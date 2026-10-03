@@ -1,44 +1,56 @@
-# 📋 Levantamento de Necessidades & Dores (Stakeholder)
+# 📋 Panorama de Necessidades, Personas & Dores (Stakeholder)
 
-*Status: Em elaboração inicial*  
+*Status: Alinhado e Validado com o Gestor e Usuário*  
 *Responsável: Agente Stakeholder*
 
 ---
 
-## 🎯 Visão de Valor da Família
+## 🎯 Proposta de Valor para a Família
 
-Uma família típica enfrenta três grandes desafios financeiros:
-1. **Falta de clareza do fluxo de caixa conjunto**: Gastos pulverizados em múltiplos bancos, cartões e contas correntes.
-2. **Divisão de custos justa e sem conflitos**: Como dividir o aluguel, mercado e contas dos filhos quando cada membro ganha um salário diferente?
-3. **Imprevisibilidade e falta de metas claras**: Gastos inesperados desestabilizam o mês e não há dinheiro sobrando para férias ou reserva de emergência.
+Uma família típica enfrenta dores crônicas na gestão do seu dinheiro:
+1. **Falta de visibilidade do fluxo conjunto:** Gastos pulverizados entre contas de diferentes bancos e cartões de crédito.
+2. **Atritos no acerto de contas:** Dúvidas e desgaste emocional sobre quem pagou mais despesas da casa no final do mês.
+3. **Falsa ilusão de liquidez:** Saldo alto na conta corrente que acaba sendo gasto porque o dinheiro da reserva de emergência e das férias estava misturado no mesmo saldo.
+4. **Descompasso de datas e faturas:** Boletos vencendo antes do salário cair e compras parceladas no cartão de crédito comprometendo meses futuros sem que ninguém perceba.
+5. **Fadiga de cadastro e senhas:** Desistência do uso quando o aplicativo exige cadastros burocráticos e redigitação mensal de orçamentos.
 
 ---
 
-## 👥 Personas Iniciais
+## 👥 Personas Mapeadas
 
-### Persona 1: O "Gestor da Casa" (Ex: Mariana, 34 anos)
-- **Papel**: Centraliza o controle das contas a pagar, monitora os vencimentos e busca manter o casal dentro do orçamento.
-- **Dor**: Cansaço de preencher planilhas manuais que o parceiro esquece de atualizar.
+### Persona 1: O "Gestor Familiar" (Ex: Mariana, 34 anos)
+- **Papel:** Acompanha os compromissos a pagar, monitora as previsões, define tetos por categoria e protege as reservas.
+- **Dores:** Cansaço de cobrar o parceiro para anotar gastos e medo de pagar contas em duplicidade ou com atraso.
+- **Objetivo no App:** Ver em 3 segundos quanto a família ainda pode gastar no mês em cada categoria e saber se os próximos 7 dias estão cobertos financeiramente.
 
 ### Persona 2: O "Membro Colaborador" (Ex: Lucas, 36 anos)
-- **Papel**: Quer participar da divisão das contas, mas busca praticidade máxima (lançamento rápido de despesas e visualização simples de quanto deve no mês).
-- **Dor**: Não sabe exatamente quanto pode gastar livremente no mês sem comprometer as despesas conjuntas.
+- **Papel:** Participa ativamente da renda e das despesas, mas tem rotina corrida e busca praticidade máxima.
+- **Dores:** Não sabe quanto pode gastar no dia a dia sem prejudicar as metas da casa; acha formulários lentos.
+- **Objetivo no App:** Login com 1 clique com sua conta Google, registro ágil de compras e visão clara do acerto de contas do mês.
 
 ---
 
-## 💡 Necessidades Iniciais Mapeadas
+## 🗺️ Matriz Consolidada de Necessidades (NEED-001 a NEED-012)
 
-### [NEED-001] Registro e Classificação Ágil de Transações
-- **Problema/Dor**: Lançar gastos é demorado e membros da família esquecem despesas do dia a dia.
-- **Público Atingido**: Todos os membros da família.
-- **Benefício Esperado**: Lançamento rápido de despesas e receitas, com categorização instantânea (Moradia, Alimentação, Transporte, Lazer, etc.).
+Todas as necessidades estão detalhadas em arquivos modulares nesta pasta:
 
-### [NEED-002] Divisão Compartilhada de Despesas (Conjunto vs. Individual)
-- **Problema/Dor**: Dúvidas frequentes sobre quem pagou o quê e quem deve quanto no final do mês.
-- **Público Atingido**: Casais e familiares com orçamentos mistos.
-- **Benefício Esperado**: Cálculo automático do acerto de contas entre os membros (50/50 ou proporcional à renda).
+| ID | Necessidade de Negócio | Release Alvo | Resumo da Dor e Valor Entregue |
+| :--- | :--- | :---: | :--- |
+| **[`NEED-012`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-012-autenticacao-social-google.md)** | **Autenticação com Conta Google** | **AP0 (MVP)** | Login imediato com 1 clique via Google Sign-In, eliminando senhas e importando avatar e nome. |
+| **[`NEED-001`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-001-membros-e-responsaveis.md)** | **Membros & Tripla Responsabilidade** | **AP0 (MVP)** | Saber quem cadastrou (`autor`), quem realizou a compra (`gastador`) e quem vai quitar (`pagador`). |
+| **[`NEED-002`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-002-contas-bancarias-e-compartilhamento.md)** | **Contas Bancárias & Transferências** | **AP0 (MVP)** | Múltiplas contas compartilhadas no grupo familiar e transferências atômicas entre elas. |
+| **[`NEED-003`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-003-cartoes-de-credito-e-parcelamentos.md)** | **Cartões de Crédito & Parcelamentos** | **AP0 / AP1** | Cartão como entidade autônoma (não mexe no saldo bancário até pagar a fatura) + parcelamentos futuros (10x). |
+| **[`NEED-004`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-004-despesas-previstas-e-recorrentes.md)** | **Despesas Previstas & Recorrência** | **AP0 / AP1** | Compromissos futuros (`PREVISTO` vs `PAGO`), baixa em conta e contas fixas recorrentes automáticas. |
+| **[`NEED-005`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-005-ciclo-e-tetos-orcamentarios.md)** | **Ciclo Customizado & Auto-Clonagem** | **AP1** | Ciclo que fecha no dia desejado pela família, tetos dinâmicos por mês e cópia automática do mês anterior. |
+| **[`NEED-006`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-006-disponibilidade-e-relatorios.md)** | **Disponibilidade por Categoria** | **AP0 / AP1** | Painel de autocontrole ("quanto ainda podemos gastar") com termômetros visuais sem travamentos. |
+| **[`NEED-007`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-007-acerto-de-contas-familiar.md)** | **Acerto de Contas Familiar (Split)** | **AP2** | Balanço de despesas comuns entre membros com cálculo automático da transferência de compensação. |
+| **[`NEED-008`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-008-desdobramento-de-despesas.md)** | **Desdobramento de Despesa Única** | **AP2** | Rateio de compras de supermercado/farmácia em múltiplas categorias e múltiplos membros responsáveis. |
+| **[`NEED-009`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-009-caixinhas-e-saldo-livre.md)** | **Caixinhas & Foco no Saldo Livre** | **AP2** | Caixinhas no detalhe da conta e exibição estrita do saldo livre para gastar na tela principal. |
+| **[`NEED-010`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-010-conciliacao-e-auditoria-de-ajustes.md)** | **Conciliação Rápida & Auditoria** | **AP2** | Ajuste rápido digitando o saldo real do banco com indicador de auditoria de desvios acumulados. |
+| **[`NEED-011`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-011-termometro-de-liquidez-imediata.md)** | **Termômetro de Liquidez (7 Dias)** | **AP2** | Previsão de contas a vencer nos próximos 7 dias vs saldo livre para blindagem contra cheque especial. |
 
-### [NEED-003] Planejamento Orçamentário e Tetos de Gastos por Categoria
-- **Problema/Dor**: Surpresas financeiras no final do mês com faturas estouradas.
-- **Público Atingido**: Toda a família.
-- **Benefício Esperado**: Alertas visuais de limite atingido em categorias como Delivery, Supermercado e Lazer.
+---
+
+## 📌 Relação com Outros Agentes
+- **Product Owner (PO):** Utiliza este panorama e os arquivos `NEED-001` a `NEED-012` para construir os fluxos (`flows/`) e o backlog de histórias BDD (`backlog/`).
+- **Tech Lead:** Avalia a viabilidade dos requisitos, modela as entidades e gera os contratos de engenharia (`sdd/`).

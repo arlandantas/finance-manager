@@ -32,6 +32,7 @@ graph TD
 
 | Need Mapeado | Funcionalidades Entregues no AP0 | Valor para a Família |
 | :--- | :--- | :--- |
+| **[`NEED-012`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-012-autenticacao-social-google.md)** | Autenticação com 1 Clique via Conta Google e vínculo por e-mail ao grupo familiar. | Login seguro, sem fricção de senhas e com avatar/foto automática. |
 | **[`NEED-001`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-001-membros-e-responsaveis.md)** | Cadastro de membros familiares e dupla responsabilidade inicial (`autor_cadastro` + `responsavel_gasto`). | Saber quem realizou cada despesa da casa. |
 | **[`NEED-002`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-002-contas-bancarias-e-compartilhamento.md)** | Cadastro de contas bancárias, saldos reais, entradas, saídas avulsas e transferências entre contas. | Visão consolidada de quanto dinheiro a família tem no banco. |
 | **[`NEED-003`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-003-cartoes-de-credito-e-parcelamentos.md)** | Cadastro de cartões de crédito (limite, fechamento e vencimento) e lançamento de compras à vista no cartão. | Separar gastos no cartão do saldo imediato da conta corrente. |
@@ -81,6 +82,7 @@ graph TD
 
 ```text
 [AP0 - MVP Operacional]
+   ├── Épico 0: Autenticação Google & Onboarding Familiar (NEED-012)
    ├── Épico 1: Governança Familiar & Membros (NEED-001)
    ├── Épico 2: Gestão de Contas & Movimentações (NEED-002)
    ├── Épico 3: Cartões de Crédito Básicos (NEED-003 - Fase 1)

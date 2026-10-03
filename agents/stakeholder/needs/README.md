@@ -21,6 +21,7 @@ Cada documento `NEED-XXX` serve como **insumo direto** para o **Product Owner (P
 | **[`NEED-009`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-009-caixinhas-e-saldo-livre.md)** | Caixinhas (Reservas) e Saldo Livre para Gastar | Blindagem Patrimonial | ✅ Validado | Histórias de subcontas e exibição do saldo livre |
 | **[`NEED-010`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-010-conciliacao-e-auditoria-de-ajustes.md)** | Conciliação Rápida de Saldo e Auditoria de Ajustes | Integridade & Controle | ✅ Validado | Histórias de ajuste de saldo e indicador de desvios |
 | **[`NEED-011`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-011-termometro-de-liquidez-imediata.md)** | Termômetro de Liquidez Imediata (Janela de 7 Dias) | Prevenção de Caixa | ✅ Validado | Histórias do card de cobertura imediata de contas |
+| **[`NEED-012`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-012-autenticacao-social-google.md)** | Autenticação via Conta Google e Acesso Familiar | Segurança & Onboarding | ✅ Validado (AP0) | Histórias de Sign-in with Google e perfil familiar |
 
 ---
 
