@@ -1,7 +1,7 @@
 # Modelo de Dados Consolidado (R1)
 
 *Responsável: Agente Tech Lead · 2026-10-04 · Referências: [ADR-007](../adrs/ADR-007-modelo-de-ledger-e-correcoes.md), [ADR-009](../adrs/ADR-009-idempotencia-e-controle-otimista.md), [ADR-010](../adrs/ADR-010-periodo-e-datas.md), [ADR-011](../adrs/ADR-011-regra-de-divisao-versionada.md), [ADR-012](../adrs/ADR-012-convites-e-email.md), [ADR-013](../adrs/ADR-013-isolamento-por-familia.md).*
-*Substitui o diagrama de classes preliminar de `overview.md`. Cobre EN-001 e US-001..013. Fora do R1 (cartões, previstas, orçamento) **não** entra aqui.*
+*Substitui o diagrama de classes preliminar de `overview.md`. Cobre EN-001 e US-001..013 (§1–§6). **A R2 (US-014..019: categorias, cartões, fatura, previstas) é o §7 deste documento**; orçamento e demais AP1+ ainda não entram.*
 
 ## 1. Diagrama ER
 
@@ -386,3 +386,215 @@ Observação: a soma de `bps` = 10000 por versão é validada no serviço (SDD-0
 
 ## 6. Seed e migrações
 Uma migração por história (`us-001-auth`, `us-002-familia`, …), nunca editar migração aplicada. O baseline `SystemInfo` do EN-001 permanece. Catálogo de categorias padrão em `src/modules/familia/default-categories.ts` (SDD-003 §4.3).
+
+---
+
+## 7. R2 — Categorias, cartões, fatura e despesas previstas (US-014..019)
+
+*Acrescentado em 2026-10-04. Referências: [ADR-014](../adrs/ADR-014-cartao-e-fatura-no-ledger.md), [ADR-015](../adrs/ADR-015-despesa-prevista-como-entidade-propria.md), [SDD-007](../sdd/SDD-007-categorias.md), [SDD-008](../sdd/SDD-008-cartoes-fatura.md), [SDD-009](../sdd/SDD-009-despesas-previstas.md). Vale a mesma regra do §3: o **normativo** são nomes, tipos, índices, FKs compostas e o SQL de §7.3.*
+
+### 7.1 Diagrama ER (acréscimos)
+
+```mermaid
+erDiagram
+    Family ||--o{ CreditCard : ""
+    Family ||--o{ CardInvoice : ""
+    Family ||--o{ PlannedExpense : ""
+    Member ||--o{ CreditCard : "titular (owner)"
+    CreditCard ||--o{ CardInvoice : "uma por ciclo (mês de fechamento)"
+    CardInvoice ||--o{ Transaction : "compras (EXPENSE) e pagamento (INVOICE_PAYMENT)"
+    CreditCard ||--o{ Transaction : "cartão da compra/pagamento"
+    Category ||--o{ PlannedExpense : "classifica"
+    Member ||--o{ PlannedExpense : "responsável / autor"
+    PlannedExpense ||--o| Transaction : "paidTransactionId (despesa gerada na baixa)"
+
+    CreditCard { uuid id PK
+      string name "único por família (case-insens.)"
+      bigint limitInCents
+      int closingDay "1..28"
+      int dueDay "1..28"
+      int version }
+    CardInvoice { uuid id PK
+      string referenceMonth "YYYY-MM do fechamento"
+      date closingDate
+      date dueDate }
+    PlannedExpense { uuid id PK
+      bigint amountInCents "previsto"
+      date dueOn
+      enum status "PREVISTO|PAGO"
+      uuid paidTransactionId FK
+      int version
+      timestamptz deletedAt }
+```
+
+### 7.2 Schema Prisma (trechos normativos)
+
+```prisma
+enum TransactionKind      { EXPENSE INCOME OPENING TRANSFER_OUT TRANSFER_IN INVOICE_PAYMENT }   // + INVOICE_PAYMENT
+enum PlannedExpenseStatus { PREVISTO PAGO }
+
+model Category {                                  // ALTERAÇÃO (US-014): + version, updatedAt, updatedByMemberId
+  // … campos existentes …
+  version           Int      @default(1)
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz(3)
+  updatedByMemberId String?  @db.Uuid               // para "alterada por {Nome}" no 409
+}
+
+model CreditCard {
+  id            String   @id @default(uuid()) @db.Uuid
+  familyId      String   @db.Uuid
+  name          String                                     // trim; único por família ignorando caixa (§7.3)
+  institution   String   @default("Outro")
+  ownerMemberId String   @db.Uuid
+  limitInCents  BigInt                                     // > 0
+  closingDay    Int                                        // 1..28
+  dueDay        Int                                        // 1..28
+  version       Int      @default(1)
+  updatedByMemberId String? @db.Uuid                       // para "alterado por {Nome}" no 409
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(3)
+  family       Family        @relation(fields: [familyId], references: [id])
+  owner        Member        @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
+  invoices     CardInvoice[]
+  transactions Transaction[]
+  @@unique([familyId, id])
+  @@map("credit_cards")
+}
+
+model CardInvoice {
+  id             String   @id @default(uuid()) @db.Uuid
+  familyId       String   @db.Uuid
+  cardId         String   @db.Uuid
+  referenceMonth String                                    // "YYYY-MM" do mês de FECHAMENTO
+  closingDate    DateTime @db.Date                         // snapshot do ciclo do cartão na criação
+  dueDate        DateTime @db.Date
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  card         CreditCard    @relation(fields: [familyId, cardId], references: [familyId, id])
+  transactions Transaction[]
+  @@unique([cardId, referenceMonth])
+  @@unique([familyId, id])
+  @@index([familyId, cardId, closingDate])
+  @@map("card_invoices")
+}
+
+model Transaction {                               // ALTERAÇÕES
+  accountId String? @db.Uuid                       // era obrigatório; NULL só em compra no cartão (CHECK §7.3)
+  cardId    String? @db.Uuid
+  invoiceId String? @db.Uuid
+  account   BankAccount?  @relation(fields: [familyId, accountId], references: [familyId, id])
+  card      CreditCard?   @relation(fields: [familyId, cardId], references: [familyId, id])
+  invoice   CardInvoice?  @relation(fields: [familyId, invoiceId], references: [familyId, id])
+  paidPlanned PlannedExpense? @relation("PlannedPaidTx")   // lado inverso (1:0..1)
+  @@index([familyId, cardId, occurredOn])
+  @@index([familyId, invoiceId])
+}
+
+model PlannedExpense {
+  id                  String               @id @default(uuid()) @db.Uuid
+  familyId            String               @db.Uuid
+  description         String                                   // 2..100
+  amountInCents       BigInt                                   // PREVISTO (> 0); o valor pago vive na Transaction
+  dueOn               DateTime             @db.Date
+  categoryId          String               @db.Uuid
+  responsibleMemberId String               @db.Uuid
+  isSharedExpense     Boolean              @default(true)
+  note                String?
+  status              PlannedExpenseStatus @default(PREVISTO)
+  paidTransactionId   String?              @unique @db.Uuid
+  authorMemberId      String               @db.Uuid
+  updatedByMemberId   String?              @db.Uuid
+  version             Int                  @default(1)
+  createdAt           DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime             @updatedAt @db.Timestamptz(3)
+  deletedAt           DateTime?            @db.Timestamptz(3)
+  deletedByMemberId   String?              @db.Uuid
+  family      Family       @relation(fields: [familyId], references: [id])
+  category    Category     @relation(fields: [familyId, categoryId], references: [familyId, id])
+  responsible Member       @relation("PlannedResponsible", fields: [familyId, responsibleMemberId], references: [familyId, id])
+  author      Member       @relation("PlannedAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+  paidTx      Transaction? @relation("PlannedPaidTx", fields: [familyId, paidTransactionId], references: [familyId, id])
+  @@unique([familyId, id])
+  @@index([familyId, status, dueOn])
+  @@map("planned_expenses")
+}
+```
+Acrescentar as relações inversas necessárias em `Family`, `Member` e `Category` (o Prisma exige). Se o Prisma 7 recusar a relação composta com `accountId` opcional, o fallback do SDD-000 vale: FK composta só no SQL e relação simples no cliente.
+
+### 7.3 Migrações em SQL cru (uma por história; **nunca** editar migração aplicada)
+
+Ordem e conteúdo (o Dev gera com `prisma migrate dev --create-only` e anexa o SQL):
+
+| Migração | Conteúdo |
+| :-- | :-- |
+| `us014_categorias` | `categories."version"`, `"updatedAt"`, `"updatedByMemberId"` + índice único funcional de nome |
+| `us015_cartoes` | `credit_cards` + `CHECK`s + índice único de nome |
+| `us016_enum_invoice_payment` | **somente** `ALTER TYPE "TransactionKind" ADD VALUE 'INVOICE_PAYMENT'` (um valor novo de enum não pode ser usado na mesma transação em que nasce, por isso o arquivo é isolado) |
+| `us016_compra_cartao` | `card_invoices`, colunas novas em `transactions`, FKs compostas, **substituição** de `tx_kind_shape_chk`, índices parciais |
+| `us018_previstas` | enum `PlannedExpenseStatus`, `planned_expenses`, `CHECK`s |
+
+```sql
+-- us014_categorias
+-- (Prisma cria a coluna "version"; o índice exato (familyId, kind, name) permanece e é redundante, mas inofensivo)
+CREATE UNIQUE INDEX categories_family_kind_name_uq ON categories ("familyId", kind, lower(btrim(name)));
+
+-- us015_cartoes (após o CREATE TABLE gerado pelo Prisma)
+ALTER TABLE credit_cards ADD CONSTRAINT credit_cards_limit_chk   CHECK ("limitInCents" > 0);
+ALTER TABLE credit_cards ADD CONSTRAINT credit_cards_closing_chk CHECK ("closingDay" BETWEEN 1 AND 28);
+ALTER TABLE credit_cards ADD CONSTRAINT credit_cards_due_chk     CHECK ("dueDay" BETWEEN 1 AND 28);
+CREATE UNIQUE INDEX credit_cards_family_name_uq ON credit_cards ("familyId", lower(btrim(name)));
+
+-- us016_compra_cartao
+-- (Prisma: transactions."accountId" DROP NOT NULL; ADD "cardId", "invoiceId"; FKs compostas ON DELETE RESTRICT)
+ALTER TABLE card_invoices ADD CONSTRAINT card_invoices_ref_chk CHECK ("referenceMonth" ~ '^[0-9]{4}-(0[1-9]|1[0-2])$');
+ALTER TABLE card_invoices ADD CONSTRAINT card_invoices_dates_chk CHECK ("dueDate" > "closingDate");
+
+ALTER TABLE transactions DROP CONSTRAINT tx_kind_shape_chk;
+ALTER TABLE transactions ADD CONSTRAINT tx_kind_shape_chk CHECK (
+  -- despesa em conta OU compra no cartão
+  (kind = 'EXPENSE' AND direction = 'DEBIT' AND "categoryId" IS NOT NULL AND "payerMemberId" IS NOT NULL AND "transferGroupId" IS NULL
+     AND (("accountId" IS NOT NULL AND "cardId" IS NULL AND "invoiceId" IS NULL)
+       OR ("accountId" IS NULL AND "cardId" IS NOT NULL AND "invoiceId" IS NOT NULL)))
+  OR (kind = 'INCOME'  AND direction = 'CREDIT' AND "categoryId" IS NOT NULL AND "payerMemberId" IS NOT NULL AND "isSharedExpense" = false
+     AND "transferGroupId" IS NULL AND "accountId" IS NOT NULL AND "cardId" IS NULL AND "invoiceId" IS NULL)
+  OR (kind = 'OPENING' AND "categoryId" IS NULL AND "payerMemberId" IS NULL AND "isSharedExpense" = false
+     AND "transferGroupId" IS NULL AND "accountId" IS NOT NULL AND "cardId" IS NULL AND "invoiceId" IS NULL)
+  OR (kind = 'TRANSFER_OUT' AND direction = 'DEBIT'  AND "categoryId" IS NULL AND "payerMemberId" IS NULL AND "isSharedExpense" = false
+     AND "transferGroupId" IS NOT NULL AND "accountId" IS NOT NULL AND "cardId" IS NULL AND "invoiceId" IS NULL)
+  OR (kind = 'TRANSFER_IN'  AND direction = 'CREDIT' AND "categoryId" IS NULL AND "payerMemberId" IS NULL AND "isSharedExpense" = false
+     AND "transferGroupId" IS NOT NULL AND "accountId" IS NOT NULL AND "cardId" IS NULL AND "invoiceId" IS NULL)
+  OR (kind = 'INVOICE_PAYMENT' AND direction = 'DEBIT' AND "categoryId" IS NULL AND "payerMemberId" IS NULL AND "isSharedExpense" = false
+     AND "transferGroupId" IS NULL AND "accountId" IS NOT NULL AND "cardId" IS NOT NULL AND "invoiceId" IS NOT NULL));
+
+-- No máximo um pagamento ATIVO por fatura
+CREATE UNIQUE INDEX tx_invoice_payment_active_uq ON transactions ("invoiceId")
+  WHERE kind = 'INVOICE_PAYMENT' AND "deletedAt" IS NULL;
+-- Consulta de limite/total: compras ativas por fatura
+CREATE INDEX tx_card_purchase_active_idx ON transactions ("familyId", "cardId", "invoiceId")
+  WHERE kind = 'EXPENSE' AND "cardId" IS NOT NULL AND "deletedAt" IS NULL;
+
+-- us018_previstas (após o CREATE TABLE gerado pelo Prisma)
+ALTER TABLE planned_expenses ADD CONSTRAINT planned_amount_chk CHECK ("amountInCents" > 0);
+ALTER TABLE planned_expenses ADD CONSTRAINT planned_status_paid_chk CHECK ((status = 'PAGO') = ("paidTransactionId" IS NOT NULL));
+ALTER TABLE planned_expenses ADD CONSTRAINT planned_deleted_chk CHECK (
+  ("deletedAt" IS NULL AND "deletedByMemberId" IS NULL) OR ("deletedAt" IS NOT NULL AND "deletedByMemberId" IS NOT NULL));
+-- Previsão excluída não pode estar paga (desfazer antes)
+ALTER TABLE planned_expenses ADD CONSTRAINT planned_deleted_unpaid_chk CHECK ("deletedAt" IS NULL OR status = 'PREVISTO');
+```
+O trigger `transactions_no_delete` e a trilha `transaction_revisions` continuam valendo para as novas linhas.
+
+### 7.4 Consultas-chave (referência)
+```sql
+-- Usado do cartão (compras ativas em faturas sem pagamento ativo)
+SELECT t."cardId", COALESCE(SUM(t."amountInCents"),0)::bigint AS used
+FROM transactions t
+WHERE t."familyId" = $1 AND t.kind = 'EXPENSE' AND t."cardId" IS NOT NULL AND t."deletedAt" IS NULL
+  AND NOT EXISTS (SELECT 1 FROM transactions p WHERE p."invoiceId" = t."invoiceId" AND p.kind = 'INVOICE_PAYMENT' AND p."deletedAt" IS NULL)
+GROUP BY t."cardId";
+
+-- Total e subtotal por membro de uma fatura
+SELECT t."payerMemberId", SUM(t."amountInCents")::bigint AS total, COUNT(*) AS n
+FROM transactions t WHERE t."familyId" = $1 AND t."invoiceId" = $2 AND t.kind = 'EXPENSE' AND t."deletedAt" IS NULL
+GROUP BY t."payerMemberId";
+
+-- Saldo (SDD-004 §4.1) passa a filtrar contas: ... AND "accountId" IS NOT NULL
+```
