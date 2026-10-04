@@ -36,3 +36,13 @@ export function compareDate(a: DateISO, b: DateISO): -1 | 0 | 1 {
 export function daysBetween(a: DateISO, b: DateISO): number {
   return Math.round((toUtc(b) - toUtc(a)) / 86_400_000);
 }
+
+/** `YYYY-MM-DD` -> `Date` UTC à meia-noite (coluna `DATE` do Postgres via Prisma). */
+export function toDbDate(d: DateISO): Date {
+  return new Date(`${d}T00:00:00.000Z`);
+}
+
+/** Coluna `DATE` lida pelo Prisma (UTC à meia-noite) -> `YYYY-MM-DD`. */
+export function fromDbDate(d: Date): DateISO {
+  return d.toISOString().slice(0, 10);
+}

@@ -110,3 +110,57 @@ export async function makeFamily(
   for (const m of members) byName[m.name.split(" ")[0] as string] = m;
   return { family: { id: family.id, name: family.name }, members, byName };
 }
+
+export type AccountFixture = { id: string; name: string; ownerMemberId: string };
+
+/** Conta com lançamento de abertura (mesmo desenho de `createAccount`, direto no banco). */
+export async function makeAccount(
+  fx: FamilyFixture,
+  o: {
+    name: string;
+    owner?: string; // primeiro nome do titular (padrão: o primeiro membro)
+    type?: "CHECKING" | "SAVINGS" | "CASH";
+    institution?: string;
+    openingBalanceInCents?: number;
+    openingDate?: string;
+  },
+): Promise<AccountFixture> {
+  const db = fdb();
+  const owner = (o.owner ? fx.byName[o.owner] : fx.members[0]) ?? fx.members[0];
+  if (!owner) throw new Error("Família sem membros");
+  const balance = o.openingBalanceInCents ?? 0;
+  const account = await db.bankAccount.create({
+    data: {
+      familyId: fx.family.id,
+      name: o.name,
+      institution: o.institution ?? "Outro",
+      type: o.type ?? "CHECKING",
+      ownerMemberId: owner.memberId,
+    },
+  });
+  const opening = await db.transaction.create({
+    data: {
+      familyId: fx.family.id,
+      kind: "OPENING",
+      direction: balance >= 0 ? "CREDIT" : "DEBIT",
+      accountId: account.id,
+      amountInCents: BigInt(Math.abs(balance)),
+      occurredOn: new Date(`${o.openingDate ?? "2026-10-01"}T00:00:00Z`),
+      description: "Saldo inicial",
+      authorMemberId: owner.memberId,
+    },
+  });
+  await db.transactionRevision.create({
+    data: {
+      familyId: fx.family.id,
+      transactionId: opening.id,
+      revision: 1,
+      action: "CREATE",
+      actorMemberId: owner.memberId,
+      changes: [
+        { field: "*", from: null, to: { kind: "OPENING", amountInCents: Math.abs(balance) } },
+      ],
+    },
+  });
+  return { id: account.id, name: account.name, ownerMemberId: owner.memberId };
+}
