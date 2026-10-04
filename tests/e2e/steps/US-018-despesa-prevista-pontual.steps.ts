@@ -244,6 +244,8 @@ Given(
 );
 
 When("Mariana salva um novo valor", async ({ world }) => {
+  const alt = world.data.conflictActions as { mariana: () => Promise<void> } | undefined;
+  if (alt) return alt.mariana(); // US-016b (compra no cartão)
   const p = world.data.marianaPage as Page;
   const d = dlg(p, "Editar despesa prevista");
   await fillPlanned(d, { amount: "R$ 700,00" });
@@ -251,7 +253,9 @@ When("Mariana salva um novo valor", async ({ world }) => {
   await expect(p.getByText("Despesa prevista atualizada")).toBeVisible();
 });
 
-When("Lucas tenta salvar outro valor", async ({ page }) => {
+When("Lucas tenta salvar outro valor", async ({ page, world }) => {
+  const alt = world.data.conflictActions as { lucas: () => Promise<void> } | undefined;
+  if (alt) return alt.lucas(); // US-016b (compra no cartão)
   const d = dlg(page, "Editar despesa prevista");
   await fillPlanned(d, { amount: "R$ 800,00" });
   await d.getByRole("button", { name: "Salvar", exact: true }).click();

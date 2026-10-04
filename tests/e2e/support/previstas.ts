@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
 import { testDb } from "../../support/db";
 import { gotoReady } from "../../support/nav";
+import { fillPayInvoice, openPayInvoice } from "./cartoes";
 import { dlg } from "./categorias";
 import type { World } from "./fixtures";
 
@@ -151,7 +152,15 @@ export async function confirmPay(d: ReturnType<Page["getByRole"]>, label = "Conf
 }
 
 /** Duplo clique em "Confirmar pagamento" (usado pelo passo comum "toca duas vezes" da US-005). */
-export async function doubleClickPay(page: Page, botao: string) {
+export async function doubleClickPay(page: Page, botao: string, world?: World) {
+  if (world?.data.invoiceContext) {
+    // US-017b: pagamento da fatura
+    const d = await openPayInvoice(page, world);
+    await fillPayInvoice(d, { account: "Itaú Lucas" });
+    await d.getByRole("button", { name: botao }).dblclick();
+    await expect(page.getByText("Fatura paga com sucesso!")).toBeVisible();
+    return;
+  }
   await openPrevistasOf(page, PERIOD_NOV);
   const d = await openPay(page, "Condomínio");
   await d.getByRole("button", { name: botao }).dblclick();

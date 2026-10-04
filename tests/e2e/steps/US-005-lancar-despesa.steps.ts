@@ -139,8 +139,12 @@ Then("vê {string}", async ({ page }, texto: string) => {
   await expect(page.getByText(texto, { exact: true })).toBeVisible();
 });
 
-Then("nada é registrado", async () => {
-  expect(await db.transaction.count({ where: { kind: { in: ["EXPENSE", "INCOME"] } } })).toBe(0);
+Then("nada é registrado", async ({ world }) => {
+  // `baselineTx`: lançamentos que o contexto do cenário já criou (ex.: compra da fatura, US-017b).
+  const baseline = (world.data.baselineTx as number | undefined) ?? 0;
+  expect(await db.transaction.count({ where: { kind: { in: ["EXPENSE", "INCOME"] } } })).toBe(
+    baseline,
+  );
 });
 
 When("Lucas informa o valor mas não escolhe categoria e tenta salvar", async ({ page }) => {
@@ -172,8 +176,8 @@ Then("a despesa é registrada com a descrição {string}", async ({}, descricao:
   expect((await lastTransaction("EXPENSE")).row.description).toBe(descricao);
 });
 
-When("Lucas toca duas vezes rapidamente em {string}", async ({ page }, botao: string) => {
-  if (botao === "Confirmar pagamento") return doubleClickPay(page, botao); // US-019 (baixa)
+When("Lucas toca duas vezes rapidamente em {string}", async ({ page, world }, botao: string) => {
+  if (botao === "Confirmar pagamento") return doubleClickPay(page, botao, world); // US-019/US-017b
   await openDrawer(page);
   await fillAmount(page, "R$ 50,00");
   await pickCategory(page, "Supermercado");

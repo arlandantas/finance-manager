@@ -4,6 +4,7 @@ import { normalizeSpaces } from "../../support/constants";
 import { testDb } from "../../support/db";
 import { makePlannedExpense } from "../../support/factories";
 import { gotoReady } from "../../support/nav";
+import { fillPayInvoice, gotoInvoice, openPayInvoice, payInvoiceDrawer } from "../support/cartoes";
 import { dlg } from "../support/categorias";
 import { Given, Then, When, type World } from "../support/fixtures";
 import {
@@ -263,14 +264,28 @@ Given("que o saldo de {string} é {string}", async ({}, conta: string, saldo: st
 
 When(
   "Lucas escolhe {string} para pagar {string}",
-  async ({ page }, conta: string, valor: string) => {
+  async ({ page, world }, conta: string, valor: string) => {
+    if (world.data.invoiceContext) {
+      // US-017b: pagamento da fatura (o valor é o total da fatura, somente leitura)
+      const d = await openPayInvoice(page, world);
+      await expect(d.getByTestId("pay-invoice-total")).toHaveText(normalizeSpaces(valor));
+      await fillPayInvoice(d, { account: conta });
+      return;
+    }
     await payNov(page, { account: conta, amount: valor });
   },
 );
 
-Then("ao confirmar o saldo da conta passa a {string}", async ({ page }, saldo: string) => {
-  await confirmPay(payDrawer(page, "Condomínio"), "Confirmar mesmo assim");
-  await expect(page.getByText("Pagamento registrado com sucesso!")).toBeVisible();
+Then("ao confirmar o saldo da conta passa a {string}", async ({ page, world }, saldo: string) => {
+  if (world.data.invoiceContext) {
+    await payInvoiceDrawer(page, world, "2026-10")
+      .getByRole("button", { name: "Confirmar mesmo assim" })
+      .click();
+    await expect(page.getByText("Fatura paga com sucesso!")).toBeVisible();
+  } else {
+    await confirmPay(payDrawer(page, "Condomínio"), "Confirmar mesmo assim");
+    await expect(page.getByText("Pagamento registrado com sucesso!")).toBeVisible();
+  }
   await gotoReady(page, "/contas");
   await expect(page.getByTestId("account-card").filter({ hasText: "Itaú Lucas" })).toContainText(
     normalizeSpaces(saldo),
@@ -281,10 +296,12 @@ Then("apenas uma despesa é gerada", async () => {
   expect(await db.transaction.count({ where: { kind: "EXPENSE" } })).toBe(1);
 });
 
-Then("a conta é debitada uma única vez", async ({ page }) => {
+Then("a conta é debitada uma única vez", async ({ page, world }) => {
   await gotoReady(page, "/contas");
+  // baixa: 3.000 - 650 · fatura (US-017b): 3.000 - 1.200
+  const esperado = world.data.invoiceContext ? "R$ 1.800,00" : "R$ 2.350,00";
   await expect(page.getByTestId("account-card").filter({ hasText: "Itaú Lucas" })).toContainText(
-    normalizeSpaces("R$ 2.350,00"),
+    normalizeSpaces(esperado),
   );
 });
 
@@ -354,7 +371,17 @@ Given(
   },
 );
 
-When("Lucas toca em {string} e confirma", async ({ page }, acao: string) => {
+When("Lucas toca em {string} e confirma", async ({ page, world }, acao: string) => {
+  if (world.data.invoiceContext) {
+    // US-017b: desfazer o pagamento da fatura pela tela da fatura
+    await gotoInvoice(page, world, "2026-10");
+    await page.getByRole("button", { name: "Desfazer pagamento", exact: true }).click();
+    const dd = dlg(page, `${acao}?`);
+    await expect(dd).toBeVisible();
+    await dd.getByRole("button", { name: acao, exact: true }).click();
+    await expect(page.getByText("Pagamento desfeito")).toBeVisible();
+    return;
+  }
   await openPrevistasOf(page, PERIOD_NOV);
   await page.getByRole("tab", { name: "Pagas" }).click();
   await page.getByRole("button", { name: /^Desfazer pagamento de/ }).click();

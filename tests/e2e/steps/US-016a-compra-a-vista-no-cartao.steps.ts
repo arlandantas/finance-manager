@@ -258,8 +258,9 @@ When(
 );
 
 Then("vê o aviso {string} com o botão {string}", async ({ page }, aviso: string, botao: string) => {
-  await expect(drawer(page).getByText(aviso, { exact: true })).toBeVisible();
-  await expect(drawer(page).getByRole("button", { name: botao })).toBeVisible();
+  const d = page.getByRole("dialog").last();
+  await expect(d.getByText(aviso, { exact: true })).toBeVisible();
+  await expect(d.getByRole("button", { name: botao })).toBeVisible();
 });
 
 Then("ao confirmar a compra é registrada", async ({ page }) => {

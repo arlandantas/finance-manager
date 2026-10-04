@@ -1,5 +1,7 @@
 import { expect, type Page } from "@playwright/test";
+import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import { gotoReady } from "../../support/nav";
+import { enterAs } from "./acerto";
 import { dlg } from "./categorias";
 import type { World } from "./fixtures";
 import { drawer, fillAmount, openDrawer, pickCategory, setDate, waitSaved } from "./lancamento";
@@ -102,3 +104,56 @@ export async function buyOnCard(page: Page, o: BuyOptions & { card: string }) {
 }
 
 export const todayOf = (world: World) => (world.data.today as string | undefined) ?? "2026-10-04";
+
+// ── Fatura e pagamento (US-017a/b) ──
+
+type CardRef = { id: string; name: string };
+const cardOfWorld = (world: World) => world.data.card as CardRef;
+
+/** Abre a tela da fatura do cartão do cenário (`ref` em AAAA-MM). */
+export async function gotoInvoice(page: Page, world: World, ref: string, query = "") {
+  await enterAs(world, page, "Lucas");
+  const card = cardOfWorld(world);
+  await gotoReady(page, `/cartoes/${card.id}?ref=${ref}${query}`);
+  await expect(page.getByTestId("invoice-ref")).toHaveText(formatInvoiceLabel(ref));
+}
+
+export const payInvoiceDrawer = (page: Page, world: World, ref: string) =>
+  dlg(page, `Pagar fatura ${cardOfWorld(world).name} ${formatInvoiceLabel(ref)}`);
+
+export async function openPayInvoice(page: Page, world: World, ref = "2026-10") {
+  if (!page.url().includes(`/cartoes/`) || !page.url().includes(`ref=${ref}`)) {
+    await gotoInvoice(page, world, ref);
+  }
+  await page.getByRole("button", { name: "Pagar fatura" }).click();
+  const d = payInvoiceDrawer(page, world, ref);
+  await expect(d).toBeVisible();
+  return d;
+}
+
+/** `account: null` limpa a seleção (para o cenário "sem escolher a conta"). */
+export async function fillPayInvoice(
+  d: ReturnType<Page["getByRole"]>,
+  o: { account?: string | null; date?: string },
+) {
+  if (o.account) {
+    const select = d.getByLabel("Conta de origem", { exact: true });
+    const value = await select
+      .locator("option", { hasText: o.account })
+      .first()
+      .getAttribute("value");
+    await select.selectOption(value as string);
+  }
+  if (o.account === null) {
+    await d.getByLabel("Conta de origem", { exact: true }).evaluate((el) => {
+      const s = el as HTMLSelectElement;
+      s.value = "";
+      s.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  }
+  if (o.date) {
+    const date = d.getByLabel("Data do pagamento", { exact: true });
+    if (!(await date.isVisible())) await d.getByText("Mais detalhes").click();
+    await date.fill(o.date);
+  }
+}
