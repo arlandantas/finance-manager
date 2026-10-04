@@ -40,6 +40,15 @@ flowchart TD
 
 ---
 
+### Revisão 2 (2026-10-04) — alinhada às NEEDs, ao ADR-006 e a US-005
+- **Conta**: chip *Conta* logo abaixo do valor, pré-selecionado com a **última conta usada** pelo membro (todo lançamento pertence a uma conta, NEED-002).
+- **Quem pagou?**: seletor de avatares, padrão = usuário logado. No MVP esse campo preenche *responsável pelo gasto* e *pagador* (decisão D-PO-01). O **autor do cadastro** é automático e não aparece no formulário.
+- **Dividir com a família?**: o *switch* existente vira o marcador de **despesa comum vs pessoal** (RN-007.2).
+- **Categorias padrão**: Supermercado, Moradia, Contas e serviços, Transporte, Saúde, Educação, Lazer e restaurantes, Outros.
+- **Receita**: o alternador *Nova Receita* troca categorias por Salário / Rendimentos / Outras receitas e oculta o switch de divisão (receita não entra no rateio no MVP).
+
+---
+
 ## 3. ✨ Experiência do Usuário (UX & Micro-interações)
 
 - **Fricção Mínima**: Campos secundários (como notas detalhadas, anexo de comprovante ou alteração de data retroativa) ficam recolhidos em um botão *"Mais detalhes..."* para não poluir o lançamento ágil.
