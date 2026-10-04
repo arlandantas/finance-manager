@@ -90,6 +90,7 @@ export type TransactionDTO = {
   updatedBy: MemberRef | null;
   isSharedExpense: boolean; // "Dividir com a família"
   transferGroupId: string | null;
+  plannedExpenseId: string | null; // previsão que originou esta despesa (baixa), SDD-009 §4.5
   isSettlement: boolean;
   counterpartAccount: { id: string; name: string } | null;
   version: number;

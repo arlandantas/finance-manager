@@ -8,6 +8,7 @@ const loadInclude = {
   invoice: { select: { referenceMonth: true, closingDate: true, dueDate: true } },
   category: true,
   group: true,
+  paidPlanned: { select: { id: true } },
 } as const;
 
 /** Lançamentos e categorias sempre escopados por `familyId` (ADR-013). */

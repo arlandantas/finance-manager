@@ -80,6 +80,7 @@ export function toTransactionDTO(
     account: { id: string; name: string } | null;
     card?: { id: string; name: string } | null;
     invoice?: { ref: string; closingDate: string; dueDate: string } | null;
+    plannedExpenseId?: string | null;
     category: CategoryRef | null;
     members: Map<string, MemberRef>;
   },
@@ -107,6 +108,7 @@ export function toTransactionDTO(
     updatedBy: member(row.updatedByMemberId),
     isSharedExpense: row.isSharedExpense,
     transferGroupId: row.transferGroupId,
+    plannedExpenseId: ctx.plannedExpenseId ?? null,
     isSettlement: false,
     counterpartAccount: null,
     version: row.version,
@@ -362,6 +364,7 @@ function dtoFromLoaded(
           dueDate: fromDbDate(r.invoice.dueDate),
         }
       : null,
+    plannedExpenseId: r.paidPlanned?.id ?? null,
     category: r.category ? categoryRefOf(r.category) : null,
     members,
   });

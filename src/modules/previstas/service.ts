@@ -1,19 +1,24 @@
 import { conflict, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
-import { fromDbDate, todayInFamilyTz } from "@/lib/dates";
+import { compareDate, fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
 import { periodFromKey, periodOf } from "@/lib/period";
 import type { MemberRef } from "@/lib/schemas";
+import { recordRevision } from "@/modules/contas/ledger";
+import { accountBalances } from "@/modules/contas/ledger-queries";
 import { previstasRepo } from "@/modules/previstas/repo";
 import { isPlannedOverdue, plannedDifference } from "@/modules/previstas/rules";
 import type {
   CreatePlannedExpenseParsed,
   ListPlannedQuery,
+  PayPlannedExpenseParsed,
+  PayPlannedResponse,
   PlannedExpenseDTO,
   PlannedListResponse,
   UpdatePlannedExpenseParsed,
 } from "@/modules/previstas/schemas";
+import { createExpenseCore } from "@/modules/transacoes/service";
 
 type Repo = ReturnType<typeof previstasRepo>;
 export type PlannedRow = NonNullable<Awaited<ReturnType<Repo["findById"]>>>;
@@ -256,4 +261,120 @@ export async function deletePlannedExpense(
   const res = await repo.markDeleted(id, version, ctx.memberId, ctx.clock.now());
   if (res.count === 0) throw await versionConflict(repo, tx, ctx.familyId, id);
   return { deleted: true };
+}
+
+async function loadForPay(
+  tx: Tx,
+  ctx: RequestContext,
+  repo: Repo,
+  id: string,
+  version: number,
+): Promise<PlannedRow> {
+  if (!(await repo.findById(id))) throw notFound(NOT_FOUND);
+  await repo.lock(id);
+  const row = await repo.findById(id);
+  if (!row) throw notFound(NOT_FOUND);
+  // Ordem fixa (SDD-009 §1): versão divergente primeiro, depois a situação.
+  if (row.version !== version) throw await versionConflict(repo, tx, ctx.familyId, id);
+  return row;
+}
+
+/**
+ * US-019 (SDD-009 §4.3): a baixa cria a despesa real pelo MESMO serviço da US-005 e marca a
+ * previsão como PAGO, na mesma transação. O valor pago vive só na Transaction gerada.
+ */
+export async function payPlannedExpense(
+  tx: Tx,
+  ctx: RequestContext,
+  id: string,
+  input: PayPlannedExpenseParsed,
+): Promise<PayPlannedResponse> {
+  const repo = previstasRepo(tx, ctx.familyId);
+  const row = await loadForPay(tx, ctx, repo, id, input.version);
+  if (row.status === "PAGO") {
+    throw conflict("PLANNED_ALREADY_PAID", "Esta despesa prevista já foi paga");
+  }
+  const today = todayInFamilyTz(ctx.clock);
+  const paidOn = input.paidOn ?? today;
+  if (compareDate(paidOn, today) > 0) {
+    const message = "A data do pagamento não pode ser futura";
+    throw unprocessable("FUTURE_DATE_NOT_ALLOWED", message, [{ path: "paidOn", message }]);
+  }
+  const effective = input.amountInCents ?? toCents(row.amountInCents);
+  const payerMemberId = input.payerMemberId ?? row.responsibleMemberId;
+  if (
+    !(await tx.bankAccount.findFirst({ where: { id: input.accountId, familyId: ctx.familyId } }))
+  ) {
+    throw invalidRef("accountId", "Escolha a conta do pagamento");
+  }
+  if (!(await repo.findMember(payerMemberId))) throw invalidRef("payerMemberId", "Membro inválido");
+
+  const created = await createExpenseCore(
+    tx,
+    ctx,
+    {
+      type: "EXPENSE",
+      accountId: input.accountId,
+      categoryId: row.categoryId,
+      amountInCents: effective,
+      occurredOn: paidOn,
+      payerMemberId,
+      description: row.description,
+      ...((input.note ?? row.note) ? { note: (input.note ?? row.note) as string } : {}),
+      isSharedExpense: row.isSharedExpense,
+    },
+    { allowArchivedCategory: true },
+  );
+  const res = await repo.markPaid(id, input.version, created.transaction.id, ctx.memberId);
+  if (res.count === 0) throw await versionConflict(repo, tx, ctx.familyId, id);
+
+  const balance =
+    (await accountBalances(tx, ctx.familyId, [input.accountId])).get(input.accountId) ?? 0;
+  return {
+    plannedExpense: await loadDTO(tx, ctx, id),
+    transaction: { ...created.transaction, plannedExpenseId: id },
+    account: { id: input.accountId, balanceInCents: balance },
+  };
+}
+
+/** SDD-009 §4.4: desfaz a despesa gerada (UNDONE + revisão UNDO) e devolve a previsão a PREVISTO. */
+export async function undoPlannedPayment(
+  tx: Tx,
+  ctx: RequestContext,
+  id: string,
+  version: number,
+): Promise<{ plannedExpense: PlannedExpenseDTO }> {
+  const repo = previstasRepo(tx, ctx.familyId);
+  const row = await loadForPay(tx, ctx, repo, id, version);
+  if (row.status !== "PAGO" || !row.paidTransactionId) {
+    throw conflict("PLANNED_NOT_PAID", "Esta despesa prevista não está paga");
+  }
+  const t = await tx.transaction.findFirst({
+    where: { id: row.paidTransactionId, familyId: ctx.familyId },
+  });
+  if (!t) throw notFound(NOT_FOUND);
+  if (!t.deletedAt) {
+    const marked = await tx.transaction.updateMany({
+      where: { id: t.id, familyId: ctx.familyId, version: t.version, deletedAt: null },
+      data: {
+        deletedAt: ctx.clock.now(),
+        deletedByMemberId: ctx.memberId,
+        deletionReason: "UNDONE",
+        updatedByMemberId: ctx.memberId,
+        version: { increment: 1 },
+      },
+    });
+    if (marked.count === 0) throw await versionConflict(repo, tx, ctx.familyId, id);
+    await recordRevision(tx, {
+      familyId: ctx.familyId,
+      transactionId: t.id,
+      revision: t.version + 1,
+      action: "UNDO",
+      actorMemberId: ctx.memberId,
+      changes: [{ field: "deletionReason", from: null, to: "UNDONE" }],
+    });
+  }
+  const res = await repo.markUnpaid(id, version, ctx.memberId);
+  if (res.count === 0) throw await versionConflict(repo, tx, ctx.familyId, id);
+  return { plannedExpense: await loadDTO(tx, ctx, id) };
 }

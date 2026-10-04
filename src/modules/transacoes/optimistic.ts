@@ -149,6 +149,7 @@ export function buildPendingItem(
     updatedBy: null,
     isSharedExpense: input.type === "EXPENSE" ? (input.isSharedExpense ?? true) : false,
     transferGroupId: null,
+    plannedExpenseId: null,
     isSettlement: false,
     counterpartAccount: null,
     version: 1,

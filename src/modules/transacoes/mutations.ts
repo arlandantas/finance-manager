@@ -17,6 +17,7 @@ import type {
 import { getTransaction, memberRefOf } from "@/modules/transacoes/service";
 
 const NOT_EDITABLE = "Transferências e acertos não podem ser editados. Use Desfazer.";
+const LINKED_TO_PLANNED = "Esta despesa veio de uma despesa prevista. Use Desfazer pagamento.";
 const PAYMENT_NOT_EDITABLE =
   "O pagamento de fatura não pode ser editado nem excluído. Use Desfazer pagamento.";
 const SETTLED = "Este mês já foi acertado. O saldo do acerto será recalculado.";
@@ -236,6 +237,7 @@ export async function deleteTransaction(
   const repo = transacoesRepo(tx, ctx.familyId);
   const row = await loadMutable(repo, id);
   if (row.deletedAt) throw conflict("ALREADY_DELETED", "Este lançamento já foi excluído.");
+  if (row.paidPlanned) throw unprocessable("LINKED_TO_PLANNED", LINKED_TO_PLANNED);
   if (row.kind === "EXPENSE" && row.isSharedExpense) {
     await requireSettledConfirmation(
       tx,
@@ -267,6 +269,7 @@ export async function restoreTransaction(
 ): Promise<{ transaction: UpdateTransactionResponse["transaction"] }> {
   const repo = transacoesRepo(tx, ctx.familyId);
   const row = await loadMutable(repo, id);
+  if (row.paidPlanned) throw unprocessable("LINKED_TO_PLANNED", LINKED_TO_PLANNED);
   if (!row.deletedAt || row.deletionReason !== "DELETED") {
     throw unprocessable("NOT_RESTORABLE", "Este lançamento não pode ser restaurado.");
   }
