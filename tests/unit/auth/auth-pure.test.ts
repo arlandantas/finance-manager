@@ -110,7 +110,7 @@ describe("US-001 infra: dev-login seguro", () => {
     expect(isDevLoginHost(null, env)).toBe(false);
   });
 
-  it("isDirectLocalRequest (relógio de apoio): localhost e sem cabeçalhos de proxy/túnel", () => {
+  it("isDirectLocalRequest (relógio de apoio): localhost direto, sem IP/host de proxy ou túnel", () => {
     const h = (o: Record<string, string>) => new Headers(o);
     expect(isDirectLocalRequest(h({ host: "localhost:3100" }))).toBe(true);
     expect(isDirectLocalRequest(h({ host: "localhost:3100", "x-forwarded-for": "1.2.3.4" }))).toBe(
@@ -119,6 +119,17 @@ describe("US-001 infra: dev-login seguro", () => {
     expect(isDirectLocalRequest(h({ host: "localhost", "x-forwarded-host": "a.loca.lt" }))).toBe(
       false,
     );
+    // cabeçalhos que o próprio Next acrescenta (loopback) não bloqueiam
+    expect(
+      isDirectLocalRequest(
+        h({
+          host: "127.0.0.1:3101",
+          "x-forwarded-for": "::1",
+          "x-forwarded-host": "127.0.0.1:3101",
+          "x-forwarded-proto": "http",
+        }),
+      ),
+    ).toBe(true);
     expect(isDirectLocalRequest(h({ host: "a.loca.lt" }))).toBe(false);
   });
 

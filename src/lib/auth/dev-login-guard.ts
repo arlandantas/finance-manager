@@ -47,12 +47,20 @@ export function isDevLoginHost(hostHeader: string | null | undefined, env: Env =
   return hostHeader.trim().toLowerCase().replace(/:\d+$/, "") === allowed;
 }
 
-/** Endpoint de apoio ao E2E: só localhost direto, nunca via proxy/túnel (cabeçalhos x-forwarded-*). */
+const LOOPBACK_IP = /^(127\.\d+\.\d+\.\d+|::1|::ffff:127\.\d+\.\d+\.\d+)$/;
+
+/**
+ * Endpoint de apoio ao E2E: só localhost direto, nunca via túnel/proxy. O Next acrescenta `x-forwarded-*`
+ * com valores locais; um proxy/túnel real traz Host ou IP de cliente não locais, e isso é recusado.
+ */
 export function isDirectLocalRequest(headers: Headers): boolean {
   if (!isLocalHost(headers.get("host"))) return false;
-  return !["x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "forwarded"].some((k) =>
-    headers.has(k),
-  );
+  const fwdHost = headers.get("x-forwarded-host");
+  if (fwdHost && !isLocalHost(fwdHost)) return false;
+  const fwdFor = headers.get("x-forwarded-for");
+  if (fwdFor && !fwdFor.split(",").every((ip) => LOOPBACK_IP.test(ip.trim()))) return false;
+  if (headers.has("forwarded")) return false;
+  return true;
 }
 
 export const localPart = (email: string) => email.split("@")[0] ?? email;
