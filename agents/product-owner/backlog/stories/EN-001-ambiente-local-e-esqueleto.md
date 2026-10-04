@@ -22,7 +22,7 @@ Funcionalidade: Ambiente local reprodutível
   Cenário: Subir o sistema em máquina limpa
     Dado que clonei o repositório e copiei ".env.example" para ".env.local"
     Quando executo "docker compose up -d", "pnpm i", "pnpm db:migrate", "pnpm db:seed" e "pnpm dev"
-    Então a aplicação responde em "http://localhost:3000"
+    Então a aplicação responde em "http://localhost:3100"
     E "/api/health" retorna 200 com o banco acessível
 
   Cenário: Suíte de qualidade verde
