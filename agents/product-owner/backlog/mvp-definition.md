@@ -15,7 +15,7 @@ O escopo AP0 do Stakeholder + o split (ADR-006) é maior do que a dor vital. Par
 | Release | Incrementos | O que entrega | Backlog |
 | :-- | :-- | :-- | :-- |
 | **R1 — Fechar o mês em casal** *(MVP vital)* | Inc 1 + Inc 2 | Login Google, família e convite, contas, lançamento de despesa/receita, extrato, **regra de divisão, acerto de contas e registro do acerto**, transferências, home, correção de lançamentos | EN-001, US-001..013 |
-| **R2 — AP0 completo** | Inc 3 | Gerenciar categorias, cartões de crédito (compra à vista e fatura), despesas previstas pontuais (`PREVISTO` → `PAGO`) | US-014..019 |
+| **R2 — AP0 completo** | Inc 3 | Gerenciar categorias, cartões de crédito (compra à vista, fatura e pagamento da fatura), despesas previstas pontuais (`PREVISTO` → `PAGO`, baixa com valor efetivo) | US-014, 015, 016a/b, 017a/b, 018, 019 (refinadas em 2026-10-04) |
 
 Detalhe e ordem em [`backlog.md`](backlog.md).
 
