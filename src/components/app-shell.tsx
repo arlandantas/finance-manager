@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, LogOut } from "lucide-react";
+import { Home, LogOut, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -12,6 +12,7 @@ export type ShellUser = { name: string; email: string; image: string | null };
 
 const NAV_ITEMS: Array<{ href: string; label: string; icon: typeof Home }> = [
   { href: "/", label: "Início", icon: Home },
+  { href: "/contas", label: "Contas", icon: Wallet },
 ];
 
 function UserMenu({ user }: { user: ShellUser }) {

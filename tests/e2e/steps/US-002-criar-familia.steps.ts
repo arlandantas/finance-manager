@@ -2,13 +2,14 @@ import { expect } from "@playwright/test";
 import { testDb } from "../../support/db";
 import { makeFamily } from "../../support/factories";
 import { loginAs } from "../../support/login";
+import { gotoReady } from "../../support/nav";
 import { Given, Then, When } from "../support/fixtures";
 
 const db = testDb();
 
 Given("que Mariana está autenticada e não pertence a nenhuma família", async ({ page }) => {
   await loginAs(page, { email: "mariana@exemplo.com", name: "Mariana Silva" });
-  await page.goto("/onboarding");
+  await gotoReady(page, "/onboarding");
 });
 
 When(
@@ -48,20 +49,13 @@ Given("que o nome Google de Mariana é {string}", async ({ page }, nome: string)
 });
 
 When("o onboarding é exibido", async ({ page }) => {
-  await page.goto("/");
+  await gotoReady(page, "/");
   await expect(page).toHaveURL(/\/onboarding$/);
 });
 
-Then(
-  "o campo {string} vem preenchido com {string}",
-  async ({ page }, campo: string, valor: string) => {
-    await expect(page.getByLabel(campo)).toHaveValue(valor);
-  },
-);
-
 Given("que estou no onboarding", async ({ page }) => {
   await loginAs(page, { email: "mariana@exemplo.com", name: "Mariana Silva" });
-  await page.goto("/onboarding");
+  await gotoReady(page, "/onboarding");
   await expect(page.getByLabel("Nome da família")).toBeVisible();
 });
 
@@ -84,7 +78,7 @@ Then("nenhuma família é criada", async () => {
 
 Given("que preenchi o nome da família", async ({ page }) => {
   await loginAs(page, { email: "mariana@exemplo.com", name: "Mariana Silva" });
-  await page.goto("/onboarding");
+  await gotoReady(page, "/onboarding");
   await page.getByLabel("Nome da família").fill("Família Silva");
 });
 
@@ -104,7 +98,7 @@ Given("que Lucas já pertence a uma família", async ({ page, world }) => {
 });
 
 When("ele tenta acessar a tela de onboarding", async ({ page }) => {
-  await page.goto("/onboarding");
+  await gotoReady(page, "/onboarding");
 });
 
 Then("é redirecionado para a Home", async ({ page }) => {

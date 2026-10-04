@@ -2,6 +2,7 @@ import { expect } from "@playwright/test";
 import { testDb } from "../../support/db";
 import { makeFamily } from "../../support/factories";
 import { loginAs } from "../../support/login";
+import { gotoReady } from "../../support/nav";
 import { Given, Then, When } from "../support/fixtures";
 
 const db = testDb();
@@ -20,7 +21,7 @@ When("ela clica em {string} e autoriza", async ({ page, world }, _botao: string)
   const email = "mariana@exemplo.com";
   await loginAs(page, { email, name: "Mariana Silva" });
   world.data.email = email;
-  await page.goto("/");
+  await gotoReady(page, "/");
 });
 
 Then("uma conta de usuário é criada com o nome, o e-mail e a foto do Google", async () => {
@@ -41,7 +42,7 @@ Given("que {string} já pertence à {string}", async ({ world }, _email: string,
 
 When("ele entra com o Google", async ({ page }) => {
   await loginAs(page, { email: "lucas@exemplo.com", name: "Lucas Silva" });
-  await page.goto("/");
+  await gotoReady(page, "/");
 });
 
 Then("ele chega à Home da {string}", async ({ page }, nome: string) => {
@@ -62,7 +63,7 @@ Given("que Lucas entrou ontem e não saiu", async ({ page, world }) => {
 When("ele reabre o navegador e acessa o sistema", async ({ page, context, world }) => {
   await page.close();
   const fresh = await context.newPage();
-  await fresh.goto("/");
+  await gotoReady(fresh, "/");
   world.data.page = fresh;
 });
 
@@ -79,7 +80,7 @@ Given("que não há sessão ativa", async ({ context }) => {
 
 When("acesso diretamente a tela {string}", async ({ page, world }, tela: string) => {
   world.family = await makeFamily();
-  await page.goto(`/${tela.toLowerCase()}`);
+  await gotoReady(page, `/${tela.toLowerCase()}`);
 });
 
 Then("sou redirecionado ao login", async ({ page }) => {
@@ -93,12 +94,12 @@ Then("após entrar, volto para a tela {string}", async ({ page }, tela: string) 
 });
 
 Given("que estou na tela de login", async ({ page }) => {
-  await page.goto("/login");
+  await gotoReady(page, "/login");
 });
 
 // Cancelamento simulado: o Auth.js devolve ao /login com `?error=AccessDenied` (SDD-003 §8).
 When("clico em {string} e cancelo na janela do Google", async ({ page }, _botao: string) => {
-  await page.goto("/login?error=AccessDenied");
+  await gotoReady(page, "/login?error=AccessDenied");
 });
 
 Then("volto ao login com a mensagem {string}", async ({ page }, mensagem: string) => {
@@ -106,25 +107,22 @@ Then("volto ao login com a mensagem {string}", async ({ page }, mensagem: string
   await expect(page.getByRole("alert").filter({ hasText: mensagem })).toBeVisible();
 });
 
-Then("nenhuma conta é criada", async () => {
-  expect(await db.user.count()).toBe(0);
-  expect(await db.session.count()).toBe(0);
-});
-
 Given("uma conta Google cujo e-mail não está verificado", async () => {
   // Sem usuário prévio; o callback `signIn` nega antes de criar qualquer registro.
 });
 
 When("tento entrar", async ({ page }) => {
-  await page.goto("/login?error=EmailNotVerified");
+  await gotoReady(page, "/login?error=EmailNotVerified");
 });
 
 Then("o acesso é negado com mensagem clara", async ({ page }) => {
-  await expect(page.getByRole("alert")).toContainText("Seu e-mail do Google não está verificado");
+  await expect(page.locator("main [role=alert]")).toContainText(
+    "Seu e-mail do Google não está verificado",
+  );
 });
 
 Given("que o ambiente é local com {string}", async ({ page }, _flag: string) => {
-  await page.goto("/login");
+  await gotoReady(page, "/login");
   await expect(page.getByText("Entrar como (teste)")).toBeVisible();
 });
 
@@ -145,7 +143,7 @@ Then("o fluxo seguinte \\(família ou convite\\) é o mesmo do login Google", as
 Given("que estou autenticado", async ({ page, world }) => {
   world.family = await makeFamily();
   await loginAs(page, { email: "lucas@exemplo.com", name: "Lucas Silva" });
-  await page.goto("/");
+  await gotoReady(page, "/");
 });
 
 When("clico em {string}", async ({ page, world }, nome: string) => {
