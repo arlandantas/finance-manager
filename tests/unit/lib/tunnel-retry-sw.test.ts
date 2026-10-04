@@ -14,10 +14,12 @@ function load(fetchImpl: (r: unknown) => Promise<{ status: number }>) {
     clients: { claim: () => Promise.resolve() },
   };
   const code = readFileSync("public/tunnel-retry-sw.js", "utf8");
-  vm.runInNewContext(code, { self, fetch: fetchImpl, URL, setTimeout, Promise, Math, Set });
+  const caches = { open: async () => ({ match: async () => undefined, put: async () => {} }) };
+  vm.runInNewContext(code, { self, caches, fetch: fetchImpl, URL, setTimeout, Promise, Math, Set });
   const request = (path: string) => ({
     url: `https://t.loca.lt${path}`,
     headers: new Headers(),
+    method: "GET",
     clone() {
       return this;
     },
@@ -35,7 +37,11 @@ function load(fetchImpl: (r: unknown) => Promise<{ status: number }>) {
 describe("tunnel-retry-sw (dev)", () => {
   it("repete 502 até obter sucesso", async () => {
     let calls = 0;
-    const { send } = load(async () => ({ status: ++calls < 3 ? 502 : 200 }));
+    const { send } = load(async () => ({
+      status: ++calls < 3 ? 502 : 200,
+      ok: calls >= 3,
+      clone: () => ({}),
+    }));
     expect((await send("/api/v1/accounts")).status).toBe(200);
     expect(calls).toBe(3);
   });
@@ -48,7 +54,7 @@ describe("tunnel-retry-sw (dev)", () => {
       peak = Math.max(peak, active);
       await new Promise((r) => setTimeout(r, 10));
       active--;
-      return { status: 200 };
+      return { status: 200, ok: true, clone: () => ({}) };
     });
     await Promise.all(Array.from({ length: 8 }, (_, i) => send(`/_next/static/c${i}.js`)));
     expect(peak).toBe(2);

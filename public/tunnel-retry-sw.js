@@ -25,6 +25,17 @@ function release() {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Chunks de /_next/static têm hash no nome: cache-first reduz muito as idas ao túnel nas navegações seguintes.
+const CACHE = "tunnel-static-v1";
+async function cachedStatic(request) {
+  const cache = await caches.open(CACHE);
+  const hit = await cache.match(request);
+  if (hit) return hit;
+  const res = await fetchWithRetry(request);
+  if (res.ok) cache.put(request, res.clone()).catch(() => {});
+  return res;
+}
+
 async function fetchWithRetry(request) {
   await acquire();
   try {
@@ -53,5 +64,6 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith("/_next/webpack-hmr") || url.pathname === "/_next/hmr") return;
   if (request.headers.get("accept")?.includes("text/event-stream")) return;
-  event.respondWith(fetchWithRetry(request));
+  const isStatic = request.method === "GET" && url.pathname.startsWith("/_next/static/");
+  event.respondWith(isStatic ? cachedStatic(request) : fetchWithRetry(request));
 });
