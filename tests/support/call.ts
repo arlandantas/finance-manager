@@ -48,6 +48,7 @@ export type CallOptions = {
   origin?: string | null;
   headers?: Record<string, string>;
   host?: string;
+  contentType?: string;
 };
 
 export const ORIGIN = "http://localhost:3100";
@@ -75,7 +76,7 @@ export async function call<T = any>(
   if (as) headers.set("cookie", as.cookie);
   if (method !== "GET") {
     if (opts.origin !== null) headers.set("origin", opts.origin ?? ORIGIN);
-    headers.set("content-type", "application/json");
+    headers.set("content-type", opts.contentType ?? "application/json");
     if (opts.idempotencyKey !== null)
       headers.set("idempotency-key", opts.idempotencyKey ?? randomUUID());
   }

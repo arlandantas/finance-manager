@@ -1,9 +1,8 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import { localPart } from "@/lib/auth/dev-login-guard";
 import { normalizeEmail } from "@/lib/auth/email";
 import { SESSION_MAX_AGE_SECONDS } from "@/lib/auth/session";
 import { randomToken } from "@/lib/ids";
-
-export const localPart = (email: string) => email.split("@")[0] ?? email;
 
 /** Reproduz o fim de um login OAuth: upsert do User + Session em banco (ADR-008 §1). */
 export async function createDevSession(

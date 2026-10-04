@@ -24,3 +24,5 @@ export function isLocalHost(hostHeader: string | null | undefined): boolean {
     name === "localhost" || name === "127.0.0.1" || name === "[::1]" || name.endsWith(".localhost")
   );
 }
+
+export const localPart = (email: string) => email.split("@")[0] ?? email;
