@@ -3,6 +3,7 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 import { compareDate, fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { formatBRL, toCents } from "@/lib/money";
 import { periodOf } from "@/lib/period";
+import { cardUsage } from "@/modules/cartoes/queries";
 import { type Change, recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
 import { splitRepo } from "@/modules/split/repo";
@@ -16,6 +17,8 @@ import type {
 import { getTransaction, memberRefOf } from "@/modules/transacoes/service";
 
 const NOT_EDITABLE = "Transferências e acertos não podem ser editados. Use Desfazer.";
+const PAYMENT_NOT_EDITABLE =
+  "O pagamento de fatura não pode ser editado nem excluído. Use Desfazer pagamento.";
 const SETTLED = "Este mês já foi acertado. O saldo do acerto será recalculado.";
 const invalidRef = (path: string, message: string) =>
   unprocessable("INVALID_REFERENCE", message, [{ path, message }]);
@@ -26,6 +29,7 @@ type Row = NonNullable<Awaited<ReturnType<Repo["findById"]>>>;
 async function loadMutable(repo: Repo, id: string): Promise<Row> {
   const row = await repo.findById(id);
   if (!row) throw notFound("Lançamento não encontrado.");
+  if (row.kind === "INVOICE_PAYMENT") throw unprocessable("NOT_EDITABLE", PAYMENT_NOT_EDITABLE);
   if (row.kind !== "EXPENSE" && row.kind !== "INCOME") {
     throw unprocessable("NOT_EDITABLE", NOT_EDITABLE);
   }
@@ -77,11 +81,22 @@ async function respond(
   id: string,
 ): Promise<UpdateTransactionResponse> {
   const { transaction } = await getTransaction(tx, ctx, id);
-  const balance =
-    (await accountBalances(tx, ctx.familyId, [transaction.account.id])).get(
-      transaction.account.id,
-    ) ?? 0;
-  return { transaction, account: { id: transaction.account.id, balanceInCents: balance } };
+  if (transaction.card && !transaction.account) {
+    const card = await transacoesRepo(tx, ctx.familyId).findCard(transaction.card.id);
+    const used =
+      (await cardUsage(tx, ctx.familyId, [transaction.card.id])).get(transaction.card.id) ?? 0;
+    return {
+      transaction,
+      card: {
+        id: transaction.card.id,
+        usedInCents: used,
+        availableInCents: toCents(card?.limitInCents ?? 0n) - used,
+      },
+    };
+  }
+  const accountId = (transaction.account as { id: string }).id;
+  const balance = (await accountBalances(tx, ctx.familyId, [accountId])).get(accountId) ?? 0;
+  return { transaction, account: { id: accountId, balanceInCents: balance } };
 }
 
 /** PATCH /transactions/:id (SDD-001 §4.2). */
@@ -106,6 +121,13 @@ export async function updateTransaction(
   }
   const today = todayInFamilyTz(ctx.clock);
 
+  if (row.cardId && input.accountId !== undefined) {
+    throw unprocessable(
+      "PAYMENT_SOURCE_NOT_EDITABLE",
+      "Para mudar a forma de pagamento, exclua e lance novamente",
+      [{ path: "accountId", message: "Para mudar a forma de pagamento, exclua e lance novamente" }],
+    );
+  }
   const account = input.accountId ? await repo.findAccount(input.accountId) : null;
   if (input.accountId && !account) throw invalidRef("accountId", "Escolha uma conta");
   // SDD-007 §1: a validação "categoria ativa" só roda quando a categoria enviada difere da atual.

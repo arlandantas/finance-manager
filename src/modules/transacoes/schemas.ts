@@ -24,9 +24,32 @@ const common = {
   note: z.string().trim().max(500, "A observação deve ter no máximo 500 caracteres").optional(),
 };
 
+// SDD-008 §3.2: despesa em conta OU compra no cartão.
 export const CreateExpenseSchema = z
-  .object({ type: z.literal("EXPENSE"), ...common, isSharedExpense: z.boolean().default(true) })
-  .strict();
+  .object({
+    type: z.literal("EXPENSE"),
+    ...common,
+    accountId: common.accountId.optional(),
+    cardId: z.uuid({ error: "Escolha um cartão" }).optional(),
+    isSharedExpense: z.boolean().default(true),
+  })
+  .strict()
+  .superRefine((v, c) => {
+    if (!v.accountId && !v.cardId) {
+      c.addIssue({
+        code: "custom",
+        path: ["accountId"],
+        message: "Escolha uma conta ou um cartão",
+      });
+    }
+    if (v.accountId && v.cardId) {
+      c.addIssue({
+        code: "custom",
+        path: ["cardId"],
+        message: "Informe a conta ou o cartão, não os dois",
+      });
+    }
+  });
 export const CreateIncomeSchema = z.object({ type: z.literal("INCOME"), ...common }).strict();
 export const CreateTransactionSchema = z.discriminatedUnion("type", [
   CreateExpenseSchema,
@@ -36,7 +59,13 @@ export type CreateTransactionInput = z.input<typeof CreateTransactionSchema>;
 export type CreateTransactionParsed = z.output<typeof CreateTransactionSchema>;
 
 // ── DTOs (SDD-001 §2) ──
-export type TransactionType = "EXPENSE" | "INCOME" | "TRANSFER_OUT" | "TRANSFER_IN" | "OPENING";
+export type TransactionType =
+  | "EXPENSE"
+  | "INCOME"
+  | "TRANSFER_OUT"
+  | "TRANSFER_IN"
+  | "OPENING"
+  | "INVOICE_PAYMENT";
 
 export type TransactionDTO = {
   id: string;
@@ -46,7 +75,9 @@ export type TransactionDTO = {
   occurredOn: string; // YYYY-MM-DD
   description: string;
   note: string | null;
-  account: { id: string; name: string };
+  account: { id: string; name: string } | null; // null em compra no cartão
+  card: { id: string; name: string } | null; // compra no cartão e pagamento de fatura
+  invoice: { ref: string; closingDate: string; dueDate: string } | null;
   category: {
     id: string;
     name: string;
@@ -72,11 +103,13 @@ export type TransactionDetailDTO = TransactionDTO & { editedBy: MemberRef | null
 
 export type CreateTransactionResponse = {
   transaction: TransactionDTO;
-  account: { id: string; balanceInCents: number };
+  account?: { id: string; balanceInCents: number }; // só quando há conta
+  card?: { id: string; usedInCents: number; availableInCents: number }; // só em compra no cartão
 };
 
 export type TransactionDefaults = {
   accountId: string | null;
+  cardId: string | null;
   payerMemberId: string;
   today: string;
 };
@@ -92,7 +125,8 @@ export const ListTransactionsQuerySchema = z
     accountId: uuidSchema.optional(),
     memberId: uuidSchema.optional(), // pagou/recebeu OU autor
     categoryId: uuidSchema.optional(),
-    type: z.enum(["EXPENSE", "INCOME", "TRANSFER"]).optional(),
+    cardId: uuidSchema.optional(),
+    type: z.enum(["EXPENSE", "INCOME", "TRANSFER", "INVOICE_PAYMENT"]).optional(),
     shared: boolParam.optional(), // true = comum; false = pessoal (só despesas)
     includeDeleted: boolParam.optional(),
     cursor: z.string().max(300).optional(),
@@ -111,9 +145,10 @@ export type LedgerFilters = {
   start: string;
   end: string;
   accountId?: string;
+  cardId?: string;
   memberId?: string;
   categoryId?: string;
-  type?: "EXPENSE" | "INCOME" | "TRANSFER";
+  type?: "EXPENSE" | "INCOME" | "TRANSFER" | "INVOICE_PAYMENT";
   shared?: boolean;
   includeDeleted: boolean;
 };
@@ -183,5 +218,6 @@ export type RevisionDTO = {
 
 export type UpdateTransactionResponse = {
   transaction: TransactionDetailDTO;
-  account: { id: string; balanceInCents: number };
+  account?: { id: string; balanceInCents: number }; // ausente em compra no cartão
+  card?: { id: string; usedInCents: number; availableInCents: number };
 };

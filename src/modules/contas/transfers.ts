@@ -28,6 +28,10 @@ async function toTransferDTO(tx: Tx, ctx: RequestContext, g: GroupRow): Promise<
   const out = g.legs.find((l) => l.kind === "TRANSFER_OUT");
   const inn = g.legs.find((l) => l.kind === "TRANSFER_IN");
   if (!out || !inn) throw new Error("Grupo de transferência sem as duas pernas");
+  // Pernas de transferência sempre têm conta (CHECK tx_kind_shape_chk).
+  if (!out.accountId || !inn.accountId || !out.account || !inn.account) {
+    throw new Error("Perna de transferência sem conta");
+  }
   const author = await repo.findMember(g.authorMemberId);
   const balances = await accountBalances(tx, ctx.familyId, [out.accountId, inn.accountId]);
   return {

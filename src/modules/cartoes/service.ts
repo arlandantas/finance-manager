@@ -5,8 +5,7 @@ import { localPart } from "@/lib/auth/dev-login-guard";
 import { todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
 import type { MemberRef } from "@/lib/schemas";
-import { openInvoiceRef } from "@/modules/cartoes/cycle";
-import { buildInvoiceSummary, cardsWithInvoices, cardUsage } from "@/modules/cartoes/queries";
+import { cardInvoiceSummaries, cardsWithInvoices, cardUsage } from "@/modules/cartoes/queries";
 import { cartoesRepo } from "@/modules/cartoes/repo";
 import type {
   CardDTO,
@@ -33,10 +32,11 @@ async function toCardDTOs(tx: Tx, ctx: RequestContext, rows: CardRow[]): Promise
   const today = todayInFamilyTz(ctx.clock);
   const usage = await cardUsage(tx, ctx.familyId, ids);
   const locked = await cardsWithInvoices(tx, ctx.familyId, ids);
+  const invoices = await cardInvoiceSummaries(tx, ctx.familyId, rows, today);
   return rows.map((c) => {
     const used = usage.get(c.id) ?? 0;
     const limit = toCents(c.limitInCents);
-    const ref = openInvoiceRef(today, c.closingDay);
+    const inv = invoices.get(c.id);
     return {
       id: c.id,
       name: c.name,
@@ -50,8 +50,8 @@ async function toCardDTOs(tx: Tx, ctx: RequestContext, rows: CardRow[]): Promise
       cycleLocked: locked.has(c.id),
       version: c.version,
       createdAt: c.createdAt.toISOString(),
-      openInvoice: buildInvoiceSummary(c, ref, null, { totalInCents: 0, count: 0 }, null, today),
-      payableInvoices: [],
+      openInvoice: inv?.open as CardDTO["openInvoice"],
+      payableInvoices: inv?.payable ?? [],
     };
   });
 }

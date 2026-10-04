@@ -15,6 +15,7 @@ export function buildLedgerWhere(f: LedgerFilters): Prisma.Sql {
   ];
   if (!f.includeDeleted) parts.push(Prisma.sql`t."deletedAt" IS NULL`);
   if (f.accountId) parts.push(Prisma.sql`t."accountId" = ${f.accountId}::uuid`);
+  if (f.cardId) parts.push(Prisma.sql`t."cardId" = ${f.cardId}::uuid`);
   if (f.categoryId) parts.push(Prisma.sql`t."categoryId" = ${f.categoryId}::uuid`);
   if (f.memberId) {
     parts.push(
@@ -23,6 +24,7 @@ export function buildLedgerWhere(f: LedgerFilters): Prisma.Sql {
   }
   if (f.type === "EXPENSE") parts.push(Prisma.sql`t.kind = 'EXPENSE'`);
   if (f.type === "INCOME") parts.push(Prisma.sql`t.kind = 'INCOME'`);
+  if (f.type === "INVOICE_PAYMENT") parts.push(Prisma.sql`t.kind = 'INVOICE_PAYMENT'`);
   if (f.type === "TRANSFER") parts.push(Prisma.sql`t.kind IN ('TRANSFER_OUT', 'TRANSFER_IN')`);
   if (f.shared !== undefined) {
     parts.push(Prisma.sql`t.kind = 'EXPENSE' AND t."isSharedExpense" = ${f.shared}`);

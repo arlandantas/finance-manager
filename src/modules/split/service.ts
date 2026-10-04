@@ -200,7 +200,8 @@ export function settlementEntries(l: LoadedSettlement): SettlementEntryDTO[] {
   return l.groups.flatMap((g) => {
     const out = g.legs.find((x) => x.kind === "TRANSFER_OUT");
     const inn = g.legs.find((x) => x.kind === "TRANSFER_IN");
-    if (!out || !inn || !g.settlementFromMemberId || !g.settlementToMemberId) return [];
+    if (!out?.account || !inn?.account || !g.settlementFromMemberId || !g.settlementToMemberId)
+      return [];
     return [
       {
         groupId: g.id,

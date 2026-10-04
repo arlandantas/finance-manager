@@ -4,6 +4,7 @@ import { toCents } from "@/lib/money";
 
 /**
  * Saldo derivado por conta (SDD-004 §4.1): Σ CREDIT − Σ DEBIT das linhas ativas, inclusive OPENING.
+ * Compras no cartão (`accountId` nulo) não entram (RN-003.1, ADR-014); pagamento de fatura debita a conta.
  * Contas sem linhas valem 0. Única função de saldo (Contas, Home, transferência e testes).
  */
 export async function accountBalances(
@@ -18,7 +19,7 @@ export async function accountBalances(
   const rows = await tx.$queryRaw<Array<{ accountId: string; balance: bigint }>>`
     SELECT "accountId", COALESCE(SUM(CASE direction WHEN 'CREDIT' THEN "amountInCents" ELSE -"amountInCents" END), 0)::bigint AS balance
     FROM transactions
-    WHERE "familyId" = ${familyId}::uuid AND "deletedAt" IS NULL ${onlyAccounts}
+    WHERE "familyId" = ${familyId}::uuid AND "deletedAt" IS NULL AND "accountId" IS NOT NULL ${onlyAccounts}
     GROUP BY "accountId"`;
   const map = new Map<string, number>();
   for (const id of accountIds ?? []) map.set(id, 0);

@@ -54,6 +54,7 @@ enum TransactionKind {
   OPENING
   TRANSFER_OUT
   TRANSFER_IN
+  INVOICE_PAYMENT
 }
 
 enum Direction {
@@ -258,12 +259,34 @@ model CreditCard {
   createdAt         DateTime @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime @updatedAt @db.Timestamptz(3)
 
-  family Family @relation(fields: [familyId], references: [id])
-  owner  Member @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
+  family       Family        @relation(fields: [familyId], references: [id])
+  owner        Member        @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
+  invoices     CardInvoice[]
+  transactions Transaction[]
 
   @@unique([familyId, id])
   @@map("credit_cards")
 }
+
+// Fatura materializada sob demanda (primeira compra no ciclo). Total, limite e situação são derivados (ADR-014).
+model CardInvoice {
+  id             String   @id @default(uuid()) @db.Uuid
+  familyId       String   @db.Uuid
+  cardId         String   @db.Uuid
+  referenceMonth String // "YYYY-MM" do mês de FECHAMENTO
+  closingDate    DateTime @db.Date // snapshot do ciclo do cartão na criação
+  dueDate        DateTime @db.Date
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  card         CreditCard    @relation(fields: [familyId, cardId], references: [familyId, id])
+  transactions Transaction[]
+
+  @@unique([cardId, referenceMonth])
+  @@unique([familyId, id])
+  @@index([familyId, cardId, closingDate])
+  @@map("card_invoices")
+}
+
 
 model TransferGroup {
   id                     String            @id @default(uuid()) @db.Uuid
@@ -292,7 +315,9 @@ model Transaction {
   familyId          String          @db.Uuid
   kind              TransactionKind
   direction         Direction
-  accountId         String          @db.Uuid
+  accountId         String?         @db.Uuid // NULL só em compra no cartão (CHECK tx_kind_shape_chk)
+  cardId            String?         @db.Uuid
+  invoiceId         String?         @db.Uuid
   amountInCents     BigInt // magnitude (>0; OPENING pode ser 0)
   occurredOn        DateTime        @db.Date
   categoryId        String?         @db.Uuid // EXPENSE/INCOME: obrigatório; demais: nulo
@@ -311,7 +336,9 @@ model Transaction {
   deletionReason    DeletionReason?
 
   family    Family                @relation(fields: [familyId], references: [id])
-  account   BankAccount           @relation(fields: [familyId, accountId], references: [familyId, id])
+  account   BankAccount?          @relation(fields: [familyId, accountId], references: [familyId, id])
+  card      CreditCard?           @relation(fields: [familyId, cardId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  invoice   CardInvoice?          @relation(fields: [familyId, invoiceId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
   category  Category?             @relation(fields: [familyId, categoryId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
   payer     Member?               @relation("TxPayer", fields: [familyId, payerMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
   author    Member                @relation("TxAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
@@ -323,6 +350,8 @@ model Transaction {
   @@index([familyId, accountId])
   @@index([familyId, payerMemberId, occurredOn])
   @@index([familyId, kind, occurredOn])
+  @@index([familyId, cardId, occurredOn])
+  @@index([familyId, invoiceId])
   @@map("transactions")
 }
 

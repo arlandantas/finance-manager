@@ -2,6 +2,14 @@ import type { Tx } from "@/lib/api/types";
 import { toDbDate } from "@/lib/dates";
 import { fromCents } from "@/lib/money";
 
+const loadInclude = {
+  account: { select: { id: true, name: true } },
+  card: { select: { id: true, name: true } },
+  invoice: { select: { referenceMonth: true, closingDate: true, dueDate: true } },
+  category: true,
+  group: true,
+} as const;
+
 /** Lançamentos e categorias sempre escopados por `familyId` (ADR-013). */
 export function transacoesRepo(tx: Tx, familyId: string) {
   return {
@@ -13,6 +21,13 @@ export function transacoesRepo(tx: Tx, familyId: string) {
     listAllCategories: () => tx.category.findMany({ where: { familyId } }),
     findCategory: (id: string) =>
       tx.category.findFirst({ where: { id, familyId, archivedAt: null } }),
+    /** Categoria da família ainda que arquivada (baixa de previsão, SDD-009). */
+    findCategoryAny: (id: string) => tx.category.findFirst({ where: { id, familyId } }),
+    findCard: (id: string) =>
+      tx.creditCard.findFirst({
+        where: { id, familyId },
+        select: { id: true, name: true, closingDay: true, dueDay: true, limitInCents: true },
+      }),
     findAccount: (id: string) =>
       tx.bankAccount.findFirst({ where: { id, familyId }, select: { id: true, name: true } }),
     findMember: (id: string) =>
@@ -25,11 +40,21 @@ export function transacoesRepo(tx: Tx, familyId: string) {
           authorMemberId: memberId,
           kind: { in: ["EXPENSE", "INCOME"] },
           deletedAt: null,
+          accountId: { not: null },
         },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         select: { accountId: true },
       });
       return last?.accountId ?? null;
+    },
+    /** Cartão da despesa mais recente do membro, se ela foi no cartão (SDD-008 §3.2). */
+    lastCardUsedBy: async (memberId: string): Promise<string | null> => {
+      const last = await tx.transaction.findFirst({
+        where: { familyId, authorMemberId: memberId, kind: "EXPENSE", deletedAt: null },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        select: { cardId: true },
+      });
+      return last?.cardId ?? null;
     },
     ownedAccountId: async (memberId: string): Promise<string | null> => {
       const a = await tx.bankAccount.findFirst({
@@ -51,15 +76,9 @@ export function transacoesRepo(tx: Tx, familyId: string) {
       (await tx.family.findFirst({ where: { id: familyId }, select: { cutDay: true } }))?.cutDay ??
       1,
     findByIds: (ids: string[]) =>
-      tx.transaction.findMany({
-        where: { familyId, id: { in: ids } },
-        include: { account: { select: { id: true, name: true } }, category: true, group: true },
-      }),
+      tx.transaction.findMany({ where: { familyId, id: { in: ids } }, include: loadInclude }),
     findById: (id: string) =>
-      tx.transaction.findFirst({
-        where: { id, familyId },
-        include: { account: { select: { id: true, name: true } }, category: true, group: true },
-      }),
+      tx.transaction.findFirst({ where: { id, familyId }, include: loadInclude }),
     /** Pernas "irmãs" de transferência (conta da outra ponta). */
     counterparts: (groupIds: string[]) =>
       tx.transaction.findMany({
@@ -83,7 +102,9 @@ export function transacoesRepo(tx: Tx, familyId: string) {
     insert: (d: {
       kind: "EXPENSE" | "INCOME";
       direction: "CREDIT" | "DEBIT";
-      accountId: string;
+      accountId: string | null;
+      cardId?: string | null;
+      invoiceId?: string | null;
       categoryId: string;
       amountInCents: number;
       occurredOn: string;
@@ -99,6 +120,8 @@ export function transacoesRepo(tx: Tx, familyId: string) {
           kind: d.kind,
           direction: d.direction,
           accountId: d.accountId,
+          cardId: d.cardId ?? null,
+          invoiceId: d.invoiceId ?? null,
           categoryId: d.categoryId,
           amountInCents: fromCents(d.amountInCents),
           occurredOn: toDbDate(d.occurredOn),

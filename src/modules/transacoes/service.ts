@@ -5,6 +5,9 @@ import { compareDate, fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
 import { periodFromKey, periodOf } from "@/lib/period";
 import type { MemberRef } from "@/lib/schemas";
+import { formatInvoiceLabel, invoiceRefFor } from "@/modules/cartoes/cycle";
+import { getOrCreateInvoice } from "@/modules/cartoes/invoices";
+import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
 import {
@@ -36,7 +39,7 @@ export const memberRefOf = (m: MemberRow): MemberRef => ({
 
 type TxRow = {
   id: string;
-  kind: "EXPENSE" | "INCOME" | "OPENING" | "TRANSFER_OUT" | "TRANSFER_IN";
+  kind: TransactionDTO["type"];
   direction: "CREDIT" | "DEBIT";
   amountInCents: bigint;
   occurredOn: Date;
@@ -74,7 +77,9 @@ export const categoryRefOf = (c: {
 export function toTransactionDTO(
   row: TxRow,
   ctx: {
-    account: { id: string; name: string };
+    account: { id: string; name: string } | null;
+    card?: { id: string; name: string } | null;
+    invoice?: { ref: string; closingDate: string; dueDate: string } | null;
     category: CategoryRef | null;
     members: Map<string, MemberRef>;
   },
@@ -94,6 +99,8 @@ export function toTransactionDTO(
     description: row.description,
     note: row.note,
     account: ctx.account,
+    card: ctx.card ?? null,
+    invoice: ctx.invoice ?? null,
     category: ctx.category,
     payer: member(row.payerMemberId),
     author,
@@ -120,14 +127,33 @@ export async function getDefaults(tx: Tx, ctx: RequestContext): Promise<Transact
     (await repo.lastAccountUsedBy(ctx.memberId)) ??
     (await repo.ownedAccountId(ctx.memberId)) ??
     (await repo.firstAccountId());
-  return { accountId, payerMemberId: ctx.memberId, today: todayInFamilyTz(ctx.clock) };
+  const cardId = await repo.lastCardUsedBy(ctx.memberId);
+  return { accountId, cardId, payerMemberId: ctx.memberId, today: todayInFamilyTz(ctx.clock) };
 }
 
-/** US-005/US-006 (SDD-001 §4.1): um lançamento = uma linha no ledger + revisão CREATE. */
+type ExpenseInput = Extract<CreateTransactionParsed, { type: "EXPENSE" }>;
+type IncomeInput = Extract<CreateTransactionParsed, { type: "INCOME" }>;
+
+/** US-005/US-006/US-016a (SDD-001 §4.1, SDD-008 §4.4): um lançamento = uma linha no ledger + revisão CREATE. */
 export async function createTransaction(
   tx: Tx,
   ctx: RequestContext,
   input: CreateTransactionParsed,
+): Promise<CreateTransactionResponse> {
+  return input.type === "EXPENSE"
+    ? createExpenseCore(tx, ctx, input, {})
+    : createIncome(tx, ctx, input);
+}
+
+/**
+ * Despesa em conta ou compra no cartão. Reutilizada pela baixa de previsão (SDD-009 §4.3), que
+ * aceita categoria arquivada depois do cadastro.
+ */
+export async function createExpenseCore(
+  tx: Tx,
+  ctx: RequestContext,
+  input: ExpenseInput,
+  opts: { allowArchivedCategory?: boolean },
 ): Promise<CreateTransactionResponse> {
   const repo = transacoesRepo(tx, ctx.familyId);
   const today = todayInFamilyTz(ctx.clock);
@@ -135,15 +161,19 @@ export async function createTransaction(
   const payerMemberId = input.payerMemberId ?? ctx.memberId;
 
   // 2) referências da família
-  const account = await repo.findAccount(input.accountId);
-  if (!account) throw invalidRef("accountId", "Escolha uma conta");
-  const category = await repo.findCategory(input.categoryId);
+  const account = input.accountId ? await repo.findAccount(input.accountId) : null;
+  if (input.accountId && !account) throw invalidRef("accountId", "Escolha uma conta");
+  const card = input.cardId ? await repo.findCard(input.cardId) : null;
+  if (input.cardId && !card) throw invalidRef("cardId", "Escolha um cartão");
+  const category = opts.allowArchivedCategory
+    ? await repo.findCategoryAny(input.categoryId)
+    : await repo.findCategory(input.categoryId);
   if (!category) throw invalidRef("categoryId", "Escolha uma categoria");
   const payer = await repo.findMember(payerMemberId);
   if (!payer) throw invalidRef("payerMemberId", "Membro inválido");
 
   // 3) tipo x categoria
-  if (category.kind !== input.type) {
+  if (category.kind !== "EXPENSE") {
     throw unprocessable(
       "CATEGORY_KIND_MISMATCH",
       "A categoria não combina com o tipo do lançamento",
@@ -153,18 +183,125 @@ export async function createTransaction(
 
   // 4) data não futura
   if (compareDate(occurredOn, today) > 0) {
-    const message =
-      input.type === "EXPENSE"
-        ? "Para contas futuras, use Despesa prevista"
-        : "A data da receita não pode ser futura";
+    const message = card
+      ? "A data da compra não pode ser futura"
+      : "Para contas futuras, use Despesa prevista";
     throw unprocessable("FUTURE_DATE_NOT_ALLOWED", message, [{ path: "occurredOn", message }]);
   }
 
-  const isShared = input.type === "EXPENSE" ? input.isSharedExpense : false;
+  // 5) fatura da compra (cria sob demanda, travada) e fatura paga recusa
+  let invoice: { id: string; ref: string; closingDate: string; dueDate: string } | null = null;
+  if (card) {
+    const ref = invoiceRefFor(occurredOn, card.closingDay);
+    invoice = await getOrCreateInvoice(tx, ctx.familyId, card, ref);
+    if ((await activePayments(tx, ctx.familyId, [invoice.id])).has(invoice.id)) {
+      throw unprocessable(
+        "INVOICE_ALREADY_PAID",
+        `A fatura de ${formatInvoiceLabel(ref)} já foi paga. Use uma data posterior ao fechamento.`,
+        { ref },
+      );
+    }
+  }
+
   const description = input.description ?? category.name;
   const row = await repo.insert({
-    kind: input.type,
-    direction: input.type === "EXPENSE" ? "DEBIT" : "CREDIT",
+    kind: "EXPENSE",
+    direction: "DEBIT",
+    accountId: account?.id ?? null,
+    cardId: card?.id ?? null,
+    invoiceId: invoice?.id ?? null,
+    categoryId: category.id,
+    amountInCents: input.amountInCents,
+    occurredOn,
+    description,
+    note: input.note ?? null,
+    payerMemberId,
+    authorMemberId: ctx.memberId,
+    isSharedExpense: input.isSharedExpense,
+  });
+
+  const dto = toTransactionDTO(row, {
+    account,
+    card: card ? { id: card.id, name: card.name } : null,
+    invoice: invoice
+      ? { ref: invoice.ref, closingDate: invoice.closingDate, dueDate: invoice.dueDate }
+      : null,
+    category: categoryRefOf(category),
+    members: new Map((await repo.listMembers()).map((m) => [m.id, memberRefOf(m)] as const)),
+  });
+  await recordRevision(tx, {
+    familyId: ctx.familyId,
+    transactionId: row.id,
+    revision: 1,
+    action: "CREATE",
+    actorMemberId: ctx.memberId,
+    changes: [
+      {
+        field: "*",
+        from: null,
+        to: {
+          kind: "EXPENSE",
+          accountId: account?.id ?? null,
+          cardId: card?.id ?? null,
+          invoiceRef: invoice?.ref ?? null,
+          categoryId: category.id,
+          amountInCents: dto.amountInCents,
+          occurredOn,
+          description,
+          payerMemberId,
+          isSharedExpense: input.isSharedExpense,
+        },
+      },
+    ],
+  });
+  if (card) {
+    const used = (await cardUsage(tx, ctx.familyId, [card.id])).get(card.id) ?? 0;
+    return {
+      transaction: dto,
+      card: {
+        id: card.id,
+        usedInCents: used,
+        availableInCents: toCents(card.limitInCents) - used,
+      },
+    };
+  }
+  const accountId = (account as { id: string }).id;
+  const balance = (await accountBalances(tx, ctx.familyId, [accountId])).get(accountId) ?? 0;
+  return { transaction: dto, account: { id: accountId, balanceInCents: balance } };
+}
+
+async function createIncome(
+  tx: Tx,
+  ctx: RequestContext,
+  input: IncomeInput,
+): Promise<CreateTransactionResponse> {
+  const repo = transacoesRepo(tx, ctx.familyId);
+  const today = todayInFamilyTz(ctx.clock);
+  const occurredOn = input.occurredOn ?? today;
+  const payerMemberId = input.payerMemberId ?? ctx.memberId;
+
+  const account = await repo.findAccount(input.accountId);
+  if (!account) throw invalidRef("accountId", "Escolha uma conta");
+  const category = await repo.findCategory(input.categoryId);
+  if (!category) throw invalidRef("categoryId", "Escolha uma categoria");
+  const payer = await repo.findMember(payerMemberId);
+  if (!payer) throw invalidRef("payerMemberId", "Membro inválido");
+  if (category.kind !== "INCOME") {
+    throw unprocessable(
+      "CATEGORY_KIND_MISMATCH",
+      "A categoria não combina com o tipo do lançamento",
+      [{ path: "categoryId", message: "A categoria não combina com o tipo do lançamento" }],
+    );
+  }
+  if (compareDate(occurredOn, today) > 0) {
+    const message = "A data da receita não pode ser futura";
+    throw unprocessable("FUTURE_DATE_NOT_ALLOWED", message, [{ path: "occurredOn", message }]);
+  }
+
+  const description = input.description ?? category.name;
+  const row = await repo.insert({
+    kind: "INCOME",
+    direction: "CREDIT",
     accountId: account.id,
     categoryId: category.id,
     amountInCents: input.amountInCents,
@@ -173,7 +310,7 @@ export async function createTransaction(
     note: input.note ?? null,
     payerMemberId,
     authorMemberId: ctx.memberId,
-    isSharedExpense: isShared,
+    isSharedExpense: false,
   });
 
   const dto = toTransactionDTO(row, {
@@ -192,14 +329,14 @@ export async function createTransaction(
         field: "*",
         from: null,
         to: {
-          kind: dto.type,
+          kind: "INCOME",
           accountId: account.id,
           categoryId: category.id,
           amountInCents: dto.amountInCents,
           occurredOn,
           description,
           payerMemberId,
-          isSharedExpense: isShared,
+          isSharedExpense: false,
         },
       },
     ],
@@ -217,6 +354,14 @@ function dtoFromLoaded(
 ): TransactionDTO {
   const dto = toTransactionDTO(r, {
     account: r.account,
+    card: r.card,
+    invoice: r.invoice
+      ? {
+          ref: r.invoice.referenceMonth,
+          closingDate: fromDbDate(r.invoice.closingDate),
+          dueDate: fromDbDate(r.invoice.dueDate),
+        }
+      : null,
     category: r.category ? categoryRefOf(r.category) : null,
     members,
   });
@@ -262,6 +407,7 @@ export async function listTransactions(
     end: range.end,
     includeDeleted: q.includeDeleted ?? false,
     ...(q.accountId ? { accountId: q.accountId } : {}),
+    ...(q.cardId ? { cardId: q.cardId } : {}),
     ...(q.memberId ? { memberId: q.memberId } : {}),
     ...(q.categoryId ? { categoryId: q.categoryId } : {}),
     ...(q.type ? { type: q.type } : {}),
@@ -281,7 +427,7 @@ export async function listTransactions(
   const siblings = groupIds.length > 0 ? await repo.counterparts(groupIds) : [];
   const counterpartOf = (r: { id: string; transferGroupId: string | null }) => {
     const other = siblings.find((s) => s.transferGroupId === r.transferGroupId && s.id !== r.id);
-    return other ? { id: other.account.id, name: other.account.name } : null;
+    return other?.account ? { id: other.account.id, name: other.account.name } : null;
   };
 
   const items = pageIds
@@ -316,7 +462,7 @@ export async function getTransaction(
   if (row.transferGroupId) {
     const siblings = await repo.counterparts([row.transferGroupId]);
     const other = siblings.find((s) => s.id !== row.id);
-    counterpart = other ? { id: other.account.id, name: other.account.name } : null;
+    counterpart = other?.account ? { id: other.account.id, name: other.account.name } : null;
   }
   const editorId = await repo.lastEditorId(row.id);
   return {
@@ -325,4 +471,21 @@ export async function getTransaction(
       editedBy: editorId ? (members.get(editorId) ?? null) : null,
     },
   };
+}
+
+/** DTOs de lançamentos já conhecidos por id, na ordem pedida (fatura, previstas, etc.). */
+export async function loadTransactionDTOs(
+  tx: Tx,
+  ctx: RequestContext,
+  ids: string[],
+): Promise<TransactionDTO[]> {
+  if (ids.length === 0) return [];
+  const repo = transacoesRepo(tx, ctx.familyId);
+  const rows = await repo.findByIds(ids);
+  const byId = new Map(rows.map((r) => [r.id, r] as const));
+  const members = await memberMap(repo);
+  return ids
+    .map((id) => byId.get(id))
+    .filter((r): r is NonNullable<typeof r> => r !== undefined)
+    .map((r) => dtoFromLoaded(r, members, null));
 }

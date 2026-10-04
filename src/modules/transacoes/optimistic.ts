@@ -1,4 +1,5 @@
 import type { MemberRef } from "@/lib/schemas";
+import { invoiceDates, invoiceRefFor } from "@/modules/cartoes/cycle";
 import type {
   CreateTransactionInput,
   ListTransactionsResponse,
@@ -9,9 +10,10 @@ import type {
 export type LedgerUiFilters = {
   period?: string;
   accountId?: string;
+  cardId?: string;
   memberId?: string;
   categoryId?: string;
-  type?: "EXPENSE" | "INCOME" | "TRANSFER";
+  type?: "EXPENSE" | "INCOME" | "TRANSFER" | "INVOICE_PAYMENT";
   shared?: boolean;
   includeDeleted?: boolean;
 };
@@ -31,7 +33,8 @@ export function admits(
   const period = data.pages[0]?.period;
   if (!period) return false;
   if (item.occurredOn < period.start || item.occurredOn > period.end) return false;
-  if (filters.accountId && filters.accountId !== item.account.id) return false;
+  if (filters.accountId && filters.accountId !== item.account?.id) return false;
+  if (filters.cardId && filters.cardId !== item.card?.id) return false;
   if (filters.categoryId && filters.categoryId !== item.category?.id) return false;
   if (
     filters.memberId &&
@@ -94,6 +97,7 @@ export type PendingLookups = {
   today: string;
   me: MemberRef;
   accounts: Array<{ id: string; name: string }>;
+  cards?: Array<{ id: string; name: string; closingDay: number; dueDay: number }>;
   categories: Array<{
     id: string;
     name: string;
@@ -111,9 +115,14 @@ export function buildPendingItem(
   input: CreateTransactionInput,
   l: PendingLookups,
 ): PendingTransaction | null {
-  const account = l.accounts.find((a) => a.id === input.accountId);
+  const account = l.accounts.find((a) => a.id === input.accountId) ?? null;
+  const card =
+    input.type === "EXPENSE" ? ((l.cards ?? []).find((c) => c.id === input.cardId) ?? null) : null;
   const category = l.categories.find((c) => c.id === input.categoryId);
-  if (!account || !category) return null;
+  if ((!account && !card) || !category) return null;
+  const occurredOn = input.occurredOn ?? l.today;
+  const ref = card ? invoiceRefFor(occurredOn, card.closingDay) : null;
+  const dates = card && ref ? invoiceDates(ref, card.closingDay, card.dueDay) : null;
   const payer = l.members.find((m) => m.id === input.payerMemberId) ?? l.me;
   const iso = l.now.toISOString();
   return {
@@ -121,11 +130,13 @@ export function buildPendingItem(
     type: input.type,
     direction: input.type === "EXPENSE" ? "DEBIT" : "CREDIT",
     amountInCents: input.amountInCents,
-    occurredOn: input.occurredOn ?? l.today,
+    occurredOn,
     description:
       (typeof input.description === "string" && input.description.trim()) || category.name,
     note: input.note ?? null,
-    account,
+    account: card ? null : account,
+    card: card ? { id: card.id, name: card.name } : null,
+    invoice: ref && dates ? { ref, closingDate: dates.closingDate, dueDate: dates.dueDate } : null,
     category: {
       id: category.id,
       name: category.name,
