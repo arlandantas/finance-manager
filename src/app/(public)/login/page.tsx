@@ -1,11 +1,7 @@
 import { redirect } from "next/navigation";
-import { signInWithGoogleAction } from "@/app/actions";
-import { Button } from "@/components/ui/button";
-import { isGoogleConfigured } from "@/lib/auth/config";
-import { isDevLoginEnabled } from "@/lib/auth/dev-login-guard";
 import { safeCallbackUrl } from "@/lib/auth/redirect";
 import { getCurrentUser } from "@/lib/auth/require-session";
-import { getEnv } from "@/lib/env";
+import { LoginOptions } from "../login-options";
 import { loginErrorMessage } from "./messages";
 
 export const dynamic = "force-dynamic";
@@ -18,11 +14,7 @@ export default async function LoginPage({
   const params = await searchParams;
   const callbackUrl = safeCallbackUrl(params.callbackUrl);
   if (await getCurrentUser()) redirect(callbackUrl);
-
-  const devLogin = isDevLoginEnabled();
-  const googleReady = isGoogleConfigured(getEnv());
   const errorMessage = loginErrorMessage(params.error);
-  const DevLoginForm = devLogin ? (await import("./dev-login-form")).DevLoginForm : null;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-4 py-10">
@@ -40,21 +32,7 @@ export default async function LoginPage({
         </p>
       ) : null}
 
-      <form action={signInWithGoogleAction} className="flex flex-col gap-2">
-        <input type="hidden" name="callbackUrl" value={callbackUrl} />
-        <Button type="submit" variant="secondary" disabled={!googleReady} className="w-full">
-          Entrar com o Google
-        </Button>
-        {!googleReady && devLogin ? (
-          <p className="text-center text-xs text-slate-500">
-            Google não configurado neste ambiente
-          </p>
-        ) : null}
-      </form>
-
-      <p className="text-center text-xs text-slate-500">Usamos apenas seu nome, e-mail e foto.</p>
-
-      {DevLoginForm ? <DevLoginForm callbackUrl={callbackUrl} /> : null}
+      <LoginOptions callbackUrl={callbackUrl} />
     </main>
   );
 }

@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { InviteForm } from "@/components/invite-form";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Field, TextInput } from "@/components/ui/field";
@@ -89,11 +90,11 @@ export function OnboardingFlow({ userName, userImage, suggestedName, notice }: P
           <h2 id="invite-step" className="text-base font-semibold text-slate-900">
             Convidar membro
           </h2>
-          <p className="text-sm text-slate-600">
-            Você poderá convidar pessoas a qualquer momento pela tela Família.
-          </p>
+          <InviteForm showRole={false} onDone={() => router.push("/")} />
         </section>
-        <Button onClick={() => router.push("/")}>Fazer depois</Button>
+        <Button variant="ghost" onClick={() => router.push("/")}>
+          Fazer depois
+        </Button>
       </main>
     );
   }

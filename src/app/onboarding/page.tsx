@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Providers } from "@/components/providers";
 import { requireSession } from "@/lib/auth/require-session";
-import { resolveAppEntry } from "@/modules/familia/service";
+import { resolveOnboardingEntry } from "@/modules/familia/service";
 import { suggestFamilyName } from "@/modules/familia/suggest-name";
 import { OnboardingFlow } from "./onboarding-flow";
 
@@ -14,8 +14,8 @@ export default async function OnboardingPage({
   searchParams: Promise<{ notice?: string }>;
 }) {
   const user = await requireSession();
-  const entry = await resolveAppEntry(user);
-  if (entry.membership) redirect("/");
+  const entry = await resolveOnboardingEntry(user);
+  if (entry.redirectTo) redirect(entry.redirectTo);
   const { notice } = await searchParams;
   const displayName = user.name ?? user.email.split("@")[0] ?? user.email;
   return (
@@ -24,7 +24,11 @@ export default async function OnboardingPage({
         userName={displayName}
         userImage={user.image}
         suggestedName={suggestFamilyName(user.name)}
-        notice={notice === "invite_expired" ? "Convite expirado. Peça um novo convite." : null}
+        notice={
+          notice === "invite_expired" || entry.expiredInvite
+            ? "Convite expirado. Peça um novo convite."
+            : null
+        }
       />
     </Providers>
   );

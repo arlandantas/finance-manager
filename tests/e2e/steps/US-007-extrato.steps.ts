@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import { parseBRL } from "@/lib/money";
 import { normalizeSpaces } from "../../support/constants";
-import { resetDb, testDb } from "../../support/db";
+import { testDb } from "../../support/db";
 import {
   type AccountFixture,
   makeAccount,
@@ -254,12 +254,16 @@ Then("vejo {string} e a ação {string}", async ({ page }, mensagem: string, aca
   await expect(page).not.toHaveURL(/type=/);
 });
 
-Given("uma família sem nenhum lançamento", async ({ world }) => {
-  await resetDb();
-  world.family = undefined;
-  world.data = {};
-  await setupFamily(world);
-  expect(await db.transaction.count({ where: { kind: { in: ["EXPENSE", "INCOME"] } } })).toBe(0);
+Given("uma família sem nenhum lançamento", async ({ page, world }) => {
+  // Família separada, só com a conta (abertura não é lançamento); sem TRUNCATE no meio do cenário.
+  const vazia = await makeFamily({
+    name: "Família Vazia",
+    members: [{ email: "lucas.vazio@exemplo.com", name: "Lucas Silva", role: "ADMIN" }],
+  });
+  await makeAccount(vazia, { name: "Conta Vazia", openingBalanceInCents: 50000 });
+  world.family = vazia;
+  world.data.loggedAs = "Lucas";
+  await loginAs(page, { email: "lucas.vazio@exemplo.com", name: "Lucas Silva" });
 });
 
 Then("vejo um convite para fazer o primeiro lançamento", async ({ page }) => {

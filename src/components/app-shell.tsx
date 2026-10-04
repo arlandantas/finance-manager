@@ -1,10 +1,11 @@
 "use client";
 
-import { Home, ListOrdered, LogOut, Wallet } from "lucide-react";
+import { Home, ListOrdered, LogOut, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, Suspense, useEffect, useRef, useState } from "react";
 import { signOutAction } from "@/app/actions";
+import { JoinedNotice } from "@/components/joined-notice";
 import { QuickAddProvider } from "@/components/quick-add";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
@@ -15,6 +16,7 @@ const NAV_ITEMS: Array<{ href: string; label: string; icon: typeof Home }> = [
   { href: "/", label: "Início", icon: Home },
   { href: "/extrato", label: "Extrato", icon: ListOrdered },
   { href: "/contas", label: "Contas", icon: Wallet },
+  { href: "/familia", label: "Família", icon: Users },
 ];
 
 function UserMenu({ user }: { user: ShellUser }) {
@@ -144,7 +146,12 @@ export function AppShell({
         </div>
       </header>
       <QuickAddProvider>
-        <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</div>
+        <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
+          <Suspense fallback={null}>
+            <JoinedNotice familyName={familyName} />
+          </Suspense>
+          {children}
+        </div>
       </QuickAddProvider>
       <nav
         aria-label="Principal (celular)"

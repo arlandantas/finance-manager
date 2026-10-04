@@ -11,3 +11,9 @@ export async function signInWithGoogleAction(formData: FormData) {
   const callbackUrl = safeCallbackUrl(String(formData.get("callbackUrl") ?? "/"));
   await signIn("google", { redirectTo: callbackUrl });
 }
+
+/** "Entrar com outra conta" (convite aberto com o e-mail errado): encerra a sessão e volta ao convite. */
+export async function switchAccountAction(formData: FormData) {
+  const callbackUrl = safeCallbackUrl(String(formData.get("callbackUrl") ?? "/"));
+  await signOut({ redirectTo: `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` });
+}

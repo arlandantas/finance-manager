@@ -89,11 +89,8 @@ Then("o switch {string} não é exibido", async ({ page }, rotulo: string) => {
 });
 
 Then("as categorias exibidas são as de receita", async ({ page }) => {
-  const names = await drawer(page)
-    .getByRole("radiogroup", { name: "Categoria" })
-    .getByRole("radio")
-    .allInnerTexts();
-  expect(names.map((n) => n.trim())).toEqual(["Salário", "Rendimentos", "Outras receitas"]);
+  const radios = drawer(page).getByRole("radiogroup", { name: "Categoria" }).getByRole("radio");
+  await expect(radios).toHaveText(["Salário", "Rendimentos", "Outras receitas"]);
 });
 
 When("tento salvar a receita com {string}", async ({ page, world }, valor: string) => {

@@ -239,10 +239,12 @@ Then("o formulário preserva o que foi digitado", async ({ page, world }) => {
 });
 
 Given("que a família não tem contas", async ({ page, world }) => {
-  const { resetDb } = await import("../../support/db");
-  await resetDb();
-  world.family = await makeFamily();
-  await loginAs(page, { email: "lucas@exemplo.com", name: "Lucas Silva" });
+  // Outra família (sem contas) com um "Lucas": evita TRUNCATE no meio do cenário (o app tem requisições em curso).
+  world.family = await makeFamily({
+    name: "Família Sem Contas",
+    members: [{ email: "lucas.semcontas@exemplo.com", name: "Lucas Silva", role: "ADMIN" }],
+  });
+  await loginAs(page, { email: "lucas.semcontas@exemplo.com", name: "Lucas Silva" });
   await gotoReady(page, "/");
 });
 
