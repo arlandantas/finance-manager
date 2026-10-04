@@ -29,7 +29,7 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-013 | US-012 | Home: visão essencial da família | US-004, US-007, US-009a | SDD-005 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-014 | US-009b | Acerto com 3 membros e lista expansível das despesas (Should, cortável) | US-009a | SDD-002 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-015 | US-013a | Editar, excluir, restaurar com auditoria e conflito 409 (Should, núcleo) | US-005, US-007 | SDD-001 | 5 | Concluído (aguardando validação do Gestor) |
-| TASK-016 | US-013b | Desfazer transferência/acerto e aviso de mês acertado (Should, cortável) | US-013a, US-010, US-011 | SDD-001, SDD-004 | 3 | Todo |
+| TASK-016 | US-013b | Desfazer transferência/acerto e aviso de mês acertado (Should, cortável) | US-013a, US-010, US-011 | SDD-001, SDD-004 | 3 | Concluído (aguardando validação do Gestor) |
 
 ---
 
@@ -266,3 +266,13 @@ EN-001 (complemento), US-001, US-002, US-004, US-005, US-006, US-007 e US-003 **
 - **Observação**: o diálogo "Mês já acertado" (409 `SETTLED_PERIOD_CONFIRMATION_REQUIRED`) e a regra no servidor já existem aqui e foram vistos funcionando no manual; seus testes dedicados fazem parte da US-013b.
 - **Desvios**: passos renomeados por colisão (`restauro o lançamento clicando em`, `Lucas vê o conflito`); contexto acrescentado ao cenário "Trilha de auditoria" ("corrigida por Mariana para …"); formulário de edição usa selects (conta/categoria/quem pagou) em vez da grade do drawer de criação.
 
+## ✅ [TASK-016] US-013b — Desfazer transferência/acerto e aviso de mês já acertado
+- **História PO**: [US-013b](../../product-owner/backlog/stories/US-013b-desfazer-e-mes-acertado.md) · **SDD-001** §3, §4.2, §5.2 · **SDD-004** §4.4.
+- **Arquivos**: `src/components/undo-transfer-dialog.tsx`, `src/modules/contas/hooks.ts` (`useUndoTransfer`), `src/app/(app)/extrato/transaction-detail-drawer.tsx` (Desfazer transferência/acerto; sem "Editar" em pernas), `src/app/(app)/acerto/acerto-screen.tsx` ("Desfazer acerto" no histórico), `tests/integration/us-013b-mes-acertado.int.test.ts`, `tests/e2e/features/US-013b-*.feature` + steps.
+- **QA**: I (6): 409 `SETTLED_PERIOD_CONFIRMATION_REQUIRED` (mensagem + `periods`) e 200 com a flag, só descrição/pessoal sem flag, delete/restore, mover de mês (período antes e depois), undo remove a exigência, perna de acerto `NOT_EDITABLE`; E2E 3 cenários x 2; lint, typecheck, test (175), test:int (229), test:e2e (214), build verdes; manual 375 px: confirmação de mês acertado ao salvar edição, "Desfazer acerto?" no painel (R$ 490,00 -> R$ 990,00, histórico vazio).
+- **Desvios**: cenário "Transferência não é editável" ganhou `Dado uma transferência entre contas`.
+
+---
+
+## 📌 Estado do Incremento 2
+US-008, US-009a, US-010, US-011, US-012, US-009b, US-013a e US-013b **concluídas e commitadas**, com todos os portões verdes. Pendente: passada de regressão completa do R1 e relatório `qa-r1.md`.
