@@ -46,3 +46,10 @@ export function getEnv(
 ): Env {
   return schema.parse(source);
 }
+
+/** Base dos links enviados por e-mail: o túnel de teste (APP_PUBLIC_ORIGIN) em dev, senão APP_URL. */
+export function publicBaseUrl(env: Env = getEnv()): string {
+  const base =
+    env.NODE_ENV !== "production" && env.APP_PUBLIC_ORIGIN ? env.APP_PUBLIC_ORIGIN : env.APP_URL;
+  return base.replace(/\/+$/, "");
+}

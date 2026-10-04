@@ -4,7 +4,7 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import { normalizeEmail } from "@/lib/auth/email";
 import type { Clock } from "@/lib/clock";
-import { getEnv } from "@/lib/env";
+import { publicBaseUrl } from "@/lib/env";
 import { randomToken, sha256Hex } from "@/lib/ids";
 import { getMailer } from "@/lib/mail";
 import {
@@ -122,7 +122,7 @@ export async function createInvitation(
   }
 
   const [family, name] = await Promise.all([repo.family(), memberNames(tx, ctx.familyId)]);
-  const inviteUrl = `${getEnv().APP_URL}/convite/${token}`;
+  const inviteUrl = `${publicBaseUrl()}/convite/${token}`;
   const message = {
     to: email,
     ...invitationEmail({

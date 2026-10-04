@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getEnv } from "@/lib/env";
+import { getEnv, publicBaseUrl } from "@/lib/env";
 
 const base = {
   DATABASE_URL: "postgresql://x:y@localhost:5442/db",
@@ -46,5 +46,19 @@ describe("EN-001 env (ADR-008)", () => {
       AUTH_GOOGLE_SECRET: "",
     });
     expect(env.AUTH_GOOGLE_ID).toBeUndefined();
+  });
+});
+
+describe("publicBaseUrl (links de e-mail)", () => {
+  const tunnel = "https://fancy-queens-kick.loca.lt/";
+  it("usa o túnel em dev e APP_URL sem ele ou em produção", () => {
+    const dev = { ...base, NODE_ENV: "development" };
+    expect(publicBaseUrl(getEnv({ ...dev, APP_PUBLIC_ORIGIN: tunnel }))).toBe(tunnel.slice(0, -1));
+    expect(publicBaseUrl(getEnv(dev))).toBe("http://localhost:3100");
+    expect(publicBaseUrl(getEnv({ ...dev, APP_PUBLIC_ORIGIN: "" }))).toBe("http://localhost:3100");
+    const prod = { ...base, NODE_ENV: "production", APP_URL: "https://app.exemplo.com" };
+    expect(publicBaseUrl(getEnv({ ...prod, APP_PUBLIC_ORIGIN: tunnel }))).toBe(
+      "https://app.exemplo.com",
+    );
   });
 });

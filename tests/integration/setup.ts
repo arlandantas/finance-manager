@@ -5,6 +5,7 @@ import { closeTestDb, TEST_DATABASE_URL } from "../support/db";
 process.env.DATABASE_URL = TEST_DATABASE_URL;
 process.env.AUTH_URL = "http://localhost:3100";
 process.env.APP_URL = "http://localhost:3100";
+process.env.APP_PUBLIC_ORIGIN = ""; // o .env.local de dev pode definir o túnel
 process.env.AUTH_SECRET ??= "segredo-somente-para-testes";
 process.env.AUTH_DEV_LOGIN = "false";
 
