@@ -205,7 +205,22 @@ export function withApi<A extends AuthMode = "family", B = undefined, Q = undefi
           ...(opts.isolationLevel ? { isolationLevel: opts.isolationLevel } : {}),
         },
       );
-      return jsonResponse(outcome.result, requestId);
+      let result = outcome.result;
+      if (result.afterCommit) {
+        const patch = await result.afterCommit().catch(() => undefined);
+        if (patch && result.body && typeof result.body === "object") {
+          result = { ...result, body: { ...(result.body as Record<string, unknown>), ...patch } };
+          if (key && userId) {
+            await db.idempotencyRecord
+              .update({
+                where: { userId_key: { userId, key } },
+                data: { responseBody: result.body as object },
+              })
+              .catch(() => undefined);
+          }
+        }
+      }
+      return jsonResponse(result, requestId);
     } catch (e) {
       if (e instanceof ApiError) return errorResponse(e.status, e.toBody(), requestId);
       logger.error(

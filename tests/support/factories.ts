@@ -272,3 +272,37 @@ export async function makeTransfer(
   await leg("TRANSFER_IN", o.to.id);
   return group;
 }
+
+/** Convite direto no banco; devolve o token em claro (só o hash é persistido). */
+export async function makeInvitation(
+  fx: FamilyFixture,
+  o: {
+    email: string;
+    role?: "ADMIN" | "MEMBER";
+    invitedBy?: string;
+    createdAt?: Date;
+    expiresAt?: Date;
+    status?: "PENDING" | "ACCEPTED" | "CANCELED" | "EXPIRED";
+  },
+) {
+  const { randomBytes, createHash } = await import("node:crypto");
+  const db = fdb();
+  const token = randomBytes(32).toString("base64url");
+  const inviter = (o.invitedBy ? fx.byName[o.invitedBy] : fx.members[0]) ?? fx.members[0];
+  if (!inviter) throw new Error("Família sem membros");
+  const createdAt = o.createdAt ?? new Date("2026-10-04T12:00:00Z");
+  const row = await db.invitation.create({
+    data: {
+      familyId: fx.family.id,
+      email: o.email.toLowerCase(),
+      role: o.role ?? "MEMBER",
+      tokenHash: createHash("sha256").update(token).digest("hex"),
+      status: o.status ?? "PENDING",
+      expiresAt: o.expiresAt ?? new Date(createdAt.getTime() + 7 * 24 * 60 * 60 * 1000),
+      invitedByMemberId: inviter.memberId,
+      emailStatus: "SENT",
+      createdAt,
+    },
+  });
+  return { id: row.id, token };
+}

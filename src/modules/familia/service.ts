@@ -4,6 +4,11 @@ import { makeRepos } from "@/lib/api/repos";
 import type { RequestContext, Tx, UserContext } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import type { SessionUser } from "@/lib/auth/session";
+import { getClock } from "@/lib/clock";
+import {
+  acceptPendingInvitation,
+  listPendingInvitations,
+} from "@/modules/familia/invitations/service";
 import { familiaRepo, findMembershipByUserId, type Membership } from "@/modules/familia/repo";
 import { toRole } from "@/modules/familia/roles";
 import type {
@@ -18,13 +23,33 @@ export type AppEntry =
   | { redirectTo?: undefined; membership: Membership };
 
 /**
- * Gate de entrada (SDD-003 §5.6). Quem tem `Member` segue; senão vai ao onboarding
- * (a vinculação por convite entra com a US-003).
+ * Gate de entrada (SDD-003 §5.6). Quem tem `Member` segue; senão tenta vincular por convite:
+ * `JOINED` => Home com o aviso; `EXPIRED` => onboarding com aviso; `NONE` => onboarding.
  */
 export async function resolveAppEntry(user: SessionUser): Promise<AppEntry> {
   const membership = await findMembershipByUserId(user.userId);
   if (membership) return { membership };
+  const accepted = await acceptPendingInvitation(
+    { id: user.userId, email: user.email, emailVerified: user.emailVerified },
+    getClock(),
+  );
+  if (accepted.status === "JOINED") return { redirectTo: "/?joined=1", membership: null };
+  if (accepted.status === "EXPIRED")
+    return { redirectTo: "/onboarding?notice=invite_expired", membership: null };
   return { redirectTo: "/onboarding", membership: null };
+}
+
+export type OnboardingEntry = { redirectTo: string | null; expiredInvite: boolean };
+
+/** Entrada da própria tela de onboarding (evita laço de redirecionamento do gate). */
+export async function resolveOnboardingEntry(user: SessionUser): Promise<OnboardingEntry> {
+  if (await findMembershipByUserId(user.userId)) return { redirectTo: "/", expiredInvite: false };
+  const accepted = await acceptPendingInvitation(
+    { id: user.userId, email: user.email, emailVerified: user.emailVerified },
+    getClock(),
+  );
+  if (accepted.status === "JOINED") return { redirectTo: "/?joined=1", expiredInvite: false };
+  return { redirectTo: null, expiredInvite: accepted.status === "EXPIRED" };
 }
 
 export async function getMe(
@@ -73,7 +98,7 @@ export async function createFamily(
   }
 }
 
-/** GET /api/v1/family (SDD-003 §4.5). Convites pendentes entram com a US-003. */
+/** GET /api/v1/family (SDD-003 §4.5). Convites pendentes só para ADMIN. */
 export async function getFamily(tx: Tx, ctx: RequestContext): Promise<FamilyDTO> {
   const repos = makeRepos(tx, ctx);
   const [family, members] = await Promise.all([
@@ -92,6 +117,6 @@ export async function getFamily(tx: Tx, ctx: RequestContext): Promise<FamilyDTO>
       role: toRole(m.role),
       joinedAt: m.joinedAt.toISOString(),
     })),
-    pendingInvitations: [],
+    pendingInvitations: ctx.role === "ADMIN" ? await listPendingInvitations(tx, ctx) : [],
   };
 }
