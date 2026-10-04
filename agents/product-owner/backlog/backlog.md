@@ -1,6 +1,6 @@
 # 📑 Backlog do Produto (Product Owner)
 
-*Status: **Refinado até o Incremento 2** · Atualizado: 2026-10-04*
+*Status: **Refinado até o Incremento 2** · Decisões do Gestor D-GES-01..08 incorporadas · Atualizado: 2026-10-04*
 *Responsável: Agente Product Owner (PO)*
 *Método e portões (DoR/DoD): [`working-agreement.md`](working-agreement.md) · Escopo: [`mvp-definition.md`](mvp-definition.md)*
 
@@ -65,11 +65,11 @@ Escala 1–10 para V/U/R; Tamanho em Fibonacci relativo (1, 2, 3, 5, 8). **Taman
 | 11 | [US-010](stories/US-010-transferencia-entre-contas.md) | Transferir entre contas | EPIC-2 | Must | 6 | 4 | 3 | 3 | 4,3 | US-004 | Refinada |
 | 12 | [US-011](stories/US-011-registrar-acerto-de-contas.md) | Registrar o acerto | EPIC-4 | Must | 7 | 5 | 4 | 3 | 5,3 | US-009, US-010 | Refinada · aguarda SDD-002 |
 | 13 | [US-012](stories/US-012-home-dashboard.md) | Home essencial | EPIC-5 | Must | 8 | 5 | 3 | 3 | 5,3 | US-004, US-007, US-009 | Refinada |
-| 14 | [US-013](stories/US-013-corrigir-ou-estornar-lancamento.md) | Corrigir/excluir lançamento | EPIC-3 | Should | 6 | 4 | 5 | 3 | 5,0 | US-005, US-007 | Refinada |
+| 14 | [US-013](stories/US-013-corrigir-ou-estornar-lancamento.md) | Corrigir/excluir lançamento | EPIC-3 | Should | 6 | 4 | 5 | 3 | 5,0 | US-005, US-007 | Refinada · **Should dentro da R1** (D-GES-03) |
 | 15 | US-014 | Gerenciar categorias | EPIC-3 | Could | 4 | 2 | 1 | 2 | 3,5 | US-002 | Rascunho |
 | 16 | US-015 | Cadastrar cartão de crédito | EPIC-6 | Must | 6 | 3 | 3 | 2 | 6,0 | US-002 | Rascunho |
 | 17 | US-016 | Compra à vista no cartão | EPIC-6 | Must | 7 | 3 | 4 | 5 | 2,8 | US-015 | Rascunho |
-| 18 | US-017 | Ver e pagar a fatura | EPIC-6 | Should | 7 | 3 | 4 | 5 | 2,8 | US-016, US-010 | Rascunho |
+| 18 | US-017 | Ver e pagar a fatura | EPIC-6 | Should | 7 | 3 | 4 | 5 | 2,8 | US-016, US-010 | Rascunho · Should em R2 (D-GES-04) |
 | 19 | US-018 | Despesa prevista pontual | EPIC-7 | Must | 6 | 3 | 2 | 3 | 3,7 | US-005 | Rascunho |
 | 20 | US-019 | Dar baixa em despesa prevista | EPIC-7 | Must | 6 | 3 | 3 | 3 | 4,0 | US-018 | Rascunho |
 
@@ -102,7 +102,7 @@ Escala 1–10 para V/U/R; Tamanho em Fibonacci relativo (1, 2, 3, 5, 8). **Taman
 | **R2 — "AP0 completo"** | Inc 3 (US-014..019) | Categorias, cartões à vista, fatura, despesas previstas | *"Cartões e contas a pagar também estão aqui."* |
 | AP1 | a refinar | Orçamento e autocontrole | — |
 
-**Justificativa:** a dor vital do MVP (`mvp-definition.md`) e o ADR-006 colocam o split no centro; cartões e previstas são do AP0 do Stakeholder mas **não bloqueiam** a dor central. Entregar R1 antes de R2 permite **homologação de valor antecipada** com o Stakeholder e reduz o risco de um MVP "grande demais". Decisão final de cronograma é do Gestor.
+**Justificativa:** a dor vital do MVP (`mvp-definition.md`) e o ADR-006 colocam o split no centro; cartões e previstas são do AP0 do Stakeholder mas **não bloqueiam** a dor central. Entregar R1 antes de R2 permite **homologação de valor antecipada** com o Stakeholder e reduz o risco de um MVP "grande demais". Divisão R1/R2 **ratificada pelo Gestor (D-GES-01)**; homologação de valor após a R1.
 
 ---
 
@@ -120,11 +120,11 @@ Escala 1–10 para V/U/R; Tamanho em Fibonacci relativo (1, 2, 3, 5, 8). **Taman
 
 | ID | Tipo | Texto | Quem decide | Bloqueia? |
 | :-- | :-- | :-- | :-- | :-: |
-| **D-PO-01** | Decisão | No MVP há **um único campo "Quem pagou?"**, que preenche *responsável pelo gasto* e *pagador* (reduz o formulário para os 10 s). `responsavel_pagamento` só existe nas previstas (US-018). | Stakeholder valida; TL modela | Não |
-| **D-PO-02** | Decisão | No MVP **todos os membros veem e lançam em todas as contas/cartões** (sem permissões granulares). | Stakeholder valida | Não |
-| **D-PO-03** | Decisão | **Período = mês-calendário** no MVP; o ciclo com dia de corte (NEED-005) chega no AP1. O TL deve projetar o cálculo de período como função de um `cutDay` (padrão 1). | TL confirma | Não |
-| Q-01 | Pergunta | NEED-001 cita "filho" como responsável pelo gasto: dependentes sem login entram no MVP? Proposta: **não** (US-021). | Stakeholder | Não |
-| Q-03 | Pergunta | Validade do convite: 7 dias. | TL/Gestor | Não |
-| Q-08 | Pergunta | Regra de divisão deve ter **vigência por data** para preservar meses passados? Recomendação: sim. | TL (SDD-002) | **Sim p/ US-008** |
-| Q-13 | Pergunta | Subir US-013 (corrigir/excluir) de Should para Must? | Gestor | Não |
-| Q-17 | Pergunta | Pagamento de fatura (US-017) deve estar no AP0 mesmo sem estar no cronograma? Proposta: Should em R2. | Stakeholder/Gestor | Não |
+| **D-PO-01** | Decisão | No MVP há **um único campo "Quem pagou?"**, que preenche *responsável pelo gasto* e *pagador* (reduz o formulário para os 10 s). `responsavel_pagamento` só existe nas previstas (US-018). | Stakeholder valida; TL modela | Não — ✅ aprovada (D-GES-05); validada pelo Stakeholder em 2026-10-04 |
+| **D-PO-02** | Decisão | No MVP **todos os membros veem e lançam em todas as contas/cartões** (sem permissões granulares). | Stakeholder valida | Não — ✅ aprovada (D-GES-05); validada pelo Stakeholder em 2026-10-04 |
+| **D-PO-03** | Decisão | **Período = mês-calendário** no MVP; o ciclo com dia de corte (NEED-005) chega no AP1. O TL deve projetar o cálculo de período como função de um `cutDay` (padrão 1). | TL confirma | Não — ✅ aprovada (D-GES-05); validada pelo Stakeholder em 2026-10-04 (obs.: período como função de `cutDay`) |
+| Q-01 | Pergunta | NEED-001 cita "filho" como responsável pelo gasto: dependentes sem login entram no MVP? Proposta: **não** (US-021). | Stakeholder | ✅ **Respondida** (D-GES-06; Stakeholder aceitou): fora do MVP, vira US-021 |
+| Q-03 | Pergunta | Validade do convite: 7 dias. | TL/Gestor | ✅ **Respondida** (D-GES-07): **7 dias** |
+| Q-08 | Pergunta | Regra de divisão deve ter **vigência por data** para preservar meses passados? Recomendação: sim. | TL (SDD-002) | ✅ **Respondida** (D-GES-08): **sim**, vigência por data; TL modela no SDD-002 (ainda bloqueia o início da US-008 até o SDD) |
+| Q-13 | Pergunta | Subir US-013 (corrigir/excluir) de Should para Must? | Gestor | ✅ **Respondida** (D-GES-03): permanece **Should**, mas **dentro da R1** (Inc 2); último a ser cortado |
+| Q-17 | Pergunta | Pagamento de fatura (US-017) deve estar no AP0 mesmo sem estar no cronograma? Proposta: Should em R2. | Stakeholder/Gestor | ✅ **Respondida** (D-GES-04): **Should em R2** |
