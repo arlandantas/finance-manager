@@ -63,6 +63,12 @@ Funcionalidade: Cadastro de cartão de crédito
     Quando Mariana altera o fechamento para o dia 20
     Então o cartão passa a mostrar "Fecha dia 20"
 
+  Cenário: Dias do ciclo travados depois da primeira compra
+    Dado o cartão "Nubank Mariana" com uma compra de "R$ 300,00"
+    Quando Mariana tenta alterar o dia de fechamento
+    Então o campo está desabilitado com a explicação "Os dias de fechamento e vencimento não podem ser alterados porque já há compras neste cartão"
+    E nome e limite continuam editáveis
+
   Cenário: Conflito de edição
     Dado que Mariana e Lucas abriram a edição do cartão "Nubank Mariana"
     Quando Mariana salva um novo limite

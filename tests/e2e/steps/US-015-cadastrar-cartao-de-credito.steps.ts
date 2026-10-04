@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import { normalizeSpaces } from "../../support/constants";
 import { testDb } from "../../support/db";
-import { makeAccount, makeCard, makeFamily } from "../../support/factories";
+import { makeAccount, makeCard, makeCardPurchase, makeFamily } from "../../support/factories";
 import { loginAs } from "../../support/login";
 import { gotoReady } from "../../support/nav";
 import { enterAs } from "../support/acerto";
@@ -250,4 +250,36 @@ Given("a {string} com o cartão {string}", async ({}, familia: string, cartao: s
 Then("não vê o cartão {string}", async ({ page }, nome: string) => {
   await expect(page.getByText("Cadastre seu primeiro cartão")).toBeVisible();
   await expect(cardItem(page, nome)).toHaveCount(0);
+});
+
+Given(
+  "o cartão {string} com uma compra de {string}",
+  async ({ world }, nome: string, valor: string) => {
+    const fx = await setupFamily(world);
+    const card = await makeCard(fx, { name: nome, owner: "Mariana" });
+    await makeCardPurchase(fx, {
+      card,
+      amountInCents: Math.round(Number(valor.replace(/[^\d,]/g, "").replace(",", ".")) * 100),
+      occurredOn: "2026-10-03",
+    });
+  },
+);
+
+When("Mariana tenta alterar o dia de fechamento", async ({ page }) => {
+  await openCartoes(page);
+  const card = await db.creditCard.findFirstOrThrow();
+  await openEdit(page, card.name);
+});
+
+Then("o campo está desabilitado com a explicação {string}", async ({ page }, texto: string) => {
+  const d = dlg(page, "Editar cartão");
+  await expect(d.getByLabel("Dia de fechamento", { exact: true })).toBeDisabled();
+  await expect(d.getByLabel("Dia de vencimento", { exact: true })).toBeDisabled();
+  await expect(d.getByText(texto, { exact: true })).toBeVisible();
+});
+
+Then("nome e limite continuam editáveis", async ({ page }) => {
+  const d = dlg(page, "Editar cartão");
+  await expect(d.getByLabel("Nome", { exact: true })).toBeEnabled();
+  await expect(d.getByLabel("Limite", { exact: true })).toBeEnabled();
 });
