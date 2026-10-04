@@ -65,7 +65,6 @@ export function PayPlannedDrawer({
     if (!planned) return;
     setCents(planned.amountInCents);
     setPayerId(planned.responsible.id);
-    // biome-ignore lint/correctness/useExhaustiveDependencies: só reinicia quando a previsão carregada muda
   }, [loadedId, planned?.version]);
   useEffect(() => {
     if (open && defaults.data?.accountId)
