@@ -54,3 +54,8 @@ flowchart TD
 - **Fricção Mínima**: Campos secundários (como notas detalhadas, anexo de comprovante ou alteração de data retroativa) ficam recolhidos em um botão *"Mais detalhes..."* para não poluir o lançamento ágil.
 - **Feedback Háptico e Visual**: Leve vibração (em navegadores mobile compatíveis) e animação sutil de sucesso ao concluir o salvamento.
 - **Sincronização em Background**: O extrato atualiza imediatamente na tela sem recarregar a página (otimização de cache).
+
+---
+
+### Revisão 3 (2026-10-04) — compra no cartão (R2, US-016)
+- O *chip* **Conta** vira **"Pagar com"** (contas e cartões; padrão = último meio usado). No modo **Receita** continua só com contas. Ao escolher um cartão, aparecem a dica "Entra na fatura de out/2026 · fecha 25/10" e o "Disponível" do cartão; compra acima do limite pede *Confirmar mesmo assim*. Detalhes em [FLUXO-004](FLUXO-004-cartao-e-fatura.md). O atalho "Gerenciar categorias" (US-014) fica no fim da grade de categorias.
