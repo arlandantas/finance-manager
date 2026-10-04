@@ -1,12 +1,15 @@
-# US-013 — Corrigir ou excluir um lançamento com trilha de auditoria
+# US-013a — Corrigir ou excluir um lançamento com trilha de auditoria (núcleo)
 
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-3 Transações & Categorização · R1 |
-| MoSCoW · WSJF · Tamanho (PO) | Should · 5,0 · 3 |
-| Status | Refinada (PO) |
+| MoSCoW · WSJF · Tamanho (PO) | Should · 2,8 · 5 (TL: 8 na história inteira; 13a + 13b) |
+| Status | Especificada (SDD-001) · fatia **13a** da US-013 (a 13b é [US-013b](US-013b-desfazer-e-mes-acertado.md)) |
 | Depende de | US-005, US-007 |
 | Rastreabilidade | NEED-001 (autor/auditoria) · NEED-010 (princípio de auditoria) · ADR-001 (ledger imutável, `version`) · ADR-006 |
+
+## Fatiamento (decisão do PO, 2026-10-04)
+A US-013 original (TL: 8 pontos) foi fatiada. **Esta 13a é o núcleo Should (D-GES-03, último a ser cortado)**: editar, excluir, restaurar, auditoria, conflito `409` e recálculo do acerto. A **13b** trata dos efeitos sobre transferências/acertos e do aviso de mês quitado; pode ser cortada sem quebrar a R1, pois depende de US-010/US-011 já entregues.
 
 ## História
 Como **membro da família**, quero **corrigir ou excluir um lançamento feito por engano**, para **manter saldos e acertos corretos sem perder o histórico**.
@@ -17,8 +20,8 @@ Como **membro da família**, quero **corrigir ou excluir um lançamento feito po
 - **Excluir** mantém o registro histórico: o lançamento sai dos saldos e totais, fica visível apenas com o filtro *Mostrar excluídos* e pode ser **restaurado**.
 - **Concorrência otimista**: se outra pessoa alterou o lançamento desde que a tela foi aberta, o salvamento é recusado com orientação (nunca sobrescrever em silêncio).
 - Saldos, extrato, Home e **acerto de contas** são recalculados imediatamente.
-- Editar despesa de um mês **já acertado** exibe aviso antes de salvar.
-- Lançamentos de **transferência e acerto** não são editáveis; só podem ser **desfeitos** (estorno completo das duas pernas).
+- *(US-013b)* Editar despesa de um mês **já acertado** exibe aviso antes de salvar.
+- *(US-013b)* Lançamentos de **transferência e acerto** não são editáveis; só podem ser **desfeitos** (estorno completo das duas pernas).
 
 ## Critérios de aceite (Gherkin)
 
@@ -58,19 +61,8 @@ Funcionalidade: Correção e exclusão de lançamentos
     Quando a despesa comum de Mariana de "R$ 400,00" é excluída
     Então o painel exibe "Lucas deve R$ 200,00 para Mariana"
 
-  Cenário: Aviso em mês já acertado
-    Dado que outubro foi quitado
-    Quando edito o valor de uma despesa comum de outubro
-    Então vejo "Este mês já foi acertado. O saldo do acerto será recalculado." e posso confirmar
 
-  Cenário: Desfazer um acerto
-    Dado um acerto registrado de "R$ 400,00"
-    Quando escolho "Desfazer acerto" e confirmo
-    Então as duas pernas são estornadas e o painel volta a exibir "Lucas deve R$ 400,00 para Mariana"
 
-  Cenário: Transferência não é editável
-    Quando abro o detalhe de uma transferência
-    Então não há "Editar", apenas "Desfazer transferência"
 
   Cenário: Validações da edição
     Quando altero o valor para "R$ 0,00"
@@ -81,7 +73,7 @@ Funcionalidade: Correção e exclusão de lançamentos
 Ações *Editar* e *Excluir* no detalhe do lançamento (menu "⋯"); histórico em linha do tempo; confirmação em diálogo; *toast* com ação "Desfazer" por 5 s após excluir.
 
 ## Fora de escopo
-Edição em lote, exclusão definitiva (hard delete é proibido), permissões diferenciadas por papel, anexos.
+Aviso de mês acertado e desfazer transferência/acerto (US-013b), edição em lote, exclusão definitiva (hard delete é proibido), permissões diferenciadas por papel, anexos.
 
 ## Perguntas em aberto / pontos para o Tech Lead
 - Como mapear "editar" sobre o *ledger* imutável (estorno + novo lançamento vs. versionamento com histórico). **Comportamento observável acima é o contrato do PO.**

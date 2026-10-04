@@ -1,12 +1,15 @@
-# US-009 — Ver o acerto de contas do mês
+# US-009a — Ver o acerto de contas do mês (núcleo)
 
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-4 Divisão & Acerto de Contas · R1 |
-| MoSCoW · WSJF · Tamanho (PO) | Must · 4,6 · 5 |
-| Status | Refinada (PO) — aguarda SDD-002 · **substitui a antiga US-002** |
+| MoSCoW · WSJF · Tamanho (PO) | Must · 4,4 · 5 (TL: 8 na história inteira; 9a + 9b) |
+| Status | Especificada (SDD-002) · **substitui a antiga US-002** · fatia **9a** da US-009 (a 9b é [US-009b](US-009b-acerto-tres-membros-e-detalhe.md)) |
 | Depende de | US-005, US-008 |
 | Rastreabilidade | NEED-007 · RN-007.1, RN-007.2 · ADR-006 · FLUXO-003 |
+
+## Fatiamento (decisão do PO, 2026-10-04)
+A US-009 original (TL: 8 pontos) foi fatiada. **Esta 9a é o núcleo Must e entrega sozinha a promessa da R1 ("sei quem deve quanto a quem")**: motor `computeSettlement` completo (inclui N > 2 e vetores S1..S13 do SDD-002), API, painel com frase-herói, cartões por membro, navegação de mês e estados vazios. A **9b** acrescenta apenas a exibição de 3+ membros e a lista expansível de despesas; pode ser cortada sem quebrar a R1. US-011, US-012 e US-013a dependem apenas da 9a.
 
 ## História
 Como **membro da família**, quero **ver quanto cada um pagou em despesas comuns e quem deve quanto a quem**, para **acertarmos o mês sem planilha e sem discussão**.
@@ -77,26 +80,18 @@ Funcionalidade: Painel de acerto de contas
     Quando abro o painel
     Então vejo que o acerto exige pelo menos dois membros e a ação "Convidar membro"
 
-  Cenário: Três membros
-    Dado três membros e regra igualitária com total comum de "R$ 900,00" pago só por Mariana
-    Quando abro o painel
-    Então a cota de cada um é "R$ 300,00"
-    E as sugestões são duas transferências de "R$ 300,00" para Mariana
 
   Cenário: Navegar entre meses
     Quando seleciono o mês anterior
     Então o painel recalcula apenas com as despesas daquele mês
 
-  Cenário: Ver as despesas que compõem o cálculo
-    Quando expando "Ver despesas comuns do período"
-    Então vejo a lista com quem pagou e valor, cuja soma é o total comum
 ```
 
 ## Experiência
 [FLUXO-003](../../flows/FLUXO-003-acerto-de-contas.md): frase-herói, cartões por membro, botão *Registrar acerto*, lista expansível, aviso "Despesas pessoais não entram na divisão".
 
 ## Fora de escopo
-Registrar o acerto (US-011), receitas no rateio, rateio por item/subitens (AP2, NEED-008), gráficos, notificações.
+Exibição para 3+ membros e lista expansível de despesas (US-009b), registrar o acerto (US-011), receitas no rateio, rateio por item/subitens (AP2, NEED-008), gráficos, notificações.
 
 ## Perguntas em aberto / pontos para o Tech Lead
 - Bloqueante: **SDD-002** (ADR-006) deve existir antes do desenvolvimento.
