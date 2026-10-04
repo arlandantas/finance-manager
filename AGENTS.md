@@ -137,3 +137,10 @@ Todos os commits no repositório devem seguir rigorosamente duas regras fundamen
    - **Tech Lead**: `Co-authored-by: Agente Tech Lead <tech-lead@finance-manager.local>`
    - **Desenvolvedor & QA**: `Co-authored-by: Agente Desenvolvedor & QA <dev-qa@finance-manager.local>`
 
+
+3. **Commit Automático das Próprias Modificações**:
+   - Ao concluir uma unidade lógica de trabalho, cada agente deve **commitar automaticamente** as suas modificações, sem aguardar pedido do Gestor.
+   - Faça o commit apenas dos arquivos que o próprio agente alterou (`git add <arquivos>`), nunca `git add -A` às cegas, para não incluir mudanças de terceiros.
+   - Siga as regras 1 e 2 acima: commit atômico, Conventional Commits e trailer `Co-authored-by` do agente.
+   - **Não** fazer `git push`, `--force`, `--amend` de commits já existentes nem reescrita de histórico sem autorização explícita do Gestor.
+   - Se os testes ou verificações da tarefa estiverem falhando, não commitar como "concluído": sinalize o problema ao Gestor.
