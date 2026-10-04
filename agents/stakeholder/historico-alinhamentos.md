@@ -223,3 +223,37 @@ Definição da esteira de prioridades e faseamento das entregas em releases (**A
 - [x] Criação do documento oficial [cronograma-e-releases.md](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/cronograma-e-releases.md).
 - [x] Mapeamento dos 15 Épicos direcionados ao Product Owner.
 - [x] Atualização do portal [README.md](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/README.md).
+
+---
+
+## [2026-10-04] - Validação das Decisões do PO e do Gestor (D-PO-01..03, Q-01/03/08/13/17)
+
+### Participantes
+- **Agente Stakeholder**
+- Insumos: `agents/product-owner/backlog/backlog.md`, `mvp-definition.md` e `agents/manager/decisoes-do-gestor.md` (D-GES-01..11)
+
+### Pauta
+Validar, como dono do problema, as decisões provisórias do PO (aprovadas pelo Gestor em D-GES-05) e as respostas do Gestor às perguntas abertas, sob a ótica de valor de negócio.
+
+### Validações
+| Item | Decisão | Parecer do Stakeholder | Justificativa de valor |
+| :-- | :-- | :-: | :-- |
+| **D-PO-01** | Um único campo "Quem pagou?" preenche responsável pelo gasto e pagador; `responsavel_pagamento` só nas previstas | ✅ Validada | Preserva a regra de responsabilidade (NEED-001) no cenário real do casal, em que quem gasta é quem paga, e protege a meta de lançar em menos de 10 s. A distinção volta nas previstas, onde ela de fato importa. |
+| **D-PO-02** | Todos veem e lançam em todas as contas e cartões | ✅ Validada | Transparência total é o princípio do produto; permissões granulares (US-020) não são dor do MVP. Reavaliar se surgir uso com conta estritamente pessoal. |
+| **D-PO-03** | Período = mês-calendário; ciclo com dia de corte no AP1 | ✅ Validada, com observação | Aceito para a R1, pois o acerto de contas é mensal. Observação: o ciclo configurável (NEED-005) é diferencial prioritário; o cálculo de período deve nascer como função de `cutDay` (padrão 1) para não gerar retrabalho. |
+| **Q-01 / D-GES-06** | Dependentes sem login fora do MVP (US-021) | ✅ Aceita | Os dois responsáveis do casal cobrem a dor vital. Item futuro, não esquecido. |
+| **Q-03 / D-GES-07** | Convite válido por 7 dias | ✅ Aceita | Prazo adequado à realidade do casal; sem impacto de negócio. |
+| **Q-08 / D-GES-08** | Regra de divisão com vigência por data | ✅ Aceita, e a considero necessária | Mudar a regra não pode reescrever acertos de meses já quitados; seria fonte direta de nova discussão familiar. |
+| **Q-13 / D-GES-03** | US-013 (corrigir/excluir) continua *Should*, dentro da R1, último a ser cortado | ✅ Aceita, com observação | Erros de lançamento são certos no cotidiano. Se o prazo apertar e a US-013 for cortada, a R1 só é homologável se houver contorno claro (ex.: lançamento de estorno). Peço aviso ao Gestor caso o corte ocorra. |
+| **Q-17 / D-GES-04** | Pagar fatura como *Should* na R2 | ✅ Aceita, com observação | Compatível com o cronograma (cartão à vista no AP0). Do ponto de vista de negócio, sem pagar a fatura o ciclo do cartão fica incompleto; peço que permaneça na R2 e não escorregue para o AP1. |
+
+### Objeções
+Nenhuma objeção bloqueante. As observações acima (D-PO-03, Q-13, Q-17) são recomendações e não impedem o fluxo.
+
+### Escopo e cronograma
+- **D-GES-01 / D-GES-02:** de acordo com o fatiamento R1/R2 e com a antecipação do **NEED-007 (split) para o AP0** (ADR-006). Homologação de valor após a R1.
+- Registro de que, no AP0, o acerto de contas cobre a dor vital; o desdobramento de compra (NEED-008) permanece no AP2.
+
+### Entregas
+- [x] Atualização de [`cronograma-e-releases.md`](cronograma-e-releases.md): NEED-007 no AP0/R1, fatiamento R1/R2, AP1..AP3 coerentes.
+- [x] Esta entrada de validação.
