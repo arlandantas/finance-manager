@@ -165,6 +165,38 @@ export async function makeAccount(
   return { id: account.id, name: account.name, ownerMemberId: owner.memberId };
 }
 
+export type CardFixture = { id: string; name: string; closingDay: number; dueDay: number };
+
+/** Cartão de crédito direto no banco (sem passar pela API). */
+export async function makeCard(
+  fx: FamilyFixture,
+  o: {
+    name: string;
+    owner?: string;
+    limitInCents?: number;
+    closingDay?: number;
+    dueDay?: number;
+    institution?: string;
+  },
+): Promise<CardFixture> {
+  const db = fdb();
+  const owner = (o.owner ? fx.byName[o.owner] : fx.members[0]) ?? fx.members[0];
+  if (!owner) throw new Error("Família sem membros");
+  const card = await db.creditCard.create({
+    data: {
+      familyId: fx.family.id,
+      name: o.name,
+      institution: o.institution ?? "Outro",
+      ownerMemberId: owner.memberId,
+      limitInCents: BigInt(o.limitInCents ?? 500000),
+      closingDay: o.closingDay ?? 25,
+      dueDay: o.dueDay ?? 5,
+      updatedByMemberId: owner.memberId,
+    },
+  });
+  return { id: card.id, name: card.name, closingDay: card.closingDay, dueDay: card.dueDay };
+}
+
 /** Despesa/receita direto no banco (sem passar pela API), com `createdAt` controlável. */
 export async function makeTransaction(
   fx: FamilyFixture,

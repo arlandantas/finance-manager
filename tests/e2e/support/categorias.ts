@@ -1,6 +1,5 @@
 import { expect, type Page } from "@playwright/test";
 import { testDb } from "../../support/db";
-import { makeAccount, makeFamily } from "../../support/factories";
 import type { World } from "./fixtures";
 
 export const dlg = (page: Page, name: string | RegExp) => page.getByRole("dialog", { name });
@@ -34,15 +33,6 @@ export async function seedCategory(
       sortOrder: (agg._max.sortOrder ?? -1) + 1,
       ...(o.archived ? { archivedAt: new Date() } : {}),
     },
-  });
-}
-
-export async function setupFamilyWithAccount(world: World, name = "Família Silva") {
-  world.family = await makeFamily({ name });
-  world.data.account = await makeAccount(world.family, {
-    name: "Nubank Conjunta",
-    owner: "Mariana",
-    openingBalanceInCents: 500000,
   });
 }
 

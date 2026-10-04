@@ -2,6 +2,16 @@ import { expect } from "@playwright/test";
 import { testDb } from "../../support/db";
 import { Then } from "../support/fixtures";
 
+// "nada é criado": cada história registra em `world.data.assertNothingCreated` a contagem a conferir.
+Then("nada é criado", async ({ world }) => {
+  await (world.data.assertNothingCreated as () => Promise<void>)();
+});
+
+// Conflito de edição: cada história registra em `world.data.conflictCheck` onde a mensagem aparece.
+Then("Lucas vê {string}", async ({ world }, mensagem: string) => {
+  await (world.data.conflictCheck as (m: string) => Promise<void>)(mensagem);
+});
+
 // Falha de rede ao salvar: cada história registra em `world.data.formCheck` o que conferir e como reenviar.
 Then("o formulário preserva o que foi digitado", async ({ world }) => {
   await (world.data.formCheck as () => Promise<void>)();

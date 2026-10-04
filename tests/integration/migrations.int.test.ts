@@ -34,6 +34,20 @@ describe("EN-001/US-004 Migração íntegra (modelo-de-dados §4)", () => {
     expect(triggers).toContain("transactions_no_delete");
   });
 
+  it("US-015: credit_cards com CHECKs e índice de nome", async () => {
+    const checks = await names("SELECT conname AS n FROM pg_constraint WHERE contype = 'c'");
+    for (const c of [
+      "credit_cards_limit_chk",
+      "credit_cards_closing_chk",
+      "credit_cards_due_chk",
+    ]) {
+      expect(checks).toContain(c);
+    }
+    const idx = await names("SELECT indexname AS n FROM pg_indexes WHERE schemaname = 'public'");
+    expect(idx).toContain("credit_cards_family_name_uq");
+    expect(idx).toContain("categories_family_kind_name_uq");
+  });
+
   it("os CHECKs barram dados inconsistentes", async () => {
     const family = await db.family.create({ data: { name: "F" } });
     await expect(

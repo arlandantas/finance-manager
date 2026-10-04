@@ -4,13 +4,9 @@ import { testDb } from "../../support/db";
 import { makeFamily, makeTransaction } from "../../support/factories";
 import { loginAs } from "../../support/login";
 import { gotoReady } from "../../support/nav";
-import {
-  createCategoryViaUi,
-  dlg,
-  openCategorias,
-  seedCategory,
-  setupFamilyWithAccount,
-} from "../support/categorias";
+import { enterAs } from "../support/acerto";
+import { openCartoes } from "../support/cartoes";
+import { createCategoryViaUi, dlg, openCategorias, seedCategory } from "../support/categorias";
 import { Given, Then, When } from "../support/fixtures";
 import {
   drawer,
@@ -20,6 +16,7 @@ import {
   save,
   waitSaved,
 } from "../support/lancamento";
+import { ensureAccount, setupFamily } from "../support/world";
 
 const db = testDb();
 const kindOf = (w: string) => (w === "receita" ? "INCOME" : "EXPENSE");
@@ -27,7 +24,7 @@ const kindOf = (w: string) => (w === "receita" ? "INCOME" : "EXPENSE");
 Given(
   "a {string} com os membros {string} e {string}",
   async ({ world }, familia: string, _a: string, _b: string) => {
-    await setupFamilyWithAccount(world, familia);
+    await setupFamily(world, familia);
   },
 );
 
@@ -53,7 +50,9 @@ Then("a categoria {string} aparece na lista de despesas", async ({ page }, nome:
   await expect(page.getByTestId("category-item").filter({ hasText: nome })).toHaveCount(1);
 });
 
-Then("aparece como última opção na grade do drawer de nova despesa", async ({ page }) => {
+Then("aparece como última opção na grade do drawer de nova despesa", async ({ page, world }) => {
+  await ensureAccount(world);
+  await gotoReady(page, "/");
   await openDrawer(page);
   const radios = drawer(page).getByRole("radiogroup", { name: "Categoria" }).getByRole("radio");
   await expect(radios.last()).toHaveAccessibleName("Pet");
@@ -69,7 +68,9 @@ Given("a categoria de despesa {string} arquivada", async ({ world }, nome: strin
 
 When(
   "Lucas lança {string} na categoria {string}",
-  async ({ page }, valor: string, categoria: string) => {
+  async ({ page, world }, valor: string, categoria: string) => {
+    await ensureAccount(world);
+    await gotoReady(page, "/");
     await openDrawer(page);
     await fillAmount(page, valor);
     await pickCategory(page, categoria);
@@ -106,17 +107,15 @@ Then("as duas categorias existem, cada uma no seu tipo", async ({ world }) => {
 
 When(
   /^Lucas tenta criar a categoria de (despesa|receita) "([^"]*)"$/,
-  async ({ page }, tipo: string, nome: string) => {
+  async ({ page, world }, tipo: string, nome: string) => {
+    world.data.assertNothingCreated = async () =>
+      expect(
+        await db.category.count({ where: { familyId: world.family?.family.id as string } }),
+      ).toBe(11);
     await openCategorias(page, tipo === "receita" ? "Receita" : "Despesa");
     await createCategoryViaUi(page, nome);
   },
 );
-
-Then("nada é criado", async ({ world }) => {
-  expect(await db.category.count({ where: { familyId: world.family?.family.id as string } })).toBe(
-    11,
-  );
-});
 
 Then("vê {string} com a ação {string}", async ({ page }, mensagem: string, acao: string) => {
   const d = dlg(page, "Nova categoria");
@@ -141,7 +140,7 @@ Given(
   "uma despesa de {string} na categoria {string}",
   async ({ world }, valor: string, categoria: string) => {
     await makeTransaction(world.family as never, {
-      account: world.data.account as never,
+      account: await ensureAccount(world),
       category: categoria,
       amountInCents: parseBRL(valor) ?? 0,
       occurredOn: "2026-10-03",
@@ -201,7 +200,9 @@ When("Lucas arquiva a categoria {string}", async ({ page, world }, nome: string)
   await expect(page.getByText("Categoria arquivada")).toBeVisible();
 });
 
-Then("ela some da grade do drawer de nova despesa", async ({ page }) => {
+Then("ela some da grade do drawer de nova despesa", async ({ page, world }) => {
+  await ensureAccount(world);
+  await gotoReady(page, "/");
   await openDrawer(page);
   const radios = drawer(page).getByRole("radiogroup", { name: "Categoria" }).getByRole("radio");
   await expect(radios.first()).toBeVisible();
@@ -231,7 +232,9 @@ When("Lucas reativa a categoria", async ({ page }) => {
   await expect(page.getByText("Categoria reativada")).toBeVisible();
 });
 
-Then("ela volta à grade do drawer de nova despesa", async ({ page }) => {
+Then("ela volta à grade do drawer de nova despesa", async ({ page, world }) => {
+  await ensureAccount(world);
+  await gotoReady(page, "/");
   await openDrawer(page);
   const radios = drawer(page).getByRole("radiogroup", { name: "Categoria" }).getByRole("radio");
   await expect(radios.filter({ hasText: "Lazer e restaurantes" })).toHaveCount(1);
@@ -295,6 +298,11 @@ Given(
     await marianaPage.getByRole("menuitem", { name: "Renomear" }).click();
     await expect(dlg(marianaPage, "Renomear categoria")).toBeVisible();
     world.data.marianaPage = marianaPage;
+    // Verificação do passo comum "Lucas vê {string}" (common.steps.ts): conflito mostrado no drawer.
+    world.data.conflictCheck = async (mensagem: string) => {
+      await expect(dlg(page, "Renomear categoria")).toContainText(mensagem);
+      await marianaPage.context().close();
+    };
   },
 );
 
@@ -310,11 +318,6 @@ When("Lucas tenta renomear para {string} e salvar", async ({ page }, nome: strin
   const d = dlg(page, "Renomear categoria");
   await d.getByLabel("Nome", { exact: true }).fill(nome);
   await d.getByRole("button", { name: "Salvar", exact: true }).click();
-});
-
-Then("Lucas vê {string}", async ({ page, world }, mensagem: string) => {
-  await expect(dlg(page, "Renomear categoria")).toContainText(mensagem);
-  await (world.data.marianaPage as Page).context().close();
 });
 
 Given("que Lucas é {string} e não {string}", async ({ world }, _papel: string, _outro: string) => {
@@ -362,8 +365,10 @@ Given("a {string} com a categoria {string}", async ({}, familia: string, categor
   });
 });
 
-When("Lucas abre {string}", async ({ page }, _tela: string) => {
-  await openCategorias(page, "Despesa");
+When("Lucas abre {string}", async ({ page, world }, tela: string) => {
+  await enterAs(world, page, "Lucas");
+  if (tela === "Cartões") await openCartoes(page);
+  else await openCategorias(page, "Despesa");
 });
 
 Then("não vê a categoria {string} da outra família", async ({ page }, nome: string) => {
