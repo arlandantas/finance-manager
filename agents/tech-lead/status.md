@@ -1,6 +1,65 @@
 # Status do Tech Lead
 
-*Atualizado: 2026-10-04 · Ciclo: liberação do time de desenvolvimento para a **R1** (EN-001, US-001..013)*
+*Atualizado: 2026-10-04 · Ciclos: liberação da **R1** (EN-001, US-001..013) e especificação da **R2** (US-014..019, abaixo)*
+
+## Ciclo R2: todas as histórias da R2 estão **Especificadas** (SDD-007, SDD-008, SDD-009)
+| Artefato | Cobre | Observação |
+| :--- | :--- | :--- |
+| [SDD-007 Categorias](sdd/SDD-007-categorias.md) | US-014 | Arquivar/reativar, unicidade sem caixa, trava da última ativa por advisory lock, 26 ícones, `version` |
+| [SDD-008 Cartões, compra à vista, fatura e pagamento](sdd/SDD-008-cartoes-fatura.md) | US-015, US-016a/b, US-017a/b | Funções puras do ciclo (vetores), fatura sob demanda, limite/total/situação derivados, pagamento com `expectedTotalInCents`, travas, **lista de impacto no código da R1** (§10) |
+| [SDD-009 Despesas previstas e baixa](sdd/SDD-009-despesas-previstas.md) | US-018, US-019 | Previsão fora do ledger, baixa via `createExpenseCore`, desfazer, `listPayables` (previsões + faturas), bloco da Home |
+| [ADR-014 Cartão e fatura no ledger](adrs/ADR-014-cartao-e-fatura-no-ledger.md) | US-015..017b | **Novo.** Compra = `EXPENSE` com `cardId`/`invoiceId` e `accountId` nulo; pagamento = `INVOICE_PAYMENT` (uma perna, fora de totais e acerto); resolve **GAP-3** |
+| [ADR-015 Previsão como entidade própria](adrs/ADR-015-despesa-prevista-como-entidade-propria.md) | US-018, US-019 | **Novo.** `PlannedExpense` + `paidTransactionId`; valor pago só na `Transaction` |
+| [`architecture/modelo-de-dados.md` §7](architecture/modelo-de-dados.md) | R2 | ER, Prisma e SQL cru (5 migrações: `us014_categorias`, `us015_cartoes`, `us016_enum_invoice_payment`, `us016_compra_cartao`, `us018_previstas`) |
+
+### Estimativas da R2 (pontos Fibonacci) e ordem técnica
+| Ordem | História | PO | **TL** | SDD | Depende tecnicamente de | Observação |
+| :-: | :-- | :-: | :-: | :-- | :-- | :-- |
+| 1 | US-015 | 3 | **3** | 008 | US-002 | Módulo `cartoes`, migração `credit_cards` |
+| 2 | US-016a | 5 | **5** | 008 | US-015, US-005, US-007 | **Maior risco da R2**: torna `accountId` anulável e reescreve `tx_kind_shape_chk`; rodar toda a suíte após a migração |
+| 3 | US-017a | 3 | **3** | 008 | US-016a | Derivações e telas; expõe `listPayableInvoices` |
+| 4 | US-018 | 5 | **5** | 009 | US-005, US-012 (+ US-017a p/ faturas) | Previsão, listas, `listPayables`, bloco da Home |
+| 5 | US-019 | 5 | **5** | 009 | US-018, US-004 (+ US-013a p/ `LINKED_TO_PLANNED`) | Extrai `createExpenseCore` |
+| 6 | US-017b | 5 | **5** | 008 | US-017a, US-004 | Cortável (Should, D-GES-04) |
+| 7 | US-016b | 3 | **3** | 008 | US-016a, US-013a, US-007 | Cortável (Should) |
+| 8 | US-014 | 3 | **3** | 007 | US-002, US-005 | Primeira a cortar (Could); independente das demais |
+| | **Total R2** | **32** | **32** | | | Must = 21 (015, 016a, 017a, 018, 019); Should = 8 (017b, 016b); Could = 3 (014) |
+
+**Concordância com o fatiamento do PO (D-PO-10):** 016a/016b e 017a/017b respeitam o limite INVEST ≤ 5; nenhuma fatia pede novo corte. A **016a** está no limite superior: se o Dev medir mais, entrega em *commits* atômicos (banco ➔ serviço ➔ UI) sem mudar o escopo da história.
+
+### Decisões e respostas do TL (R2)
+| Pergunta / Gap | Resposta |
+| :-- | :-- |
+| **GAP-3** (`Transaction` sem `accountId`) | `accountId` anulável **só** em compra no cartão, garantido por `CHECK` de forma por `kind` (ADR-014); `accountBalances` filtra `accountId IS NOT NULL`. |
+| Fatura: entidade ou derivada? | `CardInvoice` materializada sob demanda (datas gravadas); **total, limite e situação derivados** (ADR-014 §3–4). Sem job de fechamento. |
+| Pagamento da fatura e transferências | Mesmo vocabulário do ledger (movimenta caixa sem despesa, desfazer lógico, aviso de saldo negativo), mas **uma perna** (`INVOICE_PAYMENT`), não `TransferGroup` (não há 2ª conta). |
+| D-PO-07 (ciclo travado) | `cycleLocked = EXISTS(card_invoices)`; `CYCLE_LOCKED` no `PATCH`; corrida protegida por `FOR UPDATE/SHARE` no cartão. **Aceita**; alternativa versionada fica para o AP1 (parcelamento). |
+| Q-18 / D-PO-06 (dia do fechamento) | `dia ≤ closingDay` ⇒ fatura que fecha naquele dia. Função pura com vetores. |
+| **Q-20** (crédito do acerto) | Implementado como o PO propôs (`payerMemberId` da compra). **Risco registrado** no ADR-014: se a família paga a fatura com a conta de quem não comprou, o acerto não reflete o desembolso real; mudar é uma regra de consulta (AP2), sem migração. |
+| Q-21 (pagar valor diferente) | Fora da R2: o pagamento é sempre o total derivado, conferido por `expectedTotalInCents`. |
+| Q-22 (`isSharedExpense` da previsão) | Gravado na previsão e repassado à despesa na baixa; editável depois pela US-013 na despesa gerada. |
+| Previsão: ledger ou entidade? | Entidade própria (ADR-015). Valor pago só na `Transaction`; diferença calculada. |
+| Conflito de BDD detectado (US-019) | "Baixa única" e "Conflito de baixa simultânea" eram a mesma situação técnica; o PO esclareceu o primeiro (versão atual). Ordem fixa: versão ➔ situação. |
+| Dependências externas novas | **Nenhuma** (tudo local, sem serviços de terceiros); `pendencias-externas.md` inalterado. |
+
+### Riscos técnicos da R2
+| Risco | Mitigação |
+| :-- | :-- |
+| Reescrever `tx_kind_shape_chk` e anular `accountId` quebram consultas/DTOs da R1 | Lista de impacto (SDD-008 §10); testes de regressão de saldo, totais, extrato e acerto com compra no cartão e pagamento; migração do enum **isolada** (valor novo de enum não usável na mesma transação) |
+| Corridas entre compra, pagamento e edição de data na mesma fatura | `FOR UPDATE` na fatura, ordem crescente de `ref` ao travar duas, `expectedTotalInCents`, testes `Promise.all` obrigatórios |
+| Situação da fatura depende de "hoje" (virada de dia em SP) | `Clock` injetável, vetores com `2026-10-26T02:30:00Z` |
+| Previsão e despesa gerada divergirem | Fonte única do valor pago (join por `paidTransactionId`), guarda `LINKED_TO_PLANNED`, `CHECK status ⇔ paidTransactionId` |
+| US-013a ainda não implementada quando a R2 começar | SDD-008 §4.6 e SDD-009 §4.5 já fixam as emendas; as regras entram junto com a 013a (ou como débito explícito na 016b/019) |
+
+### Pendências com outros agentes (R2)
+- **PO:** refletir no `backlog.md` as estimativas (idênticas às do PO) e marcar US-014..019 como **Especificadas** (feito neste ciclo).
+- **Dev & QA:** ao iniciar a R2, seguir a ordem acima; **SDD-008 §10 e SDD-009 §9** listam o que muda no código da R1; rodar a suíte completa depois da migração `us016_compra_cartao`.
+- **Gestor:** ratificar D-PO-10 (US-017a Must / 017b Should). Nenhuma pergunta bloqueante (Q-18..Q-22 seguem com hipóteses conservadoras).
+- **Stakeholder:** validar D-PO-04..11 e a sensibilidade da **Q-20** na homologação da R2.
+
+---
+
+## Ciclo R1 (anterior)
 
 ## Entregue neste ciclo: todas as histórias da R1 estão **Especificadas**
 | Artefato | Cobre | Observação |
@@ -92,4 +151,5 @@
 ## Próximos passos do Tech Lead
 1. Responder dúvidas do Dev sobre os SDDs (registrar em `sdd/` como errata datada, nunca sobrescrever em silêncio).
 2. Revisar o código de cada história contra o SDD antes da homologação (DoD).
-3. Quando o PO refinar o Inc 3 (US-014..019), produzir SDD-007 (categorias, cartões, previstas).
+3. ~~Quando o PO refinar o Inc 3 (US-014..019), produzir SDD-007~~ — **feito**: SDD-007, SDD-008, SDD-009 (ver ciclo R2 acima).
+4. Revisar o código da R2 contra os SDDs antes da homologação; atenção especial à migração `us016_compra_cartao` e às travas de fatura.
