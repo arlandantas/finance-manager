@@ -3,6 +3,7 @@ import { apportion } from "@/lib/apportion";
 import { listAccounts } from "@/modules/contas/service";
 import { homeRepo } from "@/modules/home/repo";
 import type { HomeDTO } from "@/modules/home/schemas";
+import { homePayables } from "@/modules/previstas/payables";
 import { loadSettlement, toSettlementDto } from "@/modules/split/service";
 import { familyHasTransactions, ledgerTotals } from "@/modules/transacoes/extrato";
 import { listTransactions } from "@/modules/transacoes/service";
@@ -39,6 +40,7 @@ export async function getHome(tx: Tx, ctx: RequestContext, periodKey?: string): 
     to: "2999-12-31",
     limit: 5,
   });
+  const payables = await homePayables(tx, ctx);
   const hasTransaction = await familyHasTransactions(tx, ctx.familyId);
   const hasAccount = accounts.items.length > 0;
   return {
@@ -60,6 +62,7 @@ export async function getHome(tx: Tx, ctx: RequestContext, periodKey?: string): 
         sharePercent: shares[m.id] ?? 0,
       })),
     },
+    payables,
     recent: recent.items,
     onboarding: {
       hasAccount,

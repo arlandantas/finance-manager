@@ -57,6 +57,11 @@ enum TransactionKind {
   INVOICE_PAYMENT
 }
 
+enum PlannedExpenseStatus {
+  PREVISTO
+  PAGO
+}
+
 enum Direction {
   CREDIT
   DEBIT
@@ -148,14 +153,15 @@ model Family {
   cutDay    Int      @default(1) // CHECK 1..28; sem UI no R1 (ADR-010)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
-  members        Member[]
-  invitations    Invitation[]
-  categories     Category[]
-  splitRules     SplitRuleVersion[]
-  bankAccounts   BankAccount[]
-  creditCards    CreditCard[]
-  transactions   Transaction[]
-  transferGroups TransferGroup[]
+  members         Member[]
+  invitations     Invitation[]
+  categories      Category[]
+  splitRules      SplitRuleVersion[]
+  bankAccounts    BankAccount[]
+  creditCards     CreditCard[]
+  plannedExpenses PlannedExpense[]
+  transactions    Transaction[]
+  transferGroups  TransferGroup[]
 
   @@map("families")
 }
@@ -172,8 +178,10 @@ model Member {
 
   ownedAccounts        BankAccount[]
   ownedCards           CreditCard[]
-  paidTransactions     Transaction[] @relation("TxPayer")
-  authoredTransactions Transaction[] @relation("TxAuthor")
+  plannedResponsible   PlannedExpense[] @relation("PlannedResponsible")
+  plannedAuthored      PlannedExpense[] @relation("PlannedAuthor")
+  paidTransactions     Transaction[]    @relation("TxPayer")
+  authoredTransactions Transaction[]    @relation("TxAuthor")
 
   @@unique([userId]) // R1: 1 família por usuário (relaxar por migração se N famílias)
   @@unique([familyId, userId])
@@ -204,20 +212,21 @@ model Invitation {
 }
 
 model Category {
-  id         String       @id @default(uuid()) @db.Uuid
-  familyId   String       @db.Uuid
-  name       String
-  kind       CategoryKind
-  icon       String // chave de ícone (ex.: "shopping-cart")
-  sortOrder  Int
-  archivedAt DateTime?    @db.Timestamptz(3)
+  id                String       @id @default(uuid()) @db.Uuid
+  familyId          String       @db.Uuid
+  name              String
+  kind              CategoryKind
+  icon              String // chave de ícone (ex.: "shopping-cart")
+  sortOrder         Int
+  archivedAt        DateTime?    @db.Timestamptz(3)
   // US-014: conflito de edição ("alterada por {Nome}")
-  version           Int      @default(1)
-  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz(3)
-  updatedByMemberId String?  @db.Uuid
+  version           Int          @default(1)
+  updatedAt         DateTime     @default(now()) @updatedAt @db.Timestamptz(3)
+  updatedByMemberId String?      @db.Uuid
 
-  family       Family        @relation(fields: [familyId], references: [id])
-  transactions Transaction[]
+  family          Family           @relation(fields: [familyId], references: [id])
+  transactions    Transaction[]
+  plannedExpenses PlannedExpense[]
 
   @@unique([familyId, kind, name])
   @@unique([familyId, id])
@@ -287,7 +296,6 @@ model CardInvoice {
   @@map("card_invoices")
 }
 
-
 model TransferGroup {
   id                     String            @id @default(uuid()) @db.Uuid
   familyId               String            @db.Uuid
@@ -335,15 +343,16 @@ model Transaction {
   deletedByMemberId String?         @db.Uuid
   deletionReason    DeletionReason?
 
-  family    Family                @relation(fields: [familyId], references: [id])
-  account   BankAccount?          @relation(fields: [familyId, accountId], references: [familyId, id])
-  card      CreditCard?           @relation(fields: [familyId, cardId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  invoice   CardInvoice?          @relation(fields: [familyId, invoiceId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  category  Category?             @relation(fields: [familyId, categoryId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  payer     Member?               @relation("TxPayer", fields: [familyId, payerMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  author    Member                @relation("TxAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
-  group     TransferGroup?        @relation(fields: [familyId, transferGroupId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  revisions TransactionRevision[]
+  family      Family                @relation(fields: [familyId], references: [id])
+  account     BankAccount?          @relation(fields: [familyId, accountId], references: [familyId, id])
+  card        CreditCard?           @relation(fields: [familyId, cardId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  invoice     CardInvoice?          @relation(fields: [familyId, invoiceId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  category    Category?             @relation(fields: [familyId, categoryId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  payer       Member?               @relation("TxPayer", fields: [familyId, payerMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  author      Member                @relation("TxAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+  group       TransferGroup?        @relation(fields: [familyId, transferGroupId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  revisions   TransactionRevision[]
+  paidPlanned PlannedExpense?       @relation("PlannedPaidTx")
 
   @@unique([familyId, id])
   @@index([familyId, occurredOn(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
@@ -353,6 +362,39 @@ model Transaction {
   @@index([familyId, cardId, occurredOn])
   @@index([familyId, invoiceId])
   @@map("transactions")
+}
+
+// ───────── Despesas previstas (US-018/019, SDD-009, ADR-015): NÃO é Transaction ─────────
+model PlannedExpense {
+  id                  String               @id @default(uuid()) @db.Uuid
+  familyId            String               @db.Uuid
+  description         String // 2..100
+  amountInCents       BigInt // PREVISTO (> 0); o valor pago vive na Transaction
+  dueOn               DateTime             @db.Date
+  categoryId          String               @db.Uuid
+  responsibleMemberId String               @db.Uuid
+  isSharedExpense     Boolean              @default(true)
+  note                String?
+  status              PlannedExpenseStatus @default(PREVISTO)
+  paidTransactionId   String?              @unique @db.Uuid
+  authorMemberId      String               @db.Uuid
+  updatedByMemberId   String?              @db.Uuid
+  version             Int                  @default(1)
+  createdAt           DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime             @updatedAt @db.Timestamptz(3)
+  deletedAt           DateTime?            @db.Timestamptz(3)
+  deletedByMemberId   String?              @db.Uuid
+
+  family      Family       @relation(fields: [familyId], references: [id])
+  category    Category     @relation(fields: [familyId, categoryId], references: [familyId, id])
+  responsible Member       @relation("PlannedResponsible", fields: [familyId, responsibleMemberId], references: [familyId, id])
+  author      Member       @relation("PlannedAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+  paidTx      Transaction? @relation("PlannedPaidTx", fields: [familyId, paidTransactionId], references: [familyId, id])
+
+  @@unique([familyId, id])
+  @@unique([familyId, paidTransactionId])
+  @@index([familyId, status, dueOn])
+  @@map("planned_expenses")
 }
 
 // Append-only (trigger no banco)

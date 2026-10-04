@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { type MemberRef, periodKeySchema } from "@/lib/schemas";
 import type { AccountDTO } from "@/modules/contas/schemas";
+import type { HomePayablesDTO } from "@/modules/previstas/schemas";
 import type { SettlementDTO } from "@/modules/split/schemas";
 import type { TransactionDTO } from "@/modules/transacoes/schemas";
 
@@ -16,6 +17,7 @@ export type HomeDTO = {
     expenseInCents: number;
     byMember: Array<{ member: MemberRef; paidInCents: number; sharePercent: number }>;
   };
+  payables: HomePayablesDTO;
   recent: TransactionDTO[];
   onboarding: {
     hasAccount: boolean;
