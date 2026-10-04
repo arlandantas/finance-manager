@@ -1,6 +1,6 @@
 # 📐 Visão Arquitetural Preliminar (Tech Lead)
 
-*Status: Em rascunho*  
+*Status: Parcialmente substituído — o modelo de dados vigente está em [`modelo-de-dados.md`](modelo-de-dados.md) (nomes `isSharedExpense`, `payerMemberId`, `authorMemberId`; ver ADR-007). O diagrama de classes abaixo é conceitual e preliminar.*  
 *Responsável: Agente Tech Lead*
 
 ---
