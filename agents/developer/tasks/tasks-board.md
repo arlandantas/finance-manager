@@ -1,6 +1,6 @@
 # 📋 Quadro de Tarefas & QA do Desenvolvedor
 
-*Atualizado: 2026-10-04 · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Incremento 1 (walking skeleton) concluído: EN-001 → US-001 → US-002 → US-004 → US-005 → US-006 → US-007 → US-003. Incremento 2 (fechar o mês), ordem do PO: US-008 → US-009a → US-010 → US-011 → US-012 → US-009b → US-013a → US-013b.*
+*Atualizado: 2026-10-04 (R2 em andamento) · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Incremento 1 (walking skeleton) concluído: EN-001 → US-001 → US-002 → US-004 → US-005 → US-006 → US-007 → US-003. Incremento 2 (fechar o mês), ordem do PO: US-008 → US-009a → US-010 → US-011 → US-012 → US-009b → US-013a → US-013b.*
 
 ## 📌 Fluxo de Execução
 
@@ -30,6 +30,14 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-014 | US-009b | Acerto com 3 membros e lista expansível das despesas (Should, cortável) | US-009a | SDD-002 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-015 | US-013a | Editar, excluir, restaurar com auditoria e conflito 409 (Should, núcleo) | US-005, US-007 | SDD-001 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-016 | US-013b | Desfazer transferência/acerto e aviso de mês acertado (Should, cortável) | US-013a, US-010, US-011 | SDD-001, SDD-004 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-017 | US-014 | Gerenciar categorias (R2, Could) | US-002, US-005 | SDD-007 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-018 | US-015 | Cadastrar cartão de crédito (R2) | US-002 | SDD-008 | 3 | Todo |
+| TASK-019 | US-016a | Compra à vista no cartão (R2; reescreve `tx_kind_shape_chk`) | US-015, US-005 | SDD-008 | 5 | Todo |
+| TASK-020 | US-017a | Ver a fatura do cartão (R2) | US-016a | SDD-008 | 3 | Todo |
+| TASK-021 | US-018 | Despesa prevista pontual (R2) | US-005, US-012 | SDD-009 | 5 | Todo |
+| TASK-022 | US-019 | Dar baixa em despesa prevista (R2) | US-018, US-013a | SDD-009 | 5 | Todo |
+| TASK-023 | US-017b | Pagar a fatura (R2, Should) | US-017a, US-013a | SDD-008 | 5 | Todo |
+| TASK-024 | US-016b | Corrigir compra no cartão e filtrar por cartão (R2, Should) | US-016a, US-013a | SDD-008 | 3 | Todo |
 
 ---
 
@@ -276,3 +284,16 @@ EN-001 (complemento), US-001, US-002, US-004, US-005, US-006, US-007 e US-003 **
 
 ## 📌 Estado do Incremento 2
 US-008, US-009a, US-010, US-011, US-012, US-009b, US-013a e US-013b **concluídas e commitadas**, com todos os portões verdes. Pendente: passada de regressão completa do R1 e relatório `qa-r1.md`.
+
+
+---
+
+# R2 (Incremento 3): ordem de execução do PO
+US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → US-016b (SDD-008 §9 / SDD-009 §8).
+**Nota de ferramenta:** `tsc --noEmit` incremental (TypeScript 7) deixava passar erros com `tsconfig.tsbuildinfo` desatualizado; `pnpm typecheck` agora roda com `--incremental false`.
+
+## ✅ [TASK-017] US-014 — Gerenciar categorias
+- **História PO**: [US-014](../../product-owner/backlog/stories/US-014-gerenciar-categorias.md) · **SDD-007** · migração `us014_categorias`.
+- **Arquivos**: `prisma/migrations/*_us014_categorias`, `src/modules/categorias/{schemas,repo,service,hooks}.ts`, `src/app/api/v1/categories/{route,[id]/route,[id]/archive,[id]/unarchive}`, `src/app/(app)/categorias/*`, `src/components/category-icon.tsx` (26 ícones), atalhos em `app-shell.tsx` (menu do usuário) e `transaction-drawer.tsx`; extrato (filtro/detalhe/edição) rotula "(arquivada)"; `mutations.ts` valida categoria ativa só quando a categoria muda.
+- **QA**: U (schemas, 26 ícones mapeados); I (25: criar/ordem, nome duplicado/corrida/arquivada, curto/longo, renomear preserva histórico e totais, arquivar em uso, repetir archive/unarchive, última do tipo (mensagens) e corrida, limite 40 (arquivadas contam), conflito `Promise.all` + sequencial com nome do autor, MEMBER gerencia, isolamento, idempotência, `.strict()`, atomicidade, índice funcional no banco, filtro com arquivada); E2E 16 cenários x 2 viewports (passos comuns: "que não há conexão" agora cobre qualquer POST/PATCH e "o formulário preserva…" virou passo comum via `world.data.formCheck`).
+- **Desvios**: "Mudar ícone" e "Renomear" abrem o mesmo drawer (campo de nome ou galeria conforme a ação); ordem de checagem em archive/unarchive: estado (`ALREADY_ARCHIVED`/`NOT_ARCHIVED`) antes de `VERSION_CONFLICT` (SDD não fixa a ordem; escolhida para que repetir a operação com a versão antiga seja idempotente em semântica).
