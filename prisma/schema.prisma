@@ -20,6 +20,18 @@ enum Role {
   MEMBER
 }
 
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  CANCELED
+  EXPIRED
+}
+
+enum EmailStatus {
+  SENT
+  FAILED
+}
+
 enum CategoryKind {
   EXPENSE
   INCOME
@@ -136,6 +148,7 @@ model Family {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   members        Member[]
+  invitations    Invitation[]
   categories     Category[]
   splitRules     SplitRuleVersion[]
   bankAccounts   BankAccount[]
@@ -163,6 +176,28 @@ model Member {
   @@unique([familyId, userId])
   @@unique([familyId, id])
   @@map("members")
+}
+
+model Invitation {
+  id                String           @id @default(uuid()) @db.Uuid
+  familyId          String           @db.Uuid
+  email             String // minúsculo
+  role              Role             @default(MEMBER)
+  tokenHash         String           @unique // sha256(token) em hex
+  status            InvitationStatus @default(PENDING)
+  expiresAt         DateTime         @db.Timestamptz(3)
+  invitedByMemberId String           @db.Uuid
+  emailStatus       EmailStatus
+  createdAt         DateTime         @default(now()) @db.Timestamptz(3)
+  acceptedAt        DateTime?        @db.Timestamptz(3)
+  acceptedByUserId  String?          @db.Uuid
+  canceledAt        DateTime?        @db.Timestamptz(3)
+
+  family Family @relation(fields: [familyId], references: [id])
+
+  @@index([familyId, status])
+  @@index([email, status])
+  @@map("invitations") // + índice único parcial (familyId, email) WHERE status = 'PENDING' (SQL cru)
 }
 
 model Category {
