@@ -210,3 +210,9 @@ Contexto comum (**I/E**): outubro com despesa comum `15050` (Lucas, Supermercado
 | US-007 | 3 | **5** | SQL cru com keyset, totais coerentes com a lista, filtros na URL, rolagem infinita, vazios e otimista |
 | US-012 | 3 | **5** | Agregação multi-bloco, instantâneo `REPEATABLE READ`, checklist e estados por bloco |
 Dependências: US-007 depende de US-005/006 (dados); `ledgerTotals`/`buildLedgerWhere` nascem em US-007 e são reutilizados por US-012 e pelos testes de regressão de US-009/010/011. US-012 depende de US-004, US-007 e US-009 (`computeSettlement`).
+
+---
+
+## Errata 2026-10-04 (R2)
+- `buildLedgerWhere` ganha o filtro `cardId`; `type` aceita `INVOICE_PAYMENT`; compras no cartão (`accountId` nulo) entram em `type=EXPENSE`, nos totais e em `byMember`; pagamentos de fatura aparecem como linha neutra e **ficam fora** dos totais (`kind IN ('EXPENSE','INCOME')` não muda). Ver [SDD-008 §5](SDD-008-cartoes-fatura.md).
+- `HomeDTO` ganha `payables` (bloco "A pagar", [SDD-009 §4.6](SDD-009-despesas-previstas.md)); saldo da família e contas **não** incluem cartões.

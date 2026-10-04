@@ -240,3 +240,12 @@ Mensagens exatas:
 | US-006 | 3 | **2** | Reaproveita US-005 (`type = INCOME`) |
 | US-013 | 3 | **8** | Edição/exclusão/restauração, `version`, auditoria, confirmação de mês acertado, UI de histórico e diálogos |
 Dependências: US-004 (ledger, `recordRevision`); US-013 também usa `undo` de US-010 e o cálculo de acerto de US-009/011 (testes cruzados), logo é implementada por último.
+
+---
+
+## Errata 2026-10-04 (R2)
+A R2 emenda este SDD; **vale o texto abaixo sobre o anterior**:
+- **Compra no cartão** (US-016): `accountId` passa a ser **opcional em `EXPENSE`** (conta **ou** `cardId`); `TransactionDTO` ganha `card`, `invoice`, `account` anulável e o tipo `INVOICE_PAYMENT`; `POST /transactions` pode devolver `card` no lugar de `account`; `defaults` ganha `cardId`. Detalhes: [SDD-008 §3.2 e §4.4/§4.6](SDD-008-cartoes-fatura.md).
+- **Edição/exclusão (US-013)**: compra no cartão não troca de meio de pagamento (`PAYMENT_SOURCE_NOT_EDITABLE`), fatura paga trava (`INVOICE_PAID_LOCKED`), `INVOICE_PAYMENT` é `NOT_EDITABLE`; despesa gerada por baixa de previsão não pode ser excluída/restaurada (`LINKED_TO_PLANNED`, [SDD-009 §4.5](SDD-009-despesas-previstas.md)).
+- **Categorias** (US-014): `CategoryDTO` ganha `archived` e `version`; `GET /categories` aceita `includeArchived` ([SDD-007](SDD-007-categorias.md)). A validação "categoria ativa" só roda quando `categoryId` é enviado e difere do atual.
+- `createTransaction` passa a delegar a `createExpenseCore` (reutilizado pela baixa de previsão).

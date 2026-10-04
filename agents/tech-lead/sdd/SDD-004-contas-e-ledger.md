@@ -200,3 +200,8 @@ Rota `/contas`.
 | US-004 | 3 | **5** | Modelo de ledger, migração SQL (CHECKs/trigger), saldo derivado, 2 drawers |
 | US-010 | 3 | **3** | `createTransferGroup`/`undo` reutilizados por US-011 e US-013 |
 Dependência técnica: o **ledger** (`Transaction`, `recordRevision`, `accountBalances`) nasce em US-004 e é reutilizado por US-005 em diante.
+
+---
+
+## Errata 2026-10-04 (R2)
+`accountBalances` (§4.1) passa a filtrar `AND "accountId" IS NOT NULL`: compras no cartão têm `accountId` nulo e **não** alteram saldo de conta (RN-003.1, [ADR-014](../adrs/ADR-014-cartao-e-fatura-no-ledger.md)). O pagamento da fatura (`INVOICE_PAYMENT`) tem conta e **debita** o saldo normalmente. Teste novo: compra no cartão não cria chave `null` no mapa de saldos.

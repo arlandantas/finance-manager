@@ -324,3 +324,8 @@ Chaves: `["split-rule"]`, `["settlement", period]`.
 | US-009 | 5 | **8** | `computeSettlement` + sugestão N>2 + propriedades, painel com vários estados, lista de despesas |
 | US-011 | 3 | **5** | Lock + recálculo transacional, reuso de `createTransferGroup`, permissões, histórico/desfazer |
 Dependências: US-008 depende de membros (US-002/003); US-009 de US-005 e US-008; US-011 de US-009 e `createTransferGroup` (US-010). `computeSettlement` pode ser desenvolvido **antes** da UI, só com testes de unidade.
+
+---
+
+## Errata 2026-10-04 (R2)
+Sem mudança de regra: compras no cartão (`EXPENSE` com `cardId`, `isSharedExpense`) **entram** no rateio pela data da compra, e `INVOICE_PAYMENT` **não entra** (a base continua `kind = 'EXPENSE' AND isSharedExpense AND deletedAt IS NULL`). Despesas geradas pela baixa de previsão entram pelo valor efetivo e data do pagamento. O crédito de uma compra no cartão vai para `payerMemberId` (Q-20, [ADR-014](../adrs/ADR-014-cartao-e-fatura-no-ledger.md)). Testes de regressão novos em [SDD-008 §8](SDD-008-cartoes-fatura.md) e [SDD-009 §7](SDD-009-despesas-previstas.md).
