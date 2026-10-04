@@ -18,8 +18,8 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-002 | US-001 | Entrar com a conta Google (dev-login + Google real em EXT-01) | EN-001 | SDD-003 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-003 | US-002 | Criar a família no primeiro acesso | US-001 | SDD-003 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-004 | US-004 | Cadastrar conta bancária com saldo inicial | US-002 | SDD-004 | 5 | Concluído (aguardando validação do Gestor) |
-| TASK-005 | US-005 | Lançar uma despesa rapidamente | US-004 | SDD-001 (a revisar: isSharedExpense, splitRule, pagador) | 5 | Bloqueado: aguarda revisão do SDD-001 |
-| TASK-006 | US-006 | Lançar uma receita | US-005 | SDD-001 (a revisar) | 2 | Bloqueado: aguarda revisão do SDD-001 |
+| TASK-005 | US-005 | Lançar uma despesa rapidamente | US-004 | SDD-001 | 5 | Concluído (aguardando validação do Gestor) |
+| TASK-006 | US-006 | Lançar uma receita | US-005 | SDD-001 | 2 | Concluído (aguardando validação do Gestor) |
 | TASK-007 | US-007 | Consultar o extrato com filtros | US-005, US-006 | pendente TL | 3 | Bloqueado: aguarda SDD |
 | TASK-008 | US-003 | Convidar um membro por e-mail (Mailpit local; EXT-02) | US-002 | pendente TL | 3 | Bloqueado: aguarda SDD |
 | TASK-009 | US-008 | Definir a regra de divisão das despesas comuns | US-003 | SDD-002 (pendente TL) | 2 | Bloqueado: aguarda SDD |
@@ -137,6 +137,25 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
   - [x] `lint`, `typecheck`, `test` (120), `test:int` (69), `test:e2e` (42), `build` verdes; E2E rodado em sequência 3x sem falhas após o ajuste de hidratação.
   - [x] Verificação manual (navegador integrado, 3100, Postgres dev): desktop (estado vazio, drawer, máscara "R$ 1.500,00", criação, saldo consolidado) e mobile 375 px (skeleton, erro "Já existe uma conta com este nome", botão ± e "-R$ 300,00" em vermelho, toast, renomear, `scrollWidth == 375`). Ajustei o card para o saldo ir abaixo do nome no celular (nomes eram truncados).
 - **Desvios**: botão "Transferir" e tela de transferência não existem (US-010, fora do Incremento 1). Achado: após mudar o schema Prisma, o `pnpm dev` precisa ser reiniciado (cliente Prisma singleton em cache). E2E ganhou `HydrationMarker` (`data-hydrated`) e `gotoReady` para evitar cliques antes da hidratação.
+
+---
+
+## ✅ [TASK-005] US-005 — Lançar uma despesa rapidamente
+## ✅ [TASK-006] US-006 — Lançar uma receita
+- **Histórias PO**: [US-005](../../product-owner/backlog/stories/US-005-lancar-despesa.md), [US-006](../../product-owner/backlog/stories/US-006-lancar-receita.md) (implementadas juntas: o drawer e o serviço são os mesmos, `type = INCOME`).
+- **Especificação Técnica**: [SDD-001](../../tech-lead/sdd/SDD-001-transacoes.md) §1..§5 e §7 (US-005/US-006; edição/exclusão/histórico = US-013, Incremento 2).
+- **Status**: Concluído (aguardando validação do Gestor).
+- **Arquivos Criados/Modificados**:
+  - API: `src/modules/transacoes/{schemas,repo,service,hooks}.ts`, `src/app/api/v1/{transactions/route.ts (POST),transactions/defaults/route.ts,categories/route.ts}`.
+  - UI: `src/components/{quick-add,transaction-drawer,category-icon}.tsx` (FAB "+", drawer rápido, diálogo "Cadastre uma conta primeiro"), `ui/drawer.tsx` (foco inicial), `app-shell.tsx`.
+  - Testes: `tests/unit/transacoes/schemas.test.ts`, `tests/integration/us-005-006-lancamentos.int.test.ts`, `tests/e2e/features/US-005-*.feature` e `US-006-*.feature` + steps + `tests/e2e/support/lancamento.ts`, `tests/support/constants.ts`.
+- **Checklist de QA & Testes**:
+  - [x] U: schema (valor 0/-5/1.5/ausente = "Informe um valor maior que zero", categoria/conta obrigatórias, descrição vazia/espaços/"a", strict, receita sem `isSharedExpense`).
+  - [x] I (29 testes): despesa comum (saldo 84950, autor/pagador, hoje, revisão CREATE), outro pagador, pessoal, valores inválidos, descrição omitida, duplo clique simultâneo (1 linha, saldo 1x, `Idempotent-Replay`), `IDEMPOTENCY_KEY_REUSED`, data retroativa/futura com a mensagem exata e virada de dia em `America/Sao_Paulo` (02:30 UTC), referências de outra família (422), `CATEGORY_KIND_MISMATCH`, strict, atomicidade (falha na revisão), defaults (último lançamento, titular, sem contas), categorias (ordem, filtro, isolamento), receita (salário 650000, outro recebedor, `isSharedExpense` => 400, categoria de despesa => 422, futura).
+  - [x] E2E: 13 cenários da US-005 + 5 da US-006, desktop e mobile (76 testes no total da suíte, verdes).
+  - [x] `lint`, `typecheck`, `test` (133), `test:int` (98), `test:e2e` (76), `build` verdes.
+  - [x] Verificação manual (navegador integrado, 3100, Postgres dev): mobile 375 px (FAB sobre a barra inferior, drawer inferior com foco no valor, categorias em grade, toast "Despesa registrada com sucesso!") e desktop (modal centralizado, alternância para "Nova Receita" com 3 categorias, "Quem recebeu?" e sem switch, `Esc` fecha). O saldo conferido em `/contas` batia com o lançamento (o valor digitado em duplicidade por mim no teste manual foi refletido corretamente: máscara acumula dígitos).
+- **Desvios**: a atualização otimista (item `pending` no topo do extrato) fica com a US-007, onde existe a lista; aqui há invalidação de `["accounts"]`, `["transactions"]`, `["home"]`, `["settlement"]`. O campo "Descrição" fica em "Mais detalhes" (SDD-001 §5.1 só cita data e observação; o BDD "Descrição omitida" exige poder informá-la). `GET /transactions/defaults` devolve também `today` (data do servidor no fuso da família) para o `max` do campo data.
 
 ---
 
