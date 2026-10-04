@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { call } from "../support/call";
 import { resetDb, testDb } from "../support/db";
 import { asUser, makeFamily } from "../support/factories";
 
 const db = testDb();
 beforeEach(resetDb);
+afterEach(() => vi.unstubAllEnvs());
 
 describe("SDD-000 withApi: ordem das verificações", () => {
   it("1) CSRF: sem Origin ou com Origin de outro host -> 403 BAD_ORIGIN (antes da sessão)", async () => {
@@ -36,6 +37,23 @@ describe("SDD-000 withApi: ordem das verificações", () => {
     );
     expect(c.body.error.code).toBe("BAD_ORIGIN");
     expect(await db.family.count()).toBe(0);
+  });
+
+  it("CSRF no túnel de teste: Origin de APP_PUBLIC_ORIGIN passa em dev, mas nunca em produção", async () => {
+    const as = await asUser("mariana@exemplo.com");
+    const tunnel = "https://fancy-queens-kick.loca.lt";
+    const body = { name: "Família Silva" };
+    vi.stubEnv("APP_PUBLIC_ORIGIN", ""); // .env.local do dev pode defini-la
+    expect((await call(as, "POST", "/api/v1/families", body, { origin: tunnel })).status).toBe(403);
+    vi.stubEnv("APP_PUBLIC_ORIGIN", tunnel);
+    expect((await call(as, "POST", "/api/v1/families", body, { origin: tunnel })).status).toBe(201);
+    const other = await call(as, "POST", "/api/v1/families", body, {
+      origin: "https://outro.loca.lt",
+    });
+    expect(other.body.error.code).toBe("BAD_ORIGIN");
+    vi.stubEnv("NODE_ENV", "production");
+    const prod = await call(as, "POST", "/api/v1/families", body, { origin: tunnel });
+    expect(prod.body.error.code).toBe("BAD_ORIGIN");
   });
 
   it("Content-Type diferente de JSON em mutação -> 403 BAD_ORIGIN", async () => {

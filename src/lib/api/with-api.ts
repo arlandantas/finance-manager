@@ -65,7 +65,16 @@ function validationError(error: z.ZodError): ApiError {
 
 /** CSRF (SDD-000 §2): `Content-Type: application/json` e `Origin` igual ao host de AUTH_URL. */
 function checkCsrf(req: Request) {
-  const expected = new URL(getEnv().AUTH_URL).host;
+  const env = getEnv();
+  const allowed = new Set([new URL(env.AUTH_URL).host]);
+  // Túnel de teste (APP_PUBLIC_ORIGIN): aceito só fora de produção, host exato.
+  if (env.NODE_ENV !== "production" && env.APP_PUBLIC_ORIGIN) {
+    try {
+      allowed.add(new URL(env.APP_PUBLIC_ORIGIN).host);
+    } catch {
+      // valor inválido: ignora
+    }
+  }
   const origin = req.headers.get("origin");
   let originHost: string | null = null;
   try {
@@ -74,7 +83,11 @@ function checkCsrf(req: Request) {
     originHost = null;
   }
   const contentType = req.headers.get("content-type") ?? "";
-  if (originHost !== expected || !contentType.toLowerCase().startsWith("application/json")) {
+  if (
+    originHost === null ||
+    !allowed.has(originHost) ||
+    !contentType.toLowerCase().startsWith("application/json")
+  ) {
     throw forbidden("Requisição não autorizada.", "BAD_ORIGIN");
   }
 }
