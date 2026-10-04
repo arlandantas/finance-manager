@@ -197,6 +197,122 @@ export async function makeCard(
   return { id: card.id, name: card.name, closingDay: card.closingDay, dueDay: card.dueDay };
 }
 
+export type InvoiceFixture = { id: string; cardId: string; ref: string };
+
+/** Fatura materializada (datas pelo ciclo do cartão), idempotente por (cartão, mês de fechamento). */
+export async function makeInvoice(
+  fx: FamilyFixture,
+  card: CardFixture,
+  ref: string,
+): Promise<InvoiceFixture> {
+  const db = fdb();
+  const { invoiceDates } = await import("@/modules/cartoes/cycle");
+  const dates = invoiceDates(ref, card.closingDay, card.dueDay);
+  const inv = await db.cardInvoice.upsert({
+    where: { cardId_referenceMonth: { cardId: card.id, referenceMonth: ref } },
+    update: {},
+    create: {
+      familyId: fx.family.id,
+      cardId: card.id,
+      referenceMonth: ref,
+      closingDate: new Date(`${dates.closingDate}T00:00:00Z`),
+      dueDate: new Date(`${dates.dueDate}T00:00:00Z`),
+    },
+  });
+  return { id: inv.id, cardId: card.id, ref };
+}
+
+/** Compra no cartão direto no banco; a fatura é resolvida pelo ciclo (`invoiceRefFor`). */
+export async function makeCardPurchase(
+  fx: FamilyFixture,
+  o: {
+    card: CardFixture;
+    category?: string;
+    amountInCents: number;
+    occurredOn: string;
+    author?: string;
+    payer?: string;
+    shared?: boolean;
+    description?: string;
+    createdAt?: Date;
+    deleted?: boolean;
+  },
+) {
+  const db = fdb();
+  const { invoiceRefFor } = await import("@/modules/cartoes/cycle");
+  const invoice = await makeInvoice(fx, o.card, invoiceRefFor(o.occurredOn, o.card.closingDay));
+  const category = await db.category.findFirstOrThrow({
+    where: { familyId: fx.family.id, name: o.category ?? "Supermercado" },
+  });
+  const author = (o.author ? fx.byName[o.author] : fx.members[0]) ?? fx.members[0];
+  const payer = (o.payer ? fx.byName[o.payer] : author) ?? author;
+  if (!author || !payer) throw new Error("Família sem membros");
+  return db.transaction.create({
+    data: {
+      familyId: fx.family.id,
+      kind: "EXPENSE",
+      direction: "DEBIT",
+      accountId: null,
+      cardId: o.card.id,
+      invoiceId: invoice.id,
+      categoryId: category.id,
+      amountInCents: BigInt(o.amountInCents),
+      occurredOn: new Date(`${o.occurredOn}T00:00:00Z`),
+      description: o.description ?? category.name,
+      payerMemberId: payer.memberId,
+      authorMemberId: author.memberId,
+      isSharedExpense: o.shared ?? true,
+      ...(o.createdAt ? { createdAt: o.createdAt } : {}),
+      ...(o.deleted
+        ? {
+            deletedAt: new Date(),
+            deletedByMemberId: author.memberId,
+            deletionReason: "DELETED" as const,
+          }
+        : {}),
+    },
+  });
+}
+
+/** Pagamento de fatura direto no banco (uma perna, DEBIT na conta). */
+export async function makeInvoicePayment(
+  fx: FamilyFixture,
+  o: {
+    card: CardFixture;
+    invoice: InvoiceFixture;
+    account: AccountFixture;
+    amountInCents: number;
+    paidOn: string;
+    author?: string;
+    undone?: boolean;
+  },
+) {
+  const db = fdb();
+  const author = (o.author ? fx.byName[o.author] : fx.members[0]) ?? fx.members[0];
+  if (!author) throw new Error("Família sem membros");
+  return db.transaction.create({
+    data: {
+      familyId: fx.family.id,
+      kind: "INVOICE_PAYMENT",
+      direction: "DEBIT",
+      accountId: o.account.id,
+      cardId: o.card.id,
+      invoiceId: o.invoice.id,
+      amountInCents: BigInt(o.amountInCents),
+      occurredOn: new Date(`${o.paidOn}T00:00:00Z`),
+      description: `Pagamento da fatura ${o.card.name}`,
+      authorMemberId: author.memberId,
+      ...(o.undone
+        ? {
+            deletedAt: new Date(),
+            deletedByMemberId: author.memberId,
+            deletionReason: "UNDONE" as const,
+          }
+        : {}),
+    },
+  });
+}
+
 /** Despesa/receita direto no banco (sem passar pela API), com `createdAt` controlável. */
 export async function makeTransaction(
   fx: FamilyFixture,

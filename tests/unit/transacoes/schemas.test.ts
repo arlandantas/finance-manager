@@ -31,11 +31,31 @@ describe("US-005 Valor obrigatório e positivo: CreateTransactionSchema", () => 
 });
 
 describe("US-005 Categoria obrigatória", () => {
-  it("sem categoryId => 'Escolha uma categoria'; sem accountId => 'Escolha uma conta'", () => {
-    const { categoryId: _c, accountId: _a, ...rest } = base;
-    const list = messages(rest);
-    expect(list).toContainEqual({ path: "categoryId", message: "Escolha uma categoria" });
-    expect(list).toContainEqual({ path: "accountId", message: "Escolha uma conta" });
+  it("sem categoryId => 'Escolha uma categoria'", () => {
+    const { categoryId: _c, ...rest } = base;
+    expect(messages(rest)).toContainEqual({ path: "categoryId", message: "Escolha uma categoria" });
+  });
+
+  it("despesa sem conta nem cartão => 'Escolha uma conta ou um cartão' (SDD-008 §10)", () => {
+    const { accountId: _a, ...rest } = base;
+    expect(messages(rest)).toContainEqual({
+      path: "accountId",
+      message: "Escolha uma conta ou um cartão",
+    });
+  });
+
+  it("conta e cartão juntos => 'Informe a conta ou o cartão, não os dois'", () => {
+    expect(messages({ ...base, cardId: "7b9c4f6e-2d7e-4f6a-9d3e-0a1b2c3d4e5f" })).toContainEqual({
+      path: "cardId",
+      message: "Informe a conta ou o cartão, não os dois",
+    });
+  });
+
+  it("compra no cartão (cardId sem conta) é válida; receita com cardId => rejeitada (.strict)", () => {
+    const { accountId: _a, ...rest } = base;
+    const card = "7b9c4f6e-2d7e-4f6a-9d3e-0a1b2c3d4e5f";
+    expect(messages({ ...rest, cardId: card })).toEqual([]);
+    expect(messages({ ...base, type: "INCOME", cardId: card }).length).toBeGreaterThan(0);
   });
 });
 

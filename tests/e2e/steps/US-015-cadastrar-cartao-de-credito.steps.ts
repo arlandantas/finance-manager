@@ -224,6 +224,8 @@ When("Lucas tenta salvar outro limite", async ({ world }) => {
 
 Given("que a família não tem cartões", async ({ world }) => {
   await setupFamily(world);
+  // Remove os cartões que o contexto do cenário tenha criado (cartão sem faturas/compras não tem trava).
+  await db.creditCard.deleteMany();
   expect(await db.creditCard.count()).toBe(0);
 });
 

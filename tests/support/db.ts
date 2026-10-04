@@ -38,5 +38,14 @@ export async function resetDb() {
     WHERE schemaname = 'public' AND tablename NOT IN ('_prisma_migrations', 'SystemInfo')`;
   if (rows.length === 0) return;
   const list = rows.map((r) => `"${r.tablename}"`).join(", ");
-  await db.$executeRawUnsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
+  // Requisições do app ainda em curso do cenário anterior podem causar deadlock (40P01): repete.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await db.$executeRawUnsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
+      return;
+    } catch (e) {
+      if (attempt >= 4 || !String(e).includes("40P01")) throw e;
+      await new Promise((r) => setTimeout(r, 200 * attempt));
+    }
+  }
 }

@@ -18,3 +18,13 @@ export async function ensureAccount(world: World) {
   }
   return world.data.account as Awaited<ReturnType<typeof makeAccount>>;
 }
+
+/** Fixa o "hoje" do servidor E2E (ex.: "2026-10-15" => 12:00 em São Paulo). Restaurado no Before. */
+export async function setToday(date: string) {
+  const res = await fetch("http://localhost:3101/api/dev/clock", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ now: `${date}T15:00:00Z` }),
+  });
+  if (!res.ok) throw new Error(`relógio de teste indisponível (${res.status})`);
+}

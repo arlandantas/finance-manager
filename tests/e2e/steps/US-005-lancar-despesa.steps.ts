@@ -57,7 +57,7 @@ Then(
     const { row, name } = await lastTransaction("EXPENSE");
     expect(name(row.authorMemberId)).toBe(autor);
     expect(name(row.payerMemberId)).toBe(pagador);
-    expect(row.account.name).toBe(conta);
+    expect(row.account?.name).toBe(conta);
     expect(row.occurredOn.toISOString().slice(0, 10)).toBe(TODAY);
   },
 );
@@ -265,7 +265,7 @@ When("Lucas executa o fluxo valor, categoria e salvar com os padrões", async ({
   await page.getByRole("button", { name: "Novo lançamento" }).click();
   await expect(page.getByLabel("Valor", { exact: true })).toBeFocused();
   // padrões: conta já escolhida, quem pagou = logado, dividir ligado
-  await expect(page.getByLabel("Conta", { exact: true })).toHaveValue(/.+/);
+  await expect(page.getByLabel("Pagar com", { exact: true })).toHaveValue(/.+/);
   await fillAmount(page, "R$ 25,00");
   interactions += 1;
   await pickCategory(page, "Transporte");

@@ -284,6 +284,7 @@ describe("US-005 (infra) Defaults e categorias", () => {
     const d1 = await withClock(NOW, () => call(lucas(), "GET", "/api/v1/transactions/defaults"));
     expect(d1.body).toEqual({
       accountId: itau.id,
+      cardId: null,
       payerMemberId: fx.byName.Lucas?.memberId,
       today: "2026-10-04",
     });
