@@ -69,3 +69,27 @@ export function useCreateTransfer(idempotencyKey: string) {
       ),
   });
 }
+
+/** Desfaz transferência/acerto (SDD-004 §4.4). Sem `version`, busca a versão atual do grupo. */
+export function useUndoTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (a: { groupId: string; version?: number; idempotencyKey: string }) => {
+      const version =
+        a.version ??
+        (await apiFetch<{ transfer: TransferDTO }>(`/api/v1/transfers/${a.groupId}`)).transfer
+          .version;
+      return apiFetch<{ transfer: TransferDTO }>(`/api/v1/transfers/${a.groupId}/undo`, {
+        method: "POST",
+        body: { version },
+        idempotencyKey: a.idempotencyKey,
+      });
+    },
+    onSuccess: () =>
+      Promise.all(
+        [["accounts"], ["transactions"], ["transaction"], ["home"], ["settlement"]].map(
+          (queryKey) => qc.invalidateQueries({ queryKey }),
+        ),
+      ),
+  });
+}

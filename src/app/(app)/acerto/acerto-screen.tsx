@@ -9,6 +9,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
 import { formatBRL } from "@/lib/money";
 import { heroText } from "@/modules/split/hero";
 import { useSettlement, useSharedExpenses, useSplitRule } from "@/modules/split/hooks";
@@ -250,6 +251,7 @@ export function AcertoScreen() {
   const s = settlement.data;
   const hasAdjustments = s ? s.settlements.length > 0 : false;
   const [settling, setSettling] = useState<SettlementSuggestion | null>(null);
+  const [undoing, setUndoing] = useState<{ groupId: string; version: number } | null>(null);
 
   return (
     <main className="flex flex-col gap-4">
@@ -331,6 +333,13 @@ export function AcertoScreen() {
                         <p className="text-slate-500">
                           {x.fromAccount.name} → {x.toAccount.name}
                         </p>
+                        <Button
+                          variant="ghost"
+                          className="mt-1 -ml-3"
+                          onClick={() => setUndoing({ groupId: x.groupId, version: x.version })}
+                        >
+                          Desfazer acerto
+                        </Button>
                       </li>
                     ))}
                   </ul>
@@ -341,6 +350,12 @@ export function AcertoScreen() {
           ) : null}
         </>
       ) : null}
+      <UndoTransferDialog
+        groupId={undoing?.groupId ?? null}
+        {...(undoing ? { version: undoing.version } : {})}
+        isSettlement
+        onClose={() => setUndoing(null)}
+      />
       <SettleDrawer
         period={s?.period.key ?? ""}
         suggestion={settling}

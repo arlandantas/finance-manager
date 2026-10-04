@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { formatBRL } from "@/lib/money";
 import { useDefaults, useTransactionDetail, useTransactionState } from "@/modules/transacoes/hooks";
@@ -45,6 +46,7 @@ export function TransactionDetailDrawer({
   const [conflictMsg, setConflictMsg] = useState<string | null>(null);
   const [settled, setSettled] = useState<{ message: string; resend: () => void } | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [undoing, setUndoing] = useState(false);
   const del = useTransactionState("delete");
   const restore = useTransactionState("restore");
   const stateKey = useRef(newIdempotencyKey());
@@ -60,6 +62,7 @@ export function TransactionDetailDrawer({
   }, [id]);
 
   const editable = t && (t.type === "EXPENSE" || t.type === "INCOME");
+  const isLeg = t && (t.type === "TRANSFER_OUT" || t.type === "TRANSFER_IN");
 
   function runState(
     action: "delete" | "restore",
@@ -182,6 +185,12 @@ export function TransactionDetailDrawer({
                   Restaurar
                 </Button>
               ) : null}
+              {isLeg && t.transferGroupId && !t.deletedAt ? (
+                <Button variant="secondary" onClick={() => setUndoing(true)}>
+                  <RotateCcw size={16} aria-hidden="true" />
+                  {t.isSettlement ? "Desfazer acerto" : "Desfazer transferência"}
+                </Button>
+              ) : null}
               {editable ? (
                 <Menu
                   label="Ações do lançamento"
@@ -262,6 +271,13 @@ export function TransactionDetailDrawer({
           </>
         ) : null}
       </Drawer>
+
+      <UndoTransferDialog
+        groupId={undoing && t?.transferGroupId ? t.transferGroupId : null}
+        isSettlement={Boolean(t?.isSettlement)}
+        onClose={() => setUndoing(false)}
+        onDone={onClose}
+      />
 
       <Drawer
         open={confirmingDelete}
