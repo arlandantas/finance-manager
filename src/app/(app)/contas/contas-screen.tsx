@@ -1,10 +1,11 @@
 "use client";
 
-import { MoreHorizontal, Pencil, Plus } from "lucide-react";
+import { ArrowLeftRight, MoreHorizontal, Pencil, Plus } from "lucide-react";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
+import { Drawer } from "@/components/ui/drawer";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatBRL } from "@/lib/money";
@@ -12,6 +13,7 @@ import { useAccounts } from "@/modules/contas/hooks";
 import { ACCOUNT_TYPE_LABELS, type AccountDTO } from "@/modules/contas/schemas";
 import { NewAccountDrawer } from "./new-account-drawer";
 import { RenameAccountDialog } from "./rename-account-dialog";
+import { TransferDrawer } from "./transfer-drawer";
 
 function Balance({ cents, className }: { cents: number; className?: string }) {
   return (
@@ -79,16 +81,29 @@ export function ContasScreen() {
   const accounts = useAccounts();
   const [creating, setCreating] = useState(false);
   const [renaming, setRenaming] = useState<AccountDTO | null>(null);
+  const [transferring, setTransferring] = useState(false);
+  const [needsAnother, setNeedsAnother] = useState(false);
   const data = accounts.data;
 
   return (
     <main className="flex flex-col gap-4">
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-slate-900">Contas</h1>
-        <Button onClick={() => setCreating(true)}>
-          <Plus size={18} aria-hidden="true" />
-          Nova conta
-        </Button>
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          <Button
+            variant="secondary"
+            onClick={() =>
+              data && data.items.length < 2 ? setNeedsAnother(true) : setTransferring(true)
+            }
+          >
+            <ArrowLeftRight size={18} aria-hidden="true" />
+            Transferir
+          </Button>
+          <Button onClick={() => setCreating(true)}>
+            <Plus size={18} aria-hidden="true" />
+            Nova conta
+          </Button>
+        </div>
       </header>
 
       {accounts.isPending ? <AccountsSkeleton /> : null}
@@ -131,6 +146,30 @@ export function ContasScreen() {
       ) : null}
 
       <NewAccountDrawer open={creating} onOpenChange={setCreating} />
+      <TransferDrawer open={transferring} onOpenChange={setTransferring} />
+      <Drawer
+        open={needsAnother}
+        onOpenChange={setNeedsAnother}
+        title="Cadastre outra conta para transferir"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-slate-700">
+            Uma transferência precisa de duas contas da família. Cadastre outra conta para
+            continuar.
+          </p>
+          <Button
+            onClick={() => {
+              setNeedsAnother(false);
+              setCreating(true);
+            }}
+          >
+            Nova conta
+          </Button>
+          <Button variant="ghost" onClick={() => setNeedsAnother(false)}>
+            Agora não
+          </Button>
+        </div>
+      </Drawer>
       <RenameAccountDialog account={renaming} onClose={() => setRenaming(null)} />
     </main>
   );
