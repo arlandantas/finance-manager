@@ -16,7 +16,7 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | :-- | :-- | :-- | :-- | :-- | :-: | :-- |
 | TASK-001 | EN-001 | Ambiente local e esqueleto (+ complemento SDD-006: utilitários puros, `check:imports`, E2E 3101/db-test) | — | `architecture/ambiente-local.md`, SDD-006 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-002 | US-001 | Entrar com a conta Google (dev-login + Google real em EXT-01) | EN-001 | SDD-003 | 5 | Concluído (aguardando validação do Gestor) |
-| TASK-003 | US-002 | Criar a família no primeiro acesso | US-001 | pendente TL | 2 | Bloqueado: aguarda SDD |
+| TASK-003 | US-002 | Criar a família no primeiro acesso | US-001 | SDD-003 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-004 | US-004 | Cadastrar conta bancária com saldo inicial | US-002 | pendente TL | 3 | Bloqueado: aguarda SDD |
 | TASK-005 | US-005 | Lançar uma despesa rapidamente | US-004 | SDD-001 (a revisar: isSharedExpense, splitRule, pagador) | 5 | Bloqueado: aguarda revisão do SDD-001 |
 | TASK-006 | US-006 | Lançar uma receita | US-005 | SDD-001 (a revisar) | 2 | Bloqueado: aguarda revisão do SDD-001 |
@@ -96,6 +96,27 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
   4. `check:imports` ganhou a exceção `src/lib/auth/**` (infra de autenticação que usa `getDb()` antes de existir contexto de família).
   5. Erros 4xx de regra de negócio não são gravados no `IdempotencyRecord` (ADR-009 §4 sugere gravar): o *rollback* descarta a chave e a repetição reproduz o mesmo erro de forma determinística. 2xx são gravados.
   6. Gherkin: `E, após entrar, volto…` virou `E após entrar, volto…` (a vírgula impede o parser reconhecer a palavra-chave).
+
+---
+
+## ✅ [TASK-003] US-002 — Criar a família no primeiro acesso
+- **História PO**: [US-002](../../product-owner/backlog/stories/US-002-criar-familia.md)
+- **Especificação Técnica**: [SDD-003](../../tech-lead/sdd/SDD-003-auth-familia-convite.md) §4 · SDD-000 §2.3 (`makeRepos`), §7 (estados de UI).
+- **Status**: Concluído (aguardando validação do Gestor).
+- **Arquivos Criados/Modificados**:
+  - `src/modules/familia/{service,repo}.ts` (`createFamily`, `getFamily`, `familiaRepo` com escritas agrupadas), `src/lib/api/{repos,db-errors}.ts` (`makeRepos`, P2002).
+  - `src/app/api/v1/families/route.ts` (POST), `src/app/api/v1/family/route.ts` (GET).
+  - `src/app/onboarding/{page,onboarding-flow}.tsx` (RHF + Zod, `Idempotency-Key` gerada ao abrir o formulário, guarda contra duplo envio, passo de convite pulável).
+  - Testes: `tests/unit/familia/familia.test.ts`, `tests/unit/ui/onboarding-flow.test.tsx`, `tests/integration/{with-api,us-002-familia}.int.test.ts`, `tests/e2e/features/US-002-criar-familia.feature` + steps.
+- **Checklist de QA & Testes**:
+  - [x] U: `suggestFamilyName` (4 casos do SDD + extras), schema ("", " a " => mensagem exata), 8+3 categorias com nomes exatos.
+  - [x] Componente: sugestão preenchida e com foco; nome inválido não chama a API; duplo clique envia 1 requisição com `Idempotency-Key`; falha de rede preserva o nome e reaproveita a chave.
+  - [x] I: `POST /families` 201 (ADMIN, 11 categorias, regra EQUAL 1970-01-01, `cutDay=1`), 400 sem criar nada, 2x simultâneas mesma chave = 1 família + `Idempotent-Replay`, chaves diferentes = 1x201 + 1x409 `ALREADY_IN_FAMILY`, atomicidade com falha injetada (nada persiste e nenhum registro de idempotência), isolamento entre famílias.
+  - [x] I (`withApi`, SDD-000 §9): BAD_ORIGIN (sem Origin, Origin alheio, Content-Type não JSON), 401, NO_FAMILY, 400 `VALIDATION_ERROR` com `details`, `INVALID_JSON`, `.strict()` (`familyId` rejeitado), `IDEMPOTENCY_KEY_REQUIRED`, `IDEMPOTENCY_KEY_REUSED`, replay, escopo da chave por usuário.
+  - [x] E2E: 5 cenários BDD x desktop e mobile.
+  - [x] `pnpm lint`, `typecheck`, `test` (111), `test:int` (41), `test:e2e` (26), `build` verdes.
+  - [x] Verificação manual (navegador integrado, 3100, Postgres dev): mobile 375 px (usuário novo Ana Souza: nome sugerido "Família Souza", erro "Informe um nome com pelo menos 2 caracteres", botão fixo no rodapé, criação, passo de convite, "Fazer depois" leva à Home) e desktop (onboarding centralizado). Banco dev: 11 categorias e papel ADMIN conferidos por SQL.
+- **Observação**: o passo de convite mostra apenas "Fazer depois" e o texto explicativo; o formulário de e-mail chega com a US-003.
 
 ---
 
