@@ -27,7 +27,7 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-011 | US-010 | Transferir dinheiro entre contas da família | US-004 | SDD-004 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-012 | US-011 | Registrar o acerto de contas como transferência | US-009a, US-010 | SDD-002 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-013 | US-012 | Home: visão essencial da família | US-004, US-007, US-009a | SDD-005 | 3 | Concluído (aguardando validação do Gestor) |
-| TASK-014 | US-009b | Acerto com 3 membros e lista expansível das despesas (Should, cortável) | US-009a | SDD-002 | 3 | Todo |
+| TASK-014 | US-009b | Acerto com 3 membros e lista expansível das despesas (Should, cortável) | US-009a | SDD-002 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-015 | US-013a | Editar, excluir, restaurar com auditoria e conflito 409 (Should, núcleo) | US-005, US-007 | SDD-001 | 5 | Todo |
 | TASK-016 | US-013b | Desfazer transferência/acerto e aviso de mês acertado (Should, cortável) | US-013a, US-010, US-011 | SDD-001, SDD-004 | 3 | Todo |
 
@@ -252,4 +252,10 @@ EN-001 (complemento), US-001, US-002, US-004, US-005, US-006, US-007 e US-003 **
 - **Arquivos**: `src/modules/home/{schemas,repo,service,hooks}.ts`, `src/app/api/v1/home/route.ts` (`RepeatableRead`), `src/modules/split/hero.ts` (frase-herói compartilhada), `src/app/(app)/{page,home-screen}.tsx`, testes `tests/unit/lib/apportion-percent.test.ts`, `tests/integration/us-012-home.int.test.ts`, `tests/e2e/features/US-012-*.feature` + steps.
 - **QA**: I (9): dados, resumo sem transferência/acerto, 75/25 (inclui pessoais; total 0 => 0), checklist, últimos 5 (sem OPENING/excluídos, com transferências), spy de `isolationLevel: RepeatableRead`, `period`, isolamento, 401; E2E 8 cenários x 2 (CLS medido <= 0,01 com resposta atrasada; 375 e 1280 px sem rolagem horizontal); lint, typecheck, test (175), test:int (209), test:e2e (190), build verdes; manual 375 px e desktop (dados do casal: saldo R$ 1.600,00, card "Lucas deve R$ 460,00 para Mariana", resumo 75%/25%, últimos lançamentos com "Mesma transferência", `scrollWidth == 375`).
 - **Desvios**: o passo genérico `vejo {string}` (US-004) e `vejo {string} e {string}` (US-007) passaram a aceitar texto composto no `main`; "Erro parcial por bloco" do SDD é coberto por um único cartão de erro (a API é única).
+
+## ✅ [TASK-014] US-009b — Acerto com três membros e detalhe das despesas
+- **História PO**: [US-009b](../../product-owner/backlog/stories/US-009b-acerto-tres-membros-e-detalhe.md) · **SDD-002** §6.1.
+- **Arquivos**: `src/app/(app)/acerto/acerto-screen.tsx` (`SharedExpensesList`: `<details>` que só consulta `GET /settlement/expenses` ao abrir), `tests/e2e/features/US-009b-*.feature` + steps. Motor (N>2) e API já cobertos por S4 e pelos testes de integração da US-009a.
+- **QA**: E2E 2 cenários x 2 (três membros com cotas iguais e duas sugestões; lista cuja soma = total comum); lint, typecheck, test (175), test:int (209), test:e2e (194), build verdes; manual 375 px: lista com 6 despesas, "Total: R$ 6.400,00" igual ao total comum, `scrollWidth == 375`.
+- **Desvios**: cenário "Ver as despesas…" ganhou `Dado despesas comuns de … por Mariana e … por Lucas`.
 
