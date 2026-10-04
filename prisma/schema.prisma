@@ -1,0 +1,16 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Baseline de EN-001: tabela técnica mínima para validar migrate/seed/health.
+// O domínio (User, Family, Account, Transaction...) entra com as histórias (US-001+), conforme os SDDs.
+model SystemInfo {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
