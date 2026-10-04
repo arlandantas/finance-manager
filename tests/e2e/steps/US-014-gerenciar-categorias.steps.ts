@@ -16,6 +16,7 @@ import {
   save,
   waitSaved,
 } from "../support/lancamento";
+import { openPrevistas } from "../support/previstas";
 import { ensureAccount, setupFamily } from "../support/world";
 
 const db = testDb();
@@ -368,6 +369,7 @@ Given("a {string} com a categoria {string}", async ({}, familia: string, categor
 When("Lucas abre {string}", async ({ page, world }, tela: string) => {
   await enterAs(world, page, "Lucas");
   if (tela === "Cartões") await openCartoes(page);
+  else if (tela === "Contas a pagar") await openPrevistas(page);
   else await openCategorias(page, "Despesa");
 });
 

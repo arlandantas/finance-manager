@@ -302,3 +302,27 @@ When(
     await gotoReady(page, `/cartoes/${card.id}`);
   },
 );
+
+Given(
+  /^a fatura "([^"]+)" fechada com total "([^"]+)" e vencimento (\d{2})\/(\d{2})\/(\d{4})$/,
+  async ({ world }, _rotulo: string, total: string, _d: string, _m: string, _y: string) => {
+    await makeCardPurchase(world.family as never, {
+      card: cardOf(world),
+      amountInCents: money(total),
+      occurredOn: "2026-10-10",
+      createdAt: stamp(),
+    });
+  },
+);
+
+Then(
+  /^o bloco "A pagar" mostra "([^"]+)" com vencimento (\d{2})\/(\d{2})$/,
+  async ({ page }, texto: string, d: string, m: string) => {
+    const item = page.getByTestId("home-payables").getByTestId("home-payable").first();
+    const [titulo, valor] = texto.split(/ (?=R\$)/) as [string, string];
+    await expect(item).toContainText(titulo);
+    await expect(item).toContainText(normalizeSpaces(valor));
+    await expect(item).toContainText(`vence ${d}/${m}`);
+    await expect(item.getByRole("link", { name: "Ver fatura" })).toBeVisible();
+  },
+);

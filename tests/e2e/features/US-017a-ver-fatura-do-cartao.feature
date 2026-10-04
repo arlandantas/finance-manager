@@ -63,6 +63,12 @@ Funcionalidade: Fatura do cartão
     Quando Lucas abre o cartão
     Então vê "Nenhuma compra nesta fatura" e total "R$ 0,00"
 
+  Cenário: Fatura fechada aparece em "A pagar"
+    Dado a fatura "out/2026" fechada com total "R$ 400,00" e vencimento 05/11/2026
+    E que hoje é 30/10/2026
+    Quando Lucas abre a Home
+    Então o bloco "A pagar" mostra "Fatura Nubank Mariana R$ 400,00" com vencimento 05/11
+
   Cenário: Erro ao carregar a fatura
     Dado que a leitura da fatura falha
     Quando Lucas abre o cartão

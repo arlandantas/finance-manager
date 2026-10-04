@@ -313,6 +313,49 @@ export async function makeInvoicePayment(
   });
 }
 
+export type PlannedFixture = { id: string; description: string };
+
+/** Despesa prevista direto no banco (status PREVISTO; PAGO só com `paidTransactionId`). */
+export async function makePlannedExpense(
+  fx: FamilyFixture,
+  o: {
+    description: string;
+    amountInCents: number;
+    dueOn: string;
+    category?: string;
+    responsible?: string;
+    author?: string;
+    shared?: boolean;
+    paidTransactionId?: string;
+    note?: string;
+  },
+): Promise<PlannedFixture> {
+  const db = fdb();
+  const category = await db.category.findFirstOrThrow({
+    where: { familyId: fx.family.id, name: o.category ?? "Moradia" },
+  });
+  const responsible = (o.responsible ? fx.byName[o.responsible] : fx.members[0]) ?? fx.members[0];
+  const author = (o.author ? fx.byName[o.author] : responsible) ?? responsible;
+  if (!responsible || !author) throw new Error("Família sem membros");
+  const row = await db.plannedExpense.create({
+    data: {
+      familyId: fx.family.id,
+      description: o.description,
+      amountInCents: BigInt(o.amountInCents),
+      dueOn: new Date(`${o.dueOn}T00:00:00Z`),
+      categoryId: category.id,
+      responsibleMemberId: responsible.memberId,
+      authorMemberId: author.memberId,
+      isSharedExpense: o.shared ?? true,
+      note: o.note ?? null,
+      ...(o.paidTransactionId
+        ? { status: "PAGO" as const, paidTransactionId: o.paidTransactionId }
+        : {}),
+    },
+  });
+  return { id: row.id, description: row.description };
+}
+
 /** Despesa/receita direto no banco (sem passar pela API), com `createdAt` controlável. */
 export async function makeTransaction(
   fx: FamilyFixture,
