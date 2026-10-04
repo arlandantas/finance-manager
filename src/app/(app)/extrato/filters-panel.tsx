@@ -1,6 +1,7 @@
 "use client";
 
 import { Field, inputClass } from "@/components/ui/field";
+import { useCards } from "@/modules/cartoes/hooks";
 import { useAllCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
@@ -16,6 +17,7 @@ export function FiltersPanel({
   idPrefix: string;
 }) {
   const accounts = useAccounts();
+  const cards = useCards();
   const family = useFamily();
   const categories = useAllCategories();
   const id = (name: string) => `${idPrefix}-${name}`;
@@ -34,6 +36,21 @@ export function FiltersPanel({
           {(accounts.data?.items ?? []).map((a) => (
             <option key={a.id} value={a.id}>
               {a.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field id={id("card")} label="Cartão">
+        <select
+          id={id("card")}
+          className={inputClass}
+          value={filters.cardId ?? ""}
+          onChange={(e) => onChange({ cardId: empty(e.target.value) })}
+        >
+          <option value="">Todos</option>
+          {(cards.data?.items ?? []).map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
             </option>
           ))}
         </select>
@@ -81,6 +98,7 @@ export function FiltersPanel({
           <option value="EXPENSE">Despesa</option>
           <option value="INCOME">Receita</option>
           <option value="TRANSFER">Transferência</option>
+          <option value="INVOICE_PAYMENT">Pagamento de fatura</option>
         </select>
       </Field>
       <Field id={id("shared")} label="Divisão">

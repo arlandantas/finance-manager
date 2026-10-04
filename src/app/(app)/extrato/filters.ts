@@ -1,13 +1,13 @@
 import type { LedgerUiFilters } from "@/modules/transacoes/optimistic";
 
-const TYPES = ["EXPENSE", "INCOME", "TRANSFER"] as const;
+const TYPES = ["EXPENSE", "INCOME", "TRANSFER", "INVOICE_PAYMENT"] as const;
 
 /** Filtros da URL (mesmos nomes da API, SDD-005 §4.1). Valores desconhecidos são ignorados. */
 export function parseFilters(sp: { get(name: string): string | null }): LedgerUiFilters {
   const f: LedgerUiFilters = {};
   const period = sp.get("period");
   if (period && /^\d{4}-(0[1-9]|1[0-2])$/.test(period)) f.period = period;
-  for (const key of ["accountId", "memberId", "categoryId"] as const) {
+  for (const key of ["accountId", "cardId", "memberId", "categoryId"] as const) {
     const v = sp.get(key);
     if (v) f[key] = v;
   }
