@@ -15,3 +15,4 @@
 | EXT-09 | Biblioteca de autenticação em versão beta e provedor de e-mail real | `next-auth@5.0.0-beta.32` (fixada no lockfile) usado apenas para `signOut` e OAuth Google; e-mails de convite só no Mailpit via `nodemailer` | Acompanhar a versão estável do Auth.js v5 antes de ir a produção; ao contratar o SMTP (EXT-02), configurar `SMTP_*`/`MAIL_FROM` (EXT-08) e, no Google (EXT-01), o redirect `/api/auth/callback/google` e `AUTH_TRUST_HOST` conforme a hospedagem (EXT-03) | US-001 / US-003 |
 
 *Os agentes acrescentam linhas à tabela conforme surgirem novas dependências.*
+| EXT-10 | Acesso externo ao app local (túnel ngrok/localtunnel/cloudflared) | Não configurado | Escolher a ferramenta (ngrok exige conta e authtoken). **Antes de expor**: o login de teste (`AUTH_DEV_LOGIN`) permite entrar sem senha; exposto na internet, qualquer pessoa com o link entraria. Exige proteção (ver decisão do Gestor) e `AUTH_URL`/`AUTH_TRUST_HOST` apontando para a URL do túnel. | Gestor |
