@@ -12,7 +12,7 @@
     "start": "next start -p 3100",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit --incremental false",
     "test": "pnpm check:imports && vitest run",
     "test:watch": "vitest",
     "test:int": "vitest run --config vitest.int.config.mts",

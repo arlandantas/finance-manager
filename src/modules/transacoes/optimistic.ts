@@ -94,7 +94,13 @@ export type PendingLookups = {
   today: string;
   me: MemberRef;
   accounts: Array<{ id: string; name: string }>;
-  categories: Array<{ id: string; name: string; icon: string; kind: "EXPENSE" | "INCOME" }>;
+  categories: Array<{
+    id: string;
+    name: string;
+    icon: string;
+    kind: "EXPENSE" | "INCOME";
+    archived?: boolean;
+  }>;
   members: MemberRef[];
   now: Date;
   key: string;
@@ -120,7 +126,13 @@ export function buildPendingItem(
       (typeof input.description === "string" && input.description.trim()) || category.name,
     note: input.note ?? null,
     account,
-    category,
+    category: {
+      id: category.id,
+      name: category.name,
+      icon: category.icon,
+      kind: category.kind,
+      archived: category.archived ?? false,
+    },
     payer,
     author: l.me,
     updatedBy: null,

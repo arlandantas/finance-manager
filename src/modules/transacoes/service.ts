@@ -16,7 +16,6 @@ import {
 } from "@/modules/transacoes/extrato";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
-  CategoryDTO,
   CreateTransactionParsed,
   CreateTransactionResponse,
   LedgerFilters,
@@ -55,12 +54,28 @@ type TxRow = {
   deletionReason: "DELETED" | "UNDONE" | null;
 };
 
+type CategoryRef = TransactionDTO["category"] & {};
+
+export const categoryRefOf = (c: {
+  id: string;
+  name: string;
+  icon: string;
+  kind: "EXPENSE" | "INCOME";
+  archivedAt: Date | null;
+}): CategoryRef => ({
+  id: c.id,
+  name: c.name,
+  icon: c.icon,
+  kind: c.kind,
+  archived: c.archivedAt !== null,
+});
+
 /** Monta o DTO de lançamento (SDD-001 §2) a partir da linha e dos mapas já carregados. */
 export function toTransactionDTO(
   row: TxRow,
   ctx: {
     account: { id: string; name: string };
-    category: { id: string; name: string; icon: string; kind: "EXPENSE" | "INCOME" } | null;
+    category: CategoryRef | null;
     members: Map<string, MemberRef>;
   },
 ): TransactionDTO {
@@ -97,15 +112,6 @@ export function toTransactionDTO(
 
 const invalidRef = (path: string, message: string) =>
   unprocessable("INVALID_REFERENCE", message, [{ path, message }]);
-
-export async function listCategories(
-  tx: Tx,
-  ctx: RequestContext,
-  kind?: "EXPENSE" | "INCOME",
-): Promise<{ items: CategoryDTO[] }> {
-  const rows = await transacoesRepo(tx, ctx.familyId).listCategories(kind);
-  return { items: rows.map((c) => ({ id: c.id, name: c.name, kind: c.kind, icon: c.icon })) };
-}
 
 /** SDD-001 §3: conta do último lançamento do membro; senão a de que é titular; senão a 1ª. */
 export async function getDefaults(tx: Tx, ctx: RequestContext): Promise<TransactionDefaults> {
@@ -172,7 +178,7 @@ export async function createTransaction(
 
   const dto = toTransactionDTO(row, {
     account,
-    category: { id: category.id, name: category.name, icon: category.icon, kind: category.kind },
+    category: categoryRefOf(category),
     members: new Map((await repo.listMembers()).map((m) => [m.id, memberRefOf(m)] as const)),
   });
   await recordRevision(tx, {
@@ -211,9 +217,7 @@ function dtoFromLoaded(
 ): TransactionDTO {
   const dto = toTransactionDTO(r, {
     account: r.account,
-    category: r.category
-      ? { id: r.category.id, name: r.category.name, icon: r.category.icon, kind: r.category.kind }
-      : null,
+    category: r.category ? categoryRefOf(r.category) : null,
     members,
   });
   return {

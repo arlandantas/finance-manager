@@ -207,7 +207,11 @@ model Category {
   kind       CategoryKind
   icon       String // chave de ícone (ex.: "shopping-cart")
   sortOrder  Int
-  archivedAt DateTime?    @db.Timestamptz(3) // uso futuro (US-014)
+  archivedAt DateTime?    @db.Timestamptz(3)
+  // US-014: conflito de edição ("alterada por {Nome}")
+  version           Int      @default(1)
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz(3)
+  updatedByMemberId String?  @db.Uuid
 
   family       Family        @relation(fields: [familyId], references: [id])
   transactions Transaction[]

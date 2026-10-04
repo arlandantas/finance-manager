@@ -108,8 +108,11 @@ export async function updateTransaction(
 
   const account = input.accountId ? await repo.findAccount(input.accountId) : null;
   if (input.accountId && !account) throw invalidRef("accountId", "Escolha uma conta");
-  const category = input.categoryId ? await repo.findCategory(input.categoryId) : null;
-  if (input.categoryId && !category) throw invalidRef("categoryId", "Escolha uma categoria");
+  // SDD-007 §1: a validação "categoria ativa" só roda quando a categoria enviada difere da atual.
+  const changesCategory = input.categoryId !== undefined && input.categoryId !== row.categoryId;
+  const category =
+    changesCategory && input.categoryId ? await repo.findCategory(input.categoryId) : null;
+  if (changesCategory && !category) throw invalidRef("categoryId", "Escolha uma categoria");
   if (category && category.kind !== row.kind) {
     throw unprocessable(
       "CATEGORY_KIND_MISMATCH",

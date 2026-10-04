@@ -18,8 +18,15 @@ const mercado = {
   name: "Supermercado",
   icon: "shopping-cart",
   kind: "EXPENSE" as const,
+  archived: false,
 };
-const salario = { id: "c-salario", name: "Salário", icon: "wallet", kind: "INCOME" as const };
+const salario = {
+  id: "c-salario",
+  name: "Salário",
+  icon: "wallet",
+  kind: "INCOME" as const,
+  archived: false,
+};
 
 const lookups: PendingLookups = {
   today: "2026-10-04",

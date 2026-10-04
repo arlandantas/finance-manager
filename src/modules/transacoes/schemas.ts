@@ -35,10 +35,6 @@ export const CreateTransactionSchema = z.discriminatedUnion("type", [
 export type CreateTransactionInput = z.input<typeof CreateTransactionSchema>;
 export type CreateTransactionParsed = z.output<typeof CreateTransactionSchema>;
 
-export const CategoriesQuerySchema = z
-  .object({ kind: z.enum(["EXPENSE", "INCOME"]).optional() })
-  .strict();
-
 // ── DTOs (SDD-001 §2) ──
 export type TransactionType = "EXPENSE" | "INCOME" | "TRANSFER_OUT" | "TRANSFER_IN" | "OPENING";
 
@@ -51,7 +47,13 @@ export type TransactionDTO = {
   description: string;
   note: string | null;
   account: { id: string; name: string };
-  category: { id: string; name: string; icon: string; kind: "EXPENSE" | "INCOME" } | null;
+  category: {
+    id: string;
+    name: string;
+    icon: string;
+    kind: "EXPENSE" | "INCOME";
+    archived: boolean;
+  } | null;
   payer: MemberRef | null; // quem pagou/recebeu (D-PO-01)
   author: MemberRef; // autor do cadastro (RN-001.1)
   updatedBy: MemberRef | null;
@@ -67,8 +69,6 @@ export type TransactionDTO = {
 };
 
 export type TransactionDetailDTO = TransactionDTO & { editedBy: MemberRef | null };
-
-export type CategoryDTO = { id: string; name: string; kind: "EXPENSE" | "INCOME"; icon: string };
 
 export type CreateTransactionResponse = {
   transaction: TransactionDTO;
