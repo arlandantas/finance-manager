@@ -52,11 +52,10 @@ function ruleDto(
 
 async function loadRuleContext(tx: Tx, ctx: RequestContext) {
   const repo = splitRepo(tx, ctx.familyId);
-  const [members, ruleRows, cutDay] = await Promise.all([
-    repo.listMembers(),
-    repo.listRules(),
-    repo.cutDay(),
-  ]);
+  // Sequencial: uma transação interativa usa uma única conexão (pg avisa sobre consultas concorrentes).
+  const members = await repo.listMembers();
+  const ruleRows = await repo.listRules();
+  const cutDay = await repo.cutDay();
   const today = todayInFamilyTz(ctx.clock);
   return { repo, members, ruleRows, cutDay, today, rules: toRuleInputs(ruleRows) };
 }
@@ -149,10 +148,8 @@ export async function loadSettlement(
   const c = await loadRuleContext(tx, ctx);
   const currentPeriod = periodOf(c.today, c.cutDay);
   const period = periodKey ? periodFromKey(periodKey, c.cutDay) : currentPeriod;
-  const [expenses, groups] = await Promise.all([
-    c.repo.sharedExpenses(period.start, period.end),
-    c.repo.activeSettlements(period.key),
-  ]);
+  const expenses = await c.repo.sharedExpenses(period.start, period.end);
+  const groups = await c.repo.activeSettlements(period.key);
   const result = computeSettlement({
     period,
     members: c.members.map((m, i) => ({ id: m.id, ordinal: i, joinedOn: memberJoinedOn(m) })),

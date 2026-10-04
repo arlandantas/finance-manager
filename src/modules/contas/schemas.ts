@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { dateISOSchema } from "@/lib/dates";
-import { MAX_AMOUNT_IN_CENTS } from "@/lib/money";
+import { amountInCentsSchema, MAX_AMOUNT_IN_CENTS } from "@/lib/money";
 import { type MemberRef, uuidSchema, versionSchema } from "@/lib/schemas";
 
 // Tipos: CHECKING = Conta corrente · SAVINGS = Poupança · CASH = Dinheiro/carteira
@@ -69,3 +69,37 @@ export type AccountDTO = {
 };
 
 export type AccountsResponse = { items: AccountDTO[]; totalBalanceInCents: number };
+
+// ── Transferência (SDD-004 §2) ──
+export const CreateTransferSchema = z
+  .object({
+    fromAccountId: uuidSchema,
+    toAccountId: uuidSchema,
+    amountInCents: amountInCentsSchema,
+    occurredOn: dateISOSchema.optional(), // padrão: hoje
+    note: z.string().trim().max(500, "A observação deve ter no máximo 500 caracteres").optional(),
+  })
+  .strict()
+  .refine((v) => v.fromAccountId !== v.toAccountId, {
+    path: ["toAccountId"],
+    message: "Escolha contas diferentes",
+  });
+export type CreateTransferInput = z.input<typeof CreateTransferSchema>;
+
+export const UndoTransferSchema = z.object({ version: versionSchema }).strict(); // version do TransferGroup
+export type UndoTransferInput = z.infer<typeof UndoTransferSchema>;
+
+export type TransferDTO = {
+  groupId: string;
+  kind: "TRANSFER" | "SETTLEMENT";
+  occurredOn: string;
+  amountInCents: number;
+  from: { accountId: string; name: string; balanceAfterInCents: number };
+  to: { accountId: string; name: string; balanceAfterInCents: number };
+  author: MemberRef;
+  note: string | null;
+  version: number;
+  createdAt: string;
+  settlement: null | { period: string; fromMemberId: string; toMemberId: string };
+  undoneAt: string | null;
+};

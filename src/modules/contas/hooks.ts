@@ -2,7 +2,13 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
-import type { AccountDTO, AccountsResponse, CreateAccountInput } from "@/modules/contas/schemas";
+import type {
+  AccountDTO,
+  AccountsResponse,
+  CreateAccountInput,
+  CreateTransferInput,
+  TransferDTO,
+} from "@/modules/contas/schemas";
 
 export const accountsKey = ["accounts"] as const;
 
@@ -43,5 +49,23 @@ export function useRenameAccount() {
         idempotencyKey: a.idempotencyKey,
       }),
     onSuccess: invalidate,
+  });
+}
+
+export function useCreateTransfer(idempotencyKey: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateTransferInput) =>
+      apiFetch<{ transfer: TransferDTO }>("/api/v1/transfers", {
+        method: "POST",
+        body: input,
+        idempotencyKey,
+      }),
+    onSuccess: () =>
+      Promise.all(
+        [["accounts"], ["transactions"], ["home"], ["settlement"]].map((queryKey) =>
+          qc.invalidateQueries({ queryKey }),
+        ),
+      ),
   });
 }
