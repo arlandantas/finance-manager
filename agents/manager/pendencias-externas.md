@@ -16,3 +16,4 @@
 
 *Os agentes acrescentam linhas à tabela conforme surgirem novas dependências.*
 | EXT-10 | Acesso externo ao app local (túnel ngrok/localtunnel/cloudflared) | Não configurado | Escolher a ferramenta (ngrok exige conta e authtoken). **Antes de expor**: o login de teste (`AUTH_DEV_LOGIN`) permite entrar sem senha; exposto na internet, qualquer pessoa com o link entraria. Exige proteção (ver decisão do Gestor) e `AUTH_URL`/`AUTH_TRUST_HOST` apontando para a URL do túnel. | Gestor |
+| EXT-11 | Túnel gratuito (localtunnel) aceita só 2 conexões simultâneas (devolve 502/429 às demais) e não repassa WebSocket (HMR do `next dev` falha no console) | Mitigado em dev com `public/tunnel-retry-sw.js` (fila de 2 + repetição + cache de `/_next/static`) ativo só com `APP_PUBLIC_ORIGIN` | Para uso contínuo/produção, hospedagem real ou túnel com conta (ngrok/cloudflared); o login de teste não pode existir em produção | QA pré-liberação |
