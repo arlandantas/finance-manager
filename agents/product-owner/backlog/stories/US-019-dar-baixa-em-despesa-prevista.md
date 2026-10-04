@@ -99,8 +99,8 @@ Funcionalidade: Baixa de despesa prevista
     E ao confirmar o saldo da conta passa a "-R$ 550,00"
 
   Cenário: Baixa única
-    Dado que a despesa de novembro já está "Pago"
-    Quando Lucas tenta dar baixa de novo pela tela que estava aberta
+    Dado que a despesa de novembro já está "Pago" e a tela de Lucas foi atualizada
+    Quando Lucas tenta dar baixa de novo com a versão atual da previsão
     Então vê "Esta despesa prevista já foi paga"
     E nada é debitado
 
@@ -161,3 +161,4 @@ Pagamento parcial de uma previsão; pagar com cartão de crédito (a baixa é se
 
 ## Histórico
 - 2026-10-04 — Refinada a partir do esboço (Rascunho → Refinada).
+- 2026-10-04 — Cenário "Baixa única" esclarecido (tela atualizada, versão atual) para distingui-lo de "Conflito de baixa simultânea" (tela desatualizada ⇒ conflito de versão); a ordem de checagem é versão primeiro, depois situação (SDD-009 §1).

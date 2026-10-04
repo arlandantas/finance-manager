@@ -1,6 +1,6 @@
 # 📑 Backlog do Produto (Product Owner)
 
-*Status: **R1 toda Especificada; R2 (Inc 3) Refinada — pronta para o Tech Lead** · Fatiamento 9a/9b, 13a/13b (R1) e 16a/16b, 17a/17b (R2) · Atualizado: 2026-10-04*
+*Status: **R1 e R2 (Inc 3) todas Especificadas** · Fatiamento 9a/9b, 13a/13b (R1) e 16a/16b, 17a/17b (R2) · Atualizado: 2026-10-04*
 *Responsável: Agente Product Owner (PO)*
 *Método e portões (DoR/DoD): [`working-agreement.md`](working-agreement.md) · Escopo: [`mvp-definition.md`](mvp-definition.md)*
 
@@ -71,17 +71,17 @@ Escala 1–10 para V/U/R; Tamanho em Fibonacci relativo (1, 2, 3, 5, 8). **Desde
 | 14 | [US-009b](stories/US-009b-acerto-tres-membros-e-detalhe.md) | Acerto: 3+ membros e detalhe das despesas | EPIC-4 | Should | 4 | 2 | 3 | 3 | 3,0 | US-009a | Especificada (SDD-002) · **cortável** |
 | 15 | [US-013a](stories/US-013-corrigir-ou-estornar-lancamento.md) | Corrigir/excluir/restaurar lançamento (núcleo) | EPIC-3 | Should | 6 | 4 | 4 | 5 | 2,8 | US-005, US-007, US-009a | Especificada (SDD-001) · **Should dentro da R1** (D-GES-03) |
 | 16 | [US-013b](stories/US-013b-desfazer-e-mes-acertado.md) | Desfazer transferência/acerto e aviso de mês acertado | EPIC-3 | Should | 3 | 2 | 2 | 3 | 2,3 | US-013a, US-010, US-011 | Especificada (SDD-001) · **cortável** |
-| 17 | [US-015](stories/US-015-cadastrar-cartao-de-credito.md) | Cadastrar cartão de crédito | EPIC-6 | Must | 6 | 3 | 3 | 3 | 4,0 | US-002 | Refinada (PO) |
-| 18 | [US-016a](stories/US-016-compra-a-vista-no-cartao.md) | Compra à vista no cartão | EPIC-6 | Must | 7 | 3 | 4 | 5 | 2,8 | US-015, US-005, US-007 | Refinada (PO) |
-| 19 | [US-017a](stories/US-017-ver-fatura-do-cartao.md) | Ver a fatura do cartão e o limite | EPIC-6 | Must | 7 | 3 | 4 | 3 | 4,7 | US-016a | Refinada (PO) |
-| 20 | [US-018](stories/US-018-despesa-prevista-pontual.md) | Despesa prevista pontual (+ bloco "A pagar" na Home) | EPIC-7 | Must | 6 | 3 | 2 | 5 | 2,2 | US-005, US-012 (+ US-017a para faturas) | Refinada (PO) |
-| 21 | [US-019](stories/US-019-dar-baixa-em-despesa-prevista.md) | Dar baixa em despesa prevista | EPIC-7 | Must | 6 | 3 | 3 | 5 | 2,4 | US-018, US-004 | Refinada (PO) |
-| 22 | [US-017b](stories/US-017b-pagar-a-fatura.md) | Pagar a fatura | EPIC-6 | Should | 5 | 2 | 3 | 5 | 2,0 | US-017a, US-004, US-010 | Refinada (PO) · Should em R2 (D-GES-04) · **cortável** |
-| 23 | [US-016b](stories/US-016b-corrigir-compra-no-cartao-e-filtro.md) | Corrigir/excluir compra no cartão e filtrar por cartão | EPIC-6 | Should | 3 | 2 | 3 | 3 | 2,7 | US-016a, US-013a, US-007 | Refinada (PO) · **cortável** |
-| 24 | [US-014](stories/US-014-gerenciar-categorias.md) | Gerenciar categorias | EPIC-3 | Could | 4 | 2 | 1 | 3 | 2,3 | US-002, US-005 | Refinada (PO) · **primeira a cortar** |
+| 17 | [US-015](stories/US-015-cadastrar-cartao-de-credito.md) | Cadastrar cartão de crédito | EPIC-6 | Must | 6 | 3 | 3 | 3 | 4,0 | US-002 | Especificada (SDD-008) |
+| 18 | [US-016a](stories/US-016-compra-a-vista-no-cartao.md) | Compra à vista no cartão | EPIC-6 | Must | 7 | 3 | 4 | 5 | 2,8 | US-015, US-005, US-007 | Especificada (SDD-008) |
+| 19 | [US-017a](stories/US-017-ver-fatura-do-cartao.md) | Ver a fatura do cartão e o limite | EPIC-6 | Must | 7 | 3 | 4 | 3 | 4,7 | US-016a | Especificada (SDD-008) |
+| 20 | [US-018](stories/US-018-despesa-prevista-pontual.md) | Despesa prevista pontual (+ bloco "A pagar" na Home) | EPIC-7 | Must | 6 | 3 | 2 | 5 | 2,2 | US-005, US-012 (+ US-017a para faturas) | Especificada (SDD-009) |
+| 21 | [US-019](stories/US-019-dar-baixa-em-despesa-prevista.md) | Dar baixa em despesa prevista | EPIC-7 | Must | 6 | 3 | 3 | 5 | 2,4 | US-018, US-004 | Especificada (SDD-009) |
+| 22 | [US-017b](stories/US-017b-pagar-a-fatura.md) | Pagar a fatura | EPIC-6 | Should | 5 | 2 | 3 | 5 | 2,0 | US-017a, US-004, US-010 | Especificada (SDD-008) · Should em R2 (D-GES-04) · **cortável** |
+| 23 | [US-016b](stories/US-016b-corrigir-compra-no-cartao-e-filtro.md) | Corrigir/excluir compra no cartão e filtrar por cartão | EPIC-6 | Should | 3 | 2 | 3 | 3 | 2,7 | US-016a, US-013a, US-007 | Especificada (SDD-008) · **cortável** |
+| 24 | [US-014](stories/US-014-gerenciar-categorias.md) | Gerenciar categorias | EPIC-3 | Could | 4 | 2 | 1 | 3 | 2,3 | US-002, US-005 | Especificada (SDD-007) · **primeira a cortar** |
 
 > **Ordem de corte da R2 se o prazo apertar:** US-014 → US-017b → US-016b. A ordem da tabela é a de **execução recomendada** (dependência dura > WSJF): cartão (015 → 016a → 017a), previstas (018 → 019), depois as fatias cortáveis. Nada na R2 depende de US-014, US-016b ou US-017b; as três podem sair sem quebrar as demais (sem a 017b, o cenário "Fatura fechada" continua válido: a fatura apenas não pode ser paga no app).
-> **Tamanhos desta tabela (R2):** estimativa do PO; o Tech Lead valida em `tech-lead/status.md` (ver a revisão seguinte deste documento).
+> **Tamanhos desta tabela (R2):** o Tech Lead **confirmou** as estimativas do PO sem alteração (32 pontos; `tech-lead/status.md`). A US-016a está no limite superior (≤ 5) e pode ser entregue em *commits* atômicos.
 
 > **Por que US-003 (convite) vem depois do extrato?** O WSJF empata em valor, mas o **walking skeleton** (entrar → criar família → conta → lançar → ver) precisa fechar *sozinho* primeiro; o convite habilita o split, que só tem valor com 2 membros e é entregue no Incremento 2. A ordem da tabela é a de **execução recomendada**.
 
@@ -124,7 +124,7 @@ Escala 1–10 para V/U/R; Tamanho em Fibonacci relativo (1, 2, 3, 5, 8). **Desde
 | :-- | :-- | :-: | :-- |
 | **Inc 1** — Walking skeleton | EN-001, US-001..007 | ✅ Sim | Nenhum: SDDs 001, 003, 004, 006 entregues |
 | **Inc 2** — Fechar o mês | US-008, 009a/b, 010..012, 013a/b | ✅ Sim | Nenhum: SDD-002 entregue |
-| **Inc 3** — AP0 completo (R2) | US-014, 015, 016a/b, 017a/b, 018, 019 | ✅ Sim (Refinadas em 2026-10-04) | Aguardam o SDD do Tech Lead e o fim da R1 (US-012 e US-013a são pré-requisitos de cenários) |
+| **Inc 3** — AP0 completo (R2) | US-014, 015, 016a/b, 017a/b, 018, 019 | ✅ Sim (SDD-007, 008, 009) | Nenhum SDD pendente; a R2 começa depois da R1 (US-012 e US-013a são pré-requisitos de cenários) |
 
 ---
 
