@@ -52,7 +52,6 @@ export function PayInvoiceDrawer({
     setDetailsOpen(false);
     setExpected(invoice.totalInCents);
     setKey(newIdempotencyKey());
-    // biome-ignore lint/correctness/useExhaustiveDependencies: reinicia só ao abrir
   }, [open]);
   useEffect(() => {
     if (open && defaults.data?.accountId) {

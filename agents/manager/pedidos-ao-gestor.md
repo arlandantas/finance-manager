@@ -31,3 +31,5 @@
 | DEV-22 | 2026-10-04 | US-016a/017a | Cache de `["cards"]` com `staleTime` de 30 s mostrava limite/trava do ciclo desatualizados após ação de outro membro | `useCards` sempre rebusca ao montar; limite exibido segue só a resposta do servidor (SDD-008 §6) | Nenhum |
 | DEV-23 | 2026-10-04 | R2 (UI) | `retry` padrão do TanStack (3 tentativas, ~7 s) atrasava a mensagem "Não foi possível carregar" e o "Não encontrado" | `retry`: 2 tentativas curtas (400 ms) e nenhuma para 4xx | Nenhum |
 | DEV-24 | 2026-10-04 | US-016a | Nova rota "Cartões" no menu: a barra inferior do celular passa a ter 6 itens (cabem em 375 px) | Item "Cartões" na navegação principal | Nenhum |
+| DEV-25 | 2026-10-04 | US-016b/017b/019 | Passos Gherkin globais colidem entre histórias (mesmo texto, contextos diferentes) | Textos levemente ajustados (ver quadro) e passos comuns despachando por `world.data` (`invoiceContext`, `conflictActions`, `baselineTx`) | Nenhum |
+| DEV-26 | 2026-10-04 | US-017a | Gherkin "Fatura fechada aparece em A pagar" (Home) com vencimento 05/11 sem "hoje"; a regra do SDD-009 §4.6 só mostra vencimentos até hoje+7 | Cenário com hoje = 30/10/2026 | Nenhum |

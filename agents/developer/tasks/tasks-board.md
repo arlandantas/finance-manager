@@ -34,10 +34,10 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-018 | US-015 | Cadastrar cartão de crédito (R2) | US-002 | SDD-008 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-019 | US-016a | Compra à vista no cartão (R2; reescreve `tx_kind_shape_chk`) | US-015, US-005 | SDD-008 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-020 | US-017a | Ver a fatura do cartão (R2) | US-016a | SDD-008 | 3 | Concluído (aguardando validação do Gestor); cenário "fatura fechada em A pagar" (Home) entra com a US-018 |
-| TASK-021 | US-018 | Despesa prevista pontual (R2) | US-005, US-012 | SDD-009 | 5 | Todo |
-| TASK-022 | US-019 | Dar baixa em despesa prevista (R2) | US-018, US-013a | SDD-009 | 5 | Todo |
-| TASK-023 | US-017b | Pagar a fatura (R2, Should) | US-017a, US-013a | SDD-008 | 5 | Todo |
-| TASK-024 | US-016b | Corrigir compra no cartão e filtrar por cartão (R2, Should) | US-016a, US-013a | SDD-008 | 3 | Todo |
+| TASK-021 | US-018 | Despesa prevista pontual (R2) | US-005, US-012 | SDD-009 | 5 | Concluído (aguardando validação do Gestor) |
+| TASK-022 | US-019 | Dar baixa em despesa prevista (R2) | US-018, US-013a | SDD-009 | 5 | Concluído (aguardando validação do Gestor) |
+| TASK-023 | US-017b | Pagar a fatura (R2, Should) | US-017a, US-013a | SDD-008 | 5 | Concluído (aguardando validação do Gestor) |
+| TASK-024 | US-016b | Corrigir compra no cartão e filtrar por cartão (R2, Should) | US-016a, US-013a | SDD-008 | 3 | Concluído (aguardando validação do Gestor) |
 
 ---
 
@@ -315,3 +315,26 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 - **Arquivos**: `src/modules/cartoes/invoice-service.ts` (`listInvoices`, `getInvoice`, `listPayableInvoices`), `src/app/api/v1/cards/[id]/invoices/{route,[ref]/route}.ts`, `src/app/(app)/cartoes/[id]/{page,invoice-screen}.tsx`, lista de cartões com fatura aberta/"A pagar", `providers.tsx` (retry).
 - **QA**: I (12: aberta com ordem das compras, `GET /cards`, situação 25/10 → 26/10 → 06/11, limite com aberta+fechada e paga fora, navegação `previousRef/nextRef` e 404/400, subtotal por membro (0 para quem não comprou), retroativa em fechada, excluída, fatura virtual sem materializar, lista de faturas, `listPayableInvoices`, isolamento, `cardUsage` x soma manual com 30 compras aleatórias); E2E 12 cenários x 2 (o cenário "Fatura fechada aparece em A pagar" da Home vem com a US-018).
 - **Desvios**: DEV-20 (data do cenário de navegação), DEV-23 (retry).
+
+## ✅ [TASK-021] US-018 — Despesa prevista pontual
+- **História PO**: [US-018](../../product-owner/backlog/stories/US-018-despesa-prevista-pontual.md) · **SDD-009** · migração `us018_previstas`.
+- **Arquivos**: `src/modules/previstas/{schemas,rules,repo,service,payables,hooks}.ts`, `src/app/api/v1/{planned-expenses,payables}`, `src/app/(app)/previstas/*`, bloco "A pagar" em `home-screen.tsx` e `HomeDTO.payables` (dentro do `REPEATABLE READ`), item "A pagar" no menu.
+- **QA**: U (12: atrasada/borda, ordenação, elegibilidade Home, schemas); I (20: criar, padrões, regressão "previsão não mexe em saldo/extrato/totais/acerto", atrasada e virada de dia em SP, edição/conflito/sem diferença, PAGO travado, exclusão lógica, lista por mês, Home com borda hoje+7 e máx. 5, faturas em /payables e Home, isolamento, idempotência, CHECK, atomicidade); E2E 19 cenários x 2.
+- **Desvios**: nenhum de regra; layout da tela segue o FLUXO-005.
+
+## ✅ [TASK-022] US-019 — Dar baixa em despesa prevista
+- **História PO**: [US-019](../../product-owner/backlog/stories/US-019-dar-baixa-em-despesa-prevista.md) · **SDD-009** §4.3–§4.5.
+- **Arquivos**: `previstas/service.ts` (`payPlannedExpense`, `undoPlannedPayment`), `transacoes/service.ts` (`createExpenseCore` reutilizado, `plannedExpenseId`), `transacoes/mutations.ts` (`LINKED_TO_PLANNED`), `previstas/pay-drawer.tsx`, ações na tela e na Home.
+- **QA**: I (21: baixa, valor efetivo/diferença, despesa real no extrato/totais, pagador/autor, acerto pelo valor efetivo e pessoal fora, mês seguinte intacto, validações/virada SP, conta negativa, referências, categoria arquivada, baixa única, idempotência e conflito, isolamento, desfazer, LINKED_TO_PLANNED, correção da despesa atualiza a previsão, 3 atomicidades); E2E 20 cenários x 2 (2 `@integration`: "Baixa única" e "Isolamento", sem rota de UI).
+- **Desvios** (DEV-25): três textos de Gherkin ajustados por colisão de passos ("escolhe, para a baixa, uma data…", "que o saldo de X é Y").
+
+## ✅ [TASK-023] US-017b — Pagar a fatura
+- **História PO**: [US-017b](../../product-owner/backlog/stories/US-017b-pagar-a-fatura.md) · **SDD-008** §4.5, §4.7.
+- **Arquivos**: `cartoes/payment-service.ts`, `app/api/v1/cards/[id]/invoices/[ref]/{pay,undo-payment}`, `app/(app)/cartoes/[id]/pay-invoice-drawer.tsx`, "Desfazer pagamento" na fatura e no detalhe do extrato, atalho "Pagar fatura" (`?pay=1`) na Home, travas `INVOICE_PAID_LOCKED` em `transacoes/mutations.ts`.
+- **QA**: I (19: pagar, limite, regressão de totais/Home/acerto/Σ saldos, extrato neutro e filtros, não pagável, validações, conta negativa, duplo clique, já paga, total mudou e corrida compra x pagamento, isolamento, desfazer, compra recusada, travas, restaurar, pagamento não editável, CHECK/índice/trigger, atomicidade); E2E 19 cenários x 2.
+
+## ✅ [TASK-024] US-016b — Corrigir compra no cartão e filtrar por cartão
+- **História PO**: [US-016b](../../product-owner/backlog/stories/US-016b-corrigir-compra-no-cartao-e-filtro.md) · **SDD-008** §4.6, §5.
+- **Arquivos**: `transacoes/mutations.ts` (`lockPurchaseInvoices`: locks em ordem crescente de `ref`, troca de fatura por data, `PAYMENT_SOURCE_NOT_EDITABLE`), filtro "Cartão"/"Pagamento de fatura" em `extrato/filters*.ts*`, edição com "Pagar com" desabilitado.
+- **QA**: I (11, incluindo PATCH cruzados sem deadlock); E2E 10 cenários x 2.
+- **Desvios** (DEV-25): ordem dos passos do cenário "Corrigir o valor" (detalhe antes do total) e `vejo` em vez de `vê … e …` por colisão de passos.
