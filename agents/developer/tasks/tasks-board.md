@@ -28,7 +28,7 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-012 | US-011 | Registrar o acerto de contas como transferência | US-009a, US-010 | SDD-002 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-013 | US-012 | Home: visão essencial da família | US-004, US-007, US-009a | SDD-005 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-014 | US-009b | Acerto com 3 membros e lista expansível das despesas (Should, cortável) | US-009a | SDD-002 | 3 | Concluído (aguardando validação do Gestor) |
-| TASK-015 | US-013a | Editar, excluir, restaurar com auditoria e conflito 409 (Should, núcleo) | US-005, US-007 | SDD-001 | 5 | Todo |
+| TASK-015 | US-013a | Editar, excluir, restaurar com auditoria e conflito 409 (Should, núcleo) | US-005, US-007 | SDD-001 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-016 | US-013b | Desfazer transferência/acerto e aviso de mês acertado (Should, cortável) | US-013a, US-010, US-011 | SDD-001, SDD-004 | 3 | Todo |
 
 ---
@@ -258,4 +258,11 @@ EN-001 (complemento), US-001, US-002, US-004, US-005, US-006, US-007 e US-003 **
 - **Arquivos**: `src/app/(app)/acerto/acerto-screen.tsx` (`SharedExpensesList`: `<details>` que só consulta `GET /settlement/expenses` ao abrir), `tests/e2e/features/US-009b-*.feature` + steps. Motor (N>2) e API já cobertos por S4 e pelos testes de integração da US-009a.
 - **QA**: E2E 2 cenários x 2 (três membros com cotas iguais e duas sugestões; lista cuja soma = total comum); lint, typecheck, test (175), test:int (209), test:e2e (194), build verdes; manual 375 px: lista com 6 despesas, "Total: R$ 6.400,00" igual ao total comum, `scrollWidth == 375`.
 - **Desvios**: cenário "Ver as despesas…" ganhou `Dado despesas comuns de … por Mariana e … por Lucas`.
+
+## ✅ [TASK-015] US-013a — Corrigir ou excluir um lançamento com trilha de auditoria
+- **História PO**: [US-013a](../../product-owner/backlog/stories/US-013-corrigir-ou-estornar-lancamento.md) · **SDD-001** §3, §4.2, §4.3, §5.2, §7.
+- **Arquivos**: `src/modules/transacoes/{mutations,schemas,repo,hooks}.ts` (`updateTransaction`, `deleteTransaction`, `restoreTransaction`, `listHistory`), `src/app/api/v1/transactions/[id]/{route,delete,restore,history}`, `src/app/(app)/extrato/{transaction-detail-drawer,edit-transaction-form,history-list}.tsx`, `tests/integration/us-013-corrigir-lancamento.int.test.ts`, `tests/e2e/features/US-013-*.feature` + steps.
+- **QA**: I (14): valor corrigido (saldo, version, `editedBy`, revisão), histórico com rótulos e append-only, excluir/ALREADY_DELETED, restaurar/NOT_RESTORABLE, conflito `Promise.all` (200+409, mensagem com o nome), versão velha, acerto recalculado (excluir e restaurar), validações (valor 0, tipo da categoria, data futura), sem alteração, mover conta/receita sem `isSharedExpense`/excluído, atomicidade, `NOT_EDITABLE` (pernas e abertura), isolamento, `.strict()`/idempotência; E2E 7 cenários x 2; lint, typecheck, test (175), test:int (223), test:e2e (208), build verdes; manual 375 px: menu Editar/Excluir/Histórico, edição R$ 400,00 -> R$ 350,00, "Editado por Lucas", histórico "Valor: R$ 400,00 -> R$ 350,00" e "Criado por Mariana".
+- **Observação**: o diálogo "Mês já acertado" (409 `SETTLED_PERIOD_CONFIRMATION_REQUIRED`) e a regra no servidor já existem aqui e foram vistos funcionando no manual; seus testes dedicados fazem parte da US-013b.
+- **Desvios**: passos renomeados por colisão (`restauro o lançamento clicando em`, `Lucas vê o conflito`); contexto acrescentado ao cenário "Trilha de auditoria" ("corrigida por Mariana para …"); formulário de edição usa selects (conta/categoria/quem pagou) em vez da grade do drawer de criação.
 
