@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { monthLabel, shiftMonthKey } from "@/app/(app)/extrato/filters";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatBRL } from "@/lib/money";
 import { useSettlement, useSplitRule } from "@/modules/split/hooks";
 import { formatBpsList } from "@/modules/split/rules";
-import type { SettlementDTO, SplitRuleDTO } from "@/modules/split/schemas";
+import type { SettlementDTO, SettlementSuggestion, SplitRuleDTO } from "@/modules/split/schemas";
+import { SettleDrawer } from "./settle-drawer";
 
 const firstName = (name: string) => name.split(" ")[0] ?? name;
 
@@ -73,7 +75,7 @@ function MonthSelector({ period, isCurrent }: { period: string; isCurrent: boole
   );
 }
 
-function Hero({ s }: { s: SettlementDTO }) {
+function Hero({ s, onSettle }: { s: SettlementDTO; onSettle: (x: SettlementSuggestion) => void }) {
   const hero = heroText(s);
   const ok = s.status === "BALANCED" || s.status === "SETTLED";
   return (
@@ -98,11 +100,27 @@ function Hero({ s }: { s: SettlementDTO }) {
           Convidar membro
         </Link>
       ) : null}
+      {s.status === "PENDING" && s.suggestions[0] ? (
+        <Button
+          variant="secondary"
+          className="mt-1 w-fit"
+          onClick={() => onSettle(s.suggestions[0] as SettlementSuggestion)}
+        >
+          Registrar acerto
+        </Button>
+      ) : null}
       {s.status === "PENDING" && s.suggestions.length > 1 ? (
         <ul data-testid="settlement-suggestions" className="mt-1 flex flex-col gap-1 text-sm">
           {s.suggestions.slice(1).map((x) => (
-            <li key={`${x.from.id}-${x.to.id}`}>
+            <li key={`${x.from.id}-${x.to.id}`} className="flex flex-wrap items-center gap-2">
               {firstName(x.from.name)} deve {formatBRL(x.amountInCents)} para {firstName(x.to.name)}
+              <button
+                type="button"
+                onClick={() => onSettle(x)}
+                className="min-h-11 rounded-lg px-2 font-semibold underline"
+              >
+                Registrar
+              </button>
             </li>
           ))}
         </ul>
@@ -190,6 +208,7 @@ export function AcertoScreen() {
   const rule = useSplitRule();
   const s = settlement.data;
   const hasAdjustments = s ? s.settlements.length > 0 : false;
+  const [settling, setSettling] = useState<SettlementSuggestion | null>(null);
 
   return (
     <main className="flex flex-col gap-4">
@@ -239,7 +258,7 @@ export function AcertoScreen() {
             </p>
           ) : null}
 
-          <Hero s={s} />
+          <Hero s={s} onSettle={setSettling} />
 
           {s.status !== "NEEDS_MORE_MEMBERS" ? (
             <>
@@ -252,11 +271,39 @@ export function AcertoScreen() {
                 ))}
               </ul>
               <RuleSummary rule={rule.data} />
+              {s.settlements.length > 0 ? (
+                <section aria-label="Histórico de acertos" className="flex flex-col gap-2">
+                  <h2 className="text-lg font-semibold text-slate-900">Acertos registrados</h2>
+                  <ul className="flex flex-col gap-2">
+                    {s.settlements.map((x) => (
+                      <li
+                        key={x.groupId}
+                        data-testid="settlement-entry"
+                        className="rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-800"
+                      >
+                        <p className="font-medium">
+                          {firstName(x.from.name)} transferiu {formatBRL(x.amountInCents)} para{" "}
+                          {firstName(x.to.name)} em{" "}
+                          {x.occurredOn.split("-").reverse().slice(0, 2).join("/")}
+                        </p>
+                        <p className="text-slate-500">
+                          {x.fromAccount.name} → {x.toAccount.name}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
               <p className="text-sm text-slate-500">Despesas pessoais não entram na divisão.</p>
             </>
           ) : null}
         </>
       ) : null}
+      <SettleDrawer
+        period={s?.period.key ?? ""}
+        suggestion={settling}
+        onClose={() => setSettling(null)}
+      />
     </main>
   );
 }
