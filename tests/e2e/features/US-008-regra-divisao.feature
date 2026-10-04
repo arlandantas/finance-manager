@@ -10,6 +10,7 @@ Funcionalidade: Regra de divisão familiar
     Dado que sou Administrador
     Quando escolho "Proporcional" e informo Mariana "60%" e Lucas "40%"
     Então a regra é salva
+    E o painel de acerto passa a usar 60% / 40%
 
   Cenário: Percentuais não somam 100%
     Dado que sou Administrador na tela "Regra de divisão"
@@ -26,3 +27,14 @@ Funcionalidade: Regra de divisão familiar
     Dado que Lucas tem papel "Membro"
     Quando ele abre "Regra de divisão"
     Então vê a regra em modo somente leitura
+
+  Cenário: Novo membro entra na família
+    Dado a regra proporcional 60% / 40% e um terceiro membro convidado que aceita
+    Então o sistema solicita ao Administrador que redefina os percentuais
+    E enquanto isso o acerto exibe aviso "Regra de divisão desatualizada"
+
+  Cenário: Mudança de regra não altera meses passados
+    Dado o acerto de setembro calculado com a regra 50% / 50%
+    Quando o Administrador define 60% / 40% com vigência a partir de outubro
+    Então o acerto de setembro continua calculado com 50% / 50%
+    E os lançamentos de outubro em diante usam 60% / 40%

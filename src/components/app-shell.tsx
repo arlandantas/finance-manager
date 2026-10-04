@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, ListOrdered, LogOut, Users, Wallet } from "lucide-react";
+import { Home, ListOrdered, LogOut, Scale, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode, Suspense, useEffect, useRef, useState } from "react";
@@ -16,6 +16,7 @@ const NAV_ITEMS: Array<{ href: string; label: string; icon: typeof Home }> = [
   { href: "/", label: "Início", icon: Home },
   { href: "/extrato", label: "Extrato", icon: ListOrdered },
   { href: "/contas", label: "Contas", icon: Wallet },
+  { href: "/acerto", label: "Acerto", icon: Scale },
   { href: "/familia", label: "Família", icon: Users },
 ];
 

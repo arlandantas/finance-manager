@@ -3,6 +3,7 @@ import { testDb } from "../../support/db";
 import { makeFamily } from "../../support/factories";
 import { loginAs } from "../../support/login";
 import { gotoReady } from "../../support/nav";
+import { addExpense, memberCard, setProportionalRule, setupCouple } from "../support/acerto";
 import { Given, Then, When, type World } from "../support/fixtures";
 
 const db = testDb();
@@ -109,4 +110,71 @@ Then("vê a regra em modo somente leitura", async ({ page }) => {
   await expect(page.getByText(/modo somente leitura/)).toBeVisible();
   await expect(page.getByRole("radio", { name: /Dividir igualmente/ })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Salvar regra" })).toHaveCount(0);
+});
+
+Then("o painel de acerto passa a usar 60% \\/ 40%", async ({ page }) => {
+  await gotoReady(page, "/acerto");
+  await expect(page.getByTestId("rule-summary")).toHaveText("Divisão proporcional (60% / 40%)");
+});
+
+Given(
+  "a regra proporcional 60% \\/ 40% e um terceiro membro convidado que aceita",
+  async ({ world, page }) => {
+    await setupCouple(world);
+    await setProportionalRule(world, { Mariana: 6000, Lucas: 4000 });
+    const user = await db.user.create({
+      data: { email: "terceiro@exemplo.com", name: "Terceiro Silva" },
+    });
+    await db.member.create({
+      data: {
+        familyId: world.family?.family.id as string,
+        userId: user.id,
+        role: "MEMBER",
+        joinedAt: new Date("2026-10-03T12:00:00Z"),
+      },
+    });
+    await enter(world, page, "Mariana");
+  },
+);
+
+Then("o sistema solicita ao Administrador que redefina os percentuais", async ({ page }) => {
+  await openRule(page);
+  await expect(page.getByText("Um novo membro entrou. Redefina os percentuais.")).toBeVisible();
+});
+
+Then("enquanto isso o acerto exibe aviso {string}", async ({ page }, aviso: string) => {
+  await gotoReady(page, "/acerto");
+  await expect(page.getByRole("alert").filter({ hasText: aviso })).toBeVisible();
+});
+
+Given("o acerto de setembro calculado com a regra 50% \\/ 50%", async ({ world, page }) => {
+  await setupCouple(world);
+  await addExpense(world, "Mariana", "R$ 1.000,00", { occurredOn: "2026-09-10" });
+  await addExpense(world, "Mariana", "R$ 1.000,00", { occurredOn: "2026-10-10" });
+  await enter(world, page, "Mariana");
+  await gotoReady(page, "/acerto?period=2026-09");
+  await expect(memberCard(page, "Lucas").getByTestId("quota")).toHaveText("R$ 500,00");
+});
+
+When("o Administrador define 60% \\/ 40% com vigência a partir de outubro", async ({ page }) => {
+  await openRule(page);
+  await chooseProportional(page);
+  await percent(page, "Mariana").fill("60");
+  await percent(page, "Lucas").fill("40");
+  await page.getByText("Mais detalhes").click();
+  await page.getByLabel("Vigência").fill("2026-10-01");
+  await page.getByRole("button", { name: "Salvar regra" }).click();
+  await expect(page.getByText("Regra de divisão salva")).toBeVisible();
+});
+
+Then("o acerto de setembro continua calculado com 50% \\/ 50%", async ({ page }) => {
+  await gotoReady(page, "/acerto?period=2026-09");
+  await expect(memberCard(page, "Mariana").getByTestId("quota")).toHaveText("R$ 500,00");
+  await expect(memberCard(page, "Lucas").getByTestId("quota")).toHaveText("R$ 500,00");
+});
+
+Then("os lançamentos de outubro em diante usam 60% \\/ 40%", async ({ page }) => {
+  await gotoReady(page, "/acerto?period=2026-10");
+  await expect(memberCard(page, "Mariana").getByTestId("quota")).toHaveText("R$ 600,00");
+  await expect(memberCard(page, "Lucas").getByTestId("quota")).toHaveText("R$ 400,00");
 });
