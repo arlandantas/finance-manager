@@ -1,17 +1,29 @@
-import { unprocessable } from "@/lib/api/errors";
+import { badRequest, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import { compareDate, fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
+import { periodFromKey, periodOf } from "@/lib/period";
 import type { MemberRef } from "@/lib/schemas";
 import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
+import {
+  decodeCursor,
+  encodeCursor,
+  familyHasTransactions,
+  ledgerPageIds,
+  ledgerTotals,
+} from "@/modules/transacoes/extrato";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
   CategoryDTO,
   CreateTransactionParsed,
   CreateTransactionResponse,
+  LedgerFilters,
+  ListTransactionsQuery,
+  ListTransactionsResponse,
   TransactionDefaults,
+  TransactionDetailDTO,
   TransactionDTO,
 } from "@/modules/transacoes/schemas";
 
@@ -188,4 +200,125 @@ export async function createTransaction(
   });
   const balance = (await accountBalances(tx, ctx.familyId, [account.id])).get(account.id) ?? 0;
   return { transaction: dto, account: { id: account.id, balanceInCents: balance } };
+}
+
+type LoadedRow = Awaited<ReturnType<ReturnType<typeof transacoesRepo>["findById"]>> & {};
+
+function dtoFromLoaded(
+  r: NonNullable<LoadedRow>,
+  members: Map<string, MemberRef>,
+  counterpart: { id: string; name: string } | null,
+): TransactionDTO {
+  const dto = toTransactionDTO(r, {
+    account: r.account,
+    category: r.category
+      ? { id: r.category.id, name: r.category.name, icon: r.category.icon, kind: r.category.kind }
+      : null,
+    members,
+  });
+  return {
+    ...dto,
+    isSettlement: r.group?.kind === "SETTLEMENT",
+    counterpartAccount: counterpart,
+  };
+}
+
+async function memberMap(repo: ReturnType<typeof transacoesRepo>) {
+  return new Map((await repo.listMembers()).map((m) => [m.id, memberRefOf(m)] as const));
+}
+
+/** Resolve a faixa de datas do filtro: `period`, `from/to` ou o período corrente (ADR-010). */
+async function resolveRange(
+  repo: ReturnType<typeof transacoesRepo>,
+  ctx: RequestContext,
+  q: ListTransactionsQuery,
+) {
+  if (q.from && q.to) return { start: q.from, end: q.to, period: null };
+  const cutDay = await repo.cutDay();
+  const p = q.period
+    ? periodFromKey(q.period, cutDay)
+    : periodOf(todayInFamilyTz(ctx.clock), cutDay);
+  return { start: p.start, end: p.end, period: p };
+}
+
+/** GET /api/v1/transactions (SDD-005 §3.1): keyset + totais só na primeira página. */
+export async function listTransactions(
+  tx: Tx,
+  ctx: RequestContext,
+  q: ListTransactionsQuery,
+): Promise<ListTransactionsResponse> {
+  const repo = transacoesRepo(tx, ctx.familyId);
+  const cursor = q.cursor ? decodeCursor(q.cursor) : null;
+  if (q.cursor && !cursor) throw badRequest("INVALID_CURSOR", "Cursor inválido");
+
+  const range = await resolveRange(repo, ctx, q);
+  const filters: LedgerFilters = {
+    familyId: ctx.familyId,
+    start: range.start,
+    end: range.end,
+    includeDeleted: q.includeDeleted ?? false,
+    ...(q.accountId ? { accountId: q.accountId } : {}),
+    ...(q.memberId ? { memberId: q.memberId } : {}),
+    ...(q.categoryId ? { categoryId: q.categoryId } : {}),
+    ...(q.type ? { type: q.type } : {}),
+    ...(q.shared !== undefined ? { shared: q.shared } : {}),
+  };
+
+  const ids = await ledgerPageIds(tx, filters, cursor, q.limit);
+  const hasMore = ids.length > q.limit;
+  const pageIds = ids.slice(0, q.limit);
+  const rows = await repo.findByIds(pageIds);
+  const byId = new Map(rows.map((r) => [r.id, r] as const));
+  const members = await memberMap(repo);
+
+  const groupIds = [
+    ...new Set(rows.map((r) => r.transferGroupId).filter((g): g is string => g !== null)),
+  ];
+  const siblings = groupIds.length > 0 ? await repo.counterparts(groupIds) : [];
+  const counterpartOf = (r: { id: string; transferGroupId: string | null }) => {
+    const other = siblings.find((s) => s.transferGroupId === r.transferGroupId && s.id !== r.id);
+    return other ? { id: other.account.id, name: other.account.name } : null;
+  };
+
+  const items = pageIds
+    .map((id) => byId.get(id))
+    .filter((r): r is NonNullable<typeof r> => r !== undefined)
+    .map((r) => dtoFromLoaded(r, members, r.transferGroupId ? counterpartOf(r) : null));
+
+  const last = items[items.length - 1];
+  const nextCursor =
+    hasMore && last ? encodeCursor({ d: last.occurredOn, c: last.createdAt, i: last.id }) : null;
+
+  return {
+    items,
+    nextCursor,
+    period: range.period,
+    totals: cursor ? null : await ledgerTotals(tx, filters),
+    hasAnyTransactions: cursor ? null : await familyHasTransactions(tx, ctx.familyId),
+  };
+}
+
+/** GET /api/v1/transactions/:id (SDD-001 §3): detalhe com "Registrado por" e "Editado por". */
+export async function getTransaction(
+  tx: Tx,
+  ctx: RequestContext,
+  id: string,
+): Promise<{ transaction: TransactionDetailDTO }> {
+  const repo = transacoesRepo(tx, ctx.familyId);
+  const row = await repo.findById(id);
+  if (!row) throw notFound("Lançamento não encontrado.");
+  const members = await memberMap(repo);
+  let counterpart: { id: string; name: string } | null = null;
+  if (row.transferGroupId) {
+    const siblings = await repo.counterparts([row.transferGroupId]);
+    const other = siblings.find((s) => s.id !== row.id);
+    counterpart = other ? { id: other.account.id, name: other.account.name } : null;
+  }
+  const editorId = await repo.lastEditorId(row.id);
+  return {
+    transaction: {
+      ...dtoFromLoaded(row, members, counterpart),
+      editedBy: editorId ? (members.get(editorId) ?? null) : null,
+    },
+  };
 }

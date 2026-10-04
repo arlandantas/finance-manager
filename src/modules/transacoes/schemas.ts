@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { dateISOSchema } from "@/lib/dates";
+import { dateISOSchema, daysBetween } from "@/lib/dates";
 import { amountInCentsSchema } from "@/lib/money";
-import { type MemberRef, uuidSchema } from "@/lib/schemas";
+import { type MemberRef, periodKeySchema, uuidSchema } from "@/lib/schemas";
 
 // Descrição opcional (Q-05): vazia/ausente => o servidor usa o nome da categoria.
 const descriptionSchema = z.preprocess(
@@ -79,4 +79,56 @@ export type TransactionDefaults = {
   accountId: string | null;
   payerMemberId: string;
   today: string;
+};
+
+// ── Extrato (SDD-005 §2) ──
+const boolParam = z.enum(["true", "false"]).transform((v) => v === "true");
+
+export const ListTransactionsQuerySchema = z
+  .object({
+    period: periodKeySchema.optional(), // padrão: período corrente
+    from: dateISOSchema.optional(), // alternativa a period (ambos obrigatórios juntos)
+    to: dateISOSchema.optional(),
+    accountId: uuidSchema.optional(),
+    memberId: uuidSchema.optional(), // pagou/recebeu OU autor
+    categoryId: uuidSchema.optional(),
+    type: z.enum(["EXPENSE", "INCOME", "TRANSFER"]).optional(),
+    shared: boolParam.optional(), // true = comum; false = pessoal (só despesas)
+    includeDeleted: boolParam.optional(),
+    cursor: z.string().max(300).optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(30),
+  })
+  .strict()
+  .refine((v) => !(v.period && (v.from || v.to)), { message: "Use period ou from/to, não ambos" })
+  .refine((v) => (v.from == null) === (v.to == null), { message: "Informe from e to juntos" })
+  .refine((v) => !v.from || !v.to || (v.from <= v.to && daysBetween(v.from, v.to) <= 366), {
+    message: "Intervalo inválido",
+  });
+export type ListTransactionsQuery = z.output<typeof ListTransactionsQuerySchema>;
+
+export type LedgerFilters = {
+  familyId: string;
+  start: string;
+  end: string;
+  accountId?: string;
+  memberId?: string;
+  categoryId?: string;
+  type?: "EXPENSE" | "INCOME" | "TRANSFER";
+  shared?: boolean;
+  includeDeleted: boolean;
+};
+
+export type LedgerTotalsDTO = {
+  incomeInCents: number;
+  expenseInCents: number;
+  balanceInCents: number;
+  count: number;
+};
+
+export type ListTransactionsResponse = {
+  items: TransactionDTO[];
+  nextCursor: string | null;
+  period: { key: string; start: string; end: string } | null; // null quando from/to
+  totals: LedgerTotalsDTO | null; // null se houve `cursor`
+  hasAnyTransactions: boolean | null; // null se houve `cursor`; exclui OPENING e excluídos
 };

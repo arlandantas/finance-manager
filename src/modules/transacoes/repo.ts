@@ -46,6 +46,39 @@ export function transacoesRepo(tx: Tx, familyId: string) {
       });
       return a?.id ?? null;
     },
+    cutDay: async (): Promise<number> =>
+      (await tx.family.findFirst({ where: { id: familyId }, select: { cutDay: true } }))?.cutDay ??
+      1,
+    findByIds: (ids: string[]) =>
+      tx.transaction.findMany({
+        where: { familyId, id: { in: ids } },
+        include: { account: { select: { id: true, name: true } }, category: true, group: true },
+      }),
+    findById: (id: string) =>
+      tx.transaction.findFirst({
+        where: { id, familyId },
+        include: { account: { select: { id: true, name: true } }, category: true, group: true },
+      }),
+    /** Pernas "irmãs" de transferência (conta da outra ponta). */
+    counterparts: (groupIds: string[]) =>
+      tx.transaction.findMany({
+        where: { familyId, transferGroupId: { in: groupIds } },
+        select: {
+          id: true,
+          transferGroupId: true,
+          accountId: true,
+          account: { select: { id: true, name: true } },
+        },
+      }),
+    /** Autor da última revisão UPDATE (para "Editado por"). */
+    lastEditorId: async (transactionId: string): Promise<string | null> => {
+      const rev = await tx.transactionRevision.findFirst({
+        where: { familyId, transactionId, action: "UPDATE" },
+        orderBy: [{ at: "desc" }],
+        select: { actorMemberId: true },
+      });
+      return rev?.actorMemberId ?? null;
+    },
     insert: (d: {
       kind: "EXPENSE" | "INCOME";
       direction: "CREDIT" | "DEBIT";

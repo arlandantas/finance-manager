@@ -164,3 +164,111 @@ export async function makeAccount(
   });
   return { id: account.id, name: account.name, ownerMemberId: owner.memberId };
 }
+
+/** Despesa/receita direto no banco (sem passar pela API), com `createdAt` controlável. */
+export async function makeTransaction(
+  fx: FamilyFixture,
+  o: {
+    account: AccountFixture;
+    type?: "EXPENSE" | "INCOME";
+    category: string;
+    amountInCents: number;
+    occurredOn: string;
+    author?: string;
+    payer?: string;
+    shared?: boolean;
+    description?: string;
+    createdAt?: Date;
+    deleted?: boolean;
+  },
+) {
+  const db = fdb();
+  const type = o.type ?? "EXPENSE";
+  const category = await db.category.findFirstOrThrow({
+    where: { familyId: fx.family.id, name: o.category },
+  });
+  const author = (o.author ? fx.byName[o.author] : fx.members[0]) ?? fx.members[0];
+  const payer = (o.payer ? fx.byName[o.payer] : author) ?? author;
+  if (!author || !payer) throw new Error("Família sem membros");
+  return db.transaction.create({
+    data: {
+      familyId: fx.family.id,
+      kind: type,
+      direction: type === "EXPENSE" ? "DEBIT" : "CREDIT",
+      accountId: o.account.id,
+      categoryId: category.id,
+      amountInCents: BigInt(o.amountInCents),
+      occurredOn: new Date(`${o.occurredOn}T00:00:00Z`),
+      description: o.description ?? category.name,
+      payerMemberId: payer.memberId,
+      authorMemberId: author.memberId,
+      isSharedExpense: type === "EXPENSE" ? (o.shared ?? true) : false,
+      ...(o.createdAt ? { createdAt: o.createdAt } : {}),
+      ...(o.deleted
+        ? {
+            deletedAt: new Date(),
+            deletedByMemberId: author.memberId,
+            deletionReason: "DELETED" as const,
+          }
+        : {}),
+    },
+  });
+}
+
+/** Transferência (ou acerto) com as duas pernas; `undone` marca o grupo e as pernas como desfeitos. */
+export async function makeTransfer(
+  fx: FamilyFixture,
+  o: {
+    from: AccountFixture;
+    to: AccountFixture;
+    amountInCents: number;
+    occurredOn: string;
+    kind?: "TRANSFER" | "SETTLEMENT";
+    undone?: boolean;
+  },
+) {
+  const db = fdb();
+  const author = fx.members[0];
+  if (!author) throw new Error("Família sem membros");
+  const deleted = o.undone
+    ? {
+        deletedAt: new Date(),
+        deletedByMemberId: author.memberId,
+        deletionReason: "UNDONE" as const,
+      }
+    : {};
+  const group = await db.transferGroup.create({
+    data: {
+      familyId: fx.family.id,
+      kind: o.kind ?? "TRANSFER",
+      occurredOn: new Date(`${o.occurredOn}T00:00:00Z`),
+      authorMemberId: author.memberId,
+      ...(o.kind === "SETTLEMENT"
+        ? {
+            settlementPeriod: o.occurredOn.slice(0, 7),
+            settlementFromMemberId: author.memberId,
+            settlementToMemberId: author.memberId,
+          }
+        : {}),
+      ...(o.undone ? { deletedAt: new Date(), deletedByMemberId: author.memberId } : {}),
+    },
+  });
+  const leg = (kind: "TRANSFER_OUT" | "TRANSFER_IN", accountId: string) =>
+    db.transaction.create({
+      data: {
+        familyId: fx.family.id,
+        kind,
+        direction: kind === "TRANSFER_OUT" ? "DEBIT" : "CREDIT",
+        accountId,
+        amountInCents: BigInt(o.amountInCents),
+        occurredOn: new Date(`${o.occurredOn}T00:00:00Z`),
+        description: "Transferência",
+        authorMemberId: author.memberId,
+        transferGroupId: group.id,
+        ...deleted,
+      },
+    });
+  await leg("TRANSFER_OUT", o.from.id);
+  await leg("TRANSFER_IN", o.to.id);
+  return group;
+}
