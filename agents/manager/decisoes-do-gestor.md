@@ -24,3 +24,9 @@
 4. QA: testes unitários, de integração e e2e/BDD; verificação manual no **navegador integrado** é autorizada, sem pedir permissão ao usuário.
 5. Commits atômicos, automáticos, com `Co-authored-by` do agente. Sem push.
 6. Se um agente detectar conflito ou ambiguidade, registra em `agents/manager/` (arquivo `pedidos-ao-gestor.md`) e segue com a hipótese mais conservadora.
+
+## Ratificações (R2)
+| ID | Decisão |
+| :-- | :-- |
+| D-GES-12 | **Ratificado D-PO-10:** US-016 → 016a/016b e US-017 → 017a (ver fatura, Must) / 017b (pagar, Should). Ordem de corte na R2: US-014, depois 017b, depois 016b. |
+| D-GES-13 | **PO-01/Q-20 aceito:** compra no cartão é creditada no acerto a quem comprou (RN-003.3). Revisar na homologação da R2. |
