@@ -1,9 +1,9 @@
 "use client";
 
 import { Field, inputClass } from "@/components/ui/field";
+import { useAllCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
-import { useAllCategories } from "@/modules/transacoes/hooks";
 import type { LedgerUiFilters } from "@/modules/transacoes/optimistic";
 
 export function FiltersPanel({
@@ -63,7 +63,7 @@ export function FiltersPanel({
           <option value="">Todas</option>
           {(categories.data?.items ?? []).map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name}
+              {c.archived ? `${c.name} (arquivada)` : c.name}
             </option>
           ))}
         </select>

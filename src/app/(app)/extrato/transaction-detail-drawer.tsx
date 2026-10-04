@@ -241,7 +241,11 @@ export function TransactionDetailDrawer({
               </Row>
               <Row label="Descrição">{t.description}</Row>
               <Row label="Data">{brDate(t.occurredOn)}</Row>
-              {t.category ? <Row label="Categoria">{t.category.name}</Row> : null}
+              {t.category ? (
+                <Row label="Categoria">
+                  {t.category.archived ? `${t.category.name} (arquivada)` : t.category.name}
+                </Row>
+              ) : null}
               <Row label="Conta">{t.account.name}</Row>
               {t.type === "EXPENSE" ? (
                 <Row label="Divisão">{t.isSharedExpense ? "Despesa comum" : "Despesa pessoal"}</Row>

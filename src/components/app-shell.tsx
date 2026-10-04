@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, ListOrdered, LogOut, Scale, Users, Wallet } from "lucide-react";
+import { Home, ListOrdered, LogOut, Scale, Tags, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode, Suspense, useEffect, useRef, useState } from "react";
@@ -61,6 +61,15 @@ function UserMenu({ user }: { user: ShellUser }) {
             <p className="truncate text-sm font-semibold text-slate-900">{user.name}</p>
             <p className="truncate text-xs text-slate-500">{user.email}</p>
           </div>
+          <Link
+            href="/categorias"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          >
+            <Tags size={16} aria-hidden="true" />
+            Categorias
+          </Link>
           <form action={signOutAction}>
             <button
               type="submit"

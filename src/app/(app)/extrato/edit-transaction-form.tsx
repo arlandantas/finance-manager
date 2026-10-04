@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
-import { useCategories, useUpdateTransaction } from "@/modules/transacoes/hooks";
+import { useUpdateTransaction } from "@/modules/transacoes/hooks";
 import { type TransactionDetailDTO, UpdateTransactionSchema } from "@/modules/transacoes/schemas";
 
 type FieldKey =
@@ -123,6 +124,19 @@ export function EditTransactionForm({
     send();
   }
 
+  // A categoria atual pode ter sido arquivada depois do lançamento: continua selecionável.
+  const activeCategories = categories.data?.items ?? [];
+  const categoryOptions =
+    t.category && !activeCategories.some((c) => c.id === t.category?.id)
+      ? [
+          {
+            id: t.category.id,
+            name: t.category.archived ? `${t.category.name} (arquivada)` : t.category.name,
+          },
+          ...activeCategories,
+        ]
+      : activeCategories;
+
   const select = (
     id: string,
     label: string,
@@ -189,8 +203,7 @@ export function EditTransactionForm({
         "Categoria",
         categoryId,
         setCategoryId,
-        categories.data?.items ??
-          (t.category ? [{ id: t.category.id, name: t.category.name }] : []),
+        categoryOptions,
         errors.categoryId,
       )}
       {select(

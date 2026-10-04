@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CategoryIcon } from "@/components/category-icon";
@@ -10,9 +11,10 @@ import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
-import { useCategories, useCreateTransaction, useDefaults } from "@/modules/transacoes/hooks";
+import { useCreateTransaction, useDefaults } from "@/modules/transacoes/hooks";
 import { type CreateTransactionInput, CreateTransactionSchema } from "@/modules/transacoes/schemas";
 
 type Kind = "EXPENSE" | "INCOME";
@@ -286,6 +288,13 @@ export function TransactionDrawer({
               {errors.categoryId}
             </p>
           ) : null}
+          <Link
+            href={`/categorias?kind=${kind}`}
+            onClick={() => onOpenChange(false)}
+            className="flex min-h-11 items-center self-start text-sm font-medium text-brand-800 underline"
+          >
+            Gerenciar categorias
+          </Link>
         </div>
 
         <div className="flex flex-col gap-1.5">

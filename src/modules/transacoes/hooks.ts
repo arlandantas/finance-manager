@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
+import { categoriesKey } from "@/modules/categorias/hooks";
+import type { CategoryDTO } from "@/modules/categorias/schemas";
 import { accountsKey } from "@/modules/contas/hooks";
 import type { AccountsResponse } from "@/modules/contas/schemas";
 import { familyKey } from "@/modules/familia/hooks";
@@ -13,22 +15,12 @@ import {
   type LedgerUiFilters,
 } from "@/modules/transacoes/optimistic";
 import type {
-  CategoryDTO,
   CreateTransactionInput,
   CreateTransactionResponse,
   TransactionDefaults,
 } from "@/modules/transacoes/schemas";
 
-export const categoriesKey = (kind: "EXPENSE" | "INCOME") => ["categories", kind] as const;
 export const defaultsKey = ["transactions-defaults"] as const;
-
-export function useCategories(kind: "EXPENSE" | "INCOME") {
-  return useQuery({
-    queryKey: categoriesKey(kind),
-    queryFn: () => apiFetch<{ items: CategoryDTO[] }>(`/api/v1/categories?kind=${kind}`),
-    staleTime: 5 * 60_000,
-  });
-}
 
 export function useDefaults(enabled: boolean) {
   return useQuery({
@@ -127,14 +119,6 @@ export function useTransactionDetail(id: string | null) {
     queryKey: ["transaction", id],
     queryFn: () => apiFetch<{ transaction: TransactionDetailDTO }>(`/api/v1/transactions/${id}`),
     enabled: id !== null,
-  });
-}
-
-export function useAllCategories() {
-  return useQuery({
-    queryKey: ["categories", "ALL"],
-    queryFn: () => apiFetch<{ items: CategoryDTO[] }>("/api/v1/categories"),
-    staleTime: 5 * 60_000,
   });
 }
 
