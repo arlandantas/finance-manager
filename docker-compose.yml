@@ -1,0 +1,51 @@
+# Dependências locais do Finance Manager. Next e worker rodam no host.
+# Subir com: docker compose -p finance-manager up -d
+# Portas deslocadas (D-GES-10) para não colidir com outros serviços da máquina.
+name: finance-manager
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: finance
+      POSTGRES_PASSWORD: finance_dev_password
+      POSTGRES_DB: finance_dev
+    ports:
+      - "127.0.0.1:5442:5432"
+    volumes:
+      - finance-manager-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finance -d finance_dev"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  db-test:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: finance
+      POSTGRES_PASSWORD: finance_test_password
+      POSTGRES_DB: finance_test
+    ports:
+      - "127.0.0.1:5443:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finance -d finance_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  finance-manager-db-data:
