@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, LogOut, Wallet } from "lucide-react";
+import { Home, ListOrdered, LogOut, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -13,6 +13,7 @@ export type ShellUser = { name: string; email: string; image: string | null };
 
 const NAV_ITEMS: Array<{ href: string; label: string; icon: typeof Home }> = [
   { href: "/", label: "Início", icon: Home },
+  { href: "/extrato", label: "Extrato", icon: ListOrdered },
   { href: "/contas", label: "Contas", icon: Wallet },
 ];
 
@@ -73,6 +74,30 @@ function UserMenu({ user }: { user: ShellUser }) {
   );
 }
 
+function OfflineBanner() {
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    setOnline(navigator.onLine);
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+  if (online) return null;
+  return (
+    <p
+      role="status"
+      className="bg-amber-100 px-4 py-2 text-center text-sm font-medium text-amber-900"
+    >
+      Sem conexão.
+    </p>
+  );
+}
+
 export function AppShell({
   user,
   familyName,
@@ -86,6 +111,7 @@ export function AppShell({
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 pb-20 md:pb-0">
+      <OfflineBanner />
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-3 px-4">
           <div className="flex min-w-0 items-center gap-6">
