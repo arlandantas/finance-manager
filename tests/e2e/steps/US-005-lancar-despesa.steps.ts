@@ -17,6 +17,7 @@ import {
   setDate,
   waitSaved,
 } from "../support/lancamento";
+import { doubleClickPay } from "../support/previstas";
 
 const db = testDb();
 
@@ -172,6 +173,7 @@ Then("a despesa é registrada com a descrição {string}", async ({}, descricao:
 });
 
 When("Lucas toca duas vezes rapidamente em {string}", async ({ page }, botao: string) => {
+  if (botao === "Confirmar pagamento") return doubleClickPay(page, botao); // US-019 (baixa)
   await openDrawer(page);
   await fillAmount(page, "R$ 50,00");
   await pickCategory(page, "Supermercado");
