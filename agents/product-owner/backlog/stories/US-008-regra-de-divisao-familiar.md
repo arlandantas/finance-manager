@@ -53,14 +53,20 @@ Funcionalidade: Regra de divisão familiar
     Dado a regra proporcional 60% / 40% e um terceiro membro convidado que aceita
     Então o sistema solicita ao Administrador que redefina os percentuais
     E enquanto isso o acerto exibe aviso "Regra de divisão desatualizada"
+
+  Cenário: Mudança de regra não altera meses passados
+    Dado o acerto de setembro calculado com a regra 50% / 50%
+    Quando o Administrador define 60% / 40% com vigência a partir de outubro
+    Então o acerto de setembro continua calculado com 50% / 50%
+    E os lançamentos de outubro em diante usam 60% / 40%
 ```
 
 ## Experiência
 Acessível pelo ícone de engrenagem do painel de acerto ([FLUXO-003](../../flows/FLUXO-003-acerto-de-contas.md)). Dois botões de opção + campos de percentual com soma ao vivo ("Total: 100%").
 
 ## Fora de escopo
-Regra por lançamento (exceção pontual), regra por categoria, cálculo automático proporcional à renda, histórico de regras.
+Regra por lançamento (exceção pontual), regra por categoria, cálculo automático proporcional à renda, tela de consulta ao histórico de regras (a vigência por data existe para preservar o cálculo dos meses passados, D-GES-08).
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- **Q-08**: uma mudança de regra deve ser **versionada com data de vigência** para que meses passados mantenham o cálculo original? Recomendação do PO: **sim** (evita rever acertos já feitos). TL define a modelagem no SDD-002.
+- **Q-08 (respondida, D-GES-08)**: **sim**, a regra tem **vigência por data** para preservar meses passados. O TL define a modelagem no SDD-002.
 - Arredondamento do centavo: **maior resto**, desempate determinístico (ADR-006).

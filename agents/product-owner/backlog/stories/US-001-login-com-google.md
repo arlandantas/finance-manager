@@ -59,6 +59,17 @@ Funcionalidade: Login com Google
     Então o acesso é negado com mensagem clara
     E nenhuma conta é criada
 
+  Cenário: Login de teste em desenvolvimento local
+    Dado que o ambiente é local com "AUTH_DEV_LOGIN=true"
+    Quando escolho um usuário de teste na tela de login
+    Então sou autenticado sem passar pelo Google
+    E o fluxo seguinte (família ou convite) é o mesmo do login Google
+
+  Cenário: Login de teste indisponível em produção
+    Dado que o ambiente é de produção ("NODE_ENV=production")
+    Então a opção de login de teste não é exibida
+    E tentativas diretas de usá-la são rejeitadas
+
   Cenário: Sair do sistema
     Dado que estou autenticado
     Quando clico em "Sair"
@@ -73,4 +84,4 @@ Ver [FLUXO-002](../../flows/FLUXO-002-onboarding-e-convite.md). Um único botão
 Apple Sign-In, magic link, e-mail/senha, troca de e-mail, exclusão de conta, autenticação em dois fatores própria.
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- Não bloqueantes: nenhuma. O E2E deve usar o **provedor de teste** (ADR-002), nunca o Google real.
+- Não bloqueantes: nenhuma. O E2E deve usar o **provedor de teste** (ADR-002), nunca o Google real. Por **D-GES-11**, em dev o login usa o provedor de teste (Credentials/dev-login), ativo só com `AUTH_DEV_LOGIN=true` e bloqueado em produção; o Google real é pendência externa (`agents/manager/pendencias-externas.md`). O TL especifica; o escopo da R1 não muda.

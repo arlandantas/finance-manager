@@ -80,11 +80,11 @@ Funcionalidade: Convite de membros
 ```
 
 ## Experiência
-Ver [FLUXO-002](../../flows/FLUXO-002-onboarding-e-convite.md) — drawer *Convidar membro*, lista de membros e *Convites pendentes*. Em desenvolvimento, o e-mail é capturado pelo **Mailpit**.
+Ver [FLUXO-002](../../flows/FLUXO-002-onboarding-e-convite.md) — drawer *Convidar membro*, lista de membros e *Convites pendentes*. Em desenvolvimento, o e-mail é capturado pelo **Mailpit** (SMTP 1025, UI 8025, D-GES-10); nenhum e-mail real é enviado (D-GES, diretriz 1). Critério de verificação: o convite aparece na caixa do Mailpit com o link de aceite.
 
 ## Fora de escopo
 Reenvio automático, convite por link/QR genérico, remoção de membro, transferência de administração, membros sem conta Google (dependentes), limite de membros.
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- **Q-03 (não bloqueante)**: validade de 7 dias é proposta; Tech Lead/Gestor podem ajustar.
-- **Q-01 (Stakeholder)**: NEED-001 cita "um filho" como responsável pelo gasto. No MVP **só há membros com Google**; dependentes sem login ficam como item futuro (US-021).
+- **Q-03 (respondida, D-GES-07)**: validade do convite = **7 dias**.
+- **Q-01 (respondida, D-GES-06)**: dependentes sem login ficam **fora do MVP** (US-021). No MVP só há membros com login.
