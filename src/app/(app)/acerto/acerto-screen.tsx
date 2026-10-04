@@ -11,7 +11,7 @@ import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatBRL } from "@/lib/money";
 import { heroText } from "@/modules/split/hero";
-import { useSettlement, useSplitRule } from "@/modules/split/hooks";
+import { useSettlement, useSharedExpenses, useSplitRule } from "@/modules/split/hooks";
 import { formatBpsList } from "@/modules/split/rules";
 import type { SettlementDTO, SettlementSuggestion, SplitRuleDTO } from "@/modules/split/schemas";
 import { SettleDrawer } from "./settle-drawer";
@@ -169,6 +169,68 @@ function RuleSummary({ rule }: { rule: SplitRuleDTO | undefined }) {
   );
 }
 
+function SharedExpensesList({ period }: { period: string }) {
+  const [open, setOpen] = useState(false);
+  const list = useSharedExpenses(period, open);
+  return (
+    <details
+      data-testid="shared-expenses"
+      className="rounded-xl border border-slate-200 bg-white p-3"
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+    >
+      <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-slate-800">
+        Ver despesas comuns do período
+      </summary>
+      {list.isPending && open ? (
+        <div aria-busy="true" className="flex flex-col gap-2">
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+        </div>
+      ) : null}
+      {list.isError ? (
+        <div role="alert" className="flex flex-col items-start gap-2 text-sm text-red-800">
+          Não foi possível carregar
+          <Button variant="secondary" onClick={() => list.refetch()}>
+            Tentar de novo
+          </Button>
+        </div>
+      ) : null}
+      {list.data ? (
+        <>
+          <ul className="flex flex-col divide-y divide-slate-100">
+            {list.data.items.map((x) => (
+              <li
+                key={x.id}
+                data-testid="shared-expense"
+                className="flex items-center justify-between gap-3 py-2 text-sm"
+              >
+                <span className="min-w-0">
+                  <span className="block break-words font-medium text-slate-900">
+                    {x.description}
+                  </span>
+                  <span className="block text-xs text-slate-500">
+                    {x.occurredOn.split("-").reverse().slice(0, 2).join("/")} · pago por{" "}
+                    {firstName(x.payer.name)}
+                  </span>
+                </span>
+                <span className="font-semibold tabular-nums text-slate-900">
+                  {formatBRL(x.amountInCents)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p
+            data-testid="shared-expenses-total"
+            className="mt-2 border-t border-slate-200 pt-2 text-sm font-semibold text-slate-900"
+          >
+            Total: {formatBRL(list.data.totalInCents)}
+          </p>
+        </>
+      ) : null}
+    </details>
+  );
+}
+
 function PanelSkeleton() {
   return (
     <div aria-busy="true" aria-label="Carregando acerto" className="flex flex-col gap-4">
@@ -249,6 +311,7 @@ export function AcertoScreen() {
                   <MemberCard key={m.member.id} row={m} showRemaining={hasAdjustments} />
                 ))}
               </ul>
+              {s.status !== "EMPTY" ? <SharedExpensesList period={s.period.key} /> : null}
               <RuleSummary rule={rule.data} />
               {s.settlements.length > 0 ? (
                 <section aria-label="Histórico de acertos" className="flex flex-col gap-2">
