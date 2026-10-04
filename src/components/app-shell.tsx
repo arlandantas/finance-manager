@@ -1,6 +1,16 @@
 "use client";
 
-import { CreditCard, Home, ListOrdered, LogOut, Scale, Tags, Users, Wallet } from "lucide-react";
+import {
+  CalendarClock,
+  CreditCard,
+  Home,
+  ListOrdered,
+  LogOut,
+  Scale,
+  Tags,
+  Users,
+  Wallet,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode, Suspense, useEffect, useRef, useState } from "react";
@@ -17,6 +27,7 @@ const NAV_ITEMS: Array<{ href: string; label: string; icon: typeof Home }> = [
   { href: "/extrato", label: "Extrato", icon: ListOrdered },
   { href: "/contas", label: "Contas", icon: Wallet },
   { href: "/cartoes", label: "Cartões", icon: CreditCard },
+  { href: "/previstas", label: "A pagar", icon: CalendarClock },
   { href: "/acerto", label: "Acerto", icon: Scale },
   { href: "/familia", label: "Família", icon: Users },
 ];

@@ -226,6 +226,48 @@ export function HomeScreen({ firstName }: { firstName: string }) {
             </Card>
           </div>
 
+          {h.payables.items.length > 0 ? (
+            <Card title="A pagar" testid="home-payables" className="md:col-span-2">
+              <ul className="flex flex-col divide-y divide-slate-100">
+                {h.payables.items.map((p) => (
+                  <li
+                    key={`${p.type}-${p.id}`}
+                    data-testid="home-payable"
+                    className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2 text-sm"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-slate-900">{p.title}</span>
+                      <span className="text-slate-600">
+                        {p.isOverdue ? (
+                          <span className="mr-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                            Atrasada
+                          </span>
+                        ) : null}
+                        vence {p.dueOn.slice(8, 10)}/{p.dueOn.slice(5, 7)}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-3">
+                      <span className="font-semibold tabular-nums text-slate-900">
+                        {formatBRL(p.amountInCents)}
+                      </span>
+                      {p.type === "INVOICE" ? (
+                        <Link href={p.href} className="font-medium text-brand-800 underline">
+                          Ver fatura
+                        </Link>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/previstas"
+                className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 underline"
+              >
+                Ver todas
+              </Link>
+            </Card>
+          ) : null}
+
           <Card title="Últimos lançamentos" testid="home-recent" className="md:col-span-2">
             {h.recent.length === 0 ? (
               <p className="text-sm text-slate-600">Nenhum lançamento ainda.</p>
