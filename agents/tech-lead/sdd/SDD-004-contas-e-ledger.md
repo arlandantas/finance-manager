@@ -118,13 +118,14 @@ GROUP BY "accountId";
 export async function createTransferGroup(tx: Tx, ctx: Ctx, a: {
   kind: "TRANSFER" | "SETTLEMENT"; fromAccountId: string; toAccountId: string; amountInCents: number;
   occurredOn: DateISO; note?: string;
+  description?: string;                       // padrão "Transferência"; o acerto passa "Acerto de contas - {Mês}" (SDD-002 §5.4)
   settlement?: { period: string; fromMemberId: string; toMemberId: string };
 }): Promise<TransferDTO>
 ```
 Em **uma** transação (herdada do `withApi`):
 1. Carregar as duas contas **da família** (`404` se faltar alguma). `occurredOn <= hoje`.
 2. `INSERT TransferGroup` (`version = 1`, `authorMemberId`, `settlement*` se SETTLEMENT).
-3. `INSERT Transaction` perna `TRANSFER_OUT` (DEBIT, conta origem) e `TRANSFER_IN` (CREDIT, conta destino): mesmo `amountInCents`, `occurredOn`, `transferGroupId`, `description` = `"Transferência"` (ou `"Acerto de contas"` para SETTLEMENT), `categoryId = null`, `payerMemberId = null`, `isSharedExpense = false`.
+3. `INSERT Transaction` perna `TRANSFER_OUT` (DEBIT, conta origem) e `TRANSFER_IN` (CREDIT, conta destino): mesmo `amountInCents`, `occurredOn`, `transferGroupId`, `description` = `a.description ?? "Transferência"`, `categoryId = null`, `payerMemberId = null`, `isSharedExpense = false`.
 4. Revisão `CREATE` para cada perna.
 5. Calcular `balanceAfterInCents` das duas contas e montar `TransferDTO`.
 Qualquer falha → *rollback* integral (nenhuma perna persiste).
