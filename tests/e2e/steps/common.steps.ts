@@ -2,6 +2,11 @@ import { expect } from "@playwright/test";
 import { testDb } from "../../support/db";
 import { Then } from "../support/fixtures";
 
+// Falha de rede ao salvar: cada história registra em `world.data.formCheck` o que conferir e como reenviar.
+Then("o formulário preserva o que foi digitado", async ({ world }) => {
+  await (world.data.formCheck as () => Promise<void>)();
+});
+
 const db = testDb();
 
 // Campo (input ou select) com o valor/opção exibida esperada.

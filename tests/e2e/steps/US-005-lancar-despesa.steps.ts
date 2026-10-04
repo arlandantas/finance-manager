@@ -211,8 +211,11 @@ When("Lucas escolhe uma data posterior a hoje", async ({ page }) => {
 });
 
 Given("que não há conexão", async ({ page }) => {
-  await page.route("**/api/v1/transactions", (route) =>
-    route.request().method() === "POST" ? route.abort("connectionfailed") : route.continue(),
+  // Toda mutação da API falha; leituras continuam funcionando (reutilizado pelos cenários da R2).
+  await page.route("**/api/v1/**", (route) =>
+    ["POST", "PATCH"].includes(route.request().method())
+      ? route.abort("connectionfailed")
+      : route.continue(),
   );
 });
 
@@ -225,17 +228,16 @@ When("Lucas toca em {string}", async ({ page, world }, rotulo: string) => {
   await fillAmount(page, "R$ 50,00");
   await pickCategory(page, "Supermercado");
   await save(page, rotulo);
-  world.data.saveLabel = rotulo;
-});
-
-Then("o formulário preserva o que foi digitado", async ({ page, world }) => {
-  await expect(page.getByLabel("Valor", { exact: true })).toHaveValue(/R\$\s50,00/);
-  await expect(page.getByRole("radio", { name: "Supermercado", exact: true })).toBeChecked();
-  // Reenvio (mesma Idempotency-Key) cria uma única despesa quando a rede volta.
-  await page.unroute("**/api/v1/transactions");
-  await save(page, world.data.saveLabel as string);
-  await waitSaved(page);
-  expect(await db.transaction.count({ where: { kind: "EXPENSE" } })).toBe(1);
+  // Passo comum "o formulário preserva o que foi digitado" (common.steps.ts) chama este verificador.
+  world.data.formCheck = async () => {
+    await expect(page.getByLabel("Valor", { exact: true })).toHaveValue(/R\$\s50,00/);
+    await expect(page.getByRole("radio", { name: "Supermercado", exact: true })).toBeChecked();
+    // Reenvio (mesma Idempotency-Key) cria uma única despesa quando a rede volta.
+    await page.unroute("**/api/v1/**");
+    await save(page, rotulo);
+    await waitSaved(page);
+    expect(await db.transaction.count({ where: { kind: "EXPENSE" } })).toBe(1);
+  };
 });
 
 Given("que a família não tem contas", async ({ page, world }) => {
