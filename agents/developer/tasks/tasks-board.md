@@ -17,7 +17,7 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-001 | EN-001 | Ambiente local e esqueleto (+ complemento SDD-006: utilitários puros, `check:imports`, E2E 3101/db-test) | — | `architecture/ambiente-local.md`, SDD-006 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-002 | US-001 | Entrar com a conta Google (dev-login + Google real em EXT-01) | EN-001 | SDD-003 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-003 | US-002 | Criar a família no primeiro acesso | US-001 | SDD-003 | 3 | Concluído (aguardando validação do Gestor) |
-| TASK-004 | US-004 | Cadastrar conta bancária com saldo inicial | US-002 | pendente TL | 3 | Bloqueado: aguarda SDD |
+| TASK-004 | US-004 | Cadastrar conta bancária com saldo inicial | US-002 | SDD-004 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-005 | US-005 | Lançar uma despesa rapidamente | US-004 | SDD-001 (a revisar: isSharedExpense, splitRule, pagador) | 5 | Bloqueado: aguarda revisão do SDD-001 |
 | TASK-006 | US-006 | Lançar uma receita | US-005 | SDD-001 (a revisar) | 2 | Bloqueado: aguarda revisão do SDD-001 |
 | TASK-007 | US-007 | Consultar o extrato com filtros | US-005, US-006 | pendente TL | 3 | Bloqueado: aguarda SDD |
@@ -117,6 +117,26 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
   - [x] `pnpm lint`, `typecheck`, `test` (111), `test:int` (41), `test:e2e` (26), `build` verdes.
   - [x] Verificação manual (navegador integrado, 3100, Postgres dev): mobile 375 px (usuário novo Ana Souza: nome sugerido "Família Souza", erro "Informe um nome com pelo menos 2 caracteres", botão fixo no rodapé, criação, passo de convite, "Fazer depois" leva à Home) e desktop (onboarding centralizado). Banco dev: 11 categorias e papel ADMIN conferidos por SQL.
 - **Observação**: o passo de convite mostra apenas "Fazer depois" e o texto explicativo; o formulário de e-mail chega com a US-003.
+
+---
+
+## ✅ [TASK-004] US-004 — Cadastrar conta bancária com saldo inicial
+- **História PO**: [US-004](../../product-owner/backlog/stories/US-004-cadastrar-conta-bancaria.md)
+- **Especificação Técnica**: [SDD-004](../../tech-lead/sdd/SDD-004-contas-e-ledger.md) §1..§7 (parte US-004; transferência/US-010 fica para o Incremento 2) · ADR-007.
+- **Status**: Concluído (aguardando validação do Gestor).
+- **Arquivos Criados/Modificados**:
+  - Banco: `prisma/schema.prisma`, migração `*_us004_ledger_contas` (BankAccount, TransferGroup, Transaction, TransactionRevision + SQL cru: índice de nome, CHECKs do ledger, índice de perna, triggers append-only/sem hard delete).
+  - `src/modules/contas/{schemas,repo,service,ledger,ledger-queries,hooks}.ts` (`accountBalances` única, `recordRevision`), `src/app/api/v1/accounts/{route,[id]/route}.ts`.
+  - UI: `src/app/(app)/contas/*` (lista, drawer Nova conta, renomear), `src/components/{money-input}.tsx`, `ui/{drawer,menu}.tsx`, `hydration-marker.tsx`; `src/lib/dates.ts` (`toDbDate`/`fromDbDate`).
+  - Testes: `tests/unit/contas/schemas.test.ts`, `tests/integration/{us-004-contas,migrations}.int.test.ts`, `tests/e2e/features/US-004-contas.feature` + steps; `tests/support/factories.ts` (`makeAccount`), `tests/support/nav.ts`.
+- **Checklist de QA & Testes**:
+  - [x] U: schema (mensagens "Informe o nome da conta"/"Escolha o tipo da conta", saldo negativo, strict, limites), `formatBRL(-30000)` (EN-001).
+  - [x] I (24 testes): criação 150000 (saldo, OPENING CREDIT, revisão CREATE, total consolidado), titular padrão, saldo -30000 (OPENING DEBIT), campos obrigatórios (400 + nada criado), nome duplicado com caixa/espaços (409 + corrida 1x201/1x409), visibilidade entre membros, isolamento (GET/PATCH), renomear (version, 409 `VERSION_CONFLICT`, corrida, duplicado, 404), atomicidade da abertura, idempotência, triggers (DELETE em `transactions` e UPDATE/DELETE em revisões), `accountBalances`, data futura (422) e titular de outra família (422).
+  - [x] I: migração íntegra (CHECKs, índices e triggers existem e barram dados inválidos).
+  - [x] E2E: 8 cenários BDD x desktop e mobile.
+  - [x] `lint`, `typecheck`, `test` (120), `test:int` (69), `test:e2e` (42), `build` verdes; E2E rodado em sequência 3x sem falhas após o ajuste de hidratação.
+  - [x] Verificação manual (navegador integrado, 3100, Postgres dev): desktop (estado vazio, drawer, máscara "R$ 1.500,00", criação, saldo consolidado) e mobile 375 px (skeleton, erro "Já existe uma conta com este nome", botão ± e "-R$ 300,00" em vermelho, toast, renomear, `scrollWidth == 375`). Ajustei o card para o saldo ir abaixo do nome no celular (nomes eram truncados).
+- **Desvios**: botão "Transferir" e tela de transferência não existem (US-010, fora do Incremento 1). Achado: após mudar o schema Prisma, o `pnpm dev` precisa ser reiniciado (cliente Prisma singleton em cache). E2E ganhou `HydrationMarker` (`data-hydrated`) e `gotoReady` para evitar cliques antes da hidratação.
 
 ---
 
