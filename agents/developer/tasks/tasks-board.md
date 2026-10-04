@@ -1,6 +1,6 @@
 # 📋 Quadro de Tarefas & QA do Desenvolvedor
 
-*Atualizado: 2026-10-04 · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Execução do Incremento 1 (walking skeleton): EN-001 (complemento SDD-006) → US-001 → US-002 → US-004 → US-005 → US-006 → US-007 → US-003.*
+*Atualizado: 2026-10-04 · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Incremento 1 (walking skeleton) concluído: EN-001 → US-001 → US-002 → US-004 → US-005 → US-006 → US-007 → US-003. Incremento 2 (fechar o mês), ordem do PO: US-008 → US-009a → US-010 → US-011 → US-012 → US-009b → US-013a → US-013b.*
 
 ## 📌 Fluxo de Execução
 
@@ -22,12 +22,14 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-006 | US-006 | Lançar uma receita | US-005 | SDD-001 | 2 | Concluído (aguardando validação do Gestor) |
 | TASK-007 | US-007 | Consultar o extrato com filtros | US-005, US-006 | SDD-005 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-008 | US-003 | Convidar um membro por e-mail (Mailpit local; EXT-02) | US-002 | SDD-003 | 5 | Concluído (aguardando validação do Gestor) |
-| TASK-009 | US-008 | Definir a regra de divisão das despesas comuns | US-003 | SDD-002 | 2 | Todo (Incremento 2; SDD publicado) |
-| TASK-010 | US-009 | Ver o acerto de contas do mês | US-005, US-008 | SDD-002 | 5 | Todo (Incremento 2; SDD publicado) |
-| TASK-011 | US-010 | Transferir dinheiro entre contas da família | US-004 | SDD-004 | 3 | Todo (Incremento 2; SDD publicado) |
-| TASK-012 | US-011 | Registrar o acerto de contas como transferência | US-009, US-010 | SDD-002 | 3 | Todo (Incremento 2; SDD publicado) |
-| TASK-013 | US-012 | Home: visão essencial da família | US-004, US-007, US-009 | SDD-005 | 3 | Todo (Incremento 2; SDD publicado) |
-| TASK-014 | US-013 | Corrigir ou excluir um lançamento com trilha de auditoria (Should, dentro da R1) | US-005, US-007 | SDD-001 | 3 | Todo (Incremento 2; SDD publicado) |
+| TASK-009 | US-008 | Definir a regra de divisão das despesas comuns | US-003 | SDD-002 | 2 | Concluído (aguardando validação do Gestor) |
+| TASK-010 | US-009a | Painel de acerto: motor `computeSettlement`, API e painel essencial | US-005, US-008 | SDD-002 | 5 | Concluído (aguardando validação do Gestor) |
+| TASK-011 | US-010 | Transferir dinheiro entre contas da família | US-004 | SDD-004 | 3 | Todo |
+| TASK-012 | US-011 | Registrar o acerto de contas como transferência | US-009a, US-010 | SDD-002 | 3 | Todo |
+| TASK-013 | US-012 | Home: visão essencial da família | US-004, US-007, US-009a | SDD-005 | 3 | Todo |
+| TASK-014 | US-009b | Acerto com 3 membros e lista expansível das despesas (Should, cortável) | US-009a | SDD-002 | 3 | Todo |
+| TASK-015 | US-013a | Editar, excluir, restaurar com auditoria e conflito 409 (Should, núcleo) | US-005, US-007 | SDD-001 | 5 | Todo |
+| TASK-016 | US-013b | Desfazer transferência/acerto e aviso de mês acertado (Should, cortável) | US-013a, US-010, US-011 | SDD-001, SDD-004 | 3 | Todo |
 
 ---
 
@@ -208,6 +210,28 @@ EN-001 (complemento), US-001, US-002, US-004, US-005, US-006, US-007 e US-003 **
 
 ---
 
-## 🗂️ Demais tarefas (TASK-009 a TASK-014, Incremento 2)
+## ✅ [TASK-009] US-008 — Definir a regra de divisão das despesas comuns
+- **História PO**: [US-008](../../product-owner/backlog/stories/US-008-regra-de-divisao-familiar.md)
+- **Especificação Técnica**: [SDD-002](../../tech-lead/sdd/SDD-002-split-e-acerto.md) §1..§3, §5.5, §6.3, §8 · ADR-011 · D-GES-08.
+- **Status**: Concluído (aguardando validação do Gestor).
+- **Arquivos**: `src/modules/split/{rules,schemas,labels,repo,service,hooks}.ts`, `src/app/api/v1/split-rule/route.ts`, `src/app/(app)/acerto/regra/*`, `tests/unit/split/rules.test.ts`, `tests/integration/us-008-regra-divisao.int.test.ts`, `tests/e2e/features/US-008-regra-divisao.feature` + steps.
+- **Checklist de QA & Testes**:
+  - [x] U: `ruleAt` (troca no meio do mês, desempate por `createdAt`, regra futura), `parsePercentToBps` (60, 33,33, 100, 110, -10, abc), `formatBps`, `equalShares`, `isRuleStale`.
+  - [x] I (12): padrão EQUAL 1970, PUT 6000/4000 (201, nova versão), soma ≠ 100 (400 e regra mantida), -1000/11000, matriz de papéis (MEMBER 403, `canEdit=false`), novo membro (`stale` na regra e no acerto), vigência (`upcoming`, `EFFECTIVE_FROM_IN_PAST`), setembro idêntico após nova regra, `SHARES_MEMBER_MISMATCH` (faltando/outra família), append-only, `.strict()`/`Idempotency-Key`, isolamento.
+  - [x] E2E (7 cenários x 2 viewports): padrão, proporcional (painel usa 60/40), soma, inválido, somente leitura, novo membro (aviso no painel e banner), meses passados.
+  - [x] `lint`, `typecheck`, `test`, `test:int`, `test:e2e`, `build` verdes; verificação manual (375 px) junto com a US-009a: soma ao vivo "Total: 90%" + "Os percentuais precisam somar 100%", salvamento 60/40, painel recalculado, Lucas (Membro) em modo somente leitura.
+- **Desvios**: DTO do acerto exibe `rule.kind` da regra vigente no último dia coberto pelo período (períodos encerrados nunca mudam); `stale` segue a regra vigente hoje (SDD-002 §4.5). Gherkin: acrescentados `Dado que sou Administrador na tela "Regra de divisão"` aos cenários 3 e 4 (a história não define contexto).
 
-Os SDDs (SDD-001, 002, 004 e 005) já estão publicados; o checklist detalhado de cada uma é derivado do BDD da história e da seção de testes do SDD no momento do início.
+## ✅ [TASK-010] US-009a — Painel de acerto de contas (núcleo)
+- **História PO**: [US-009a](../../product-owner/backlog/stories/US-009-painel-de-acerto-de-contas.md)
+- **Especificação Técnica**: [SDD-002](../../tech-lead/sdd/SDD-002-split-e-acerto.md) §4, §5.1..§5.3, §6.1, §8.
+- **Status**: Concluído (aguardando validação do Gestor).
+- **Arquivos**: `src/modules/split/{settlement,service}.ts` (motor puro + `loadSettlement`), `src/app/api/v1/settlement/{route,expenses/route}.ts`, `src/app/(app)/acerto/{page,acerto-screen}.tsx`, `src/components/app-shell.tsx` (item "Acerto"), `tests/unit/split/settlement.test.ts`, `tests/integration/us-009-acerto.int.test.ts`, `tests/e2e/{features/US-009-*.feature,steps/US-009-*.ts,support/acerto.ts}`.
+- **Checklist de QA & Testes**:
+  - [x] U: vetores S1..S13 do SDD-002 §4.7, 400 casos aleatórios de propriedade (Σ quota = total, Σ diferença = 0, Σ saldo = 0, sugestões zeram saldos, ≤ N-1, valores > 0, resultado idêntico ao permutar `members`/`expenses`/`rules`), EQUAL só com membros que entraram até o fim do período.
+  - [x] I (14): S1 via `POST /transactions`, pessoal fora, 60/40 (S2), centavo ímpar (S3), BALANCED/EMPTY/NEEDS_MORE_MEMBERS, três membros (S4), virada de mês no fuso SP, `GET /settlement/expenses` (total = totalShared; exclui pessoais, receitas, transferências e excluídas), regressão "transferência e acerto não alteram total/quotas/outro mês", despesa excluída muda o painel, isolamento, parâmetros inválidos.
+  - [x] E2E (8 cenários x 2): cálculo igualitário, pessoal, proporcional, centavo ímpar, equilibrado, vazio, um membro, navegar entre meses.
+  - [x] `lint`, `typecheck`, `test` (170), `test:int` (171), `test:e2e` (142), `build` verdes.
+  - [x] Verificação manual (navegador integrado, 3100, Postgres dev limpo com Família Silva): desktop e 375 px sem rolagem horizontal; frase-herói, cartões Pagou/Cota/Diferença com cores e sinal, resumo da regra, link de engrenagem.
+- **Desvios**: botão "Registrar acerto" e histórico entram com a US-011; lista expansível e cenário de 3 membros na UI ficam para a US-009b (a lista de sugestões adicionais já é exibida). O painel renderiza todas as sugestões desde já. Gherkin: "Navegar entre meses" ganhou `Dado despesas comuns de setembro e de outubro` e o passo virou `E navego para o mês anterior` (colide com o passo homônimo da US-007).
+
