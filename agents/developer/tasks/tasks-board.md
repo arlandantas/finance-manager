@@ -20,7 +20,7 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-004 | US-004 | Cadastrar conta bancária com saldo inicial | US-002 | SDD-004 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-005 | US-005 | Lançar uma despesa rapidamente | US-004 | SDD-001 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-006 | US-006 | Lançar uma receita | US-005 | SDD-001 | 2 | Concluído (aguardando validação do Gestor) |
-| TASK-007 | US-007 | Consultar o extrato com filtros | US-005, US-006 | pendente TL | 3 | Bloqueado: aguarda SDD |
+| TASK-007 | US-007 | Consultar o extrato com filtros | US-005, US-006 | SDD-005 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-008 | US-003 | Convidar um membro por e-mail (Mailpit local; EXT-02) | US-002 | pendente TL | 3 | Bloqueado: aguarda SDD |
 | TASK-009 | US-008 | Definir a regra de divisão das despesas comuns | US-003 | SDD-002 (pendente TL) | 2 | Bloqueado: aguarda SDD |
 | TASK-010 | US-009 | Ver o acerto de contas do mês | US-005, US-008 | SDD-002 (pendente TL) | 5 | Bloqueado: aguarda SDD |
@@ -156,6 +156,28 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
   - [x] `lint`, `typecheck`, `test` (133), `test:int` (98), `test:e2e` (76), `build` verdes.
   - [x] Verificação manual (navegador integrado, 3100, Postgres dev): mobile 375 px (FAB sobre a barra inferior, drawer inferior com foco no valor, categorias em grade, toast "Despesa registrada com sucesso!") e desktop (modal centralizado, alternância para "Nova Receita" com 3 categorias, "Quem recebeu?" e sem switch, `Esc` fecha). O saldo conferido em `/contas` batia com o lançamento (o valor digitado em duplicidade por mim no teste manual foi refletido corretamente: máscara acumula dígitos).
 - **Desvios**: a atualização otimista (item `pending` no topo do extrato) fica com a US-007, onde existe a lista; aqui há invalidação de `["accounts"]`, `["transactions"]`, `["home"]`, `["settlement"]`. O campo "Descrição" fica em "Mais detalhes" (SDD-001 §5.1 só cita data e observação; o BDD "Descrição omitida" exige poder informá-la). `GET /transactions/defaults` devolve também `today` (data do servidor no fuso da família) para o `max` do campo data.
+
+---
+
+## ✅ [TASK-007] US-007 — Consultar o extrato com filtros
+- **História PO**: [US-007](../../product-owner/backlog/stories/US-007-extrato-de-lancamentos.md)
+- **Especificação Técnica**: [SDD-005](../../tech-lead/sdd/SDD-005-extrato-e-home.md) §1..§4 e §6 (parte US-007; Home/US-012 fica para o Incremento 2) · SDD-001 §3 (`GET /transactions/:id`) e §5.1 (atualização otimista).
+- **Status**: Concluído (aguardando validação do Gestor).
+- **Arquivos Criados/Modificados**:
+  - API: `src/modules/transacoes/{extrato,schemas,repo,service,optimistic,hooks}.ts` (`buildLedgerWhere`, `ledgerTotals`, keyset, `listTransactions`, `getTransaction`), `src/app/api/v1/transactions/{route,[id]/route}.ts`.
+  - UI: `src/app/(app)/extrato/*` (tela, filtros na URL, linhas, detalhe), `src/lib/use-media-query.ts`, `app-shell.tsx` (nav Extrato, banner "Sem conexão.").
+  - Testes: `tests/unit/transacoes/optimistic.test.ts`, `tests/integration/us-007-extrato.int.test.ts`, `tests/e2e/features/US-007-extrato.feature` + steps; `tests/support/factories.ts` (`makeTransaction`, `makeTransfer`).
+- **Checklist de QA & Testes**:
+  - [x] U (8): atualização otimista (insere no topo/na posição certa, ajusta totais, não muta o original para permitir *rollback*, respeita filtros/período).
+  - [x] I (26): extrato padrão (ordem, campos, sem OPENING, totais), membro (pagador OU autor, incluindo os dois cruzados), categoria+tipo, período (30/09 vs 01/10) e `from/to`, detalhe (autor/pagador, 404), vazios, isolamento, **keyset com 120 lançamentos de mesmo `occurredOn`/`createdAt`** (5 páginas, sem duplicata/omissão, ordem igual ao `ORDER BY` do banco), `limit=101`/cursor adulterado, **propriedade Σ itens == totais** em 9 combinações de filtro, transferência/acerto/abertura/excluído fora dos totais (`type=TRANSFER` zera os totais com `count=4`), `includeDeleted` (inclui `UNDONE`), `shared`, parâmetros inválidos (7 casos), EXPLAIN informativo.
+  - [x] E2E: 9 cenários BDD x desktop e mobile (suíte inteira: 94 testes verdes).
+  - [x] `lint`, `typecheck`, `test` (142), `test:int` (124), `test:e2e` (94), `build` verdes.
+  - [x] Verificação manual (navegador integrado, 3100, Postgres dev): desktop (barra de filtros, totais, linha com marcador "Comum", novo lançamento pelo "+" aparece no topo e atualiza os totais sem recarregar) e mobile 375 px (botão "Filtros", cartões, detalhe com "Pago por"/"Registrado por", `scrollWidth == 375`). Ajustei títulos e totais para quebrar linha no celular (antes truncavam).
+- **Desvios**:
+  1. O Contexto do Gherkin da US-007 tinha uma frase em várias linhas, que o parser não aceita; virou três passos (`Dado… / E… / E…`).
+  2. Rolagem infinita usa `IntersectionObserver` e também um botão "Carregar mais" (acessibilidade e teste).
+  3. Lista no desktop é uma grade de colunas por linha (não uma `<table>`), mantendo o mesmo componente responsivo.
+  4. Achado durante o E2E: duas mudanças de filtro em sequência rápida perdiam a primeira (a URL só atualiza após a navegação); corrigido com *ref* do último filtro pedido.
 
 ---
 
