@@ -2,7 +2,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { register } from "@/instrumentation";
 import { lowercaseEmailAdapter } from "@/lib/auth/config";
-import { findSessionUser } from "@/lib/auth/session";
+import { endSession, findSessionUser } from "@/lib/auth/session";
 import { call } from "../support/call";
 import { resetDb, testDb } from "../support/db";
 import { asUser, makeFamily } from "../support/factories";
@@ -124,6 +124,20 @@ describe("US-001 Login de teste em desenvolvimento local (dev-login)", () => {
       { host: "fancy-queens-kick.loca.lt" },
     );
     expect(prod.status).toBe(404);
+  });
+
+  it("(infra) endSession remove a sessão pelo cookie comum ou __Secure- (logout atrás de túnel)", async () => {
+    enableDevLogin();
+    for (const email of ["a@exemplo.com", "b@exemplo.com"]) {
+      await call(null, "POST", "/api/dev/login", { email });
+    }
+    const [one, two] = await db.session.findMany({ orderBy: { expires: "asc" } });
+    expect(await endSession(db, {})).toBe(0);
+    expect(await endSession(db, { "authjs.session-token": one?.sessionToken as string })).toBe(1);
+    expect(
+      await endSession(db, { "__Secure-authjs.session-token": two?.sessionToken as string }),
+    ).toBe(1);
+    expect(await db.session.count()).toBe(0);
   });
 
   it("(infra) corpo inválido: 400 VALIDATION_ERROR sem criar usuário nem sessão", async () => {

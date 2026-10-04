@@ -62,3 +62,19 @@ export async function findSessionUser(
     emailVerified: u.emailVerified,
   };
 }
+
+/**
+ * Encerra a sessão: remove do banco o(s) token(s) dos cookies (nome comum e `__Secure-`).
+ * Independente do Auth.js, que só procura o cookie pelo esquema de AUTH_URL e falhava atrás de túnel/proxy.
+ */
+export async function endSession(
+  db: Pick<PrismaClient, "session">,
+  cookies: Record<string, string>,
+): Promise<number> {
+  const tokens = [cookies[SECURE_SESSION_COOKIE], cookies[SESSION_COOKIE]].filter(
+    (t): t is string => Boolean(t),
+  );
+  if (tokens.length === 0) return 0;
+  const res = await db.session.deleteMany({ where: { sessionToken: { in: tokens } } });
+  return res.count;
+}
