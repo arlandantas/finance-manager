@@ -1,6 +1,22 @@
 # Status do Product Owner
 
-*Atualizado: 2026-10-04 (após decisões D-GES-01..08)*
+*Atualizado: 2026-10-04 (após decisões D-GES-01..11 e estimativas do TL)*
+
+## Atualização: estimativas do TL e fatiamento (aviso ao Dev & QA)
+- **R1 inteira Especificada** (EN-001, US-001..013). Tamanhos do backlog agora são os do TL: **70 pontos** (PO havia estimado 45). WSJF recalculado; ordem mantida.
+- **Porta do app = 3100** (D-GES-10): corrigida em EN-001; não há outra menção a 3000 nas histórias/fluxos.
+- **Fatiamento (escopo da R1 inalterado; 10 cenários BDD de cada história redistribuídos, nenhum perdido):**
+
+| Fatia | Pts | Conteúdo | Arquivo |
+| :-- | :-: | :-- | :-- |
+| **US-009a** (Must) | 5 | Motor `computeSettlement` completo (N>2, vetores S1..S13), API, painel essencial: cálculo, pessoal fora, 60/40, centavo, mês equilibrado/vazio, 1 membro, navegar mês | `US-009-painel-de-acerto-de-contas.md` |
+| **US-009b** (Should, cortável) | 3 | UI para 3 membros e lista expansível das despesas | `US-009b-acerto-tres-membros-e-detalhe.md` |
+| **US-013a** (Should, núcleo) | 5 | Editar, auditoria, excluir, restaurar, conflito 409, acerto recalculado, validações | `US-013-corrigir-ou-estornar-lancamento.md` |
+| **US-013b** (Should, cortável) | 3 | Aviso de mês acertado, desfazer acerto, transferência sem "Editar" | `US-013b-desfazer-e-mes-acertado.md` |
+
+- **Desvio da sugestão do TL:** o TL propôs 9a = só o motor e 9b = painel/UI. O PO fatiou diferente porque cortar o painel quebraria a promessa da R1; o motor continua inteiro na 9a. US-011, US-012 e US-013a dependem só da 9a.
+- **Ordem de execução:** ... US-011 → US-012 → **US-009b** → **US-013a** → **US-013b**. **Ordem de corte:** 13b, 9b, 13a (D-GES-03). Os nomes de arquivo originais foram mantidos (links dos SDDs válidos).
+- Ao Dev: o `tasks-board.md` deve tratar 9a/9b e 13a/13b como tarefas separadas; o SDD-002 §9a/9b e SDD-001 §13a/13b valem sem alteração (o TL pode registrar errata de nomenclatura).
 
 ## Entregue neste ciclo
 | Artefato | Conteúdo |
@@ -13,7 +29,7 @@
 
 ## Próximas histórias para o time técnico (ordem de execução)
 1. **EN-001** → **US-001** → **US-002** → **US-004** → **US-005** → **US-006** → **US-007** → **US-003** (Incremento 1, walking skeleton)
-2. **US-008** → **US-009** → **US-010** → **US-011** → **US-012** → **US-013** (Incremento 2)
+2. **US-008** → **US-009a** → **US-010** → **US-011** → **US-012** → **US-009b** → **US-013a** → **US-013b** (Incremento 2)
 
 ## Decisões do Gestor incorporadas (D-GES-01..08, 2026-10-04)
 | Decisão | Efeito no backlog |
@@ -31,7 +47,7 @@ Todas as perguntas abertas do PO (Q-01, Q-03, Q-08, Q-13, Q-17) estão **respond
 
 ## Próximas histórias para o time técnico (ordem de execução, diretriz do Gestor)
 1. **EN-001** (pode começar já) → **US-001** → **US-002** → **US-004** → **US-005** → **US-006** → **US-007** → **US-003** (Incremento 1)
-2. **US-008** → **US-009** → **US-010** → **US-011** → **US-012** → **US-013** (Incremento 2)
+2. **US-008** → **US-009a** → **US-010** → **US-011** → **US-012** → **US-009b** → **US-013a** → **US-013b** (Incremento 2)
 
 Nenhuma história inicia sem SDD que a cubra.
 

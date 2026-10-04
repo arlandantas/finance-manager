@@ -1,10 +1,10 @@
 # 📑 Backlog do Produto (Product Owner)
 
-*Status: **Refinado até o Incremento 2** · Decisões do Gestor D-GES-01..08 incorporadas · Atualizado: 2026-10-04*
+*Status: **Refinado até o Incremento 2; R1 toda Especificada** · Estimativas do TL e fatiamento 9a/9b, 13a/13b incorporados · Atualizado: 2026-10-04*
 *Responsável: Agente Product Owner (PO)*
 *Método e portões (DoR/DoD): [`working-agreement.md`](working-agreement.md) · Escopo: [`mvp-definition.md`](mvp-definition.md)*
 
-> **Histórico:** esta revisão **substitui** o backlog inicial (US-001 *Cadastro de transações* e US-002 *Divisão compartilhada*), escrito antes das NEED-001..012, dos ADR-001..006 e do modelo de contas. Equivalências: antiga US-001 ➔ [US-005](stories/US-005-lancar-despesa.md); antiga US-002 ➔ [US-008](stories/US-008-regra-de-divisao-familiar.md) + [US-009](stories/US-009-painel-de-acerto-de-contas.md).
+> **Histórico:** esta revisão **substitui** o backlog inicial (US-001 *Cadastro de transações* e US-002 *Divisão compartilhada*), escrito antes das NEED-001..012, dos ADR-001..006 e do modelo de contas. Equivalências: antiga US-001 ➔ [US-005](stories/US-005-lancar-despesa.md); antiga US-002 ➔ [US-008](stories/US-008-regra-de-divisao-familiar.md) + [US-009a/9b](stories/US-009-painel-de-acerto-de-contas.md).
 
 ---
 
@@ -48,30 +48,34 @@ Os épicos adotam a numeração do cronograma do Stakeholder ([`cronograma-e-rel
 ## 🧮 Priorização
 
 **Critério:** MoSCoW decide o *corte*; **WSJF** `(Valor + Urgência + Risco/Oportunidade) ÷ Tamanho` decide a *ordem* dentro do elegível; **dependência dura prevalece** sobre o WSJF.
-Escala 1–10 para V/U/R; Tamanho em Fibonacci relativo (1, 2, 3, 5, 8). **Tamanho é estimativa preliminar do PO; o Tech Lead e o Dev confirmam ou corrigem.**
+Escala 1–10 para V/U/R; Tamanho em Fibonacci relativo (1, 2, 3, 5, 8). **Desde 2026-10-04 o Tam. é a estimativa do Tech Lead** (`tech-lead/status.md`): 70 pontos na R1 (o PO havia estimado 45), WSJF recalculado; a ordem foi mantida (dependência dura prevalece). Itens que passaram de 5 (US-009, US-013) foram **fatiados** em 9a/9b e 13a/13b (5+3 cada).
 
-| Ordem | ID | História | Épico | MoSCoW | V | U | R | Tam. | WSJF | Depende de | Status |
+**Ordem de corte se o prazo apertar:** US-013b → US-009b → US-013a (D-GES-03: a 13a é a última). As fatias 9b e 13b não são dependência de nenhuma outra história; 9a (núcleo Must) nunca é cortada.
+
+| Ordem | ID | História | Épico | MoSCoW | V | U | R | Tam. (TL) | WSJF | Depende de | Status |
 | :-: | :-- | :-- | :-- | :-: | :-: | :-: | :-: | :-: | :-: | :-- | :-- |
-| 1 | [EN-001](stories/EN-001-ambiente-local-e-esqueleto.md) | Ambiente local e esqueleto *(enabler)* | EPIC-00 | Must | 3 | 10 | 8 | 5 | 4,2 | — | Especificada |
-| 2 | [US-001](stories/US-001-login-com-google.md) | Entrar com a conta Google | EPIC-0 | Must | 8 | 9 | 6 | 3 | 7,7 | EN-001 | Refinada |
-| 3 | [US-002](stories/US-002-criar-familia.md) | Criar a família | EPIC-0 | Must | 7 | 9 | 3 | 2 | 9,5 | US-001 | Refinada |
-| 4 | [US-004](stories/US-004-cadastrar-conta-bancaria.md) | Cadastrar conta com saldo inicial | EPIC-2 | Must | 8 | 8 | 3 | 3 | 6,3 | US-002 | Refinada |
-| 5 | [US-005](stories/US-005-lancar-despesa.md) | Lançar despesa rapidamente | EPIC-3 | Must | 10 | 8 | 5 | 5 | 4,6 | US-004 | Refinada |
-| 6 | [US-006](stories/US-006-lancar-receita.md) | Lançar receita | EPIC-3 | Must | 7 | 6 | 2 | 3 | 5,0 | US-005 | Refinada |
-| 7 | [US-007](stories/US-007-extrato-de-lancamentos.md) | Extrato com filtros | EPIC-3 | Must | 8 | 6 | 3 | 3 | 5,7 | US-005, US-006 | Refinada |
-| 8 | [US-003](stories/US-003-convidar-membro.md) | Convidar membro por e-mail | EPIC-1 | Must | 8 | 7 | 4 | 3 | 6,3 | US-002 | Refinada |
-| 9 | [US-008](stories/US-008-regra-de-divisao-familiar.md) | Regra de divisão familiar | EPIC-4 | Must | 9 | 4 | 5 | 3 | 6,0 | US-003 | Refinada · aguarda SDD-002 |
-| 10 | [US-009](stories/US-009-painel-de-acerto-de-contas.md) | Painel de acerto de contas | EPIC-4 | Must | 10 | 6 | 7 | 5 | 4,6 | US-005, US-008 | Refinada · aguarda SDD-002 |
-| 11 | [US-010](stories/US-010-transferencia-entre-contas.md) | Transferir entre contas | EPIC-2 | Must | 6 | 4 | 3 | 3 | 4,3 | US-004 | Refinada |
-| 12 | [US-011](stories/US-011-registrar-acerto-de-contas.md) | Registrar o acerto | EPIC-4 | Must | 7 | 5 | 4 | 3 | 5,3 | US-009, US-010 | Refinada · aguarda SDD-002 |
-| 13 | [US-012](stories/US-012-home-dashboard.md) | Home essencial | EPIC-5 | Must | 8 | 5 | 3 | 3 | 5,3 | US-004, US-007, US-009 | Refinada |
-| 14 | [US-013](stories/US-013-corrigir-ou-estornar-lancamento.md) | Corrigir/excluir lançamento | EPIC-3 | Should | 6 | 4 | 5 | 3 | 5,0 | US-005, US-007 | Refinada · **Should dentro da R1** (D-GES-03) |
-| 15 | US-014 | Gerenciar categorias | EPIC-3 | Could | 4 | 2 | 1 | 2 | 3,5 | US-002 | Rascunho |
-| 16 | US-015 | Cadastrar cartão de crédito | EPIC-6 | Must | 6 | 3 | 3 | 2 | 6,0 | US-002 | Rascunho |
-| 17 | US-016 | Compra à vista no cartão | EPIC-6 | Must | 7 | 3 | 4 | 5 | 2,8 | US-015 | Rascunho |
-| 18 | US-017 | Ver e pagar a fatura | EPIC-6 | Should | 7 | 3 | 4 | 5 | 2,8 | US-016, US-010 | Rascunho · Should em R2 (D-GES-04) |
-| 19 | US-018 | Despesa prevista pontual | EPIC-7 | Must | 6 | 3 | 2 | 3 | 3,7 | US-005 | Rascunho |
-| 20 | US-019 | Dar baixa em despesa prevista | EPIC-7 | Must | 6 | 3 | 3 | 3 | 4,0 | US-018 | Rascunho |
+| 1 | [EN-001](stories/EN-001-ambiente-local-e-esqueleto.md) | Ambiente local e esqueleto *(enabler)* | EPIC-00 | Must | 3 | 10 | 8 | 8 | 2,6 | — | Especificada (SDD-006) |
+| 2 | [US-001](stories/US-001-login-com-google.md) | Entrar com a conta Google | EPIC-0 | Must | 8 | 9 | 6 | 5 | 4,6 | EN-001 | Especificada (SDD-003) |
+| 3 | [US-002](stories/US-002-criar-familia.md) | Criar a família | EPIC-0 | Must | 7 | 9 | 3 | 3 | 6,3 | US-001 | Especificada (SDD-003) |
+| 4 | [US-004](stories/US-004-cadastrar-conta-bancaria.md) | Cadastrar conta com saldo inicial | EPIC-2 | Must | 8 | 8 | 3 | 5 | 3,8 | US-002 | Especificada (SDD-004) |
+| 5 | [US-005](stories/US-005-lancar-despesa.md) | Lançar despesa rapidamente | EPIC-3 | Must | 10 | 8 | 5 | 5 | 4,6 | US-004 | Especificada (SDD-001) |
+| 6 | [US-006](stories/US-006-lancar-receita.md) | Lançar receita | EPIC-3 | Must | 7 | 6 | 2 | 2 | 7,5 | US-005 | Especificada (SDD-001) |
+| 7 | [US-007](stories/US-007-extrato-de-lancamentos.md) | Extrato com filtros | EPIC-3 | Must | 8 | 6 | 3 | 5 | 3,4 | US-005, US-006 | Especificada (SDD-005) |
+| 8 | [US-003](stories/US-003-convidar-membro.md) | Convidar membro por e-mail | EPIC-1 | Must | 8 | 7 | 4 | 5 | 3,8 | US-002 | Especificada (SDD-003) |
+| 9 | [US-008](stories/US-008-regra-de-divisao-familiar.md) | Regra de divisão familiar | EPIC-4 | Must | 9 | 4 | 5 | 3 | 6,0 | US-003 | Especificada (SDD-002) |
+| 10 | [US-009a](stories/US-009-painel-de-acerto-de-contas.md) | Acerto de contas: motor + painel essencial | EPIC-4 | Must | 9 | 6 | 7 | 5 | 4,4 | US-005, US-008 | Especificada (SDD-002) |
+| 11 | [US-010](stories/US-010-transferencia-entre-contas.md) | Transferir entre contas | EPIC-2 | Must | 6 | 4 | 3 | 3 | 4,3 | US-004 | Especificada (SDD-004) |
+| 12 | [US-011](stories/US-011-registrar-acerto-de-contas.md) | Registrar o acerto | EPIC-4 | Must | 7 | 5 | 4 | 5 | 3,2 | US-009a, US-010 | Especificada (SDD-002) |
+| 13 | [US-012](stories/US-012-home-dashboard.md) | Home essencial | EPIC-5 | Must | 8 | 5 | 3 | 5 | 3,2 | US-004, US-007, US-009a | Especificada (SDD-005) |
+| 14 | [US-009b](stories/US-009b-acerto-tres-membros-e-detalhe.md) | Acerto: 3+ membros e detalhe das despesas | EPIC-4 | Should | 4 | 2 | 3 | 3 | 3,0 | US-009a | Especificada (SDD-002) · **cortável** |
+| 15 | [US-013a](stories/US-013-corrigir-ou-estornar-lancamento.md) | Corrigir/excluir/restaurar lançamento (núcleo) | EPIC-3 | Should | 6 | 4 | 4 | 5 | 2,8 | US-005, US-007, US-009a | Especificada (SDD-001) · **Should dentro da R1** (D-GES-03) |
+| 16 | [US-013b](stories/US-013b-desfazer-e-mes-acertado.md) | Desfazer transferência/acerto e aviso de mês acertado | EPIC-3 | Should | 3 | 2 | 2 | 3 | 2,3 | US-013a, US-010, US-011 | Especificada (SDD-001) · **cortável** |
+| 17 | US-014 | Gerenciar categorias | EPIC-3 | Could | 4 | 2 | 1 | 2 | 3,5 | US-002 | Rascunho |
+| 18 | US-015 | Cadastrar cartão de crédito | EPIC-6 | Must | 6 | 3 | 3 | 2 | 6,0 | US-002 | Rascunho |
+| 19 | US-016 | Compra à vista no cartão | EPIC-6 | Must | 7 | 3 | 4 | 5 | 2,8 | US-015 | Rascunho |
+| 20 | US-017 | Ver e pagar a fatura | EPIC-6 | Should | 7 | 3 | 4 | 5 | 2,8 | US-016, US-010 | Rascunho · Should em R2 (D-GES-04) |
+| 21 | US-018 | Despesa prevista pontual | EPIC-7 | Must | 6 | 3 | 2 | 3 | 3,7 | US-005 | Rascunho |
+| 22 | US-019 | Dar baixa em despesa prevista | EPIC-7 | Must | 6 | 3 | 3 | 3 | 4,0 | US-018 | Rascunho |
 
 > **Por que US-003 (convite) vem depois do extrato?** O WSJF empata em valor, mas o **walking skeleton** (entrar → criar família → conta → lançar → ver) precisa fechar *sozinho* primeiro; o convite habilita o split, que só tem valor com 2 membros e é entregue no Incremento 2. A ordem da tabela é a de **execução recomendada**.
 
@@ -110,8 +114,8 @@ Escala 1–10 para V/U/R; Tamanho em Fibonacci relativo (1, 2, 3, 5, 8). **Taman
 
 | Incremento | Histórias | Pronto para o Tech Lead? | Bloqueio para o Dev |
 | :-- | :-- | :-: | :-- |
-| **Inc 1** — Walking skeleton | EN-001, US-001..007 | ✅ Sim | SDD de Auth/Família/Convite e de Contas; **revisão do SDD-001** (GAP-1, GAP-2) |
-| **Inc 2** — Fechar o mês | US-008..013 | ✅ Sim | **SDD-002** (split) para US-008/009/011 |
+| **Inc 1** — Walking skeleton | EN-001, US-001..007 | ✅ Sim | Nenhum: SDDs 001, 003, 004, 006 entregues |
+| **Inc 2** — Fechar o mês | US-008, 009a/b, 010..012, 013a/b | ✅ Sim | Nenhum: SDD-002 entregue |
 | **Inc 3** — AP0 completo | US-014..019 | ⏳ Não (rascunho) | Refinar após o Inc 1 entrar em desenvolvimento |
 
 ---
