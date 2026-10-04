@@ -2,7 +2,7 @@
 
 - **Objetivo do Fluxo**: Permitir que qualquer membro da família registre uma despesa em menos de 10 segundos, no momento exato da compra, sem fricção.
 - **Persona Principal**: Persona 2 (Lucas - Membro Colaborador em trânsito) e Persona 1 (Mariana - Gestora da Casa).
-- **Rastreabilidade**: [`[NEED-001]`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/needs-overview.md#need-001-registro-e-classificao-gil-de-transaes) e [`[US-001]`](file:///home/arlan/ai-tests/finance-manager/agents/product-owner/backlog/backlog.md#us-001-cadastro-e-gesto-de-transaes-financeiras).
+- **Rastreabilidade**: [`NEED-001`](../../stakeholder/needs/NEED-001-membros-e-responsaveis.md) · Histórias [`US-005`](../backlog/stories/US-005-lancar-despesa.md) e [`US-006`](../backlog/stories/US-006-lancar-receita.md) (substituem a antiga US-001).
 
 ---
 
