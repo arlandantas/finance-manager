@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { formatBRL } from "@/lib/money";
+import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import { useDefaults, useTransactionDetail, useTransactionState } from "@/modules/transacoes/hooks";
 import type { TransactionDetailDTO } from "@/modules/transacoes/schemas";
 import { EditTransactionForm } from "./edit-transaction-form";
@@ -246,7 +247,14 @@ export function TransactionDetailDrawer({
                   {t.category.archived ? `${t.category.name} (arquivada)` : t.category.name}
                 </Row>
               ) : null}
-              <Row label="Conta">{t.account.name}</Row>
+              {t.account ? <Row label="Conta">{t.account.name}</Row> : null}
+              {t.card ? <Row label="Cartão">{t.card.name}</Row> : null}
+              {t.invoice ? (
+                <Row label="Fatura">
+                  {formatInvoiceLabel(t.invoice.ref)} · fecha {brDate(t.invoice.closingDate)} ·
+                  vence {brDate(t.invoice.dueDate)}
+                </Row>
+              ) : null}
               {t.type === "EXPENSE" ? (
                 <Row label="Divisão">{t.isSharedExpense ? "Despesa comum" : "Despesa pessoal"}</Row>
               ) : null}

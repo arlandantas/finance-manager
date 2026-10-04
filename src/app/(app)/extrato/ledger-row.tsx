@@ -5,6 +5,7 @@ import { CategoryIcon } from "@/components/category-icon";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
 import { formatBRL } from "@/lib/money";
+import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import type { PendingTransaction } from "@/modules/transacoes/optimistic";
 
 function shortDate(iso: string): string {
@@ -33,6 +34,10 @@ export function LedgerRow({
 }) {
   const income = item.direction === "CREDIT";
   const isTransfer = item.type === "TRANSFER_IN" || item.type === "TRANSFER_OUT";
+  const isPayment = item.type === "INVOICE_PAYMENT";
+  const neutral = isTransfer || isPayment;
+  const sourceName = item.card?.name ?? item.account?.name ?? "";
+  const kindLabel = item.category?.name ?? (isPayment ? "Pagamento de fatura" : "Transferência");
   const amount = `${income ? "+" : "-"}${formatBRL(item.amountInCents)}`;
   return (
     <li>
@@ -60,7 +65,7 @@ export function LedgerRow({
             income ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-700",
           )}
         >
-          {isTransfer ? (
+          {neutral ? (
             <ArrowLeftRight size={20} />
           ) : item.category ? (
             <CategoryIcon icon={item.category.icon} />
@@ -78,13 +83,22 @@ export function LedgerRow({
             {rowTitle(item)}
           </span>
           <span className="block break-words text-xs text-slate-500 md:hidden">
-            {shortDate(item.occurredOn)} · {item.category?.name ?? "Transferência"} ·{" "}
-            {item.account.name}
+            {shortDate(item.occurredOn)} · {kindLabel} · {sourceName}
           </span>
           <span className="mt-1 flex flex-wrap gap-1">
             {item.type === "EXPENSE" ? (
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
                 {item.isSharedExpense ? "Comum" : "Pessoal"}
+              </span>
+            ) : null}
+            {item.card && item.type === "EXPENSE" ? (
+              <span className="rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-800">
+                Cartão
+              </span>
+            ) : null}
+            {item.invoice ? (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                Fatura {formatInvoiceLabel(item.invoice.ref)}
               </span>
             ) : null}
             {isTransfer && item.transferGroupId ? (
@@ -108,7 +122,7 @@ export function LedgerRow({
         <span className="hidden truncate text-sm text-slate-700 md:block">
           {item.category?.name ?? "—"}
         </span>
-        <span className="hidden truncate text-sm text-slate-700 md:block">{item.account.name}</span>
+        <span className="hidden truncate text-sm text-slate-700 md:block">{sourceName}</span>
         <span className="hidden md:block">
           {item.payer ? <Avatar name={item.payer.name} image={item.payer.image} size={28} /> : null}
         </span>
@@ -122,7 +136,7 @@ export function LedgerRow({
           <span
             className={cn(
               "font-semibold tabular-nums",
-              income ? "text-emerald-700" : "text-slate-900",
+              income && !neutral ? "text-emerald-700" : "text-slate-900",
               item.deletedAt && "line-through",
             )}
           >

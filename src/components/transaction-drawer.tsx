@@ -11,6 +11,9 @@ import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import { formatBRL } from "@/lib/money";
+import { invoiceHint } from "@/modules/cartoes/cycle";
+import { useCards } from "@/modules/cartoes/hooks";
 import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
@@ -21,6 +24,7 @@ type Kind = "EXPENSE" | "INCOME";
 type FieldKey =
   | "amountInCents"
   | "accountId"
+  | "cardId"
   | "categoryId"
   | "occurredOn"
   | "description"
@@ -53,7 +57,8 @@ export function TransactionDrawer({
 }) {
   const [kind, setKind] = useState<Kind>(initialKind);
   const [cents, setCents] = useState(0);
-  const [accountId, setAccountId] = useState("");
+  // "Pagar com": `accountId` ou `cardId` (um dos dois), guardados juntos como "acc:<id>" / "card:<id>".
+  const [source, setSource] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [payerId, setPayerId] = useState("");
   const [shared, setShared] = useState(true);
@@ -70,6 +75,7 @@ export function TransactionDrawer({
 
   const defaults = useDefaults(open);
   const accounts = useAccounts();
+  const cards = useCards();
   const family = useFamily();
   const categories = useCategories(kind);
   const create = useCreateTransaction(key);
@@ -87,7 +93,7 @@ export function TransactionDrawer({
     setErrors({});
     setBanner(null);
     setDetailsOpen(false);
-    setAccountId("");
+    setSource("");
     setPayerId("");
     setKey(newIdempotencyKey());
   }, [open, initialKind]);
@@ -95,21 +101,39 @@ export function TransactionDrawer({
   // Padrões vindos do servidor (última conta usada; quem pagou = logado).
   useEffect(() => {
     if (!open || !defaults.data) return;
-    setAccountId((cur) => cur || defaults.data.accountId || "");
+    // Padrão: último meio usado (cartão da despesa mais recente, senão a conta).
+    setSource((cur) => {
+      if (cur) return cur;
+      if (defaults.data.cardId) return `card:${defaults.data.cardId}`;
+      return defaults.data.accountId ? `acc:${defaults.data.accountId}` : "";
+    });
     setPayerId((cur) => cur || defaults.data.payerMemberId);
   }, [open, defaults.data]);
+
+  const cardList = cards.data?.items ?? [];
+  const selectedCard = source.startsWith("card:")
+    ? cardList.find((c) => `card:${c.id}` === source)
+    : undefined;
+  // Receita só entra em conta: se o padrão veio como cartão, volta para a primeira conta.
+  const effectiveSource = kind === "INCOME" && source.startsWith("card:") ? "" : source;
 
   function switchKind(next: Kind) {
     if (next === kind) return;
     setKind(next);
+    if (next === "INCOME" && source.startsWith("card:")) {
+      setSource(defaults.data?.accountId ? `acc:${defaults.data.accountId}` : "");
+    }
     setCategoryId("");
     setErrors((e) => ({ ...e, categoryId: undefined }));
   }
 
   function buildPayload(): CreateTransactionInput {
+    const fromCard = kind === "EXPENSE" && effectiveSource.startsWith("card:");
     return {
       type: kind,
-      accountId,
+      ...(fromCard
+        ? { cardId: effectiveSource.slice(5) }
+        : { accountId: effectiveSource.startsWith("acc:") ? effectiveSource.slice(4) : "" }),
       categoryId,
       amountInCents: cents,
       ...(payerId ? { payerMemberId: payerId } : {}),
@@ -167,6 +191,8 @@ export function TransactionDrawer({
 
   const text = TEXT[kind];
   const members = family.data?.members ?? [];
+  const overLimit =
+    kind === "EXPENSE" && selectedCard !== undefined && cents > selectedCard.availableInCents;
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} title={text.title} initialFocusId="tx-amount">
@@ -220,24 +246,65 @@ export function TransactionDrawer({
           />
         </Field>
 
-        <Field id="tx-account" label="Conta" error={errors.accountId}>
+        <Field
+          id="tx-account"
+          label={kind === "EXPENSE" ? "Pagar com" : "Receber em"}
+          error={errors.accountId ?? errors.cardId}
+        >
           <select
             id="tx-account"
             className={inputClass}
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
-            aria-invalid={errors.accountId ? true : undefined}
+            value={effectiveSource}
+            onChange={(e) => setSource(e.target.value)}
+            aria-invalid={errors.accountId || errors.cardId ? true : undefined}
           >
             <option value="" disabled>
-              Escolha uma conta
+              {kind === "EXPENSE" ? "Escolha uma conta ou um cartão" : "Escolha uma conta"}
             </option>
-            {(accounts.data?.items ?? []).map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
+            <optgroup label="Contas">
+              {(accounts.data?.items ?? []).map((a) => (
+                <option key={a.id} value={`acc:${a.id}`}>
+                  {a.name}
+                </option>
+              ))}
+            </optgroup>
+            {kind === "EXPENSE" && cardList.length > 0 ? (
+              <optgroup label="Cartões">
+                {cardList.map((c) => (
+                  <option key={c.id} value={`card:${c.id}`}>
+                    {c.name} · Disponível {formatBRL(c.availableInCents)}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
           </select>
         </Field>
+        {kind === "EXPENSE" && cards.data && cardList.length === 0 ? (
+          <Link
+            href="/cartoes"
+            onClick={() => onOpenChange(false)}
+            className="-mt-3 flex min-h-11 items-center self-start text-sm font-medium text-brand-800 underline"
+          >
+            Cadastrar cartão
+          </Link>
+        ) : null}
+        {selectedCard && kind === "EXPENSE" ? (
+          <p data-testid="invoice-hint" className="-mt-3 text-sm text-slate-600">
+            {invoiceHint(
+              date || defaults.data?.today || new Date().toISOString().slice(0, 10),
+              selectedCard.closingDay,
+              selectedCard.dueDay,
+            )}
+          </p>
+        ) : null}
+        {overLimit && selectedCard ? (
+          <p
+            role="alert"
+            className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900"
+          >
+            Esta compra ultrapassa o limite disponível do cartão
+          </p>
+        ) : null}
 
         <div className="flex flex-col gap-1.5">
           <span id="tx-category-label" className="text-sm font-medium text-slate-800">
@@ -398,8 +465,13 @@ export function TransactionDrawer({
         </details>
 
         <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white p-4">
-          <Button type="submit" className="w-full" disabled={create.isPending}>
-            {create.isPending ? "Salvando…" : text.save}
+          <Button
+            type="submit"
+            variant={overLimit ? "danger" : "primary"}
+            className="w-full"
+            disabled={create.isPending}
+          >
+            {create.isPending ? "Salvando…" : overLimit ? "Confirmar mesmo assim" : text.save}
           </Button>
         </div>
       </form>

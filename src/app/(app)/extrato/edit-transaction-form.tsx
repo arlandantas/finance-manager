@@ -41,7 +41,7 @@ export function EditTransactionForm({
   const family = useFamily();
   const categories = useCategories(kind);
   const [cents, setCents] = useState(t.amountInCents);
-  const [accountId, setAccountId] = useState(t.account.id);
+  const [accountId, setAccountId] = useState(t.account?.id ?? "");
   const [categoryId, setCategoryId] = useState(t.category?.id ?? "");
   const [payerId, setPayerId] = useState(t.payer?.id ?? "");
   const [shared, setShared] = useState(t.isSharedExpense);
@@ -57,7 +57,7 @@ export function EditTransactionForm({
   function payload(confirmSettledPeriod?: boolean) {
     return {
       version: t.version,
-      accountId,
+      ...(t.account ? { accountId } : {}),
       categoryId,
       amountInCents: cents,
       occurredOn: date,
@@ -190,13 +190,25 @@ export function EditTransactionForm({
           describedBy={errors.amountInCents ? "ed-amount-error" : undefined}
         />
       </Field>
-      {select(
-        "ed-account",
-        "Conta",
-        accountId,
-        setAccountId,
-        accounts.data?.items ?? [],
-        errors.accountId,
+      {t.card && !t.account ? (
+        <Field
+          id="ed-payment-source"
+          label="Pagar com"
+          hint="Para mudar a forma de pagamento, exclua e lance novamente"
+        >
+          <select id="ed-payment-source" className={inputClass} disabled value={t.card.id}>
+            <option value={t.card.id}>{t.card.name}</option>
+          </select>
+        </Field>
+      ) : (
+        select(
+          "ed-account",
+          "Conta",
+          accountId,
+          setAccountId,
+          accounts.data?.items ?? [],
+          errors.accountId,
+        )
       )}
       {select(
         "ed-category",

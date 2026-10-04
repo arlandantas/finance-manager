@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
+import { cardsKey } from "@/modules/cartoes/hooks";
+import type { CardsResponse } from "@/modules/cartoes/schemas";
 import { categoriesKey } from "@/modules/categorias/hooks";
 import type { CategoryDTO } from "@/modules/categorias/schemas";
 import { accountsKey } from "@/modules/contas/hooks";
@@ -36,9 +38,17 @@ export function useInvalidateAfterTransactionChange() {
   const qc = useQueryClient();
   return () =>
     Promise.all(
-      [["accounts"], ["transactions"], ["home"], ["settlement"], [defaultsKey[0]]].map((queryKey) =>
-        qc.invalidateQueries({ queryKey }),
-      ),
+      [
+        ["accounts"],
+        ["cards"],
+        ["card"],
+        ["invoice"],
+        ["transactions"],
+        ["home"],
+        ["settlement"],
+        ["payables"],
+        [defaultsKey[0]],
+      ].map((queryKey) => qc.invalidateQueries({ queryKey })),
     );
 }
 
@@ -60,6 +70,7 @@ export function useCreateTransaction(idempotencyKey: string) {
       const family = qc.getQueryData<FamilyDTO>(familyKey);
       const me = family?.members.find((m) => m.memberId === family.currentMemberId);
       const accounts = qc.getQueryData<AccountsResponse>(accountsKey);
+      const cards = qc.getQueryData<CardsResponse>(cardsKey);
       const categories = [
         ...(qc.getQueryData<{ items: CategoryDTO[] }>(categoriesKey(input.type))?.items ?? []),
       ];
@@ -69,6 +80,12 @@ export function useCreateTransaction(idempotencyKey: string) {
           today: defaults.today,
           me: { id: me.memberId, name: me.name, image: me.image },
           accounts: accounts.items.map((a) => ({ id: a.id, name: a.name })),
+          cards: (cards?.items ?? []).map((c) => ({
+            id: c.id,
+            name: c.name,
+            closingDay: c.closingDay,
+            dueDay: c.dueDay,
+          })),
           categories,
           members: family.members.map((m) => ({ id: m.memberId, name: m.name, image: m.image })),
           now: new Date(),
