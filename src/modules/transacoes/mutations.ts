@@ -3,7 +3,9 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 import { compareDate, fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { formatBRL, toCents } from "@/lib/money";
 import { periodOf } from "@/lib/period";
-import { cardUsage } from "@/modules/cartoes/queries";
+import { formatInvoiceLabel, invoiceRefFor } from "@/modules/cartoes/cycle";
+import { getOrCreateInvoice, lockInvoices } from "@/modules/cartoes/invoices";
+import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { type Change, recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
 import { splitRepo } from "@/modules/split/repo";
@@ -17,6 +19,8 @@ import type {
 import { getTransaction, memberRefOf } from "@/modules/transacoes/service";
 
 const NOT_EDITABLE = "Transferências e acertos não podem ser editados. Use Desfazer.";
+const INVOICE_PAID_LOCKED =
+  "Esta compra está em uma fatura já paga. Desfaça o pagamento da fatura para alterá-la.";
 const LINKED_TO_PLANNED = "Esta despesa veio de uma despesa prevista. Use Desfazer pagamento.";
 const PAYMENT_NOT_EDITABLE =
   "O pagamento de fatura não pode ser editado nem excluído. Use Desfazer pagamento.";
@@ -74,6 +78,40 @@ async function requireSettledConfirmation(
   if (settled.length > 0) {
     throw conflict("SETTLED_PERIOD_CONFIRMATION_REQUIRED", SETTLED, { periods: settled });
   }
+}
+
+const paidLocked = () => unprocessable("INVOICE_PAID_LOCKED", INVOICE_PAID_LOCKED);
+
+/**
+ * Compra no cartão (SDD-008 §4.6): trava a fatura (as duas, em ordem crescente de `ref`, se a data
+ * muda de ciclo) e recusa se qualquer uma tem pagamento ativo. Devolve a nova fatura, se mudou.
+ */
+async function lockPurchaseInvoices(
+  tx: Tx,
+  ctx: RequestContext,
+  repo: Repo,
+  row: Row,
+  newOccurredOn?: string,
+): Promise<{ newInvoiceId?: string }> {
+  const invoiceId = row.invoiceId as string;
+  const oldRef = row.invoice?.referenceMonth as string;
+  const card = await repo.findCard(row.cardId as string);
+  const newRef = newOccurredOn && card ? invoiceRefFor(newOccurredOn, card.closingDay) : oldRef;
+  let newInvoiceId: string | undefined;
+  if (card && newRef !== oldRef) {
+    if (newRef < oldRef) {
+      newInvoiceId = (await getOrCreateInvoice(tx, ctx.familyId, card, newRef)).id;
+      await lockInvoices(tx, ctx.familyId, [invoiceId]);
+    } else {
+      await lockInvoices(tx, ctx.familyId, [invoiceId]);
+      newInvoiceId = (await getOrCreateInvoice(tx, ctx.familyId, card, newRef)).id;
+    }
+  } else {
+    await lockInvoices(tx, ctx.familyId, [invoiceId]);
+  }
+  const ids = newInvoiceId ? [invoiceId, newInvoiceId] : [invoiceId];
+  if ((await activePayments(tx, ctx.familyId, ids)).size > 0) throw paidLocked();
+  return newInvoiceId ? { newInvoiceId } : {};
 }
 
 async function respond(
@@ -147,8 +185,9 @@ export async function updateTransaction(
     throw invalidRef("payerMemberId", "Membro inválido");
   }
   if (input.occurredOn && compareDate(input.occurredOn, today) > 0) {
-    const message =
-      row.kind === "EXPENSE"
+    const message = row.cardId
+      ? "A data da compra não pode ser futura"
+      : row.kind === "EXPENSE"
         ? "Para contas futuras, use Despesa prevista"
         : "A data da receita não pode ser futura";
     throw unprocessable("FUTURE_DATE_NOT_ALLOWED", message, [{ path: "occurredOn", message }]);
@@ -198,8 +237,12 @@ export async function updateTransaction(
     );
   }
 
+  const locked = row.cardId
+    ? await lockPurchaseInvoices(tx, ctx, repo, row, wanted.occurredOn)
+    : {};
   const res = await repo.updateVersioned(id, input.version, {
     ...(wanted.accountId !== undefined ? { accountId: wanted.accountId } : {}),
+    ...("newInvoiceId" in locked && locked.newInvoiceId ? { invoiceId: locked.newInvoiceId } : {}),
     ...(wanted.categoryId !== undefined ? { categoryId: wanted.categoryId } : {}),
     ...(wanted.amountInCents !== undefined ? { amountInCents: wanted.amountInCents } : {}),
     ...(wanted.occurredOn !== undefined ? { occurredOn: wanted.occurredOn } : {}),
@@ -238,6 +281,7 @@ export async function deleteTransaction(
   const row = await loadMutable(repo, id);
   if (row.deletedAt) throw conflict("ALREADY_DELETED", "Este lançamento já foi excluído.");
   if (row.paidPlanned) throw unprocessable("LINKED_TO_PLANNED", LINKED_TO_PLANNED);
+  if (row.cardId) await lockPurchaseInvoices(tx, ctx, repo, row);
   if (row.kind === "EXPENSE" && row.isSharedExpense) {
     await requireSettledConfirmation(
       tx,
@@ -273,6 +317,7 @@ export async function restoreTransaction(
   if (!row.deletedAt || row.deletionReason !== "DELETED") {
     throw unprocessable("NOT_RESTORABLE", "Este lançamento não pode ser restaurado.");
   }
+  if (row.cardId) await lockPurchaseInvoices(tx, ctx, repo, row);
   if (row.kind === "EXPENSE" && row.isSharedExpense) {
     await requireSettledConfirmation(
       tx,

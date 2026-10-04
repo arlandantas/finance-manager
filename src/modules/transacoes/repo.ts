@@ -139,6 +139,7 @@ export function transacoesRepo(tx: Tx, familyId: string) {
       version: number,
       data: {
         accountId?: string;
+        invoiceId?: string;
         categoryId?: string;
         amountInCents?: number;
         occurredOn?: string;
@@ -153,6 +154,7 @@ export function transacoesRepo(tx: Tx, familyId: string) {
         where: { id, familyId, version, deletedAt: null },
         data: {
           ...(data.accountId !== undefined ? { accountId: data.accountId } : {}),
+          ...(data.invoiceId !== undefined ? { invoiceId: data.invoiceId } : {}),
           ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
           ...(data.amountInCents !== undefined
             ? { amountInCents: fromCents(data.amountInCents) }

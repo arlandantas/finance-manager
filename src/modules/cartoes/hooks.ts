@@ -7,6 +7,8 @@ import type {
   CardsResponse,
   CreateCardInput,
   InvoiceDTO,
+  PayInvoiceInput,
+  PayInvoiceResponse,
   UpdateCardInput,
 } from "@/modules/cartoes/schemas";
 
@@ -69,6 +71,53 @@ export function useUpdateCard(idempotencyKey: string) {
         body: a.input,
         idempotencyKey,
       }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Pagamento/desfazer mexem em cartões, faturas, contas, extrato, Home e "A pagar" (SDD-008 §6). */
+function useInvalidateAfterPayment() {
+  const qc = useQueryClient();
+  return () =>
+    Promise.all(
+      [
+        ["cards"],
+        ["card"],
+        ["invoice"],
+        ["accounts"],
+        ["transactions"],
+        ["transaction"],
+        ["home"],
+        ["payables"],
+      ].map((queryKey) => qc.invalidateQueries({ queryKey })),
+    );
+}
+
+export function usePayInvoice(cardId: string, ref: string, idempotencyKey: string) {
+  const invalidate = useInvalidateAfterPayment();
+  return useMutation({
+    mutationFn: (input: PayInvoiceInput) =>
+      apiFetch<PayInvoiceResponse>(`/api/v1/cards/${cardId}/invoices/${ref}/pay`, {
+        method: "POST",
+        body: input,
+        idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUndoInvoicePayment() {
+  const invalidate = useInvalidateAfterPayment();
+  return useMutation({
+    mutationFn: (a: { cardId: string; ref: string; version: number; idempotencyKey: string }) =>
+      apiFetch<{ invoice: InvoiceDTO }>(
+        `/api/v1/cards/${a.cardId}/invoices/${a.ref}/undo-payment`,
+        {
+          method: "POST",
+          body: { version: a.version },
+          idempotencyKey: a.idempotencyKey,
+        },
+      ),
     onSuccess: invalidate,
   });
 }

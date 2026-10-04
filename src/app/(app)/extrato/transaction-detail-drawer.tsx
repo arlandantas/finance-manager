@@ -12,6 +12,7 @@ import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { formatBRL } from "@/lib/money";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
+import { useUndoInvoicePayment } from "@/modules/cartoes/hooks";
 import { useDefaults, useTransactionDetail, useTransactionState } from "@/modules/transacoes/hooks";
 import type { TransactionDetailDTO } from "@/modules/transacoes/schemas";
 import { EditTransactionForm } from "./edit-transaction-form";
@@ -49,6 +50,8 @@ export function TransactionDetailDrawer({
   const [settled, setSettled] = useState<{ message: string; resend: () => void } | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const [undoing, setUndoing] = useState(false);
+  const [undoingPayment, setUndoingPayment] = useState(false);
+  const undoPayment = useUndoInvoicePayment();
   const del = useTransactionState("delete");
   const restore = useTransactionState("restore");
   const stateKey = useRef(newIdempotencyKey());
@@ -65,6 +68,31 @@ export function TransactionDetailDrawer({
 
   const editable = t && (t.type === "EXPENSE" || t.type === "INCOME");
   const isLeg = t && (t.type === "TRANSFER_OUT" || t.type === "TRANSFER_IN");
+  const isPayment = t?.type === "INVOICE_PAYMENT";
+
+  function runUndoPayment(current: TransactionDetailDTO) {
+    if (!current.card || !current.invoice) return;
+    undoPayment.mutate(
+      {
+        cardId: current.card.id,
+        ref: current.invoice.ref,
+        version: current.version,
+        idempotencyKey: newIdempotencyKey(),
+      },
+      {
+        onSuccess: () => {
+          setUndoingPayment(false);
+          toast.success("Pagamento desfeito");
+          onClose();
+        },
+        onError: (e) => {
+          setUndoingPayment(false);
+          if (e instanceof ApiClientError || e instanceof NetworkError) setBanner(e.message);
+          else setBanner("Erro inesperado. Tente novamente.");
+        },
+      },
+    );
+  }
 
   function runState(
     action: "delete" | "restore",
@@ -187,6 +215,12 @@ export function TransactionDetailDrawer({
                   Restaurar
                 </Button>
               ) : null}
+              {isPayment && !t.deletedAt ? (
+                <Button variant="secondary" onClick={() => setUndoingPayment(true)}>
+                  <RotateCcw size={16} aria-hidden="true" />
+                  Desfazer pagamento
+                </Button>
+              ) : null}
               {isLeg && t.transferGroupId && !t.deletedAt ? (
                 <Button variant="secondary" onClick={() => setUndoing(true)}>
                   <RotateCcw size={16} aria-hidden="true" />
@@ -305,6 +339,24 @@ export function TransactionDetailDrawer({
         onClose={() => setUndoing(false)}
         onDone={onClose}
       />
+
+      <Drawer open={undoingPayment} onOpenChange={setUndoingPayment} title="Desfazer pagamento?">
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-slate-700">
+            O valor volta para a conta e a fatura volta a ficar em aberto para pagamento.
+          </p>
+          <Button
+            variant="danger"
+            disabled={undoPayment.isPending}
+            onClick={() => t && runUndoPayment(t)}
+          >
+            {undoPayment.isPending ? "Desfazendo…" : "Desfazer pagamento"}
+          </Button>
+          <Button variant="ghost" onClick={() => setUndoingPayment(false)}>
+            Cancelar
+          </Button>
+        </div>
+      </Drawer>
 
       <Drawer
         open={confirmingDelete}

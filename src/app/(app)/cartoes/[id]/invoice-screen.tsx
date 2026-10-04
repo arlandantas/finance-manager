@@ -3,18 +3,21 @@
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
+import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApiClientError } from "@/lib/http";
+import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { formatBRL } from "@/lib/money";
 import { cycleSentence, formatInvoiceLabel } from "@/modules/cartoes/cycle";
-import { useCard, useInvoice } from "@/modules/cartoes/hooks";
+import { useCard, useInvoice, useUndoInvoicePayment } from "@/modules/cartoes/hooks";
 import type { InvoiceDTO } from "@/modules/cartoes/schemas";
 import { LedgerRow } from "../../extrato/ledger-row";
 import { TransactionDetailDrawer } from "../../extrato/transaction-detail-drawer";
+import { PayInvoiceDrawer } from "./pay-invoice-drawer";
 
 const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 
@@ -53,8 +56,45 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
   const effectiveRef = ref ?? openRef;
   const invoice = useInvoice(cardId, effectiveRef);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [undoing, setUndoing] = useState(false);
+  const [undoError, setUndoError] = useState<string | null>(null);
+  const undoKey = useRef(newIdempotencyKey());
+  const undo = useUndoInvoicePayment();
   const c = card.data?.card;
   const inv = invoice.data?.invoice;
+
+  // Atalho da Home ("Pagar fatura"): abre o drawer uma única vez quando a fatura é pagável.
+  const autoPay = params.get("pay") === "1";
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (autoPay && inv?.canPay && !autoOpened.current) {
+      autoOpened.current = true;
+      setPaying(true);
+    }
+  }, [autoPay, inv?.canPay]);
+
+  function confirmUndo() {
+    if (!inv?.payment) return;
+    undo.mutate(
+      {
+        cardId,
+        ref: inv.ref,
+        version: inv.payment.version,
+        idempotencyKey: undoKey.current,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Pagamento desfeito");
+          setUndoing(false);
+        },
+        onError: (e) => {
+          if (e instanceof ApiClientError || e instanceof NetworkError) setUndoError(e.message);
+          else setUndoError("Erro inesperado. Tente novamente.");
+        },
+      },
+    );
+  }
 
   const notFound =
     (card.error instanceof ApiClientError && card.error.status === 404) ||
@@ -158,6 +198,14 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <StatusChip invoice={inv} />
+              {inv.payment ? (
+                <span
+                  data-testid="invoice-paid-on"
+                  className="text-sm font-semibold text-emerald-800"
+                >
+                  Paga em {brDate(inv.payment.paidOn)}
+                </span>
+              ) : null}
               {inv.status === "CLOSED" && inv.totalInCents > 0 ? (
                 <span data-testid="invoice-to-pay" className="text-sm font-semibold text-amber-900">
                   A pagar
@@ -173,6 +221,19 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
             <p data-testid="invoice-dates" className="text-sm text-slate-600">
               Fecha em {brDate(inv.closingDate)} · vence em {brDate(inv.dueDate)}
             </p>
+            {inv.canPay ? <Button onClick={() => setPaying(true)}>Pagar fatura</Button> : null}
+            {inv.payment ? (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  undoKey.current = newIdempotencyKey();
+                  setUndoError(null);
+                  setUndoing(true);
+                }}
+              >
+                Desfazer pagamento
+              </Button>
+            ) : null}
             <ul className="flex flex-wrap gap-2" aria-label="Subtotal por membro">
               {inv.byMember.map((m) => (
                 <li
@@ -208,6 +269,35 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
           )}
         </>
       ) : null}
+
+      {c && inv ? (
+        <PayInvoiceDrawer
+          open={paying}
+          cardName={c.name}
+          invoice={inv}
+          onClose={() => setPaying(false)}
+        />
+      ) : null}
+
+      <Drawer open={undoing} onOpenChange={setUndoing} title="Desfazer pagamento?">
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-slate-700">
+            O valor volta para a conta, a fatura volta a ficar em aberto para pagamento e as compras
+            voltam a consumir o limite.
+          </p>
+          {undoError ? (
+            <p role="alert" className="text-sm text-red-700">
+              {undoError}
+            </p>
+          ) : null}
+          <Button variant="danger" disabled={undo.isPending} onClick={confirmUndo}>
+            {undo.isPending ? "Desfazendo…" : "Desfazer pagamento"}
+          </Button>
+          <Button variant="ghost" onClick={() => setUndoing(false)}>
+            Cancelar
+          </Button>
+        </div>
+      </Drawer>
 
       <TransactionDetailDrawer id={detailId} onClose={() => setDetailId(null)} />
     </main>

@@ -254,9 +254,17 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                         {formatBRL(p.amountInCents)}
                       </span>
                       {p.type === "INVOICE" ? (
-                        <Link href={p.href} className="font-medium text-brand-800 underline">
-                          Ver fatura
-                        </Link>
+                        <>
+                          <Link href={p.href} className="font-medium text-brand-800 underline">
+                            Ver fatura
+                          </Link>
+                          <Link
+                            href={`${p.href}&pay=1`}
+                            className="font-medium text-brand-800 underline"
+                          >
+                            Pagar fatura
+                          </Link>
+                        </>
                       ) : (
                         <Button
                           variant="secondary"
