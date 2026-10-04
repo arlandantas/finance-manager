@@ -16,6 +16,7 @@ export function Drawer({
   description,
   children,
   className,
+  initialFocusId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -23,12 +24,19 @@ export function Drawer({
   description?: string;
   children: ReactNode;
   className?: string;
+  /** id do elemento que recebe o foco ao abrir (padrão do Radix: primeiro focável). */
+  initialFocusId?: string;
 }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-slate-900/50" />
         <Dialog.Content
+          onOpenAutoFocus={(e) => {
+            if (!initialFocusId) return;
+            e.preventDefault();
+            document.getElementById(initialFocusId)?.focus();
+          }}
           className={cn(
             "fixed inset-x-0 bottom-0 z-50 flex max-h-[92vh] flex-col rounded-t-2xl bg-white shadow-xl outline-none",
             "md:inset-auto md:left-1/2 md:top-1/2 md:w-full md:max-w-md md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl",

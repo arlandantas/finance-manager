@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { signOutAction } from "@/app/actions";
+import { QuickAddProvider } from "@/components/quick-add";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
 
@@ -116,7 +117,9 @@ export function AppShell({
           <UserMenu user={user} />
         </div>
       </header>
-      <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</div>
+      <QuickAddProvider>
+        <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</div>
+      </QuickAddProvider>
       <nav
         aria-label="Principal (celular)"
         className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white md:hidden"

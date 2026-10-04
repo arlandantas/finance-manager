@@ -1,0 +1,399 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { CategoryIcon } from "@/components/category-icon";
+import { MoneyInput } from "@/components/money-input";
+import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/components/ui/cn";
+import { Drawer } from "@/components/ui/drawer";
+import { Field, inputClass } from "@/components/ui/field";
+import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import { useAccounts } from "@/modules/contas/hooks";
+import { useFamily } from "@/modules/familia/hooks";
+import { useCategories, useCreateTransaction, useDefaults } from "@/modules/transacoes/hooks";
+import { type CreateTransactionInput, CreateTransactionSchema } from "@/modules/transacoes/schemas";
+
+type Kind = "EXPENSE" | "INCOME";
+type FieldKey =
+  | "amountInCents"
+  | "accountId"
+  | "categoryId"
+  | "occurredOn"
+  | "description"
+  | "note"
+  | "payerMemberId";
+
+const TEXT: Record<Kind, { title: string; payer: string; save: string; success: string }> = {
+  EXPENSE: {
+    title: "Nova Despesa",
+    payer: "Quem pagou?",
+    save: "Salvar Despesa",
+    success: "Despesa registrada com sucesso!",
+  },
+  INCOME: {
+    title: "Nova Receita",
+    payer: "Quem recebeu?",
+    save: "Salvar Receita",
+    success: "Receita registrada com sucesso!",
+  },
+};
+
+export function TransactionDrawer({
+  open,
+  onOpenChange,
+  initialKind = "EXPENSE",
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialKind?: Kind;
+}) {
+  const [kind, setKind] = useState<Kind>(initialKind);
+  const [cents, setCents] = useState(0);
+  const [accountId, setAccountId] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [payerId, setPayerId] = useState("");
+  const [shared, setShared] = useState(true);
+  const [date, setDate] = useState("");
+  const [description, setDescription] = useState("");
+  const [note, setNote] = useState("");
+  const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
+  const [banner, setBanner] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  // ADR-009: a chave nasce ao abrir o drawer e é reaproveitada nos reenvios até o sucesso.
+  const [key, setKey] = useState(newIdempotencyKey);
+  const submitting = useRef(false);
+  const categoryRef = useRef<HTMLDivElement>(null);
+
+  const defaults = useDefaults(open);
+  const accounts = useAccounts();
+  const family = useFamily();
+  const categories = useCategories(kind);
+  const create = useCreateTransaction(key);
+
+  // Nova abertura: estado limpo e nova chave.
+  useEffect(() => {
+    if (!open) return;
+    setKind(initialKind);
+    setCents(0);
+    setCategoryId("");
+    setShared(true);
+    setDate("");
+    setDescription("");
+    setNote("");
+    setErrors({});
+    setBanner(null);
+    setDetailsOpen(false);
+    setAccountId("");
+    setPayerId("");
+    setKey(newIdempotencyKey());
+  }, [open, initialKind]);
+
+  // Padrões vindos do servidor (última conta usada; quem pagou = logado).
+  useEffect(() => {
+    if (!open || !defaults.data) return;
+    setAccountId((cur) => cur || defaults.data.accountId || "");
+    setPayerId((cur) => cur || defaults.data.payerMemberId);
+  }, [open, defaults.data]);
+
+  function switchKind(next: Kind) {
+    if (next === kind) return;
+    setKind(next);
+    setCategoryId("");
+    setErrors((e) => ({ ...e, categoryId: undefined }));
+  }
+
+  function buildPayload(): CreateTransactionInput {
+    return {
+      type: kind,
+      accountId,
+      categoryId,
+      amountInCents: cents,
+      ...(payerId ? { payerMemberId: payerId } : {}),
+      ...(date ? { occurredOn: date } : {}),
+      ...(description.trim() ? { description } : {}),
+      ...(note.trim() ? { note } : {}),
+      ...(kind === "EXPENSE" ? { isSharedExpense: shared } : {}),
+    } as CreateTransactionInput;
+  }
+
+  function fieldsFromIssues(issues: Array<{ path: string; message: string }>) {
+    const out: Partial<Record<FieldKey, string>> = {};
+    for (const i of issues) {
+      const k = i.path.split(".")[0] as FieldKey;
+      if (!out[k]) out[k] = i.message;
+    }
+    return out;
+  }
+
+  function submit() {
+    if (submitting.current) return;
+    const parsed = CreateTransactionSchema.safeParse(buildPayload());
+    if (!parsed.success) {
+      const next = fieldsFromIssues(
+        parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+      );
+      setErrors(next);
+      if (next.occurredOn || next.description || next.note) setDetailsOpen(true);
+      if (next.amountInCents) document.getElementById("tx-amount")?.focus();
+      else if (next.categoryId) categoryRef.current?.querySelector<HTMLElement>("button")?.focus();
+      return;
+    }
+    setErrors({});
+    setBanner(null);
+    submitting.current = true;
+    create.mutate(buildPayload(), {
+      onSuccess: () => {
+        toast.success(TEXT[kind].success);
+        onOpenChange(false);
+      },
+      onError: (e) => {
+        if (e instanceof NetworkError) setBanner(e.message);
+        else if (e instanceof ApiClientError && Array.isArray(e.details)) {
+          const next = fieldsFromIssues(e.details as Array<{ path: string; message: string }>);
+          setErrors(next);
+          if (next.occurredOn) setDetailsOpen(true);
+          if (Object.keys(next).length === 0) setBanner(e.message);
+        } else setBanner(e instanceof Error ? e.message : "Erro inesperado. Tente novamente.");
+      },
+      onSettled: () => {
+        submitting.current = false;
+      },
+    });
+  }
+
+  const text = TEXT[kind];
+  const members = family.data?.members ?? [];
+
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange} title={text.title} initialFocusId="tx-amount">
+      <form
+        noValidate
+        className="flex flex-col gap-5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
+        <div
+          role="group"
+          aria-label="Tipo de lançamento"
+          className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1"
+        >
+          {(["EXPENSE", "INCOME"] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              aria-pressed={kind === k}
+              onClick={() => switchKind(k)}
+              className={cn(
+                "min-h-11 rounded-lg text-sm font-semibold",
+                kind === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-600",
+              )}
+            >
+              {TEXT[k].title}
+            </button>
+          ))}
+        </div>
+
+        {banner ? (
+          <p
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+          >
+            {banner}
+          </p>
+        ) : null}
+
+        <Field id="tx-amount" label="Valor" error={errors.amountInCents}>
+          <MoneyInput
+            id="tx-amount"
+            large
+            autoFocus
+            value={cents}
+            onChange={setCents}
+            invalid={Boolean(errors.amountInCents)}
+            describedBy={errors.amountInCents ? "tx-amount-error" : undefined}
+          />
+        </Field>
+
+        <Field id="tx-account" label="Conta" error={errors.accountId}>
+          <select
+            id="tx-account"
+            className={inputClass}
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+            aria-invalid={errors.accountId ? true : undefined}
+          >
+            <option value="" disabled>
+              Escolha uma conta
+            </option>
+            {(accounts.data?.items ?? []).map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <div className="flex flex-col gap-1.5">
+          <span id="tx-category-label" className="text-sm font-medium text-slate-800">
+            Categoria
+          </span>
+          <div
+            ref={categoryRef}
+            role="radiogroup"
+            aria-labelledby="tx-category-label"
+            aria-invalid={errors.categoryId ? true : undefined}
+            className={cn(
+              "grid grid-cols-3 gap-2 rounded-xl",
+              errors.categoryId && "ring-2 ring-red-600 ring-offset-2",
+            )}
+          >
+            {categories.isPending
+              ? Array.from({ length: 6 }, (_, i) => (
+                  <div
+                    key={i}
+                    aria-hidden="true"
+                    className="h-[72px] animate-pulse rounded-xl bg-slate-200"
+                  />
+                ))
+              : (categories.data?.items ?? []).map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={categoryId === c.id}
+                    onClick={() => {
+                      setCategoryId(c.id);
+                      setErrors((e) => ({ ...e, categoryId: undefined }));
+                    }}
+                    className={cn(
+                      "flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-center text-xs font-medium",
+                      categoryId === c.id
+                        ? "border-brand-700 bg-brand-50 text-brand-800"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                    )}
+                  >
+                    <CategoryIcon icon={c.icon} />
+                    <span>{c.name}</span>
+                  </button>
+                ))}
+          </div>
+          {errors.categoryId ? (
+            <p role="alert" className="text-sm text-red-700">
+              {errors.categoryId}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span id="tx-payer-label" className="text-sm font-medium text-slate-800">
+            {text.payer}
+          </span>
+          <div role="radiogroup" aria-labelledby="tx-payer-label" className="flex flex-wrap gap-2">
+            {members.map((m) => (
+              <button
+                key={m.memberId}
+                type="button"
+                role="radio"
+                aria-checked={payerId === m.memberId}
+                aria-label={m.name.split(" ")[0]}
+                onClick={() => setPayerId(m.memberId)}
+                className={cn(
+                  "flex min-h-11 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm font-medium",
+                  payerId === m.memberId
+                    ? "border-brand-700 bg-brand-50 text-brand-800"
+                    : "border-slate-200 bg-white text-slate-700",
+                )}
+              >
+                <Avatar name={m.name} image={m.image} size={32} />
+                {m.name.split(" ")[0]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {kind === "EXPENSE" ? (
+          <div className="flex min-h-11 items-center justify-between gap-3">
+            <span id="tx-shared-label" className="text-sm font-medium text-slate-800">
+              Dividir com a família
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={shared}
+              aria-labelledby="tx-shared-label"
+              onClick={() => setShared((v) => !v)}
+              className={cn(
+                "relative h-7 w-12 shrink-0 rounded-full transition-colors",
+                shared ? "bg-brand-700" : "bg-slate-300",
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all",
+                  shared ? "left-[22px]" : "left-0.5",
+                )}
+              />
+            </button>
+          </div>
+        ) : null}
+
+        <details
+          open={detailsOpen}
+          onToggle={(e) => setDetailsOpen((e.currentTarget as HTMLDetailsElement).open)}
+          className="rounded-lg border border-slate-200 p-3"
+        >
+          <summary className="min-h-6 cursor-pointer text-sm font-medium text-slate-700">
+            Mais detalhes
+          </summary>
+          <div className="mt-3 flex flex-col gap-4">
+            <Field id="tx-date" label="Data" error={errors.occurredOn}>
+              <input
+                id="tx-date"
+                type="date"
+                className={inputClass}
+                value={date}
+                {...(defaults.data ? { max: defaults.data.today } : {})}
+                onChange={(e) => setDate(e.target.value)}
+                aria-invalid={errors.occurredOn ? true : undefined}
+              />
+            </Field>
+            <Field
+              id="tx-description"
+              label="Descrição"
+              error={errors.description}
+              hint="Se vazia, usamos o nome da categoria."
+            >
+              <input
+                id="tx-description"
+                className={inputClass}
+                maxLength={100}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                aria-invalid={errors.description ? true : undefined}
+              />
+            </Field>
+            <Field id="tx-note" label="Observação" error={errors.note}>
+              <textarea
+                id="tx-note"
+                className={cn(inputClass, "min-h-20 py-2")}
+                maxLength={500}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </Field>
+          </div>
+        </details>
+
+        <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white p-4">
+          <Button type="submit" className="w-full" disabled={create.isPending}>
+            {create.isPending ? "Salvando…" : text.save}
+          </Button>
+        </div>
+      </form>
+    </Drawer>
+  );
+}
