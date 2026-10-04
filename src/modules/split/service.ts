@@ -1,13 +1,16 @@
-import { unprocessable } from "@/lib/api/errors";
+import { forbidden, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { compareDate, fromDbDate, todayInFamilyTz } from "@/lib/dates";
-import { toCents } from "@/lib/money";
+import { formatBRL, toCents } from "@/lib/money";
 import { type Period, periodFromKey, periodOf } from "@/lib/period";
 import type { MemberRef } from "@/lib/schemas";
+import type { TransferDTO } from "@/modules/contas/schemas";
+import { createTransferGroup } from "@/modules/contas/transfers";
 import { settlementLabel } from "@/modules/split/labels";
 import { splitRepo } from "@/modules/split/repo";
 import { equalShares, isRuleStale, type RuleInput, ruleAt } from "@/modules/split/rules";
 import type {
+  CreateSettlementParsed,
   RuleVersionDTO,
   SettlementDTO,
   SettlementEntryDTO,
@@ -276,4 +279,72 @@ export async function listSharedExpenses(
     },
   }));
   return { items, totalInCents: items.reduce((s, i) => s + i.amountInCents, 0) };
+}
+
+/** POST /api/v1/settlements (SDD-002 §5.4): lock por (família, período), recálculo e transferência. */
+export async function registerSettlement(
+  tx: Tx,
+  ctx: RequestContext,
+  input: CreateSettlementParsed,
+): Promise<{ transfer: TransferDTO; settlement: SettlementDTO }> {
+  const repo = splitRepo(tx, ctx.familyId);
+  const members = await repo.listMembers();
+  const ids = new Set(members.map((m) => m.id));
+  for (const [path, id] of [
+    ["fromMemberId", input.fromMemberId],
+    ["toMemberId", input.toMemberId],
+  ] as const) {
+    if (!ids.has(id)) {
+      throw unprocessable("INVALID_REFERENCE", "Membro inválido", [
+        { path, message: "Membro inválido" },
+      ]);
+    }
+  }
+  for (const id of [input.fromAccountId, input.toAccountId]) {
+    if (!(await repo.findAccount(id))) throw notFound("Conta não encontrada.");
+  }
+  const today = todayInFamilyTz(ctx.clock);
+  const occurredOn = input.occurredOn ?? today;
+  if (compareDate(occurredOn, today) > 0) {
+    const message = "A data do acerto não pode ser futura";
+    throw unprocessable("FUTURE_DATE_NOT_ALLOWED", message, [{ path: "occurredOn", message }]);
+  }
+  if (
+    ctx.role !== "ADMIN" &&
+    ctx.memberId !== input.fromMemberId &&
+    ctx.memberId !== input.toMemberId
+  ) {
+    throw forbidden("Somente os envolvidos ou um Administrador podem registrar o acerto");
+  }
+  await repo.lockPeriod(input.period);
+  const before = await loadSettlement(tx, ctx, input.period);
+  const suggestion = before.result.suggestions.find(
+    (s) => s.fromMemberId === input.fromMemberId && s.toMemberId === input.toMemberId,
+  );
+  if (!suggestion) {
+    throw unprocessable("SETTLEMENT_NOT_DUE", "Não há valor a acertar entre estes membros");
+  }
+  if (input.amountInCents > suggestion.amountInCents) {
+    const due = suggestion.amountInCents;
+    const e = unprocessable(
+      "SETTLEMENT_EXCEEDS_DUE",
+      `O valor não pode ser maior que o devido (${formatBRL(due)})`,
+      { dueInCents: due },
+    );
+    throw e;
+  }
+  const transfer = await createTransferGroup(tx, ctx, {
+    kind: "SETTLEMENT",
+    fromAccountId: input.fromAccountId,
+    toAccountId: input.toAccountId,
+    amountInCents: input.amountInCents,
+    occurredOn,
+    description: settlementLabel(input.period, Number(today.slice(0, 4))),
+    settlement: {
+      period: input.period,
+      fromMemberId: input.fromMemberId,
+      toMemberId: input.toMemberId,
+    },
+  });
+  return { transfer, settlement: await getSettlement(tx, ctx, input.period) };
 }

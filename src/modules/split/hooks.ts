@@ -65,3 +65,21 @@ export function useSharedExpenses(period: string | undefined, enabled: boolean) 
 }
 
 export type { CreateSettlementInput };
+
+export function useRegisterSettlement(idempotencyKey: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateSettlementInput) =>
+      apiFetch<{ settlement: SettlementDTO }>("/api/v1/settlements", {
+        method: "POST",
+        body: input,
+        idempotencyKey,
+      }),
+    onSuccess: () =>
+      Promise.all(
+        [["settlement"], ["accounts"], ["transactions"], ["home"]].map((queryKey) =>
+          qc.invalidateQueries({ queryKey }),
+        ),
+      ),
+  });
+}
