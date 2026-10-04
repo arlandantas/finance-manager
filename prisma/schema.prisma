@@ -152,6 +152,7 @@ model Family {
   categories     Category[]
   splitRules     SplitRuleVersion[]
   bankAccounts   BankAccount[]
+  creditCards    CreditCard[]
   transactions   Transaction[]
   transferGroups TransferGroup[]
 
@@ -169,6 +170,7 @@ model Member {
   user   User   @relation(fields: [userId], references: [id])
 
   ownedAccounts        BankAccount[]
+  ownedCards           CreditCard[]
   paidTransactions     Transaction[] @relation("TxPayer")
   authoredTransactions Transaction[] @relation("TxAuthor")
 
@@ -239,6 +241,28 @@ model BankAccount {
 
   @@unique([familyId, id])
   @@map("bank_accounts")
+}
+
+// ───────── Cartões de crédito (US-015, SDD-008, ADR-014) ─────────
+model CreditCard {
+  id                String   @id @default(uuid()) @db.Uuid
+  familyId          String   @db.Uuid
+  name              String // trim; único por família ignorando caixa (índice em SQL cru)
+  institution       String   @default("Outro")
+  ownerMemberId     String   @db.Uuid
+  limitInCents      BigInt // > 0
+  closingDay        Int // 1..28
+  dueDay            Int // 1..28
+  version           Int      @default(1)
+  updatedByMemberId String?  @db.Uuid // "alterado por {Nome}" no 409
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+
+  family Family @relation(fields: [familyId], references: [id])
+  owner  Member @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
+
+  @@unique([familyId, id])
+  @@map("credit_cards")
 }
 
 model TransferGroup {
