@@ -1,6 +1,6 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -9,9 +9,177 @@ datasource db {
 }
 
 // Baseline de EN-001: tabela técnica mínima para validar migrate/seed/health.
-// O domínio (User, Family, Account, Transaction...) entra com as histórias (US-001+), conforme os SDDs.
 model SystemInfo {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum CategoryKind {
+  EXPENSE
+  INCOME
+}
+
+enum SplitKind {
+  EQUAL
+  PROPORTIONAL
+}
+
+// ───────── Auth.js (adaptador Prisma) ─────────
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String?
+  email         String    @unique // SEMPRE minúsculo (normalizado no adaptador)
+  emailVerified DateTime? @db.Timestamptz(3)
+  image         String?
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+
+  accounts    Account[]
+  sessions    Session[]
+  member      Member?
+  idempotency IdempotencyRecord[]
+
+  @@map("users")
+}
+
+// Modelo do Auth.js (NÃO é a conta bancária; esta se chama BankAccount).
+model Account {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime @db.Timestamptz(3)
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ───────── Núcleo familiar ─────────
+model Family {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  timezone  String   @default("America/Sao_Paulo")
+  currency  String   @default("BRL")
+  cutDay    Int      @default(1) // CHECK 1..28; sem UI no R1 (ADR-010)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  members    Member[]
+  categories Category[]
+  splitRules SplitRuleVersion[]
+
+  @@map("families")
+}
+
+model Member {
+  id       String   @id @default(uuid()) @db.Uuid
+  familyId String   @db.Uuid
+  userId   String   @db.Uuid
+  role     Role
+  joinedAt DateTime @default(now()) @db.Timestamptz(3)
+
+  family Family @relation(fields: [familyId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId]) // R1: 1 família por usuário (relaxar por migração se N famílias)
+  @@unique([familyId, userId])
+  @@unique([familyId, id])
+  @@map("members")
+}
+
+model Category {
+  id         String       @id @default(uuid()) @db.Uuid
+  familyId   String       @db.Uuid
+  name       String
+  kind       CategoryKind
+  icon       String // chave de ícone (ex.: "shopping-cart")
+  sortOrder  Int
+  archivedAt DateTime?    @db.Timestamptz(3) // uso futuro (US-014)
+
+  family Family @relation(fields: [familyId], references: [id])
+
+  @@unique([familyId, kind, name])
+  @@unique([familyId, id])
+  @@map("categories")
+}
+
+// ───────── Divisão (SDD-002) ─────────
+model SplitRuleVersion {
+  id                String    @id @default(uuid()) @db.Uuid
+  familyId          String    @db.Uuid
+  kind              SplitKind
+  effectiveFrom     DateTime  @db.Date
+  createdByMemberId String?   @db.Uuid
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+
+  family Family       @relation(fields: [familyId], references: [id])
+  shares SplitShare[]
+
+  @@index([familyId, effectiveFrom(sort: Desc), createdAt(sort: Desc)])
+  @@map("split_rule_versions")
+}
+
+model SplitShare {
+  id       String @id @default(uuid()) @db.Uuid
+  ruleId   String @db.Uuid
+  memberId String @db.Uuid
+  bps      Int // 0..10000
+
+  rule SplitRuleVersion @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@unique([ruleId, memberId])
+  @@map("split_shares")
+}
+
+// ───────── Infra ─────────
+model IdempotencyRecord {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  key            String
+  method         String
+  path           String
+  requestHash    String
+  responseStatus Int
+  responseBody   Json
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([createdAt])
+  @@map("idempotency_records")
 }
