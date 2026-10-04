@@ -1,6 +1,7 @@
 "use client";
 
 import { History, MoreHorizontal, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -210,7 +211,7 @@ export function TransactionDetailDrawer({
                           Editar
                         </MenuItem>
                       ) : null}
-                      {!t.deletedAt ? (
+                      {!t.deletedAt && !t.plannedExpenseId ? (
                         <MenuItem
                           onClick={() => {
                             close();
@@ -265,6 +266,20 @@ export function TransactionDetailDrawer({
                 </Row>
               ) : null}
             </dl>
+            {t.plannedExpenseId && !t.deletedAt ? (
+              <p
+                data-testid="linked-planned"
+                className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800"
+              >
+                <span>Esta despesa veio de uma despesa prevista. Use Desfazer pagamento.</span>{" "}
+                <Link
+                  href={`/previstas#${t.plannedExpenseId}`}
+                  className="font-medium text-brand-800 underline"
+                >
+                  Ver despesa prevista
+                </Link>
+              </p>
+            ) : null}
             <div className="mt-3 flex flex-col gap-1 text-sm text-slate-700">
               {t.payer ? (
                 <p>

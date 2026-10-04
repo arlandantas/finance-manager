@@ -3,6 +3,7 @@
 import { Check, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,6 +12,7 @@ import { useHome } from "@/modules/home/hooks";
 import type { HomeDTO } from "@/modules/home/schemas";
 import { heroText } from "@/modules/split/hero";
 import { LedgerRow } from "./extrato/ledger-row";
+import { PayPlannedDrawer } from "./previstas/pay-drawer";
 
 const first = (n: string) => n.split(" ")[0] ?? n;
 
@@ -118,6 +120,7 @@ function HomeSkeleton() {
 export function HomeScreen({ firstName }: { firstName: string }) {
   const home = useHome();
   const router = useRouter();
+  const [payingId, setPayingId] = useState<string | null>(null);
   const h = home.data;
   return (
     <main className="flex flex-col gap-4">
@@ -254,7 +257,15 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                         <Link href={p.href} className="font-medium text-brand-800 underline">
                           Ver fatura
                         </Link>
-                      ) : null}
+                      ) : (
+                        <Button
+                          variant="secondary"
+                          aria-label={`Dar baixa em ${p.title}`}
+                          onClick={() => setPayingId(p.id)}
+                        >
+                          Dar baixa
+                        </Button>
+                      )}
                     </span>
                   </li>
                 ))}
@@ -293,6 +304,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
           </Card>
         </div>
       ) : null}
+      <PayPlannedDrawer plannedId={payingId} onClose={() => setPayingId(null)} />
     </main>
   );
 }
