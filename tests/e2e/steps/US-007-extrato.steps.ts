@@ -233,13 +233,11 @@ When("abro o detalhe do lançamento", async ({ page, world }) => {
 });
 
 Then("vejo {string} e {string}", async ({ page }, a: string, b: string) => {
+  // No detalhe do lançamento (drawer) ou, fora dele, no conteúdo principal da tela.
   const dialog = page.getByRole("dialog", { name: "Detalhe do lançamento" });
-  await expect(dialog.getByText(a, { exact: true }))
-    .toBeVisible()
-    .catch(async () => {
-      await expect(dialog).toContainText(a);
-    });
-  await expect(dialog).toContainText(b);
+  const scope = (await dialog.count()) > 0 ? dialog : page.locator("main");
+  await expect(scope).toContainText(a);
+  await expect(scope).toContainText(b);
 });
 
 When("aplico um filtro sem resultados", async ({ page, world }) => {

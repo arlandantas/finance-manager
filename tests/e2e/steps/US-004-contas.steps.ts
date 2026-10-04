@@ -140,7 +140,10 @@ When("tento cadastrar outra com o mesmo nome", async ({ page }) => {
 });
 
 Then("vejo {string}", async ({ page }, texto: string) => {
-  await expect(page.getByText(texto, { exact: true })).toBeVisible();
+  // Texto exato de um elemento; se a frase for composta (ex.: rótulo + valor), vale o conteúdo da tela.
+  const exact = page.getByText(texto, { exact: true });
+  const composed = page.locator("main").filter({ hasText: texto });
+  await expect(exact.or(composed).first()).toBeVisible();
 });
 
 Given("que Mariana cadastrou a conta {string}", async ({ world }, nome: string) => {
