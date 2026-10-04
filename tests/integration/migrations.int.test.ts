@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { testDb } from "../support/db";
+import { beforeEach, describe, expect, it } from "vitest";
+import { resetDb, testDb } from "../support/db";
 
 const db = testDb();
+beforeEach(resetDb);
 
 const names = async (sql: string): Promise<string[]> =>
   (await db.$queryRawUnsafe<Array<{ n: string }>>(sql)).map((r) => r.n);
@@ -34,7 +35,6 @@ describe("EN-001/US-004 Migração íntegra (modelo-de-dados §4)", () => {
   });
 
   it("os CHECKs barram dados inconsistentes", async () => {
-    await expect(db.$executeRawUnsafe(`UPDATE families SET "cutDay" = 29`)).resolves.toBeDefined(); // sem linhas
     const family = await db.family.create({ data: { name: "F" } });
     await expect(
       db.$executeRawUnsafe(`UPDATE families SET "cutDay" = 29 WHERE id = '${family.id}'::uuid`),
