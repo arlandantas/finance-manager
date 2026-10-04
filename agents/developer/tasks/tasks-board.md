@@ -24,7 +24,7 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-008 | US-003 | Convidar um membro por e-mail (Mailpit local; EXT-02) | US-002 | SDD-003 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-009 | US-008 | Definir a regra de divisão das despesas comuns | US-003 | SDD-002 | 2 | Concluído (aguardando validação do Gestor) |
 | TASK-010 | US-009a | Painel de acerto: motor `computeSettlement`, API e painel essencial | US-005, US-008 | SDD-002 | 5 | Concluído (aguardando validação do Gestor) |
-| TASK-011 | US-010 | Transferir dinheiro entre contas da família | US-004 | SDD-004 | 3 | Todo |
+| TASK-011 | US-010 | Transferir dinheiro entre contas da família | US-004 | SDD-004 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-012 | US-011 | Registrar o acerto de contas como transferência | US-009a, US-010 | SDD-002 | 3 | Todo |
 | TASK-013 | US-012 | Home: visão essencial da família | US-004, US-007, US-009a | SDD-005 | 3 | Todo |
 | TASK-014 | US-009b | Acerto com 3 membros e lista expansível das despesas (Should, cortável) | US-009a | SDD-002 | 3 | Todo |
@@ -234,4 +234,10 @@ EN-001 (complemento), US-001, US-002, US-004, US-005, US-006, US-007 e US-003 **
   - [x] `lint`, `typecheck`, `test` (170), `test:int` (171), `test:e2e` (142), `build` verdes.
   - [x] Verificação manual (navegador integrado, 3100, Postgres dev limpo com Família Silva): desktop e 375 px sem rolagem horizontal; frase-herói, cartões Pagou/Cota/Diferença com cores e sinal, resumo da regra, link de engrenagem.
 - **Desvios**: botão "Registrar acerto" e histórico entram com a US-011; lista expansível e cenário de 3 membros na UI ficam para a US-009b (a lista de sugestões adicionais já é exibida). O painel renderiza todas as sugestões desde já. Gherkin: "Navegar entre meses" ganhou `Dado despesas comuns de setembro e de outubro` e o passo virou `E navego para o mês anterior` (colide com o passo homônimo da US-007).
+
+## ✅ [TASK-011] US-010 — Transferir dinheiro entre contas da família
+- **História PO**: [US-010](../../product-owner/backlog/stories/US-010-transferencia-entre-contas.md) · **SDD-004** §2..§5, §7 (inclui `undo`, usado pela US-013b).
+- **Arquivos**: `src/modules/contas/{transfers,transfer-preview,schemas,repo,hooks}.ts` (`createTransferGroup` compartilhada com o acerto, `undoTransferGroup`), `src/app/api/v1/transfers/{route,[groupId]/route,[groupId]/undo/route}.ts`, `src/app/(app)/contas/{transfer-drawer,contas-screen}.tsx`, testes `tests/unit/contas/transfer-preview.test.ts`, `tests/integration/us-010-transferencia.int.test.ts`, `tests/e2e/features/US-010-*.feature` + steps.
+- **QA**: U (prévia de saldos); I (14: sucesso com `balanceAfter`, vinculada no extrato, fora dos totais/acerto, contas iguais, valores inválidos, sem saldo, atomicidade, duplo clique, outra família 404, data futura, índice de pernas, undo/ALREADY_UNDONE/VERSION_CONFLICT, isolamento); E2E 8 cenários x 2 (atomicidade é `@integration`); lint, typecheck, test (173), test:int (185), test:e2e (158), build verdes; verificação manual (375 px e desktop): aviso "A conta de origem ficará negativa" + "Confirmar mesmo assim", saldo -R$ 100,00, consolidado inalterado, linhas "Mesma transferência" no extrato.
+- **Desvios**: passo "toco duas vezes em" virou `preencho a transferência e toco duas vezes em` (colisão com US-006); contexto de transferência acrescentado aos cenários 2 e 3; `Promise.all` sobre `tx` evitado no módulo split (aviso do pg sobre consultas concorrentes; permanece em `getFamily` do Inc 1, ponto de atenção).
 
