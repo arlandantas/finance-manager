@@ -93,6 +93,39 @@ describe("US-001 Login de teste em desenvolvimento local (dev-login)", () => {
     expect(await db.user.count()).toBe(0);
   });
 
+  it("(infra) túnel: host de APP_PUBLIC_ORIGIN loga (cookie Secure via https); outro host segue 403", async () => {
+    enableDevLogin();
+    vi.stubEnv("APP_PUBLIC_ORIGIN", "https://fancy-queens-kick.loca.lt");
+    const ok = await call(
+      null,
+      "POST",
+      "/api/dev/login",
+      { email: "a@exemplo.com" },
+      { host: "fancy-queens-kick.loca.lt", headers: { "x-forwarded-proto": "https" } },
+    );
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get("set-cookie")).toMatch(/^__Secure-authjs\.session-token=.*; Secure/);
+    expect(await db.session.count()).toBe(1);
+    const other = await call(
+      null,
+      "POST",
+      "/api/dev/login",
+      { email: "b@exemplo.com" },
+      { host: "outro.loca.lt" },
+    );
+    expect(other.status).toBe(403);
+    // produção continua bloqueando mesmo no host do túnel
+    vi.stubEnv("NODE_ENV", "production");
+    const prod = await call(
+      null,
+      "POST",
+      "/api/dev/login",
+      { email: "c@exemplo.com" },
+      { host: "fancy-queens-kick.loca.lt" },
+    );
+    expect(prod.status).toBe(404);
+  });
+
   it("(infra) corpo inválido: 400 VALIDATION_ERROR sem criar usuário nem sessão", async () => {
     enableDevLogin();
     const res = await call(null, "POST", "/api/dev/login", { email: "lucas@" });

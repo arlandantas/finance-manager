@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import { zodDetails } from "@/lib/api/with-api";
 import { createDevSession } from "@/lib/auth/dev-login";
-import { isDevLoginEnabled, isLocalHost } from "@/lib/auth/dev-login-guard";
+import { isDevLoginEnabled, isDevLoginHost } from "@/lib/auth/dev-login-guard";
 import { SECURE_SESSION_COOKIE, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
 import { getEnv } from "@/lib/env";
@@ -10,9 +10,15 @@ import { DevLoginSchema } from "@/modules/familia/schemas";
 // ADR-008: provedor de login de teste. 404 (corpo vazio) quando desativado.
 export async function handleDevLogin(req: Request): Promise<Response> {
   if (!isDevLoginEnabled()) return new Response(null, { status: 404 });
-  if (!isLocalHost(req.headers.get("host"))) {
+  if (!isDevLoginHost(req.headers.get("host"))) {
     return Response.json(
-      { error: { code: "FORBIDDEN", message: "Login de teste disponível apenas em localhost." } },
+      {
+        error: {
+          code: "FORBIDDEN",
+          message:
+            "Login de teste disponível apenas em localhost (ou no host de APP_PUBLIC_ORIGIN).",
+        },
+      },
       { status: 403 },
     );
   }
@@ -40,7 +46,9 @@ export async function handleDevLogin(req: Request): Promise<Response> {
     );
   }
   const { user, sessionToken, expires } = await createDevSession(getDb(), parsed.data);
-  const secure = getEnv().AUTH_URL.startsWith("https://");
+  const secure =
+    req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() === "https" ||
+    getEnv().AUTH_URL.startsWith("https://");
   const cookie = [
     `${secure ? SECURE_SESSION_COOKIE : SESSION_COOKIE}=${sessionToken}`,
     "Path=/",

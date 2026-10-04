@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { loginErrorMessage } from "@/app/(public)/login/messages";
 import { authorizeSignIn, profileUpdates, sessionConfig } from "@/lib/auth/config";
-import { assertSafeAuthConfig, isDevLoginEnabled, isLocalHost } from "@/lib/auth/dev-login-guard";
+import {
+  assertSafeAuthConfig,
+  isDevLoginEnabled,
+  isDevLoginHost,
+  isDirectLocalRequest,
+  isLocalHost,
+} from "@/lib/auth/dev-login-guard";
 import { normalizeEmail } from "@/lib/auth/email";
 import { safeCallbackUrl } from "@/lib/auth/redirect";
 import { parseCookieHeader, sessionTokenFromCookies } from "@/lib/auth/session";
@@ -91,6 +97,29 @@ describe("US-001 infra: dev-login seguro", () => {
       assertSafeAuthConfig({ AUTH_DEV_LOGIN: "true", NODE_ENV: "development" }),
     ).not.toThrow();
     expect(() => assertSafeAuthConfig({ NODE_ENV: "production" })).not.toThrow();
+  });
+
+  it("isDevLoginHost: localhost sempre; túnel só se for exatamente o host de APP_PUBLIC_ORIGIN", () => {
+    const env = { APP_PUBLIC_ORIGIN: "https://fancy-queens-kick.loca.lt" };
+    expect(isDevLoginHost("localhost:3100", {})).toBe(true);
+    expect(isDevLoginHost("fancy-queens-kick.loca.lt", env)).toBe(true);
+    expect(isDevLoginHost("FANCY-queens-kick.loca.lt:443", env)).toBe(true);
+    expect(isDevLoginHost("fancy-queens-kick.loca.lt", {})).toBe(false);
+    expect(isDevLoginHost("outro.loca.lt", env)).toBe(false);
+    expect(isDevLoginHost("evil.com", { APP_PUBLIC_ORIGIN: "lixo" })).toBe(false);
+    expect(isDevLoginHost(null, env)).toBe(false);
+  });
+
+  it("isDirectLocalRequest (relógio de apoio): localhost e sem cabeçalhos de proxy/túnel", () => {
+    const h = (o: Record<string, string>) => new Headers(o);
+    expect(isDirectLocalRequest(h({ host: "localhost:3100" }))).toBe(true);
+    expect(isDirectLocalRequest(h({ host: "localhost:3100", "x-forwarded-for": "1.2.3.4" }))).toBe(
+      false,
+    );
+    expect(isDirectLocalRequest(h({ host: "localhost", "x-forwarded-host": "a.loca.lt" }))).toBe(
+      false,
+    );
+    expect(isDirectLocalRequest(h({ host: "a.loca.lt" }))).toBe(false);
   });
 
   it("isLocalHost aceita só localhost, 127.0.0.1, [::1] e *.localhost", () => {

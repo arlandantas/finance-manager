@@ -25,4 +25,34 @@ export function isLocalHost(hostHeader: string | null | undefined): boolean {
   );
 }
 
+/** Host (sem porta) de APP_PUBLIC_ORIGIN, ex.: o túnel de teste; undefined se ausente/inválido. */
+function publicOriginHost(env: Env): string | undefined {
+  const raw = env.APP_PUBLIC_ORIGIN?.trim();
+  if (!raw) return undefined;
+  try {
+    return new URL(raw).hostname.toLowerCase() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Host aceito pelo login de teste: local OU exatamente o host de APP_PUBLIC_ORIGIN (túnel de teste).
+ * A trava de produção (isDevLoginEnabled/assertSafeAuthConfig) continua valendo em qualquer host.
+ */
+export function isDevLoginHost(hostHeader: string | null | undefined, env: Env = process.env) {
+  if (isLocalHost(hostHeader)) return true;
+  const allowed = publicOriginHost(env);
+  if (!hostHeader || !allowed) return false;
+  return hostHeader.trim().toLowerCase().replace(/:\d+$/, "") === allowed;
+}
+
+/** Endpoint de apoio ao E2E: só localhost direto, nunca via proxy/túnel (cabeçalhos x-forwarded-*). */
+export function isDirectLocalRequest(headers: Headers): boolean {
+  if (!isLocalHost(headers.get("host"))) return false;
+  return !["x-forwarded-for", "x-forwarded-host", "x-forwarded-proto", "forwarded"].some((k) =>
+    headers.has(k),
+  );
+}
+
 export const localPart = (email: string) => email.split("@")[0] ?? email;

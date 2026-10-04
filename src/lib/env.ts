@@ -14,6 +14,7 @@ const schema = z
     DATABASE_URL: z.string().min(1),
     APP_TIMEZONE: z.string().default("America/Sao_Paulo"),
     APP_URL: z.string().default("http://localhost:3100"),
+    APP_PUBLIC_ORIGIN: optionalString,
     APP_NOW_OVERRIDE: optionalString,
     AUTH_SECRET: optionalString,
     AUTH_URL: z.string().default("http://localhost:3100"),

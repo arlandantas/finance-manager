@@ -461,6 +461,24 @@ describe("Relógio de teste (/api/dev/clock)", () => {
         { host: "exemplo.com" },
       );
       expect(alien.status).toBe(403);
+      // o túnel (APP_PUBLIC_ORIGIN) não abre o relógio de apoio
+      vi.stubEnv("APP_PUBLIC_ORIGIN", "https://exemplo.com");
+      const tunnel = await call(
+        null,
+        "POST",
+        "/api/dev/clock",
+        { now: "2026-10-15T15:00:00Z" },
+        { host: "exemplo.com" },
+      );
+      expect(tunnel.status).toBe(403);
+      const proxied = await call(
+        null,
+        "POST",
+        "/api/dev/clock",
+        { now: "2026-10-15T15:00:00Z" },
+        { headers: { "x-forwarded-for": "1.2.3.4" } },
+      );
+      expect(proxied.status).toBe(403);
       const ok = await call(null, "POST", "/api/dev/clock", { now: "2026-12-26T15:00:00Z" });
       expect(ok.status).toBe(200);
       const { getClock } = await import("@/lib/clock");

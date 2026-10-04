@@ -1,16 +1,16 @@
-import { isDevLoginEnabled, isLocalHost } from "@/lib/auth/dev-login-guard";
+import { isDevLoginEnabled, isDirectLocalRequest } from "@/lib/auth/dev-login-guard";
 import { setDevClockOverride } from "@/lib/clock";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Apoio a E2E (mesma proteção do login de teste, ADR-008): fixa o "hoje" do servidor por cenário.
- * 404 quando AUTH_DEV_LOGIN não está ligado ou em produção; 403 fora de localhost.
+ * 404 quando AUTH_DEV_LOGIN não está ligado ou em produção; 403 fora de localhost ou via túnel/proxy.
  * Corpo: `{ "now": "2026-10-15T15:00:00Z" }` ou `{ "now": null }` para restaurar.
  */
 export async function POST(req: Request): Promise<Response> {
   if (!isDevLoginEnabled()) return new Response(null, { status: 404 });
-  if (!isLocalHost(req.headers.get("host"))) {
+  if (!isDirectLocalRequest(req.headers)) {
     return Response.json(
       { error: { code: "FORBIDDEN", message: "Apenas em localhost." } },
       { status: 403 },
