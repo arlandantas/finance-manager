@@ -137,3 +137,54 @@ export function useAllCategories() {
     staleTime: 5 * 60_000,
   });
 }
+
+// ── Correção, exclusão, restauração e histórico (US-013) ──
+import type {
+  RevisionDTO,
+  TransactionStateInput,
+  UpdateTransactionInput,
+  UpdateTransactionResponse,
+} from "@/modules/transacoes/schemas";
+
+export function useHistory(id: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ["transaction", id, "history"],
+    queryFn: () => apiFetch<{ items: RevisionDTO[] }>(`/api/v1/transactions/${id}/history`),
+    enabled: enabled && id !== null,
+  });
+}
+
+function useInvalidateTransaction() {
+  const qc = useQueryClient();
+  const invalidate = useInvalidateAfterTransactionChange();
+  return async () => {
+    await qc.invalidateQueries({ queryKey: ["transaction"] });
+    await invalidate();
+  };
+}
+
+export function useUpdateTransaction() {
+  const invalidate = useInvalidateTransaction();
+  return useMutation({
+    mutationFn: (a: { id: string; input: UpdateTransactionInput; idempotencyKey: string }) =>
+      apiFetch<UpdateTransactionResponse>(`/api/v1/transactions/${a.id}`, {
+        method: "PATCH",
+        body: a.input,
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useTransactionState(action: "delete" | "restore") {
+  const invalidate = useInvalidateTransaction();
+  return useMutation({
+    mutationFn: (a: { id: string; input: TransactionStateInput; idempotencyKey: string }) =>
+      apiFetch<{ transaction: TransactionDetailDTO }>(`/api/v1/transactions/${a.id}/${action}`, {
+        method: "POST",
+        body: a.input,
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}

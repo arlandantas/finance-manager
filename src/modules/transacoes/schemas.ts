@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { dateISOSchema, daysBetween } from "@/lib/dates";
 import { amountInCentsSchema } from "@/lib/money";
-import { type MemberRef, periodKeySchema, uuidSchema } from "@/lib/schemas";
+import { type MemberRef, periodKeySchema, uuidSchema, versionSchema } from "@/lib/schemas";
 
 // Descrição opcional (Q-05): vazia/ausente => o servidor usa o nome da categoria.
 const descriptionSchema = z.preprocess(
@@ -131,4 +131,57 @@ export type ListTransactionsResponse = {
   period: { key: string; start: string; end: string } | null; // null quando from/to
   totals: LedgerTotalsDTO | null; // null se houve `cursor`
   hasAnyTransactions: boolean | null; // null se houve `cursor`; exclui OPENING e excluídos
+};
+
+// ── Edição, exclusão, restauração e histórico (SDD-001 §2, US-013) ──
+export const UpdateTransactionSchema = z
+  .object({
+    version: versionSchema,
+    confirmSettledPeriod: z.boolean().optional(),
+    accountId: common.accountId.optional(),
+    categoryId: common.categoryId.optional(),
+    amountInCents: amountInCentsSchema.optional(),
+    occurredOn: dateISOSchema.optional(),
+    payerMemberId: uuidSchema.optional(),
+    description: z
+      .string()
+      .trim()
+      .min(2, "A descrição deve ter no mínimo 2 caracteres")
+      .max(100, "A descrição deve ter no máximo 100 caracteres")
+      .optional(),
+    note: z
+      .string()
+      .trim()
+      .max(500, "A observação deve ter no máximo 500 caracteres")
+      .nullable()
+      .optional(),
+    isSharedExpense: z.boolean().optional(), // só despesa; em receita => 400
+  })
+  .strict();
+export type UpdateTransactionInput = z.input<typeof UpdateTransactionSchema>;
+export type UpdateTransactionParsed = z.output<typeof UpdateTransactionSchema>;
+
+export const TransactionStateSchema = z
+  .object({ version: versionSchema, confirmSettledPeriod: z.boolean().optional() })
+  .strict(); // delete / restore
+export type TransactionStateInput = z.input<typeof TransactionStateSchema>;
+
+export type RevisionDTO = {
+  revision: number;
+  action: "CREATE" | "UPDATE" | "DELETE" | "RESTORE" | "UNDO";
+  at: string;
+  actor: MemberRef;
+  changes: Array<{
+    field: string;
+    label: string;
+    from: unknown;
+    to: unknown;
+    fromLabel?: string;
+    toLabel?: string;
+  }>;
+};
+
+export type UpdateTransactionResponse = {
+  transaction: TransactionDetailDTO;
+  account: { id: string; balanceInCents: number };
 };

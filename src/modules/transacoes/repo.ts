@@ -10,6 +10,7 @@ export function transacoesRepo(tx: Tx, familyId: string) {
         where: { familyId, archivedAt: null, ...(kind ? { kind } : {}) },
         orderBy: [{ kind: "asc" }, { sortOrder: "asc" }],
       }),
+    listAllCategories: () => tx.category.findMany({ where: { familyId } }),
     findCategory: (id: string) =>
       tx.category.findFirst({ where: { id, familyId, archivedAt: null } }),
     findAccount: (id: string) =>
@@ -107,6 +108,66 @@ export function transacoesRepo(tx: Tx, familyId: string) {
           authorMemberId: d.authorMemberId,
           isSharedExpense: d.isSharedExpense,
         },
+      }),
+    /** Atualização com controle otimista: 0 linhas => versão antiga, excluído ou inexistente. */
+    updateVersioned: (
+      id: string,
+      version: number,
+      data: {
+        accountId?: string;
+        categoryId?: string;
+        amountInCents?: number;
+        occurredOn?: string;
+        payerMemberId?: string;
+        description?: string;
+        note?: string | null;
+        isSharedExpense?: boolean;
+        updatedByMemberId: string;
+      },
+    ) =>
+      tx.transaction.updateMany({
+        where: { id, familyId, version, deletedAt: null },
+        data: {
+          ...(data.accountId !== undefined ? { accountId: data.accountId } : {}),
+          ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
+          ...(data.amountInCents !== undefined
+            ? { amountInCents: fromCents(data.amountInCents) }
+            : {}),
+          ...(data.occurredOn !== undefined ? { occurredOn: toDbDate(data.occurredOn) } : {}),
+          ...(data.payerMemberId !== undefined ? { payerMemberId: data.payerMemberId } : {}),
+          ...(data.description !== undefined ? { description: data.description } : {}),
+          ...(data.note !== undefined ? { note: data.note } : {}),
+          ...(data.isSharedExpense !== undefined ? { isSharedExpense: data.isSharedExpense } : {}),
+          updatedByMemberId: data.updatedByMemberId,
+          version: { increment: 1 },
+        },
+      }),
+    markDeleted: (id: string, version: number, memberId: string, now: Date) =>
+      tx.transaction.updateMany({
+        where: { id, familyId, version, deletedAt: null },
+        data: {
+          deletedAt: now,
+          deletedByMemberId: memberId,
+          deletionReason: "DELETED",
+          updatedByMemberId: memberId,
+          version: { increment: 1 },
+        },
+      }),
+    markRestored: (id: string, version: number, memberId: string) =>
+      tx.transaction.updateMany({
+        where: { id, familyId, version, deletedAt: { not: null }, deletionReason: "DELETED" },
+        data: {
+          deletedAt: null,
+          deletedByMemberId: null,
+          deletionReason: null,
+          updatedByMemberId: memberId,
+          version: { increment: 1 },
+        },
+      }),
+    listRevisions: (transactionId: string) =>
+      tx.transactionRevision.findMany({
+        where: { familyId, transactionId },
+        orderBy: [{ at: "desc" }, { revision: "desc" }],
       }),
   };
 }
