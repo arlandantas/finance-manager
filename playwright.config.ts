@@ -18,6 +18,8 @@ const TEST_DATABASE_URL =
 const testDir = defineBddConfig({
   features: "tests/e2e/features/**/*.feature",
   steps: ["tests/e2e/steps/**/*.ts", "tests/e2e/support/**/*.ts"],
+  // Cenários @integration são cobertos em tests/integration (não dependem de navegador).
+  tags: "not @integration",
 });
 
 export default defineConfig({
