@@ -30,6 +30,43 @@ enum SplitKind {
   PROPORTIONAL
 }
 
+enum BankAccountType {
+  CHECKING
+  SAVINGS
+  CASH
+}
+
+enum TransactionKind {
+  EXPENSE
+  INCOME
+  OPENING
+  TRANSFER_OUT
+  TRANSFER_IN
+}
+
+enum Direction {
+  CREDIT
+  DEBIT
+}
+
+enum DeletionReason {
+  DELETED
+  UNDONE
+}
+
+enum TransferGroupKind {
+  TRANSFER
+  SETTLEMENT
+}
+
+enum RevisionAction {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+  UNDO
+}
+
 // ───────── Auth.js (adaptador Prisma) ─────────
 model User {
   id            String    @id @default(uuid()) @db.Uuid
@@ -98,9 +135,12 @@ model Family {
   cutDay    Int      @default(1) // CHECK 1..28; sem UI no R1 (ADR-010)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
-  members    Member[]
-  categories Category[]
-  splitRules SplitRuleVersion[]
+  members        Member[]
+  categories     Category[]
+  splitRules     SplitRuleVersion[]
+  bankAccounts   BankAccount[]
+  transactions   Transaction[]
+  transferGroups TransferGroup[]
 
   @@map("families")
 }
@@ -114,6 +154,10 @@ model Member {
 
   family Family @relation(fields: [familyId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
+
+  ownedAccounts        BankAccount[]
+  paidTransactions     Transaction[] @relation("TxPayer")
+  authoredTransactions Transaction[] @relation("TxAuthor")
 
   @@unique([userId]) // R1: 1 família por usuário (relaxar por migração se N famílias)
   @@unique([familyId, userId])
@@ -130,11 +174,111 @@ model Category {
   sortOrder  Int
   archivedAt DateTime?    @db.Timestamptz(3) // uso futuro (US-014)
 
-  family Family @relation(fields: [familyId], references: [id])
+  family       Family        @relation(fields: [familyId], references: [id])
+  transactions Transaction[]
 
   @@unique([familyId, kind, name])
   @@unique([familyId, id])
   @@map("categories")
+}
+
+// ───────── Contas, movimentações (ledger) ─────────
+model BankAccount {
+  id            String          @id @default(uuid()) @db.Uuid
+  familyId      String          @db.Uuid
+  name          String // trim; único por família ignorando caixa (índice em SQL cru)
+  institution   String
+  type          BankAccountType
+  ownerMemberId String          @db.Uuid
+  version       Int             @default(1)
+  createdAt     DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime        @updatedAt @db.Timestamptz(3)
+
+  family       Family        @relation(fields: [familyId], references: [id])
+  owner        Member        @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
+  transactions Transaction[]
+
+  @@unique([familyId, id])
+  @@map("bank_accounts")
+}
+
+model TransferGroup {
+  id                     String            @id @default(uuid()) @db.Uuid
+  familyId               String            @db.Uuid
+  kind                   TransferGroupKind
+  occurredOn             DateTime          @db.Date
+  settlementPeriod       String? // "YYYY-MM" (kind=SETTLEMENT)
+  settlementFromMemberId String?           @db.Uuid // devedor
+  settlementToMemberId   String?           @db.Uuid // credor
+  authorMemberId         String            @db.Uuid
+  version                Int               @default(1)
+  createdAt              DateTime          @default(now()) @db.Timestamptz(3)
+  deletedAt              DateTime?         @db.Timestamptz(3) // desfeito
+  deletedByMemberId      String?           @db.Uuid
+
+  family Family        @relation(fields: [familyId], references: [id])
+  legs   Transaction[]
+
+  @@unique([familyId, id])
+  @@index([familyId, kind, settlementPeriod])
+  @@map("transfer_groups")
+}
+
+model Transaction {
+  id                String          @id @default(uuid()) @db.Uuid
+  familyId          String          @db.Uuid
+  kind              TransactionKind
+  direction         Direction
+  accountId         String          @db.Uuid
+  amountInCents     BigInt // magnitude (>0; OPENING pode ser 0)
+  occurredOn        DateTime        @db.Date
+  categoryId        String?         @db.Uuid // EXPENSE/INCOME: obrigatório; demais: nulo
+  description       String // 2..100; padrão = nome da categoria; transferências: texto gerado
+  note              String? // até 500
+  payerMemberId     String?         @db.Uuid // EXPENSE/INCOME: quem pagou/recebeu (D-PO-01)
+  isSharedExpense   Boolean         @default(false) // true só em EXPENSE comum
+  authorMemberId    String          @db.Uuid // imutável
+  updatedByMemberId String?         @db.Uuid
+  transferGroupId   String?         @db.Uuid
+  version           Int             @default(1)
+  createdAt         DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime        @updatedAt @db.Timestamptz(3)
+  deletedAt         DateTime?       @db.Timestamptz(3)
+  deletedByMemberId String?         @db.Uuid
+  deletionReason    DeletionReason?
+
+  family    Family                @relation(fields: [familyId], references: [id])
+  account   BankAccount           @relation(fields: [familyId, accountId], references: [familyId, id])
+  category  Category?             @relation(fields: [familyId, categoryId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  payer     Member?               @relation("TxPayer", fields: [familyId, payerMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  author    Member                @relation("TxAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+  group     TransferGroup?        @relation(fields: [familyId, transferGroupId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  revisions TransactionRevision[]
+
+  @@unique([familyId, id])
+  @@index([familyId, occurredOn(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
+  @@index([familyId, accountId])
+  @@index([familyId, payerMemberId, occurredOn])
+  @@index([familyId, kind, occurredOn])
+  @@map("transactions")
+}
+
+// Append-only (trigger no banco)
+model TransactionRevision {
+  id            String         @id @default(uuid()) @db.Uuid
+  familyId      String         @db.Uuid
+  transactionId String         @db.Uuid
+  revision      Int // = version resultante
+  action        RevisionAction
+  actorMemberId String         @db.Uuid
+  at            DateTime       @default(now()) @db.Timestamptz(3)
+  changes       Json // [{ field, from, to }]; CREATE: snapshot em "to"
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+
+  @@unique([transactionId, revision, action])
+  @@index([familyId, transactionId, at])
+  @@map("transaction_revisions")
 }
 
 // ───────── Divisão (SDD-002) ─────────
