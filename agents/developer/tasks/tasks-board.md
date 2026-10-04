@@ -21,13 +21,13 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-005 | US-005 | Lançar uma despesa rapidamente | US-004 | SDD-001 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-006 | US-006 | Lançar uma receita | US-005 | SDD-001 | 2 | Concluído (aguardando validação do Gestor) |
 | TASK-007 | US-007 | Consultar o extrato com filtros | US-005, US-006 | SDD-005 | 5 | Concluído (aguardando validação do Gestor) |
-| TASK-008 | US-003 | Convidar um membro por e-mail (Mailpit local; EXT-02) | US-002 | pendente TL | 3 | Bloqueado: aguarda SDD |
-| TASK-009 | US-008 | Definir a regra de divisão das despesas comuns | US-003 | SDD-002 (pendente TL) | 2 | Bloqueado: aguarda SDD |
-| TASK-010 | US-009 | Ver o acerto de contas do mês | US-005, US-008 | SDD-002 (pendente TL) | 5 | Bloqueado: aguarda SDD |
-| TASK-011 | US-010 | Transferir dinheiro entre contas da família | US-004 | pendente TL | 3 | Bloqueado: aguarda SDD |
-| TASK-012 | US-011 | Registrar o acerto de contas como transferência | US-009, US-010 | pendente TL | 3 | Bloqueado: aguarda SDD |
-| TASK-013 | US-012 | Home: visão essencial da família | US-004, US-007, US-009 | pendente TL | 3 | Bloqueado: aguarda SDD |
-| TASK-014 | US-013 | Corrigir ou excluir um lançamento com trilha de auditoria (Should, dentro da R1) | US-005, US-007 | SDD-001 (a revisar) | 3 | Bloqueado: aguarda SDD |
+| TASK-008 | US-003 | Convidar um membro por e-mail (Mailpit local; EXT-02) | US-002 | SDD-003 | 5 | Concluído (aguardando validação do Gestor) |
+| TASK-009 | US-008 | Definir a regra de divisão das despesas comuns | US-003 | SDD-002 | 2 | Todo (Incremento 2; SDD publicado) |
+| TASK-010 | US-009 | Ver o acerto de contas do mês | US-005, US-008 | SDD-002 | 5 | Todo (Incremento 2; SDD publicado) |
+| TASK-011 | US-010 | Transferir dinheiro entre contas da família | US-004 | SDD-004 | 3 | Todo (Incremento 2; SDD publicado) |
+| TASK-012 | US-011 | Registrar o acerto de contas como transferência | US-009, US-010 | SDD-002 | 3 | Todo (Incremento 2; SDD publicado) |
+| TASK-013 | US-012 | Home: visão essencial da família | US-004, US-007, US-009 | SDD-005 | 3 | Todo (Incremento 2; SDD publicado) |
+| TASK-014 | US-013 | Corrigir ou excluir um lançamento com trilha de auditoria (Should, dentro da R1) | US-005, US-007 | SDD-001 | 3 | Todo (Incremento 2; SDD publicado) |
 
 ---
 
@@ -181,6 +181,33 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 
 ---
 
-## 🔒 Demais tarefas (TASK-002 a TASK-014)
+## ✅ [TASK-008] US-003 — Convidar um membro por e-mail
+- **História PO**: [US-003](../../product-owner/backlog/stories/US-003-convidar-membro.md)
+- **Especificação Técnica**: [SDD-003](../../tech-lead/sdd/SDD-003-auth-familia-convite.md) §5 e §8 · ADR-012 · D-GES-07 · EXT-02.
+- **Status**: Concluído (aguardando validação do Gestor).
+- **Arquivos Criados/Modificados**:
+  - Banco: `prisma/schema.prisma`, migração `*_us003_convites` (Invitation + índice único parcial `(familyId, email) WHERE status='PENDING'`).
+  - Serviço: `src/modules/familia/invitations/{constants,email,repo,service}.ts` (`createInvitation`, `cancelInvitation`, `acceptPendingInvitation`, `previewInvitation`), `src/lib/mail.ts` (`MailPort`, `SmtpMailer`/nodemailer, `InMemoryMailer`), `src/modules/familia/service.ts` (gate `resolveAppEntry` e `resolveOnboardingEntry`), `src/lib/api/{types,with-api}.ts` (`afterCommit`).
+  - API: `src/app/api/v1/invitations/{route,[id]/cancel/route}.ts`; `GET /family` passa a trazer convites pendentes (só ADMIN).
+  - UI: `src/app/(app)/familia/*` (membros, convites pendentes, cancelar com confirmação), `src/components/{invite-form,joined-notice}.tsx`, `src/app/(public)/convite/[token]/page.tsx`, `src/app/(public)/login-options.tsx`, passo de convite do onboarding, `app-shell.tsx` (nav Família).
+  - Testes: `tests/integration/us-003-convites.int.test.ts`, `tests/unit/familia/invitation-email.test.ts`, `tests/e2e/features/US-003-*.feature` + steps, `tests/support/mailpit.ts`, `makeInvitation`.
+- **Checklist de QA & Testes**:
+  - [x] U: `invitationEmail` (snapshot, escape de HTML, sem imagens), `INVITATION_TTL_DAYS = 7`, schemas de e-mail/papel.
+  - [x] I (21 testes): 201 com `expiresAt = now + 7 d`, `tokenHash` ≠ token, e-mail capturado no `InMemoryMailer` com o link; normalização `Lucas@Exemplo.com`; vínculo com o papel do convite e convite `ACCEPTED`; idempotência e corrida do vínculo (1 `Member`); `previewInvitation` (`WRONG_EMAIL`, `NEEDS_LOGIN`, `READY`, `INVALID`, `ACCEPTED`, `EXPIRED`); e-mail inválido; `DUPLICATE_MEMBER`; `DUPLICATE_INVITATION` + corrida 1x201/1x409 com 1 e-mail; cancelar (409 `INVITATION_NOT_PENDING`, convidado cai em `NONE`); vencimento exato e +1 s, reconvite após vencer; matriz de papéis (MEMBER = 403, sem sessão = 401); falha do e-mail (`FAILED`, convite persistido, replay com o status final); isolamento entre famílias.
+  - [x] E2E: 9 cenários BDD x desktop e mobile, incluindo o e-mail real chegando no **Mailpit** (`GET :8025/api/v1/messages`). Suíte inteira: 112 testes, rodada 2x sem falhas.
+  - [x] `lint`, `typecheck`, `test` (145), `test:int` (145), `test:e2e` (112), `build` verdes.
+  - [x] Verificação manual (navegador integrado, 3100, Postgres dev, Mailpit 8025): desktop (tela Família, validação "Informe um e-mail válido", convite criado com toast e item em "Convites pendentes" com "Expira em 7 dias", e-mail visível na UI do Mailpit com o link); mobile 375 px (link aberto com a conta errada mostra "Este convite é para outro e-mail" + "Entrar com outra conta"; login como `Novo@Exemplo.com` volta ao convite e entra na família; segundo convidado cai na Home com "Você entrou na Família Silva"; membro comum não vê "Convidar membro" nem a seção de pendentes).
+- **Bug achado na verificação manual (corrigido)**: o aviso "Você entrou na {Família}" sumia porque o `router.replace("/")` que limpa `?joined=1` remontava a página; o aviso agora vive no shell (`JoinedNotice`) com estado próprio, e o E2E confere URL limpa + aviso visível.
+- **Desvios**: (1) o e-mail é enviado por `afterCommit` no `withApi` (o SDD manda enviar após o commit; o wrapper ganhou o gancho e mescla `emailStatus` no corpo e no registro de idempotência); (2) o onboarding ganhou `resolveOnboardingEntry` separado do gate para evitar laço de redirecionamento; (3) o formulário de convite do onboarding não mostra o papel (sempre Membro); (4) nova pendência EXT-09 (Auth.js beta e SMTP real).
 
-Cada uma segue o formato do `README.md` do desenvolvedor e só inicia com SDD publicado pelo Tech Lead. Sem checklist detalhado ainda: ele é derivado do BDD da história e da seção de testes do SDD no momento do início.
+---
+
+## 📌 Estado do Incremento 1 (walking skeleton)
+EN-001 (complemento), US-001, US-002, US-004, US-005, US-006, US-007 e US-003 **concluídos** e commitados, cada um com `lint`, `typecheck`, `test`, `test:int`, `test:e2e`, `build` e verificação manual (375 px e desktop). Próximas na ordem do Gestor: US-008, US-009, US-010, US-011, US-012, US-013 (Incremento 2; `computeSettlement`, regra de divisão, transferência/acerto, Home e correções).
+**Nota de ambiente:** o banco de desenvolvimento ficou com dados de teste manual (Família Silva, Família Souza e lançamentos); `prisma migrate reset` é bloqueado em sessões de IA e o ledger não aceita `DELETE` (trigger). Para limpar: `docker compose -p finance-manager down -v` e `pnpm db:up && pnpm db:migrate && pnpm db:seed` (executar manualmente).
+
+---
+
+## 🗂️ Demais tarefas (TASK-009 a TASK-014, Incremento 2)
+
+Os SDDs (SDD-001, 002, 004 e 005) já estão publicados; o checklist detalhado de cada uma é derivado do BDD da história e da seção de testes do SDD no momento do início.

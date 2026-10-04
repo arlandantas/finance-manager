@@ -126,16 +126,19 @@ pnpm dev                          # http://localhost:3100  (health: /api/health)
 | :-- | :-- |
 | `pnpm dev` / `build` / `start` | App (HMR) / build de produção / servir build |
 | `pnpm lint` / `lint:fix` / `typecheck` | Biome / `tsc --noEmit` |
-| `pnpm test` | Unidade e componentes (Vitest + Testing Library) |
+| `pnpm test` | `check:imports` (ADR-013) + unidade e componentes (Vitest + Testing Library) |
+| `pnpm check:imports` | Verifica restrições de import (`@/lib/db` só em repositórios; regras puras sem Next/Prisma/relógio) |
 | `pnpm test:int` | Integração contra o Postgres `db-test` (porta 5443) |
-| `pnpm test:e2e` | Playwright + playwright-bdd (features em `tests/e2e/features`, sobe o app na 3100). Primeira vez: `pnpm exec playwright install chromium` |
+| `pnpm test:e2e` | Playwright + playwright-bdd (features em `tests/e2e/features`). Sobe o app em **3101** contra o `db-test` (5443), com relógio fixo em 2026-10-04 e e-mails no Mailpit. Primeira vez: `pnpm exec playwright install chromium` |
 | `pnpm db:migrate` / `db:deploy` / `db:seed` / `db:reset` | Migrações (dev) / aplicar existentes / seed / recriar banco |
 
-Hooks (Husky): `pre-commit` roda `lint` + `typecheck`; `commit-msg` exige Conventional Commits e o trailer `Co-authored-by:`.
+Hooks (Husky): `pre-commit` roda `lint` + `typecheck` + `check:imports`; `commit-msg` exige Conventional Commits e o trailer `Co-authored-by:`.
 
 Estrutura de código: `src/app` (rotas Next), `src/modules/<dominio>` (regras puras), `src/lib` (env, db), `prisma/` (schema, migrações, seed), `tests/{unit,integration,e2e}`.
 
-Observações: o login de teste (`AUTH_DEV_LOGIN`, D-GES-11) entra com a US-001; dependências externas pendentes ficam em [`agents/manager/pendencias-externas.md`](agents/manager/pendencias-externas.md).
+**Login em dev:** com `AUTH_DEV_LOGIN=true` a tela `/login` oferece "Entrar como (teste)" (atalhos Mariana e Lucas, criados por `pnpm db:seed`); o endpoint é bloqueado em produção e a aplicação recusa subir com a flag ligada. Convites chegam ao Mailpit (http://localhost:8025). Depois de mudar o schema Prisma, reinicie o `pnpm dev` (o cliente fica em cache).
+
+Observações: dependências externas pendentes ficam em [`agents/manager/pendencias-externas.md`](agents/manager/pendencias-externas.md).
 
 ---
 
