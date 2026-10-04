@@ -98,6 +98,47 @@ finance-manager/
 
 ---
 
+## 🛠️ Ambiente Local (EN-001)
+
+Pré-requisitos: Node 22 (`.nvmrc`), pnpm 11 (versão travada em `packageManager`; use `corepack enable`), Docker + Docker Compose.
+
+```bash
+cp .env.example .env.local        # valores de DEV já funcionam; Google fica para depois (EXT-01)
+pnpm db:up                        # docker compose -p finance-manager up -d --wait (db, db-test, mailpit)
+pnpm i
+pnpm db:migrate                   # aplica migrações no Postgres dev
+pnpm db:seed
+pnpm dev                          # http://localhost:3100  (health: /api/health)
+```
+
+**Portas** (deslocadas para não colidir com serviços comuns da máquina, D-GES-10):
+
+| Serviço | Porta |
+| :-- | :-- |
+| App Next | 3100 |
+| Postgres dev (`db`) | 5442 |
+| Postgres teste (`db-test`, tmpfs) | 5443 |
+| Mailpit SMTP / UI | 1025 / 8025 |
+
+**Scripts**
+
+| Script | Função |
+| :-- | :-- |
+| `pnpm dev` / `build` / `start` | App (HMR) / build de produção / servir build |
+| `pnpm lint` / `lint:fix` / `typecheck` | Biome / `tsc --noEmit` |
+| `pnpm test` | Unidade e componentes (Vitest + Testing Library) |
+| `pnpm test:int` | Integração contra o Postgres `db-test` (porta 5443) |
+| `pnpm test:e2e` | Playwright + playwright-bdd (features em `tests/e2e/features`, sobe o app na 3100). Primeira vez: `pnpm exec playwright install chromium` |
+| `pnpm db:migrate` / `db:deploy` / `db:seed` / `db:reset` | Migrações (dev) / aplicar existentes / seed / recriar banco |
+
+Hooks (Husky): `pre-commit` roda `lint` + `typecheck`; `commit-msg` exige Conventional Commits e o trailer `Co-authored-by:`.
+
+Estrutura de código: `src/app` (rotas Next), `src/modules/<dominio>` (regras puras), `src/lib` (env, db), `prisma/` (schema, migrações, seed), `tests/{unit,integration,e2e}`.
+
+Observações: o login de teste (`AUTH_DEV_LOGIN`, D-GES-11) entra com a US-001; dependências externas pendentes ficam em [`agents/manager/pendencias-externas.md`](agents/manager/pendencias-externas.md).
+
+---
+
 ## 🚀 Como os Agentes Devem Iniciar o Trabalho
 
 1. **Leitura Obrigatória**: Qualquer agente que iniciar uma sessão deve primeiro consultar o arquivo [`AGENTS.md`](file:///home/arlan/ai-tests/finance-manager/AGENTS.md).
