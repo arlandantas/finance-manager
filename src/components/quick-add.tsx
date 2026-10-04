@@ -8,6 +8,8 @@ import { TransactionDrawer } from "@/components/transaction-drawer";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { apiFetch } from "@/lib/http";
+import { cardsKey } from "@/modules/cartoes/hooks";
+import type { CardsResponse } from "@/modules/cartoes/schemas";
 import { accountsKey } from "@/modules/contas/hooks";
 import type { AccountsResponse } from "@/modules/contas/schemas";
 
@@ -34,8 +36,16 @@ export function QuickAddProvider({ children }: { children: ReactNode }) {
           staleTime: 5_000,
         });
         if (data.items.length === 0) {
-          setNoAccounts(true);
-          return;
+          // Sem contas, mas com cartão: a despesa no cartão ainda é possível.
+          const cards = await qc.fetchQuery({
+            queryKey: cardsKey,
+            queryFn: () => apiFetch<CardsResponse>("/api/v1/cards"),
+            staleTime: 0,
+          });
+          if (cards.items.length === 0) {
+            setNoAccounts(true);
+            return;
+          }
         }
       } catch {
         // Sem conexão: abre o drawer mesmo assim; o envio informa o erro.

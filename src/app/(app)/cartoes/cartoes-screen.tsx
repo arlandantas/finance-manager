@@ -1,6 +1,7 @@
 "use client";
 
 import { MoreHorizontal, Pencil, Plus } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,12 @@ function CardItem({ card, onEdit }: { card: CardDTO; onEdit: () => void }) {
     >
       <Avatar name={card.owner.name} image={card.owner.image} size={40} />
       <div className="min-w-0">
-        <p className="truncate font-semibold text-slate-900">{card.name}</p>
+        <Link
+          href={`/cartoes/${card.id}`}
+          className="block truncate font-semibold text-slate-900 hover:underline"
+        >
+          {card.name}
+        </Link>
         <p className="truncate text-sm text-slate-500">
           {card.institution} · {card.owner.name.split(" ")[0]}
         </p>
@@ -82,11 +88,36 @@ function CardItem({ card, onEdit }: { card: CardDTO; onEdit: () => void }) {
       </p>
       <UsageBar card={card} />
       <p data-testid="card-open-invoice" className="col-span-full text-sm text-slate-700">
-        Fatura {formatInvoiceLabel(card.openInvoice.ref)} (aberta):{" "}
+        Fatura aberta{" "}
         <span className="font-semibold tabular-nums">
           {formatBRL(card.openInvoice.totalInCents)}
-        </span>
+        </span>{" "}
+        ({formatInvoiceLabel(card.openInvoice.ref)}) ·{" "}
+        <Link
+          href={`/cartoes/${card.id}?ref=${card.openInvoice.ref}`}
+          className="font-medium text-brand-800 underline"
+        >
+          Ver fatura
+        </Link>
       </p>
+      {card.payableInvoices.map((p) => (
+        <p
+          key={p.ref}
+          data-testid="card-payable-invoice"
+          className="col-span-full flex flex-wrap items-center gap-x-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900"
+        >
+          <span className="font-semibold">
+            {p.isOverdue ? "Vencida" : "A pagar"} · Fatura {formatInvoiceLabel(p.ref)}
+          </span>
+          <span className="tabular-nums">{formatBRL(p.totalInCents)}</span>
+          <span>
+            vence {p.dueDate.slice(8, 10)}/{p.dueDate.slice(5, 7)}
+          </span>
+          <Link href={`/cartoes/${card.id}?ref=${p.ref}`} className="font-medium underline">
+            Ver fatura
+          </Link>
+        </p>
+      ))}
     </li>
   );
 }
