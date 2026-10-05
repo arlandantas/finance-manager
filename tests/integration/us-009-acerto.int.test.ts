@@ -106,7 +106,9 @@ describe("US-009a Painel de acerto de contas", () => {
     await spend("Mariana", 50000, { shared: false });
     const after = await settlement(mariana());
     expect(after.body.totalSharedInCents).toBe(10000);
-    expect(after.body).toEqual(before.body);
+    // a única diferença é a linha informativa "Só meu" (US-030)
+    expect({ ...after.body, personal: null }).toEqual({ ...before.body, personal: null });
+    expect(after.body.personal).toEqual({ count: 1, totalInCents: 50000 });
   });
 
   it("Divisão proporcional: 60/40 e 100000 pago por Mariana => cotas 60000/40000 (S2)", async () => {

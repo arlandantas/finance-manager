@@ -87,7 +87,7 @@ const expensePayload = {
 };
 
 describe("US-007 Novo lançamento aparece sem recarregar: atualização otimista", () => {
-  it("buildPendingItem monta o DTO provisório com padrões (hoje, autor, pagador, comum, descrição = categoria)", () => {
+  it("buildPendingItem monta o DTO provisório com padrões (hoje, autor, pagador, Só meu, descrição = categoria)", () => {
     const item = buildPendingItem(expensePayload, lookups);
     expect(item).toMatchObject({
       id: "pending-k1",
@@ -96,7 +96,7 @@ describe("US-007 Novo lançamento aparece sem recarregar: atualização otimista
       amountInCents: 15050,
       occurredOn: "2026-10-04",
       description: "Supermercado",
-      isSharedExpense: true,
+      isSharedExpense: false,
       author: lucas,
       payer: lucas,
       account: nubank,
@@ -184,7 +184,7 @@ describe("US-007 Novo lançamento aparece sem recarregar: atualização otimista
       { memberId: mariana.id },
       { type: "INCOME" as const },
       { type: "TRANSFER" as const },
-      { shared: false },
+      { shared: true },
     ]) {
       expect(admits(original, filters, pending), JSON.stringify(filters)).toBe(false);
       expect(insertPending(original, pending, filters)).toBe(original);
@@ -192,7 +192,7 @@ describe("US-007 Novo lançamento aparece sem recarregar: atualização otimista
     expect(
       admits(
         original,
-        { memberId: lucas.id, shared: true, type: "EXPENSE", accountId: nubank.id },
+        { memberId: lucas.id, shared: false, type: "EXPENSE", accountId: nubank.id },
         pending,
       ),
     ).toBe(true);

@@ -47,6 +47,7 @@ async function create(over: Record<string, unknown> = {}) {
       accountId: nubank.id,
       categoryId: await cat("Supermercado"),
       amountInCents: 15050,
+      isSharedExpense: true, // padrão do servidor agora é "Só meu" (US-030)
       ...over,
     }),
   );

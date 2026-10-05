@@ -80,6 +80,7 @@ const buy = (
           cardId: nubank.id,
           categoryId: supermercado,
           amountInCents: 30000,
+          isSharedExpense: true, // padrão do servidor agora é "Só meu" (US-030)
           ...body,
         },
         o.key ? { idempotencyKey: o.key } : {},

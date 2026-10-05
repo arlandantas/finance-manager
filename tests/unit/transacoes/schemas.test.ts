@@ -83,8 +83,8 @@ describe("US-005 Descrição omitida", () => {
 });
 
 describe("US-005/US-006 padrões e campos proibidos", () => {
-  it("despesa: isSharedExpense padrão true", () => {
-    expect(CreateTransactionSchema.parse(base)).toMatchObject({ isSharedExpense: true });
+  it("despesa: isSharedExpense padrão false (Só meu, US-030)", () => {
+    expect(CreateTransactionSchema.parse(base)).toMatchObject({ isSharedExpense: false });
   });
 
   it("(infra) .strict(): familyId e authorMemberId são rejeitados", () => {

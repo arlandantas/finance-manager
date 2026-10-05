@@ -41,6 +41,7 @@ const expense = async (over: Record<string, unknown> = {}) => ({
   accountId: nubank.id,
   categoryId: await cat("Supermercado"),
   amountInCents: 15050,
+  isSharedExpense: true, // o padrão do servidor passou a ser "Só meu" (US-030)
   ...over,
 });
 
@@ -287,7 +288,13 @@ describe("US-005 (infra) Defaults e categorias", () => {
       cardId: null,
       payerMemberId: fx.byName.Lucas?.memberId,
       today: "2026-10-04",
-      split: { available: true },
+      split: {
+        available: true,
+        ruleShares: [
+          { memberId: expect.any(String), bps: 5000 },
+          { memberId: expect.any(String), bps: 5000 },
+        ],
+      },
     });
     await post(lucas(), await expense()); // lança no Nubank
     const d2 = await call(lucas(), "GET", "/api/v1/transactions/defaults");

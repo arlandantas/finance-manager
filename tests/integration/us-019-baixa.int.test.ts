@@ -159,7 +159,7 @@ describe("US-019 Dar baixa", () => {
     expect(lucasRow.paidInCents).toBe(68250);
     await pay(lucas(), personal.id);
     const s2 = await call(lucas(), "GET", "/api/v1/settlement?period=2026-11");
-    expect(s2.body).toEqual(s1.body);
+    expect({ ...s2.body, personal: null }).toEqual({ ...s1.body, personal: null });
   });
 
   it("a previsão do mês seguinte permanece intacta (linha inteira)", async () => {

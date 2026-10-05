@@ -48,7 +48,7 @@ export async function fillPlanned(d: ReturnType<Page["getByRole"]>, o: PlannedFo
   if (o.amount !== undefined) await d.getByLabel("Valor previsto", { exact: true }).fill(o.amount);
   if (o.category) await d.getByRole("radio", { name: o.category, exact: true }).click();
   if (o.responsible) await d.getByRole("radio", { name: o.responsible, exact: true }).click();
-  if (o.shared === false) await d.getByRole("switch", { name: "Dividir com a família" }).click();
+  if (o.shared === true) await d.getByRole("switch", { name: "Dividir com a família" }).click();
   if (o.due || o.note) {
     const due = d.getByLabel("Vencimento", { exact: true });
     if (!(await due.isVisible())) await d.getByText("Mais detalhes").click();

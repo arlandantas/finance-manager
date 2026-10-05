@@ -111,11 +111,11 @@ describe("US-018 Campos obrigatórios (CreatePlannedExpenseSchema)", () => {
     }
     expect(issues(ok)).toEqual([]);
   });
-  it("padrão de 'Dividir com a família' é ligado", () => {
+  it("padrão de 'Dividir com a família' é desligado: Só meu (US-030, D-GES-15)", () => {
     expect(
       CreatePlannedExpenseSchema.parse({ description: "Luz", amountInCents: 1, categoryId: uuid })
         .isSharedExpense,
-    ).toBe(true);
+    ).toBe(false);
   });
 });
 

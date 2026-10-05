@@ -52,6 +52,7 @@ const create = (as: ReturnType<typeof lucas>, body: Record<string, unknown> = {}
       amountInCents: 65000,
       categoryId: moradia,
       dueOn: "2026-11-10",
+      isSharedExpense: true, // padrão do servidor agora é "Só meu" (US-030)
       ...body,
     },
     opts,

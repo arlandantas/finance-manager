@@ -63,8 +63,9 @@ Then(
   },
 );
 
-Then("está marcada como {string}", async ({}, _rotulo: string) => {
-  expect((await lastTransaction("EXPENSE")).row.isSharedExpense).toBe(true);
+Then("está marcada como {string}", async ({}, rotulo: string) => {
+  // US-030: o lançamento rápido nasce "Só meu"
+  expect((await lastTransaction("EXPENSE")).row.isSharedExpense).toBe(rotulo !== "Só meu");
 });
 
 Then(
@@ -108,9 +109,7 @@ When(
     await fillAmount(page, valor);
     await pickCategory(page, categoria);
     const sw = page.getByRole("switch", { name: rotulo });
-    await expect(sw).toBeChecked();
-    await sw.click();
-    await expect(sw).not.toBeChecked();
+    await expect(sw).not.toBeChecked(); // padrão "Só meu" (US-030)
     await save(page, "Salvar Despesa");
     await waitSaved(page);
   },

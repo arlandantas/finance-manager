@@ -9,7 +9,7 @@ Funcionalidade: Lançamento rápido de despesa
   Cenário: Despesa comum com sucesso
     Quando Lucas toca no botão "+", digita "R$ 150,50", escolhe a categoria "Supermercado" e toca em "Salvar Despesa"
     Então a despesa é registrada com autor "Lucas", quem pagou "Lucas", conta "Nubank Conjunta" e data de hoje
-    E está marcada como "Dividir com a família"
+    E está marcada como "Só meu"
     E o saldo de "Nubank Conjunta" passa a "R$ 849,50"
     E aparece o aviso "Despesa registrada com sucesso!"
 
