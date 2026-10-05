@@ -66,14 +66,16 @@ When(
 
 Then("a regra é salva", async ({ page }) => {
   await page.getByRole("button", { name: "Salvar regra" }).click();
-  await expect(page.getByText("Regra de divisão salva")).toBeVisible();
+  await expect(page.getByText("Regra de divisão atualizada")).toBeVisible();
   const rules = await db.splitRuleVersion.findMany({
     include: { shares: true },
     orderBy: { createdAt: "desc" },
   });
   expect(rules[0]?.kind).toBe("PROPORTIONAL");
   expect(rules[0]?.shares.map((s) => s.bps).sort()).toEqual([4000, 6000]);
-  await page.reload();
+  // ao salvar volta ao painel de Acerto (US-031); reabre a regra para conferir
+  await expect(page).toHaveURL(/\/acerto$/);
+  await gotoReady(page, "/acerto/regra");
   await expect(page.getByRole("radio", { name: "Proporcional" })).toBeChecked();
   await expect(percent(page, "Mariana")).toHaveValue("60");
   await expect(percent(page, "Lucas")).toHaveValue("40");
@@ -84,7 +86,8 @@ When(
   async ({ page }, m: string, l: string) => {
     await percent(page, "Mariana").fill(m.replace("%", ""));
     await percent(page, "Lucas").fill(l.replace("%", ""));
-    await page.getByRole("button", { name: "Salvar regra" }).click();
+    // soma != 100%: o botão fica desabilitado e a mensagem aparece na hora (US-031)
+    await expect(page.getByRole("button", { name: "Salvar regra" })).toBeDisabled();
   },
 );
 
@@ -164,7 +167,7 @@ When("o Administrador define 60% \\/ 40% com vigência a partir de outubro", asy
   await page.getByText("Mais detalhes").click();
   await page.getByLabel("Vigência").fill("2026-10-01");
   await page.getByRole("button", { name: "Salvar regra" }).click();
-  await expect(page.getByText("Regra de divisão salva")).toBeVisible();
+  await expect(page.getByText("Regra de divisão atualizada")).toBeVisible();
 });
 
 Then("o acerto de setembro continua calculado com 50% \\/ 50%", async ({ page }) => {
