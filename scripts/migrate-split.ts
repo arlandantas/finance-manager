@@ -1,3 +1,4 @@
+import { config } from "dotenv";
 import type { PrismaClient } from "../src/generated/prisma/client";
 import { todayInFamilyTz } from "../src/lib/dates";
 import { createPrismaClient } from "../src/lib/db";
@@ -107,6 +108,9 @@ export async function run(
 }
 
 if (process.argv[1]?.endsWith("migrate-split.ts")) {
+  // Mesma precedência do Next e do Prisma: .env.local, depois .env (o que já está no ambiente prevalece).
+  config({ path: ".env.local", quiet: true });
+  config({ path: ".env", quiet: true });
   const db = createPrismaClient();
   run(db, process.argv.slice(2))
     .then(async (code) => {
