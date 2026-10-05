@@ -26,9 +26,10 @@ Como **membro da família**, quero **lançar uma compra parcelada no cartão inf
 - **Limite** (RN-003.5): consumido pelo **valor total** na hora da compra; **liberado a cada fatura paga**, pelo valor da(s) parcela(s) pagas.
 - **Fatura** (RN-003.6): cada parcela cai na **fatura do mês correspondente** (ciclo do cartão, D-PO-06), rotulada **"Notebook 3/10"**; a parcela 1 usa a data da compra, as seguintes o mesmo dia dos meses seguintes (dia ajustado ao último dia do mês, quando necessário).
 - **Despesa do mês** (D-PO-26): cada **parcela** conta como despesa **no mês da fatura em que cai** (Resumo do Mês, Extrato por parcela, visões sintéticas). O total comprometido futuro aparece em "Parcelas futuras" na fatura e no cartão.
-- **Extrato**: mostra **uma linha por parcela**, ligada às demais pelo identificador do parcelamento ("3/10" + link "Ver compra").
+- **Extrato**: o filtro de período é por **competência** e o intervalo aceito passa a **até 24 meses** (as 10 parcelas estão em 10 competências; o padrão continua sendo o mês), mensagem "Escolha um intervalo de até 24 meses" (D-PO-44, TL-14). Mostra **uma linha por parcela**, ligada às demais pelo identificador do parcelamento ("3/10" + link "Ver compra").
 - **Juros** (RN-003.9): o app trabalha com o **total pago**; não calcula juros.
 - **Dividir com a família**: na R3 a compra parcelada pode ser dividida (US-042). **Até a US-042 ser entregue**, a compra parcelada só pode ser "Só meu" e o campo "Dividir" mostra "Disponível em breve" (D-PO-25).
+- **"Parcelas futuras"** (D-PO-44, TL-16): na **fatura**, a soma das parcelas ativas em faturas **posteriores** à exibida (do mesmo cartão); no **cartão**, as posteriores à fatura **aberta**. É um indicador informativo: não entra em "Despesas", em "A pagar" nem no "Saldo previsto".
 - **Aviso de limite** (D-PO-08): total acima do limite disponível ⇒ aviso com confirmação, sem bloqueio.
 - Total mínimo: R$ 0,01 por parcela; nº de parcelas 2 a 24.
 - Compra parcelada **só no cartão** (carnê/boleto fora de escopo).
@@ -101,7 +102,7 @@ Funcionalidade: Compra parcelada no cartão
 
   Cenário: Extrato mostra uma linha por parcela
     Dado que Lucas lançou "Notebook" de "R$ 2.500,00" em "10x"
-    Quando Lucas abre o Extrato filtrado pelo cartão "Nubank Lucas"
+    Quando Lucas abre o Extrato filtrado pelo cartão "Nubank Lucas" no intervalo de nov/2026 a ago/2027
     Então vê 10 linhas "Notebook" com rótulos "1/10" a "10/10"
 
   Cenário: Pagar a fatura libera só a parcela paga
@@ -113,6 +114,17 @@ Funcionalidade: Compra parcelada no cartão
   Cenário: Total acima do limite avisa e deixa confirmar
     Quando Lucas lança "Viagem" de "R$ 6.000,00" em "12x"
     Então vê o aviso "Esta compra passa do limite disponível" com o botão "Confirmar mesmo assim"
+
+  Cenário: Intervalo do Extrato aceita até 24 meses
+    Dado que Lucas lançou "Notebook" de "R$ 2.500,00" em "10x"
+    Quando Lucas escolhe no Extrato um intervalo de 25 meses
+    Então vê "Escolha um intervalo de até 24 meses"
+
+  Cenário: Parcelas futuras na fatura e no cartão
+    Dado que Lucas lançou "Notebook" de "R$ 2.500,00" em "10x" com a fatura aberta de nov/2026
+    Quando Lucas abre a fatura de nov/2026 do cartão "Nubank Lucas"
+    Então vê "Parcelas futuras: R$ 2.250,00"
+    E o cartão "Nubank Lucas" mostra "Parcelas futuras" de "R$ 2.250,00"
 
   Cenário: Parcela aparece no Extrato do mês da fatura
     Dado que hoje é 28/11/2026
@@ -129,6 +141,7 @@ Funcionalidade: Compra parcelada no cartão
 
   Cenário: Ver compra mostra todas as parcelas
     Dado que Lucas lançou "Notebook" de "R$ 2.500,00" em "10x"
+    E Lucas abre o Extrato no intervalo de nov/2026 a ago/2027
     Quando Lucas toca em "Ver compra" na parcela "3/10"
     Então vê o total "R$ 2.500,00" e as 10 parcelas com a fatura de cada uma
 
@@ -196,3 +209,4 @@ Editar parcelas e excluir uma só (US-041); dividir parcelas (US-042); antecipar
 - 2026-10-04 — Criada a partir do parecer (item 6, Q-F14).
 - 2026-10-04 — **Revisão pós-TL (D-PO-33):** estimativa do TL = 8, fatiada em 040a (5) e 040b (3); fica na R3 como 1ª entrega; recebe da US-041 os cenários "Excluir a compra parcelada inteira", "Desfazer" e "Excluir com parcela em fatura fechada"; acrescentados "Parcela aparece no Extrato do mês da fatura", "Compra à vista segue pela data da compra", "Ver compra" e "Parcela não é editável até a gestão de parcelas".
 - 2026-10-05 — **Nota pós-ADR-020 (sem mudança de pontos):** acrescentado o cenário "Cada parcela cai numa fatura diferente com fechamento no dia 28" (parcela *k* na *k*-ésima fatura).
+- 2026-10-05 — **Ajuste pós-SDD (D-GES-24, D-PO-44):** nos cenários "Extrato mostra uma linha por parcela" e "Ver compra" o Extrato informa o **intervalo** (24 meses); acrescentados "Intervalo do Extrato aceita até 24 meses" e "Parcelas futuras na fatura e no cartão" (definição do TL-16). Entra na **R3-A** (D-GES-23).

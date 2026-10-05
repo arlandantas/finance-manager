@@ -21,6 +21,9 @@ Como **membro da família**, quero **cadastrar receitas previstas (ex.: salário
 - O Resumo do Mês (US-025) ganha a linha **"A receber"** só quando há receitas previstas no mês; sem elas, o cálculo e o rótulo da R2.1 permanecem.
 - Não há recorrência na R3 (recorrência é AP1); cada receita prevista é pontual.
 - Receita prevista **não** entra no acerto.
+- **O tipo da previsão é imutável** (D-PO-47, TL-21): não se troca receita prevista em despesa prevista (nem o contrário); para trocar, exclui-se e cadastra-se de novo.
+- A aba **"Pagas e recebidas"** mistura os dois tipos.
+- "Parcelas futuras" (US-040) é um indicador do cartão e **não** entra em "A pagar", "A receber" nem no "Saldo previsto".
 
 ## Critérios de aceite (Gherkin)
 
@@ -79,6 +82,17 @@ Funcionalidade: Receitas previstas e saldo previsto
     Quando Mariana abre o painel de Acerto
     Então o acerto do mês não considera o "Salário"
 
+  Cenário: O tipo da previsão não troca
+    Dado uma receita prevista "Freelance" de "R$ 1.200,00"
+    Quando Mariana abre a edição da receita prevista
+    Então não vê opção para trocar o tipo para despesa
+    E vê "Para mudar o tipo, exclua e cadastre de novo"
+
+  Cenário: Pagas e recebidas mostra os dois tipos
+    Dado a despesa prevista "Internet" paga e a receita prevista "Freelance" recebida
+    Quando Mariana abre a aba "Pagas e recebidas"
+    Então vê "Internet" e "Freelance"
+
   Cenário: Valor inválido
     Quando Mariana cadastra a receita prevista com valor "R$ 0,00"
     Então vê "Informe um valor maior que zero"
@@ -105,3 +119,4 @@ Recorrência de receita (AP1); metas de receita; projeção de vários meses.
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (Q-F03; NEED-015 RN-015.4).
+- 2026-10-05 — **Ajuste pós-SDD (D-GES-24, D-PO-47):** `kind` imutável e aba "Pagas e recebidas" mista (TL-21); "Parcelas futuras" fora de A pagar/A receber/Saldo previsto (TL-16); 2 cenários novos. Fica na **R3-B**.

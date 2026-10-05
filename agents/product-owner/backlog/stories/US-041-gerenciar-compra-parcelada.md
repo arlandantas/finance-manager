@@ -15,7 +15,7 @@ Como **membro da família**, quero **corrigir uma parcela (só ela ou ela e as s
 ## Regras de negócio aplicáveis
 - Ao editar uma parcela, o app pergunta o **alcance**: **"Somente esta"** ou **"Esta e as próximas"** (RN-003.7). O padrão é "Somente esta".
 - Campos editáveis: valor da parcela, descrição, categoria, observação (data de parcela e nº de parcelas **não** são editáveis; para isso, exclui-se a compra e lança-se de novo).
-- **Parcelas em fatura fechada ou paga ficam travadas** (regra da US-016b/017b); "Esta e as próximas" altera só as parcelas ainda em faturas **abertas**.
+- **Parcelas em fatura fechada ou paga ficam travadas** (qualquer fatura que não esteja **aberta**; a edição de compra **única** da US-016b trava só a fatura **paga**: diferença conhecida e aceita, TL-12, a confirmar na homologação); "Esta e as próximas" altera só as parcelas ainda em faturas **abertas**.
 - Mudar o **valor** de uma parcela recalcula na hora o total da fatura e o **limite consumido** (diferença); mudar o valor de "esta e as próximas" aplica o novo valor às seguintes.
 - **Excluir a compra inteira** (e "Desfazer") **não é desta história**: foi para a **US-040b** (D-PO-33). Aqui a ação "Excluir parcela" convive com a "Excluir compra parcelada" da US-040.
 - Excluir **somente esta parcela** é permitido em fatura aberta e deixa um **registro** ("parcela 3/10 removida"); a compra fica com 9 parcelas ativas.
@@ -61,6 +61,12 @@ Funcionalidade: Gerenciar compra parcelada
     Então não vê "Editar" nem "Excluir"
     E vê "Fatura paga"
 
+  Cenário: Parcela em fatura fechada e não paga também é travada
+    Dado que a fatura de nov/2026 está fechada e não paga
+    Quando Lucas abre a parcela "1/10"
+    Então não vê "Editar"
+    E vê "Fatura fechada"
+
   Cenário: Esta e as próximas pula parcelas travadas
     Dado que a fatura de nov/2026 está fechada e paga
     Quando Lucas altera o valor da parcela "2/10" para "R$ 200,00" escolhendo "Esta e as próximas"
@@ -100,3 +106,4 @@ Antecipar ou renegociar parcelas; editar data; mudar de cartão; estorno parcial
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 6; RN-003.7).
 - 2026-10-04 — **Revisão pós-TL (D-PO-33):** os cenários "Excluir a compra parcelada inteira", "Desfazer a exclusão da compra inteira" e "Excluir a compra com parcela em fatura fechada" **migraram para a US-040b** (recomendação do TL: sem eles, um erro de digitação no Must é irrecuperável). Tamanho 5 confirmado; ordem na R3 depois da US-043.
+- 2026-10-05 — **Ajuste pós-SDD (D-GES-24, D-PO-45):** a trava vale para fatura **fechada ou paga** (TL-12); acrescentado o cenário "Parcela em fatura fechada e não paga também é travada". Fica na **R3-B**.

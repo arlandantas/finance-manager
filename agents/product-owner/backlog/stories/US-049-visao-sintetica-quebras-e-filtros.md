@@ -13,10 +13,11 @@
 Como **membro da família**, quero **alternar a quebra por membro, conta/cartão ou tag e combinar filtros**, para **recortar o gasto por quem, onde e por quê**.
 
 ## Regras de negócio aplicáveis
-- Seletor **"Agrupar por"**: **Categoria** (padrão, US-048), **Membro** (quem pagou), **Conta/Cartão**, **Tag**.
+- Seletor **"Agrupar por"**: **Categoria** (padrão, US-048), **Membro** (rótulo **"Quem pagou"**, quem pagou ou recebeu), **Conta/Cartão**, **Tag**.
 - **Filtros combináveis** (E entre filtros diferentes; OU dentro do mesmo): períodos, contas/cartões, categorias, tags, membros. Totais e quebra se ajustam.
 - **Tag** (RN-016.3): um lançamento com várias tags entra em **cada tag selecionada**; a **soma das tags pode exceder o total** e a tela mostra o aviso "Um lançamento com várias tags é contado em cada uma".
-- Lançamentos **sem tag** aparecem na linha "Sem tag".
+- Lançamentos **sem tag** aparecem na linha "Sem tag"; o drill-down dela abre o Extrato com o chip **"Sem tag"** (filtro técnico `untagged`, TL-14). O intervalo da Análise e do Extrato é de **até 24 meses**.
+- O filtro de membro chama-se **"Quem pagou"** na Análise **e** no Extrato (TL-19): é quem pagou/recebeu, e não "pagador ou autor", para que o total do drill-down feche com o da linha; links antigos com o filtro de membro continuam funcionando.
 - **Conta/Cartão**: compra no cartão aparece no **cartão**; transferências nunca entram.
 - **Drill-down** em qualquer linha abre o Extrato com os mesmos filtros e o mesmo total (excluindo a duplicidade de tag: o Extrato mostra o lançamento uma vez).
 - Respeita "ocultar valores".
@@ -58,6 +59,16 @@ Funcionalidade: Visão sintética com quebras e filtros
     E vê o aviso "Um lançamento com várias tags é contado em cada uma"
     E o total de despesas continua "R$ 1.650,00"
 
+  Cenário: Filtro de membro se chama Quem pagou
+    Quando Lucas abre os filtros da Análise
+    Então vê o filtro "Quem pagou"
+    E não vê o filtro "Membro"
+
+  Cenário: Drill-down de Sem tag fecha com o total
+    Dado "Mercado" de "R$ 300,00" sem tags em julho de 2026
+    Quando Lucas escolhe "Agrupar por" "Tag" e toca na linha "Sem tag"
+    Então o Extrato mostra o chip "Sem tag" e o total "R$ 300,00"
+
   Cenário: Lançamentos sem tag aparecem em Sem tag
     Dado "Mercado" de "R$ 300,00" sem tags em julho de 2026
     Quando Lucas escolhe "Agrupar por" "Tag"
@@ -97,3 +108,4 @@ Construtor de relatórios, salvar visões, exportação (RN-016.5); tags com or�
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 7, Q-F10).
+- 2026-10-05 — **Ajuste pós-SDD (D-GES-24, D-PO-46):** rótulo "Quem pagou" (TL-19), drill-down "Sem tag" e intervalo de 24 meses (TL-14); 2 cenários novos. Fica na **R3-B**.

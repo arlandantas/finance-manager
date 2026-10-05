@@ -16,6 +16,7 @@ Como **membro da família**, quero **que categorias como Supermercado e Condomí
 - **Categoria pode "dividir por padrão"**: opção na edição da categoria (US-014), por **qualquer membro** (D-PO-04). Padrão de todas as categorias: desligado.
 - Ao escolher uma categoria com "dividir por padrão", o seletor de divisão (US-043) vai para **"Pela regra da família"**; o usuário pode mudar para qualquer modo. Trocar a categoria **depois de ter escolhido a divisão manualmente não sobrescreve** a escolha.
 - **Revisão no fechamento do mês**: o painel de Acerto de um mês **encerrado** (e a tela "Registrar acerto") mostra **"N despesas Só meu neste mês. Revisar?"**, com a lista **revisável** (cada item com ação "Dividir" em um toque, usando "Pela regra"), sem mudar nada sozinho.
+- A lista de revisão **não inclui parcelas** de compra parcelada "Só meu": o rateio da compra parcelada é do **plano** e não existe "Dividir" numa parcela avulsa (contagem e itens coerentes; TL-13). Dividir a compra parcelada acontece no momento da compra (US-042).
 - O aviso é **informativo e dispensável por mês** ("Não perguntar de novo para este mês"); nunca bloqueia o acerto.
 - Existe apenas com o acerto ligado; respeita "ocultar valores".
 - Dividir uma despesa de mês já acertado cai nas regras da US-013b.
@@ -56,6 +57,12 @@ Funcionalidade: Dividir por padrão por categoria e revisão do mês
     Dado duas despesas "Só meu" de "R$ 80,00" e "R$ 45,00" em setembro de 2026
     Quando Lucas abre o Acerto de setembro de 2026
     Então vê "2 despesas Só meu neste mês. Revisar?"
+
+  Cenário: Revisão do mês não lista parcelas
+    Dado uma despesa "Só meu" de "R$ 80,00" e a compra parcelada "Notebook" "Só meu" com parcela em setembro de 2026
+    Quando Lucas abre o painel de Acerto de setembro de 2026
+    Então vê "1 despesa Só meu neste mês. Revisar?"
+    E a lista de revisão não mostra parcelas de "Notebook"
 
   Cenário: Dividir a partir da revisão
     Dado uma despesa "Só meu" de "R$ 45,00" em setembro de 2026
@@ -100,3 +107,4 @@ Aprender automaticamente por histórico; regras por descrição; bloquear o fech
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 9: salvaguardas do risco C7).
+- 2026-10-05 — **Ajuste pós-SDD (D-GES-24, D-PO-45):** a revisão do mês **exclui parcelas** (contagem e lista coerentes); acrescentado o cenário "Revisão do mês não lista parcelas". Fica na **R3-B**.

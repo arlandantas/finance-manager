@@ -19,7 +19,7 @@ Como **membro da família**, quero **escolher no lançamento como aquele gasto s
 - **Centavos** (RN-018.3): arredondamento determinístico em `amountInCents`; **a sobra fica com quem pagou**.
 - Editar o modo/percentual de um lançamento de **mês já acertado** segue as regras da US-013b (aviso e desfazer acerto).
 - O fluxo "Só meu" mantém os **mesmos quatro toques**; os modos extras ficam a um toque adicional.
-- Despesas previstas e compras parceladas usam o mesmo seletor (a baixa herda).
+- Despesas previstas usam o mesmo seletor e **guardam a divisão**; a **baixa herda** a divisão da previsão ("Pela regra" é resolvida na data da baixa; "De outro jeito" é copiada). Compras parceladas têm a divisão **do plano**, escolhida na compra (US-042).
 - Respeita "ocultar valores" (percentuais ficam visíveis).
 
 ## Critérios de aceite (Gherkin)
@@ -54,6 +54,12 @@ Funcionalidade: Divisão definida no lançamento
     Quando Mariana lança "Presente" de "R$ 200,00" em "Outros" com a divisão "De outro jeito" Lucas 100% e Mariana 0%
     Então o acerto considera a cota de "R$ 200,00" para Lucas
     E a cota de Mariana é "R$ 0,00"
+
+  Cenário: Previsão com divisão própria: a baixa herda
+    Dado a previsão "Presente do pai" de "R$ 200,00" com a divisão "De outro jeito" Lucas 100% e Mariana 0%
+    Quando Mariana dá baixa na previsão "Presente do pai" pagando "R$ 200,00"
+    Então a despesa gerada fica gravada com "Lucas 100% / Mariana 0%"
+    E o acerto considera a cota de "R$ 200,00" para Lucas
 
   Cenário: Percentuais precisam somar cem
     Quando Lucas informa "De outro jeito" com Lucas 70% e Mariana 40%
@@ -112,3 +118,4 @@ Divisão por valor fixo em R$ (só percentual); regras por categoria (US-044); d
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 9b, Q-F02b).
 - 2026-10-04 — **Revisão pós-TL (D-PO-34):** posição na R3 depois da US-042; a EN-002 passou a Must e deixou de ser cortada junto com esta história.
+- 2026-10-05 — **Ajuste pós-SDD (D-GES-24, D-PO-45):** acrescentado o cenário "Previsão com divisão própria: a baixa herda" (a previsão passa a guardar `split`, SDD-015). Fica na **R3-B**.

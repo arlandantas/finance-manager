@@ -104,7 +104,8 @@ R1 e R2 foram **homologadas com ressalvas** e o usuário enviou 16 sugestões. O
 4. **Histórico é sagrado**: arquivar em vez de apagar, ex-membro preserva o nome, mudar a regra nunca reescreve o passado.
 5. **Corte pelo fim** (revisado pelo TL, D-PO-34/35): R2.1: 039 ➔ 037 (tema) ➔ 038 (desktop) ➔ 036 (detalhe) ➔ 033 ➔ 035 ➔ 031. R3: 051 ➔ 050 ➔ 049 ➔ 046 ➔ 044 ➔ 041 ➔ 043 (a EN-002 não sai: é Must, D-PO-34).
 6. **Parcelamento (decidido, D-PO-33)**: o TL estimou a US-040 em 8 e a US-042 depende da EN-002, então **não** entra na R2.1; é a 1ª entrega da R3, na ordem US-040 ➔ EN-002 ➔ US-042 ➔ US-043 ➔ US-041 (D-GES-17, Q-F14).
-7. **Ordem da R2.1 (D-PO-35)**: 027 ➔ 022 ➔ 023 ➔ 024 ➔ 025 ➔ 026 ➔ 028 ➔ 029 ➔ 030 ➔ 031 ➔ 032 ➔ 033 ➔ 034 ➔ 035 ➔ 036 ➔ 037 ➔ 038 ➔ 039.
+7. **R3 em duas entregas (D-PO-43, D-GES-23)**: **R3-A** = parcelamento (US-040a/b) + percentual por lançamento (EN-002a/b), interface inalterada, 21 pts; pausa de homologação e janela de reversão (≥ 7 dias); **R3-B** = US-042, 043, 041, 044, tags, Análise, cor e receitas previstas, 44 pts.
+8. **Ordem da R2.1 (D-PO-35)**: 027 ➔ 022 ➔ 023 ➔ 024 ➔ 025 ➔ 026 ➔ 028 ➔ 029 ➔ 030 ➔ 031 ➔ 032 ➔ 033 ➔ 034 ➔ 035 ➔ 036 ➔ 037 ➔ 038 ➔ 039.
 
 **Fora do MVP e do roadmap atual (Futuro):** IA generativa (NEED-023, depende de Q-U01 e ADR de privacidade), grupos não familiares e contas privadas (NEED-021; só o spike EN-003), exclusão da família (Q-U02), construtor de relatórios, hierarquia/cor de tags.
 

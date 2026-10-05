@@ -56,6 +56,17 @@ Solicito ao Gestor, **por escrito em `agents/manager/decisoes-do-gestor.md`** (p
 | **D-PO-41** | **Cenários R1/R2 atualizados** nas histórias antigas: padrão "Só meu" (US-005, US-016a, US-018), texto neutro do acerto (US-009, US-011, US-013, US-013b, US-016a), estado vazio "Nenhuma despesa dividida neste mês" (US-009), Home reorganizada (US-012); cada anotação em "Histórico". O Dev atualiza os `.feature` e testes **na mesma história que provoca a mudança** (US-030, US-028/029, US-022, US-025). | histórias R1/R2 | Resposta do TL §7.6; SDD-010/011 §9 | |
 | **D-PO-42** | **Saldo previsto em mês futuro** usa o saldo **atual** menos só os vencimentos daquele mês (sem projeção acumulada); a projeção fica para o AP1. | US-025 | TL-09, SDD-010 §4.2 | |
 
+### 2c. Decisões pós-SDD-014..017 (D-PO-43..D-PO-47)
+Origem: D-GES-23/24 e TL-10..TL-22 (`agents/manager/pedidos-ao-gestor.md`). Hipóteses conservadoras do TL valem até o PO ratificar; o PO as **adota**. Aguardam ratificação do Gestor.
+
+| ID | Decisão | Histórias | Rastreio |
+| :-- | :-- | :-- | :-- |
+| **D-PO-43** | **R3-A** (US-040a/b + EN-002a/b; 21 pts; interface inalterada) e **R3-B** (US-042, 043, 041, 044, tags, Análise, cor, receitas previstas; 44 pts), com pausa de homologação e janela de reversão (≥ 7 dias, `--verify` limpo, um fechamento conferido) entre elas. Ordem e corte da R3 inalterados; a US-042 (Must) abre a R3-B. | R3 | D-GES-23, TL-11, ADR-021 |
+| **D-PO-44** | Extrato com **intervalo de até 24 meses** nos cenários "uma linha por parcela" e "Ver compra"; "Parcelas futuras" definida e fora de A pagar/Saldo previsto. | US-040 | TL-14, TL-16, SDD-014 |
+| **D-PO-45** | Parcela em fatura fechada ou paga é travada (US-041); a baixa herda a divisão da previsão (US-043); a revisão do mês exclui parcelas (US-044). | US-041, 043, 044 | TL-12, TL-13, TL-18 |
+| **D-PO-46** | Caracteres da tag; chip "Sem tag" do drill-down; filtro "Quem pagou"; edição só de tags = não financeira. | US-045, 047, 049 | TL-14, TL-15, TL-19, TL-20, SDD-016 |
+| **D-PO-47** | `kind` da previsão imutável; aba "Pagas e recebidas" mista. | US-051 | TL-21, SDD-017, ADR-023 |
+
 ### Pedido de ratificação (pós-TL)
 Solicito ao Gestor, em `agents/manager/decisoes-do-gestor.md` (o PO não altera essa pasta): (1) **ratificar D-PO-33..42**; (2) atenção a **D-PO-33** (parcelamento fora da R2.1, conforme a regra de D-GES-17) e **D-PO-34** (EN-002 Must e novo corte da R3, que revisa D-GES-18 só na parte da R3); (3) confirmar que o **Stakeholder** valide na homologação da R3 a assimetria à vista × parcela (TL-03) e a limitação de acento da busca (D-PO-38).
 
@@ -65,3 +76,4 @@ Solicito ao Gestor, em `agents/manager/decisoes-do-gestor.md` (o PO não altera 
 ## 4. Histórico
 - 2026-10-04 — Criado. Aguarda ratificação do Gestor.
 - 2026-10-04 — Resposta do Tech Lead aplicada: D-PO-33..42 (§2b) aguardando ratificação; D-PO-12..32 já ratificadas (D-GES-14).
+- 2026-10-05 — D-PO-43..47 (§2c) aplicam D-GES-23/24 e TL-10..TL-22; aguardam ratificação.

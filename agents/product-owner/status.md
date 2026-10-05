@@ -16,6 +16,10 @@
 - **Parcelamento fica na R3** (D-GES-17 não satisfeita: US-040 = 8 e a US-042 depende da EN-002). **EN-002 sobe a Must** (a US-042 depende dela).
 - **Corte da R3 (reescrito):** 051 ➔ 050 ➔ 049 ➔ 046 ➔ 044 ➔ 041 ➔ 043 (a EN-002 deixa a lista); saem 29 pts e sobram 36 (Must 24 + tags 045/047 + Análise 048).
 
+### R3-A e R3-B (D-PO-43, D-GES-23)
+**R3-A (21 pts)** = US-040a/b (8) + EN-002a/b (13), interface inalterada, números idênticos ao *snapshot*. **Pausa** para homologação e janela de reversão (≥ 7 dias, `--verify` limpo, um fechamento de mês conferido). **R3-B (44 pts)** = US-042 (3) ➔ US-043 (5) ➔ US-041 (5) ➔ US-044 (3) ➔ tags (045, 047, 046) ➔ Análise (048, 049) ➔ cor (050) ➔ receitas previstas (051). Ordem e corte da R3 inalterados. A EN-002 só começa com S1..S16 e os homologados verdes (ADR-021).
+**Ajustes de BDD (D-PO-44..47, TL-10..TL-22):** US-040 (intervalo de 24 meses no Extrato; "Parcelas futuras"), US-041 (trava em fatura fechada), US-043 (baixa herda a divisão), US-044 (revisão sem parcelas), US-045/047/049 (caracteres da tag, `untagged`, "Quem pagou", edição só de tags não financeira), US-051 (`kind` imutável).
+
 ### Fatiamentos novos
 | História | Fatias |
 | :-- | :-- |

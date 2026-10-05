@@ -16,13 +16,13 @@ Como **membro da família**, quero **anexar tags livres a um lançamento digitan
 - Tag é **opcional** e **nunca atrasa** o lançamento (RN-013.1): uma linha recolhida **"+ Tag"** abaixo da descrição; os quatro toques do fluxo mínimo não mudam.
 - **Criar ao digitar** (sem cadastro prévio): digitar o nome e confirmar com Enter/vírgula/"Criar tag 'viagem'". Com **sugestão** das tags existentes ao digitar (por prefixo, sem diferenciar maiúsculas e acentos).
 - Tags são **da família**; todos veem e reutilizam.
-- **Nome único sem diferenciar maiúsculas/minúsculas/acentos** (RN-013.2): "Viagem" = "viagem" = "Viágem" (só caixa e acentos); digitar uma variação reaproveita a tag existente e exibe o nome original; erros de grafia como "viajem" **não** são unificados (a sugestão ao digitar é a mitigação). Tamanho 2 a 30 caracteres, sem espaços nas pontas; espaços internos viram hífen na exibição "viagem-nordeste".
+- **Nome único sem diferenciar maiúsculas/minúsculas/acentos** (RN-013.2): "Viagem" = "viagem" = "Viágem" (só caixa e acentos); digitar uma variação reaproveita a tag existente e exibe o nome original; erros de grafia como "viajem" **não** são unificados (a sugestão ao digitar é a mitigação). Tamanho 2 a 30 caracteres, sem espaços nas pontas; **caracteres permitidos**: letras, números, hífen, ponto e sublinhado (a vírgula é o separador da interface); o espaço interno vira hífen **na gravação**; espaços internos viram hífen na exibição "viagem-nordeste".
 - **Sem limite técnico**; a interface **sugere até 3** por lançamento: a 4ª mostra aviso suave "Muitas tags dificultam a análise" mas **permite** (Q-F09).
 - Vale para **despesa, receita e compra no cartão**; **não** para transferência e acerto (Q-F09b).
 - **Tag não entra no acerto nem tem teto** (RN-013.4).
 - **Compra parcelada**: a tag vale para todas as parcelas (RN-013.5).
 - Tags aparecem como *chips* no Extrato e no detalhe; editar tags de um lançamento está na edição (US-013a).
-- Lançamento em **mês acertado**: editar tags **não** conta como edição financeira (não dispara o aviso da US-013b).
+- **Editar só tags é edição não financeira** (D-PO-46, TL-20): não dispara o aviso de mês acertado (US-013b) e **não é barrada** por fatura paga, conta arquivada nem parcela somente leitura (tag não altera saldo, fatura nem acerto); em compra parcelada vale para **todas as parcelas**. Continua barrada em lançamento excluído.
 
 ## Critérios de aceite (Gherkin)
 
@@ -73,6 +73,10 @@ Funcionalidade: Tags livres no lançamento
     Quando Mariana digita a tag "a"
     Então vê "A tag precisa ter entre 2 e 30 caracteres"
 
+  Cenário: Caractere não permitido na tag
+    Quando Mariana digita a tag "viagem*"
+    Então vê "A tag só pode ter letras, números, hífen, ponto e sublinhado"
+
   Cenário: Transferência não tem tags
     Quando Mariana abre o formulário "Transferir entre contas"
     Então não vê o campo de tags
@@ -101,6 +105,16 @@ Funcionalidade: Tags livres no lançamento
     Quando Mariana altera só a tag de uma despesa de setembro
     Então a alteração é salva sem o aviso de mês acertado
 
+  Cenário: Editar tag de despesa em fatura paga
+    Dado uma compra "Hotel" no cartão em fatura já paga
+    Quando Mariana altera só a tag de "Hotel" para "ferias"
+    Então a alteração é salva
+
+  Cenário: Editar tag de uma compra parcelada vale para todas as parcelas
+    Dado a compra "Notebook" de "R$ 2.500,00" em "10x" com a fatura de nov/2026 paga
+    Quando Mariana adiciona a tag "trabalho" à parcela "3/10"
+    Então as 10 parcelas mostram a tag "trabalho"
+
   Cenário: Falha de rede ao salvar com tag
     Dado que não há conexão
     Quando Mariana salva um lançamento com a tag "ferias"
@@ -118,3 +132,4 @@ Hierarquia, cor ou orçamento por tag (RN-013.6); tags automáticas; tags em tra
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 1, Q-F09). Correção de redação: acentos e caixa são normalizados; variações ortográficas ("viajem") **não** são unificadas (só sugestão ao digitar).
+- 2026-10-05 — **Ajuste pós-SDD (D-GES-24, D-PO-46):** caracteres permitidos e mensagem "A tag só pode ter letras, números, hífen, ponto e sublinhado" (TL-15); edição só de tags é não financeira (TL-20); 3 cenários novos. Fica na **R3-B**.

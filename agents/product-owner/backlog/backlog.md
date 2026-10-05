@@ -155,6 +155,8 @@ Origem: homologação com ressalvas de R1+R2 ([`homologacao-r1-r2.md`](../../sta
 > **Parcelamento na R2.1? Não (D-PO-33).** A regra de D-GES-17 não foi satisfeita: o TL estimou a US-040 em **8** (> 5) e a US-042 depende da EN-002 (percentual gravado). Fica como **1ª entrega da R3**, na ordem US-040 ➔ EN-002 ➔ US-042 ➔ US-043 ➔ US-041. Enquanto isso, "Dividir" mostra "Disponível em breve" na compra parcelada.
 
 ### R3 — "Cartão completo e análise" (1ª fatia do AP1) — **67 pts** (TL; PO prelim. 56; EN-003 já entregue: **65 pendentes**)
+**Duas entregas (D-PO-43, D-GES-23):** **R3-A (21 pts)** = US-040a/b (8) + EN-002a/b (13), com a **interface inalterada** e os números idênticos ao *snapshot*; **R3-B (44 pts)** = US-042 (3), US-043 (5), US-041 (5), US-044 (3), US-045 (5), US-047 (2), US-046 (3), US-048 (5), US-049 (5), US-050 (3), US-051 (5). **Entre as duas há uma pausa** para a homologação e a **janela de reversão** (≥ 7 dias, `--verify` limpo e um fechamento de mês conferido; TL-11, ADR-021). A **EN-002 só começa** com os vetores S1..S16 e os valores homologados verdes e o *gate* de 1 centavo; o `computeSettlementLegacy` é extraído em commit à parte. A ordem de execução e o corte abaixo **não mudam**; o corte só atinge itens da R3-B. A US-042 (Must) passa a ser a primeira da R3-B (depois da janela), porque a parcela dividida cria rateios que o motor `LEGACY` não representa.
+
 **Ordem final de execução (D-PO-33/34)**: EN-003 (concluída) · **US-040 ➔ EN-002 ➔ US-042 ➔ US-043 ➔ US-041** ➔ US-044 ➔ tags (US-045 ➔ 047 ➔ 046) ➔ Análise (US-048 ➔ 049) ➔ cor (US-050) ➔ receitas previstas (US-051). A EN-002 precede a US-042 (dependência dura) e a US-041 vem depois da US-043 (ordem de risco, TL §5).
 
 | Ordem | ID | História | Épico | MoSCoW | V/U/R | Pts (TL) | WSJF | Depende de | Rastreio (NEED) | Status · corte / nota |
@@ -179,7 +181,7 @@ Origem: homologação com ressalvas de R1+R2 ([`homologacao-r1-r2.md`](../../sta
 | Must (040, **EN-002**, 042) | **24** |
 | Should (043, 041, 044, 045, 047, 046, 048, 049, EN-003) | **35** (33 pendentes) |
 | Could (050, 051) | **8** |
-| **Total R3** | **67** (65 pendentes) |
+| **Total R3** | **67** (65 pendentes: **R3-A 21** + **R3-B 44**) |
 
 **Pontos acumulados (pendentes):** US-040 = 8 ➔ EN-002 = 21 ➔ US-042 = 24 ➔ US-043 = 29 ➔ US-041 = 34 ➔ US-044 = 37 ➔ US-045 = 42 ➔ US-047 = 44 ➔ US-046 = 47 ➔ US-048 = 52 ➔ US-049 = 57 ➔ US-050 = 60 ➔ US-051 = 65.
 
@@ -221,7 +223,7 @@ Assistente de IA generativa (NEED-023; depende de **Q-U01** com o usuário e de 
 | **R1 — "Fechar o mês em casal"** | Inc 1 + Inc 2 (EN-001, US-001..013) | Login, família, convite, contas, lançamentos, extrato, split, acerto, home | *"Registro tudo em 10 s e sei quem deve quanto a quem."* |
 | **R2 — "AP0 completo"** | Inc 3 (US-014..019) | Categorias, cartões à vista, fatura, despesas previstas | *"Cartões e contas a pagar também estão aqui."* |
 | **R2.1 — "Ressalvas e ajustes de baixo risco"** | Inc 4 (US-022..039) | Rótulo honesto do acerto, conta de origem padrão, descrição, Resumo do Mês, ocultar valores, acerto opcional, "Dividir" Só meu, arquivar conta/cartão, família e membros, detalhe, tema, desktop | *"A Início responde como está o mês, o acerto é discreto e opcional, e nada expõe meu dinheiro sem eu querer."* |
-| **R3 — "Cartão completo e análise"** | Inc 5 (US-040..051, EN-002, EN-003) | Parcelamento no cartão, divisão por lançamento, tags, visões sintéticas, cor, receitas previstas, spike de grupos | *"O cartão parcelado funciona e sei para onde foi o dinheiro."* |
+| **R3 — "Cartão completo e análise"**, em **R3-A** (US-040a/b + EN-002a/b, interface inalterada) e **R3-B** (US-042 em diante), com pausa de homologação entre elas | Inc 5 (US-040..051, EN-002, EN-003) | Parcelamento no cartão, divisão por lançamento, tags, visões sintéticas, cor, receitas previstas, spike de grupos | *"O cartão parcelado funciona e sei para onde foi o dinheiro."* |
 | AP1 | a refinar (logo após a R3, Q-F12) | Orçamento e autocontrole: ciclo, tetos, disponibilidade, recorrência | — |
 
 **Justificativa:** a dor vital do MVP (`mvp-definition.md`) e o ADR-006 colocam o split no centro; cartões e previstas são do AP0 do Stakeholder mas **não bloqueiam** a dor central. Entregar R1 antes de R2 permite **homologação de valor antecipada** com o Stakeholder e reduz o risco de um MVP "grande demais". Divisão R1/R2 **ratificada pelo Gestor (D-GES-01)**; homologação de valor após a R1.
@@ -278,3 +280,8 @@ Assistente de IA generativa (NEED-023; depende de **Q-U01** com o usuário e de 
 | **D-PO-40** | Decisão | `highlight` é parâmetro de UI, sem contrato de API. | Gestor ratifica | Não |
 | **D-PO-41** | Decisão | Cenários R1/R2 atualizados nas histórias antigas (padrão "Só meu", texto neutro do acerto, Home reorganizada). | Gestor ratifica | Não |
 | **D-PO-42** | Decisão | Saldo previsto em mês **futuro** usa o saldo atual e só os vencimentos daquele mês (TL-09); projeção acumulada fica para o AP1. | Gestor ratifica | Não |
+| **D-PO-43** | Decisão | **R3 em duas entregas** (D-GES-23, TL-11): **R3-A** = US-040a/b + EN-002a/b (21 pts, interface inalterada); **R3-B** = US-042, 043, 041, 044 e o restante (44 pts), depois da pausa de homologação e da janela de reversão (≥ 7 dias, `--verify` limpo, um fechamento conferido). Ordem e corte da R3 inalterados. | Gestor ratifica | Não |
+| **D-PO-44** | Decisão | **US-040:** nos cenários "uma linha por parcela" e "Ver compra" o Extrato informa o **intervalo** (até 24 meses, TL-14); "Parcelas futuras" definida (fatura: parcelas ativas em faturas posteriores à exibida; cartão: posteriores à aberta; TL-16), indicador que não entra em A pagar nem em Saldo previsto. | Gestor ratifica | Não |
+| **D-PO-45** | Decisão | **US-041:** parcela em fatura **fechada ou paga** fica travada (a compra única da US-016b trava só a paga; TL-12). **US-043:** a baixa herda a divisão da previsão (TL-18). **US-044:** a revisão do mês **não lista parcelas** (TL-13). | Gestor ratifica | Não |
+| **D-PO-46** | Decisão | **Tags e Análise:** caracteres permitidos (letras, números, hífen, ponto, sublinhado) com a mensagem do TL (TL-15); filtro `untagged` só como chip "Sem tag" do drill-down (TL-14); filtro de membro rotulado **"Quem pagou"** no Extrato e na Análise (TL-19); **editar só tags é não financeira** (não é barrada por fatura paga, conta arquivada nem parcela; vale para todas as parcelas; TL-20). | Gestor ratifica | Não |
+| **D-PO-47** | Decisão | **US-051:** `kind` da previsão **imutável** (excluir e cadastrar de novo) e aba "Pagas e recebidas" mista (TL-21). | Gestor ratifica | Não |

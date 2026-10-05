@@ -65,6 +65,17 @@ Funcionalidade: Filtrar o Extrato por tag
     Quando Lucas filtra pela tag "viagem-nordeste" e recarrega a página
     Então o filtro "viagem-nordeste" continua aplicado
 
+  Cenário: Chip Sem tag vindo da Análise
+    Quando Lucas abre o Extrato pela linha "Sem tag" da Análise de julho de 2026
+    Então vê "Mercado"
+    E o chip "Sem tag" está aplicado
+    E não vê "Hotel"
+
+  Cenário: Sem tag não combina com uma tag escolhida
+    Dado que Lucas abriu o Extrato pelo chip "Sem tag"
+    Quando Lucas filtra também pela tag "viagem-nordeste"
+    Então vê "Use tags ou "sem tag", não os dois"
+
   Cenário: Limpar o filtro de tag
     Dado que Lucas filtrou pela tag "viagem-nordeste"
     Quando Lucas toca em "Limpar filtros"
@@ -75,10 +86,11 @@ Funcionalidade: Filtrar o Extrato por tag
 Seletor múltiplo com busca no painel "Filtros" do Extrato (recolhível no mobile).
 
 ## Fora de escopo
-Filtro "todas as tags" (E); filtro por ausência de tag; salvar filtros.
+Filtro "todas as tags" (E); salvar filtros. O filtro por **ausência de tag** não tem controle próprio na interface: existe só como o chip **"Sem tag"** aberto pelo drill-down da Análise (D-PO-46, TL-14).
 
 ## Perguntas em aberto / pontos para o Tech Lead
 - Consulta com N:N sem duplicar linhas e totais; índice.
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 1).
+- 2026-10-05 — **Ajuste pós-SDD (D-GES-24, D-PO-46):** chip "Sem tag" só como drill-down da Análise (TL-14); 2 cenários novos. Fica na **R3-B**.
