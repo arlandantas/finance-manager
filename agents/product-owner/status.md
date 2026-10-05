@@ -1,6 +1,34 @@
 # Status do Product Owner
 
-*Atualizado: 2026-10-04 (R2 refinada)*
+*Atualizado: 2026-10-04 (pós-homologação: R2.1 e R3 refinadas)*
+
+## Atualização: R2.1 e R3 refinadas após a homologação (aguardam Tech Lead e ratificação do Gestor)
+- **Origem:** homologação de R1+R2 com ressalvas e feedback do usuário (16 sugestões), tratados pelo Stakeholder em [`parecer-feedback-usuario.md`](../stakeholder/parecer-feedback-usuario.md) (Q-F01..Q-F14, aprovadas pelo Gestor). O usuário delegou as decisões; nada novo foi perguntado a ele (só Q-U01/Q-U02 continuam com ele e não bloqueiam).
+- **Entregue pelo PO:** 30 histórias novas e 2 enablers, todas com rastreio NEED➔US, Gherkin (pt, sem os padrões que o parser recusa: DEV-06/11/15/25), MoSCoW, WSJF, dependências e marca de corte; 9 fluxos novos; MVP/roadmap revisados; decisões D-PO-12..32; pedidos ao TL.
+
+| Release | Histórias | Pts (PO, **prelim.**) | Composição |
+| :-- | :-- | :-: | :-- |
+| **R2.1** | [US-022..US-039](backlog/stories) (18) | **60** | Must 37 · Should 13 · Could 10 |
+| **R3** | [US-040..US-051](backlog/stories), [EN-002](backlog/stories/EN-002-percentual-gravado-por-lancamento.md), [EN-003](backlog/stories/EN-003-spike-modelo-multiplos-grupos.md) (14) | **56** | Must 8 · Should 40 · Could 8 |
+
+- **Ordem de execução R2.1:** US-022 ➔ 023 ➔ 024 ➔ 027 ➔ 025 ➔ 026 ➔ 028 ➔ 029 ➔ 030 ➔ 031 ➔ 032 ➔ 033 ➔ 034 ➔ 035 ➔ 036 ➔ 037 ➔ 038 ➔ 039. **Ordem de corte (primeiro a sair):** 039 ➔ 037 (tema) ➔ 038 (desktop) ➔ 036 (detalhe) ➔ 033 ➔ 035 ➔ 031 (restam os 37 pts de Must).
+- **Ordem de execução R3:** EN-003 (paralelo, TL) · US-040 ➔ 042 ➔ 041 ➔ EN-002 ➔ 043 ➔ 044 ➔ 045 ➔ 047 ➔ 046 ➔ 048 ➔ 049 ➔ 050 ➔ 051. **Corte:** 051 ➔ 050 ➔ 049 ➔ 046 ➔ 044 ➔ 041 ➔ EN-002 + 043.
+- **Parcelamento (Q-F14):** US-040 (5) + US-042 (3). Se o TL estimar ≤ 5 e ≤ 3, o Gestor pode puxá-las para o fim dos Must da R2.1 (68 pts); senão 1ª entrega da R3.
+- **Fluxos novos** em [`flows/`](flows): FLUXO-006 Home e Resumo do Mês · 007 Ocultar valores · 008 Lançar despesa (descrição, dividir, parcelas, tags) · 009 Acerto opcional · 010 Arquivar conta/cartão · 011 Família e membros · 012 Conta de origem padrão · 013 Preferências, desktop e detalhe · 014 Parcelamento, tags e análise (R3). FLUXO-001/002/003 receberam revisão apontando para eles.
+- **Decisões do PO (D-PO-12..32):** [`backlog/decisoes-po-r21-r3.md`](backlog/decisoes-po-r21-r3.md). **Pedem atenção do Gestor:** D-PO-16 (revisa Q-22: previstas também "Só meu") e D-PO-26 (parcela conta no mês da fatura; à vista pela data da compra: assimetria).
+- **Histórias antigas anotadas** (Histórico): US-002, 005, 008, 009, 012, 017b, 018, 019. Os cenários da R1/R2 que mudam de padrão (ex.: "Dividir" ligado por padrão na US-005) serão atualizados pelo Dev com a US-030.
+
+### Pedidos ao Tech Lead — [`backlog/pedidos-ao-tech-lead-r21-r3.md`](backlog/pedidos-ao-tech-lead-r21-r3.md)
+1. **Estimar o parcelamento básico** (US-040/042) e dizer se cabe na R2.1; avaliar a assimetria de competência (D-PO-26).
+2. **Spike de múltiplos grupos** (EN-003): vínculo usuário↔família N:N? custo de "pessoa em dois grupos" e de "conta privada"; ADR.
+3. **Migração do cálculo do acerto** (EN-002) com **regressão** sobre 3.169,90 / cota 1.584,95 / diferença 1.149,95 (e setembro 717,00 / 358,50 / 260,50).
+4. **Modelo de gravação do percentual por lançamento** (coluna vs. rateio por membro; sobra ao pagador; parcelas herdando; ex-membros).
+5. Confirmar pontos, devolver dependências técnicas e emitir SDDs (sugestão SDD-010..017) e o ADR do spike.
+
+### Pendências com outros agentes
+- **Gestor:** ratificar D-PO-12..32 (registrar em `agents/manager/decisoes-do-gestor.md`), decidir D-PO-16 e D-PO-26, e a posição do parcelamento após a estimativa do TL.
+- **Tech Lead:** itens acima. **Dev & QA:** nada a iniciar antes do SDD; ao atualizar o Gherkin da R1/R2 (padrões "Dividir" e Home), seguir as notas do §4 do pedido ao TL.
+- **Stakeholder:** ciente das decisões de detalhe (D-PO-15, 18, 25, 26) para a homologação da R2.1.
 
 ## Atualização: R2 (Inc 3, US-014..019) Refinada e **Especificada** (SDD-007, SDD-008, SDD-009)
 - **Tech Lead concluiu o ciclo (2026-10-04):** estimativas confirmadas (**32 pontos**, iguais às do PO), ADR-014 (cartão e fatura no ledger) e ADR-015 (previsão como entidade própria). Ajuste do PO após o SDD: o cenário "Baixa única" da US-019 foi esclarecido (tela atualizada ⇒ `já foi paga`; tela desatualizada ⇒ conflito de versão).
