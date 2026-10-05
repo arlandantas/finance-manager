@@ -2,16 +2,23 @@
 
 | Campo | Valor |
 | :-- | :-- |
-| Épico / Release | EPIC-16 Acerto e Divisão Opcionais e Transparentes · **R3** |
-| Tipo | **Enabler técnico** (sem valor direto ao usuário; habilita US-043, US-044 e o rótulo ponderado) |
+| Épico / Release | EPIC-16 Acerto e Divisão Opcionais e Transparentes · **R3, 2ª entrega** (depois da US-040) |
+| Tipo | **Enabler técnico** (sem valor direto ao usuário; habilita **US-042 (Must)**, US-043, US-044 e o rótulo ponderado) |
 | MoSCoW · WSJF · Tamanho (TL) | **Must** (era Should: a US-042 depende dela, D-PO-34) · 1,1 (recalc.) · 13 (002a 5 + 002b 8) (PO: 5) |
 | Status | **Esboçada** (SDD-015, esboço do Tech Lead) · tamanho re-estimado pelo TL; detalhar o SDD antes do Dev |
-| Depende de | US-008, US-009a/b, US-011, US-013a/b, US-022 |
-| Corte | Cortar junto com a US-043 (a R3 inteira de "9b" sai ou fica) |
-| Rastreabilidade | Parecer item 9b e §10 (risco: migração do acerto) · NEED-018 (RN-018.1..4) · Q-08/D-GES-08 · D-PO-27 |
+| Depende de | US-008, US-009a/b, US-011, US-013a/b, US-022; na ordem da R3 vem depois da US-040 |
+| Corte | **Não cortar** (Must: a US-042 depende do percentual gravado; D-PO-34). Só a **US-043** (e a US-044) são cortáveis |
+| Rastreabilidade | Parecer item 9b e §10 (risco: migração do acerto) · NEED-018 (RN-018.1..4) · Q-08/D-GES-08 · D-PO-27, **D-PO-34** · SDD-015 (esboço), ADR-016, TL-07 |
 
 ## Justificativa do enabler
 O acerto de contas é a área de **maior risco do produto** (parecer §10). Hoje o cálculo usa a **regra vigente por data** (Q-08). Para permitir "divisão definida no lançamento" (US-043), o **percentual efetivamente usado precisa ser gravado em cada lançamento**, e todo o histórico precisa migrar **sem que nenhum número já conferido mude**.
+
+## Fatias e entrega em duas etapas (D-PO-34; ADR-016 e SDD-015)
+| Fatia | Pts | Conteúdo |
+| :-- | :-: | :-- |
+| **EN-002a** | 5 | Modelo (rateio por membro em centavos e em *basis points*), motor `STORED` ao lado do motor `LEGACY` congelado, gravação do rateio nos **novos** lançamentos; interface inalterada |
+| **EN-002b** | 8 | Script de migração (idempotente, retomável, atômico por família), instantâneo antes/depois, ***gate*** de 1 centavo que **falha o deploy**, *rollback* testado e harness de regressão (S1..S13, S14..S16 e dados homologados) |
+**Release em duas etapas:** (1) EN-002a + 002b com **interface inalterada** (nada muda para o usuário; números idênticos); (2) só **depois da janela de reversão** a US-043 libera o modo "De outro jeito". São da 002a os cenários "Mudar a regra depois da migração não altera lançamentos antigos" e "Rótulo do mês usa os percentuais gravados"; todos os demais são da 002b.
 
 ## Resultado verificável (critérios de aceite)
 
@@ -43,6 +50,14 @@ Funcionalidade: Percentual gravado por lançamento com migração sem diferença
     Então o lançamento de 02/10/2026 fica gravado com "50% / 50%"
     E o lançamento de 10/10/2026 fica gravado com "58% / 42%"
     E as cotas do mês continuam "R$ 780,00" e "R$ 620,00"
+
+  Cenário: Centavos por lançamento não alteram o acerto antigo
+    Dado a regra "50% / 50%" e três despesas comuns de "R$ 100,01" pagas por Mariana no mesmo mês
+    E o instantâneo mostra as cotas "R$ 150,02" para Mariana e "R$ 150,01" para Lucas
+    Quando a migração do percentual por lançamento é aplicada
+    Então as cotas do mês continuam "R$ 150,02" e "R$ 150,01"
+    E a diferença a acertar do mês continua igual ao instantâneo
+    E os centavos gravados nos três lançamentos somam "R$ 150,02" e "R$ 150,01"
 
   Cenário: Lançamento pessoal migra sem percentual
     Dado uma despesa "Só meu" de "R$ 80,00"
@@ -85,7 +100,8 @@ Funcionalidade: Percentual gravado por lançamento com migração sem diferença
 Mudança de interface (US-043); lembrar por categoria (US-044); histórico de regras em tabela própria (o TL decide se mantém).
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- Modelo (campo no lançamento ou tabela de rateio por lançamento, útil para N membros); estratégia de migração e **teste de regressão** com os valores homologados 3.169,90 / cota 1.584,95 / diferença 1.149,95; compatibilidade com `computeSettlement` e com os vetores S1..S13 do SDD-002 (ver `pedidos-ao-tech-lead-r21-r3.md`).
+- **Respondido pelo TL** (ADR-016, SDD-015): tabela de rateio por membro com `bps` **e** `amountInCents`; o arredondamento por lançamento (RN-018.3) **difere** do por grupo em centavos (ex.: três despesas de R$ 100,01 a 50/50), por isso o modelo grava **centavos** e o *gate* garante cotas idênticas; regressão com os valores homologados e os vetores S1..S16.
 
 ## Histórico
 - 2026-10-04 — Criado a partir do parecer (item 9b; riscos §10).
+- 2026-10-04 — **Revisão pós-TL (D-PO-34):** re-estimada de 5 para **13** (002a 5 + 002b 8); promovida a **Must** porque a US-042 (Must) exige o percentual gravado; fica logo depois da US-040 na R3; acrescentado o cenário "Centavos por lançamento não alteram o acerto antigo" (valores ímpares).

@@ -2,11 +2,11 @@
 
 | Campo | Valor |
 | :-- | :-- |
-| Épico / Release | EPIC-16 Acerto e Divisão Opcionais e Transparentes · **R3** |
+| Épico / Release | EPIC-16 Acerto e Divisão Opcionais e Transparentes · **R3, 5ª posição** (libera o modo CUSTOM **depois da janela de reversão** da EN-002, ADR-016) |
 | MoSCoW · WSJF · Tamanho (TL) | Should · 2,6 · 5 |
 | Status | **Esboçada** (SDD-015, esboço do Tech Lead) · tamanho confirmado pelo TL; detalhar o SDD antes do Dev |
 | Depende de | EN-002, US-030, US-008, US-009b |
-| Corte | **Cortável** (com a EN-002; a R2.1 já entrega "Só meu" e regra da família) |
+| Corte | **Cortável** (a EN-002 **não** sai com ela: é Must por causa da US-042; a R2.1 já entrega "Só meu" e regra da família) |
 | Rastreabilidade | Parecer item 9b · NEED-018 (RN-018.1..5) · NEED-007 · D-PO-27 · FLUXO-008 |
 
 ## História
@@ -111,3 +111,4 @@ Divisão por valor fixo em R$ (só percentual); regras por categoria (US-044); d
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 9b, Q-F02b).
+- 2026-10-04 — **Revisão pós-TL (D-PO-34):** posição na R3 depois da US-042; a EN-002 passou a Must e deixou de ser cortada junto com esta história.

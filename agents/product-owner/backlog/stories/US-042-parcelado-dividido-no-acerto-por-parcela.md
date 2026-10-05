@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 | :-- | :-- |
-| Épico / Release | EPIC-20 Cartão Completo (parcelamento) · **R3** (junto com a US-040, na mesma entrega) |
+| Épico / Release | EPIC-20 Cartão Completo (parcelamento) · **R3, 4ª posição** (depois da US-040 e da EN-002; não entra na R2.1, TL-02) |
 | MoSCoW · WSJF · Tamanho (TL) | Must · 2,7 · 3 |
 | Status | **Esboçada** (SDD-014, esboço do Tech Lead) · tamanho confirmado pelo TL; detalhar o SDD antes do Dev |
-| Depende de | US-040, US-030, US-009a |
+| Depende de | US-040, **EN-002 (dependência dura: o percentual da parcela é o gravado na compra)**, US-030, US-009a |
 | Corte | **Não cortar** (sem ela, o parcelado fica "Só meu" e o acerto subestima) |
 | Rastreabilidade | Parecer Q-F05 · NEED-003 (RN-003.8) · NEED-007, NEED-018, NEED-019 · Q-20/D-GES-13 · FLUXO-014 · D-PO-26 |
 
@@ -16,7 +16,7 @@ Como **membro da família**, quero **dividir uma compra parcelada e ver cada par
 - Com acerto ligado, o campo "Dividir com a família" fica disponível também na compra parcelada.
 - **Cada parcela** entra no acerto do **mês da fatura em que cai** (Q-F05, RN-003.8), **não** pelo total na data da compra.
 - **Crédito a quem comprou** (Q-20/D-GES-13): quem registrou "Quem pagou" recebe o crédito de cada parcela, independentemente de quem paga a fatura.
-- **Percentual da parcela** = o da **regra vigente na data da compra**, fixado para todas as parcelas (mudar a regra depois não reescreve parcelas já lançadas). Quando a EN-002 existir, é o **percentual gravado** na compra.
+- **Percentual da parcela** = o da **regra vigente na data da compra**, fixado para todas as parcelas (mudar a regra depois não reescreve parcelas já lançadas). Com a EN-002 (que vem antes desta história na R3), é o **percentual gravado** na compra, herdado por todas as parcelas.
 - Excluir/editar parcelas (US-041) recalcula o acerto dos meses afetados; parcelas em mês já acertado seguem as regras de mês acertado (US-013b).
 - Compra parcelada **pessoal** ("Só meu") não entra no acerto.
 - O painel de Acerto do mês identifica parcelas com o rótulo "n/N" na lista expansível de despesas (US-009b).
@@ -96,3 +96,4 @@ Percentual diferente por parcela; acelerar o acerto das parcelas futuras; ajuste
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (Q-F05, RN-003.8).
+- 2026-10-04 — **Revisão pós-TL (D-PO-33):** estimativa 3 confirmada (seria 5 sem a EN-002, alternativa descartada); passa a depender da EN-002 e fica na R3 na ordem US-040, EN-002, US-042, US-043, US-041.
