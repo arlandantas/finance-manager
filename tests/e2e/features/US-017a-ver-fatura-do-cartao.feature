@@ -65,7 +65,7 @@ Funcionalidade: Fatura do cartão
 
   Cenário: Fatura fechada aparece em "A pagar"
     Dado a fatura "out/2026" fechada com total "R$ 400,00" e vencimento 05/11/2026
-    E que hoje é 30/10/2026
+    E que hoje é 02/11/2026
     Quando Lucas abre a Home
     Então o bloco "A pagar" mostra "Fatura Nubank Mariana R$ 400,00" com vencimento 05/11
 

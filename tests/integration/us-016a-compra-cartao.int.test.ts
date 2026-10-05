@@ -209,8 +209,8 @@ describe("US-016a Acerto, totais e saldo", () => {
       (m: { member: { id: string } }) => m.member.id === mid("Lucas"),
     );
     expect(lucasShare.paidInCents).toBe(30000);
-    expect(home.body.familyBalanceInCents).toBe(homeBefore.body.familyBalanceInCents);
-    expect(home.body.familyBalanceInCents).toBe(300000);
+    expect(home.body.balances.totalInCents).toBe(homeBefore.body.balances.totalInCents);
+    expect(home.body.balances.totalInCents).toBe(300000);
   });
 
   it("accountBalances: compra no cartão não cria chave nula no mapa", async () => {

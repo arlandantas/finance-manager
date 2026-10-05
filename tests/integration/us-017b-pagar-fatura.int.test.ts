@@ -110,7 +110,16 @@ describe("US-017b Pagar a fatura fechada", () => {
     const snapshot = async () => ({
       totals: (await call(lucas(), "GET", "/api/v1/transactions?period=2026-10")).body.totals
         .expenseInCents,
-      home: (await call(lucas(), "GET", "/api/v1/home")).body.monthSummary,
+      home: await (async () => {
+        // saldo (atual/previsto) muda com o pagamento; receitas, despesas e resultado não
+        const {
+          currentBalanceInCents: _c,
+          projectedBalanceInCents: _p,
+          toPay: _t,
+          ...rest
+        } = (await call(lucas(), "GET", "/api/v1/home")).body.monthSummary;
+        return rest;
+      })(),
       settlement: (await call(lucas(), "GET", "/api/v1/settlement")).body,
       sum: [...(await accountBalances(db as never, fx.family.id)).values()].reduce(
         (a, b) => a + b,

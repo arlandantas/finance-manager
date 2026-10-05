@@ -56,10 +56,10 @@ describe("US-012 Home da família", () => {
     }
     const res = await home();
     expect(res.status).toBe(200);
-    expect(res.body.familyBalanceInCents).toBe(
+    expect(res.body.balances.totalInCents).toBe(
       650000 + 84950 - (100 + 101 + 102 + 103 + 104 + 105 + 106),
     );
-    expect(res.body.accounts.map((a: { name: string }) => a.name)).toEqual([
+    expect(res.body.balances.accounts.map((a: { name: string }) => a.name)).toEqual([
       "Itaú Mariana",
       "Nubank Conjunta",
     ]);
@@ -227,8 +227,8 @@ describe("US-012 Home da família", () => {
     await twoAccounts();
     const b = await makeFamily({ uniqueEmails: true, name: "Família B" });
     const res = await home(b.members[0]?.as ?? null);
-    expect(res.body.accounts).toEqual([]);
-    expect(res.body.familyBalanceInCents).toBe(0);
+    expect(res.body.balances.accounts).toEqual([]);
+    expect(res.body.balances.totalInCents).toBe(0);
     expect(res.body.recent).toEqual([]);
     expect(await db.family.count()).toBe(2);
   });

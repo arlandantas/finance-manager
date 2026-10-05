@@ -266,27 +266,30 @@ describe("US-018 Listas por mês e agregador", () => {
     );
   });
 
-  it("Home: bloco 'A pagar' com atrasada, hoje+7 (borda), sem hoje+8, máx. 5, overdue conta todas", async () => {
+  it("Resumo (US-025): 'A pagar' do mês — só vencimentos de outubro, atrasada marcada, máx. 5 itens, overdue conta todas", async () => {
     await create(lucas(), { description: "Internet", amountInCents: 12000, dueOn: "2026-10-20" });
     await create(lucas(), { description: "Luz", amountInCents: 20000, dueOn: "2026-10-30" });
     await create(lucas(), { description: "Borda", amountInCents: 100, dueOn: "2026-11-04" });
     await create(lucas(), { description: "Condomínio", amountInCents: 65000, dueOn: "2026-11-10" });
-    await create(lucas(), { description: "Fora", amountInCents: 100, dueOn: "2026-11-05" });
     const home = await call(lucas(), "GET", "/api/v1/home");
-    const titles = home.body.payables.items.map((i: { title: string }) => i.title);
-    expect(titles).toEqual(["Internet", "Luz", "Borda"]);
-    expect(home.body.payables).toMatchObject({
-      totalCount: 3,
-      overdue: { count: 1, totalInCents: 12000 },
+    const toPay = home.body.monthSummary.toPay;
+    expect(toPay.items.map((i: { title: string }) => i.title)).toEqual(["Internet", "Luz"]);
+    expect(toPay).toMatchObject({
+      totalCount: 2,
+      totalInCents: 32000,
+      plannedInCents: 32000,
+      invoicesInCents: 0,
+      overdueCount: 1,
+      overdueInCents: 12000,
     });
-    expect(home.body.payables.items[0].isOverdue).toBe(true);
+    expect(toPay.items[0].isOverdue).toBe(true);
     for (let i = 0; i < 6; i++) {
       await create(lucas(), { description: `Atrasada ${i}`, dueOn: "2026-10-01" });
     }
-    const many = await call(lucas(), "GET", "/api/v1/home");
-    expect(many.body.payables.items).toHaveLength(5);
-    expect(many.body.payables.totalCount).toBe(9);
-    expect(many.body.payables.overdue.count).toBe(7);
+    const many = (await call(lucas(), "GET", "/api/v1/home")).body.monthSummary.toPay;
+    expect(many.items).toHaveLength(5);
+    expect(many.totalCount).toBe(8);
+    expect(many.overdueCount).toBe(7);
   });
 
   it("faturas fechadas aparecem em /payables; pagas e abertas ficam fora; atrasadas de meses anteriores só no período corrente", async () => {
@@ -326,28 +329,30 @@ describe("US-018 Listas por mês e agregador", () => {
   });
 });
 
-describe("US-018 Home: faturas fechadas no bloco 'A pagar'", () => {
-  it("fatura fechada que vence em até 7 dias entra; vencida entra; vencendo depois de 7 dias fica fora", async () => {
+describe("US-018/US-025 Resumo: faturas na linha própria 'A pagar'", () => {
+  it("fatura vence no mês do vencimento (fechada ou aberta); vencida conta como atrasada; só no corrente", async () => {
     const card = await makeCard(fx, { name: "Nubank Mariana", closingDay: 25, dueDay: 5 });
     await makeCardPurchase(fx, { card, amountInCents: 40000, occurredOn: "2026-10-10" });
-    // hoje 28/10: vence 05/11 (> hoje + 7 = 04/11) => fora
+    // hoje 28/10: a fatura de out vence 05/11 => fora de outubro, dentro de novembro
     let home = await call(lucas(), "GET", "/api/v1/home");
-    expect(home.body.payables.items).toHaveLength(0);
-    // hoje 30/10: 05/11 <= 06/11 => dentro
-    setDevClockOverride("2026-10-30T15:00:00Z");
-    home = await call(lucas(), "GET", "/api/v1/home");
-    expect(home.body.payables.items).toHaveLength(1);
-    expect(home.body.payables.items[0]).toMatchObject({
+    expect(home.body.monthSummary.toPay.items).toHaveLength(0);
+    const nov = await call(lucas(), "GET", "/api/v1/month-summary?period=2026-11");
+    expect(nov.body.toPay.invoicesInCents).toBe(40000);
+    expect(nov.body.toPay.items[0]).toMatchObject({
       type: "INVOICE",
       title: "Fatura Nubank Mariana",
       dueOn: "2026-11-05",
       amountInCents: 40000,
       isOverdue: false,
     });
-    // hoje 06/11: vencida => dentro e conta como atrasada
+    // hoje 06/11: vencida => no mês corrente e atrasada
     setDevClockOverride("2026-11-06T15:00:00Z");
     home = await call(lucas(), "GET", "/api/v1/home");
-    expect(home.body.payables.overdue).toEqual({ count: 1, totalInCents: 40000 });
+    expect(home.body.monthSummary.toPay).toMatchObject({
+      invoicesInCents: 40000,
+      overdueCount: 1,
+      overdueInCents: 40000,
+    });
   });
 });
 
@@ -376,7 +381,7 @@ describe("US-018 Permissões, isolamento e infra", () => {
     expect((await del(b, p.id, 1)).status).toBe(404);
     expect((await call(b, "GET", "/api/v1/planned-expenses")).body.items).toHaveLength(0);
     expect((await call(b, "GET", "/api/v1/payables")).body.items).toHaveLength(0);
-    expect((await call(b, "GET", "/api/v1/home")).body.payables.items).toHaveLength(0);
+    expect((await call(b, "GET", "/api/v1/home")).body.monthSummary.toPay.items).toHaveLength(0);
   });
 
   it("idempotência: Promise.all com a mesma chave => 1 previsão", async () => {

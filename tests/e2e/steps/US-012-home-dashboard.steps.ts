@@ -60,6 +60,8 @@ When("abro a Home", async ({ world, page }) => {
 });
 
 Then("a lista de contas com seus saldos", async ({ page }) => {
+  // card recolhido por padrão (US-026): expande para listar as contas
+  await page.getByTestId("balances-toggle").click();
   const items = page.getByTestId("home-account");
   await expect(items).toHaveCount(2);
   await expect(items.filter({ hasText: "Itaú Mariana" })).toContainText("R$ 6.500,00");
