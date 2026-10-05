@@ -1,8 +1,8 @@
 # Status do Tech Lead
 
-*Atualizado: 2026-10-04 · Ciclos: **R2.1 e R3** (pós-homologação, abaixo), liberação da **R1** (EN-001, US-001..013) e especificação da **R2** (US-014..019)*
+*Atualizado: 2026-10-05 · Ciclos: **R2.1 e R3** (pós-homologação, abaixo), liberação da **R1** (EN-001, US-001..013) e especificação da **R2** (US-014..019)*
 
-## Ciclo R2.1 e R3 (pós-homologação): R2.1 **Especificada** (SDD-010..013); R3 **Esboçada** (SDD-014..017); EN-003 **concluída** (ADR-018)
+## Ciclo R2.1 e R3 (pós-homologação): R2.1 **Especificada** (SDD-010..013); **R3 Especificada** (SDD-014..017, 2026-10-05); EN-003 **concluída** (ADR-018)
 Respostas completas, estimativas por história, ordem técnica, riscos e ajustes pedidos ao PO: **[`respostas-r21-r3.md`](respostas-r21-r3.md)**.
 
 | Artefato | Cobre | Observação |
@@ -11,25 +11,32 @@ Respostas completas, estimativas por história, ordem técnica, riscos e ajustes
 | [SDD-011 Acerto opcional, rótulo e prévia](sdd/SDD-011-acerto-opcional-rotulo-e-previa.md) | US-022, 028, 029, 030, 031 | Motor **intacto**; `splitExplanation`, chave por família (`409 SETTLEMENT_DISABLED`), pendências em janela, default "Só meu" (muda contrato), prévia sem gravar; lista de testes R1/R2 que mudam |
 | [SDD-012 Manutenção de cadastros](sdd/SDD-012-manutencao-de-cadastros.md) | US-032, 033, 034, 035 | Arquivar com lock anti-corrida, **exclusão lógica terminal**, último Administrador atômico, remoção/saída com reatribuição, vetores S14..S16 |
 | [SDD-013 Pagamentos: conta padrão, descrição e polimento](sdd/SDD-013-pagamentos-conta-padrao-descricao-e-polimento.md) | US-023, 024, 039 | Função pura de sugestão, busca `q`, rotação de token do convite |
-| [SDD-014..017 (esboços R3)](sdd/SDD-014-parcelamento-esboco.md) | US-040..051, EN-002 | Parcelamento, percentual por lançamento e migração, tags e Análise, cor e receitas previstas |
+| [SDD-014 Compra parcelada no cartão](sdd/SDD-014-parcelamento-esboco.md) | US-040a/b, US-042, US-041 | **Completo** (2026-10-05): plano + N parcelas, fatura *k* = `ref_1 + k − 1`, `competenceOn` derivada por gatilho, exclusão do plano por carimbo (Desfazer), vetores I1..I12, `INSTALLMENT_*`, matriz BDD→teste |
+| [SDD-015 Percentual por lançamento, migração e divisão por categoria](sdd/SDD-015-percentual-por-lancamento-e-migracao-esboco.md) | EN-002a/b, US-043, US-044 | **Completo**: `splitAmount` (V1..V10), motor `STORED` ao lado do `LEGACY` congelado, **backfill por pesos exatos com prova**, migração por família com *gate* de 1 centavo, harness de 200+ famílias, reversão em 2 níveis, `CUSTOM`, revisão do mês |
+| [SDD-016 Tags e Análise](sdd/SDD-016-tags-e-visoes-sinteticas-esboco.md) | US-045, 047, 046, 048, 049 | **Completo**: `normalizeTagKey` (T1..T9), N:N, mesclagem atômica, filtro por `EXISTS`, filtros plurais (`payerIds`, `sourceIds`), `analyze()` com reconciliação por propriedade, intervalo de 24 meses |
+| [SDD-017 Cor e receitas previstas](sdd/SDD-017-cor-e-receitas-previstas-esboco.md) | US-050, US-051 | **Completo** (nome do arquivo termina em `-esboco` só para não quebrar links): `AccountColor` + migração + contraste, `kind` na previsão, `createIncomeCore`, `listReceivables`, "A receber" e saldo previsto |
 | [ADR-016 Percentual gravado por lançamento](adrs/ADR-016-percentual-gravado-por-lancamento.md) | EN-002, US-042..044 | Rateio por membro em centavos, motor LEGACY/STORED, migração com *gate* de 1 centavo |
 | [ADR-017 Parcelamento e competência](adrs/ADR-017-parcelamento-no-cartao-e-competencia.md) | US-040..042 | N linhas no ledger + `InstallmentPlan`, `competenceOn`, **não puxar para a R2.1** |
 | [ADR-018 Múltiplos grupos (spike)](adrs/ADR-018-multiplos-grupos-spike.md) | EN-003 | N:N estrutural já existe; custos 13 / 13–21; preparar sem construir |
 | [ADR-019 Ciclo de vida do vínculo](adrs/ADR-019-ciclo-de-vida-do-vinculo-ex-membro.md) | US-034, 035 | Ex-membro (`removedAt`), unicidade parcial, reconvite |
-| [`architecture/modelo-de-dados.md` §8–§9](architecture/modelo-de-dados.md) | R2.1, R3 | 4 migrações da R2.1 em ordem; mapa das migrações da R3 |
+| [ADR-020 Parcela *k* na *k*-ésima fatura e competência no banco](adrs/ADR-020-parcela-na-k-esima-fatura-e-competencia-no-banco.md) | US-040..042 | Refina o ADR-017: uma parcela por fatura mesmo com fechamento 28; gatilho de `competenceOn`; carimbo de exclusão do plano |
+| [ADR-021 Protocolo de migração e corte do motor do acerto](adrs/ADR-021-protocolo-de-migracao-e-corte-do-motor-do-acerto.md) | EN-002 | **Corrige o ADR-016 §5.3** (pesos exatos), trava de família, famílias `LEGACY` sem rateio, reversão em 2 níveis, migração de contrato tardia |
+| [ADR-022 Tags e agregado único da Análise](adrs/ADR-022-tags-e-agregado-unico-da-analise.md) | US-045..049 | Normalização por chave, N:N, `EXISTS`, filtros plurais, Análise = Extrato = Resumo |
+| [ADR-023 Receita prevista por `kind` e cor por enum fechado](adrs/ADR-023-receita-prevista-por-kind-e-cor-por-enum-fixo.md) | US-050, US-051 | `kind` em `planned_expenses`; 10 cores com contraste testado |
+| [`architecture/modelo-de-dados.md` §8 e §10](architecture/modelo-de-dados.md) | R2.1, R3 | 4 migrações da R2.1 em ordem; **R3 final (§10)**: ER, 8 migrações em ordem, proteções (gatilhos, `CHECK`s, *constraint triggers*) e ordem de travas |
 
 ### Pontos confirmados
 | Release | PO | **TL** | Must | Should | Could | Observação |
 | :-- | :-: | :-: | :-: | :-: | :-: | :-- |
 | **R2.1** | 60 | **67** | 40 | 17 | 10 | +2 US-032, +1 US-033, +3 US-035, +1 US-024; demais confirmadas. **Só Must = 40.** |
-| **R3** | 56 | **67** | 11 (24 com EN-002 Must) | 48 | 8 | +3 US-040, +8 EN-002; EN-003 concluída (2) |
+| **R3** | 56 | **67** | **24** (US-040, **EN-002**, US-042) | 35 | 8 | +3 US-040, +8 EN-002; EN-003 concluída (2). **SDDs confirmam**: US-040a 5 · 040b 3 · EN-002a 5 · 002b 8 · US-042 3 · US-043 5 · US-041 5 · US-044 3 · US-045 5 · 047 2 · 046 3 · 048 5 · 049 5 · 050 3 · 051 5 (sem mudança de pontos ao detalhar) |
 
 ### Decisões e respostas do TL (R2.1/R3)
 | Pergunta / Gap | Resposta |
 | :-- | :-- |
 | Parcelamento na R2.1 (D-GES-17) | **Não**: US-040 = 8 (> 5) e a US-042 depende da EN-002. 1ª entrega da R3 (ADR-017). |
 | Assimetria D-PO-26 | Viável e consistente via `competenceOn` + predicado único; não toca números homologados; +2 pts (ADR-017 §3). |
-| Migração do acerto e modelo do percentual | ADR-016: rateio em centavos, snapshot, gate de 1 centavo, idempotente/reversível; **achado**: arredondamento por lançamento difere do por grupo. |
+| Migração do acerto e modelo do percentual | ADR-016 + **ADR-021**: rateio em centavos, snapshot, gate de 1 centavo, idempotente/reversível; **achados**: (1) arredondamento por lançamento difere do por grupo; (2) **erro de prova do ADR-016 §5.3** (sobra negativa com `EQUAL` de 3 membros) corrigido com pesos exatos (TL-10). |
 | Spike de grupos | ADR-018: N:N estrutural; 1:1 só por `UNIQUE(userId)` e 4 leituras; a=13, privada=13–21; preparar na US-035. |
 | "Excluir de verdade" (conta/cartão) | Exclusão **lógica terminal** (ledger sem `DELETE`; `OPENING` em toda conta). |
 | Copiar link do convite | Exige **rotação do token** (só existe o hash). |
@@ -38,11 +45,17 @@ Respostas completas, estimativas por história, ordem técnica, riscos e ajustes
 | Risco | Mitigação |
 | :-- | :-- |
 | Corrida arquivar × postar; acerto com ex-membro; default `isSharedExpense`; vazamento com "ocultar"; migração do acerto (1 centavo); `competenceOn` esquecido | Ver [`respostas-r21-r3.md` §6](respostas-r21-r3.md) |
+| **Migração do acerto** (R3, o maior risco do produto) | ADR-021: pesos exatos + prova, `READ COMMITTED` com trava de família, *gate* por período (inclui rótulo), "teste do teste" (+1 centavo tem de falhar), harness ≥ 200 famílias, `--dry-run` em dados reais, `--verify`, reversão em 2 níveis, **janela de reversão** (TL-11) |
+| Parcela na fatura errada em borda; competência esquecida | ADR-020 (ref consecutiva, gatilho `tx_sync_competence`, `CHECK`s); predicado único + `check:imports` (`occurredOn` **e** `competenceOn`); propriedade de reconciliação Extrato = Resumo = Acerto = Análise |
+| Escrita concorrente na migração | `lockFamilySplit` em **toda** escrita relevante (varredura estática + `Promise.all`) |
+| *Deadlock* (24 faturas, plano, tags) | Ordem de travas do `modelo-de-dados.md` §10.4; testes `Promise.all` obrigatórios |
+| Tag duplicada/órfã; Análise divergente | `UNIQUE (familyId, nameKey)`, `FOR SHARE/UPDATE` ordenados; agregado único com propriedade |
+| Cor ilegível no tema escuro | Teste de contraste lê os tokens reais do `globals.css` (≥ 3:1) |
 
 ### Pendências com outros agentes (R2.1/R3)
-- **PO:** aplicar os ajustes de [`respostas-r21-r3.md` §8](respostas-r21-r3.md) (pontos, parcelamento na R3, EN-002 Must, US-040 com exclusão, US-024 busca, mensagens neutras, ordem US-027 primeiro) e marcar US-022..039 como **Especificadas**.
-- **Gestor:** itens **TL-02..TL-09** em [`../manager/pedidos-ao-gestor.md`](../manager/pedidos-ao-gestor.md) (todos com hipótese conservadora; nenhum bloqueia a R2.1).
-- **Dev & QA:** rodar a linha de base E2E completa (D-GES-19) antes da US-022; seguir a ordem técnica; SDD-011 §9 e SDD-010 §9 listam o que muda em R1/R2.
+- **PO** (feito em 2026-10-04/05): os ajustes de [`respostas-r21-r3.md` §8](respostas-r21-r3.md) foram aplicados. **Novos pedidos (SDD-014..017)**, todos não bloqueantes: marcar US-040..051 e EN-002 como **Especificadas**; no BDD da US-040 informar o **intervalo** do Extrato nos cenários "uma linha por parcela" e "Ver compra"; confirmar TL-12 (parcela trava em fatura **fechada**), TL-13 (revisão sem parcelas), TL-14/15/19/20 (tags e Análise: `untagged`, caracteres, "Quem pagou", edição não financeira), TL-16 (rótulo "Parcelas futuras"), TL-21 (`kind` imutável); acrescentar à US-043 o cenário "Previsão com divisão própria: a baixa herda"; mensagem "A tag só pode ter letras, números, hífen, ponto e sublinhado" na US-045.
+- **Gestor:** itens **TL-02..TL-09** (R2.1) e **TL-10..TL-22** (R3) em [`../manager/pedidos-ao-gestor.md`](../manager/pedidos-ao-gestor.md), todos com hipótese conservadora e **nenhum bloqueante**. **Decisão pedida:** TL-11 (US-042 só depois da janela de reversão da EN-002, ou antecipada com reversão limitada).
+- **Dev & QA:** (R2.1 em andamento) rodar a linha de base E2E completa (D-GES-19) antes da US-022; seguir a ordem técnica; SDD-011 §9 e SDD-010 §9 listam o que muda em R1/R2. **Preparação barata na R2.1** (evita retrabalho na R3): manter `ledger-where.ts` como **único** ponto de período; fábricas aceitando `split?`/`tags?`/`color?` (ignorados até a história); `explainByRules` recebendo o `SettlementResult` (já é o contrato). **R3** (contratos prontos): ordem US-040a ➜ 040b ➜ EN-002a ➜ 002b ➜ (release R3-A) ➜ US-042 ➜ US-043 ➜ US-041 ➜ US-044 ➜ US-045 ➜ 047 ➜ 046 ➜ 048 ➜ 049 ➜ 050 ➜ 051; **a EN-002 só começa com os vetores S1..S16 e os dados homologados verdes** e a refatoração `computeSettlementLegacy` num *commit* à parte.
 - **Stakeholder:** validar a assimetria D-PO-26 (parcela por mês da fatura × à vista por data) na homologação da R3.
 
 ---

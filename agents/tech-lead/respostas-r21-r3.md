@@ -165,3 +165,8 @@ Dependência **dura** prevalece; mudança em relação à ordem do PO (D-PO-12):
 | US-045..049 | [SDD-016](sdd/SDD-016-tags-e-visoes-sinteticas-esboco.md) (esboço) | ADR-017 (competência) |
 | US-050, 051 | [SDD-017](sdd/SDD-017-cor-e-receitas-previstas-esboco.md) (esboço) | ADR-015 |
 | EN-003 | — | **[ADR-018](adrs/ADR-018-multiplos-grupos-spike.md)** |
+
+---
+
+## 10. Atualização de 2026-10-05 — R3 especificada
+Os esboços SDD-014..017 viraram **SDDs completos** e nenhuma estimativa mudou (US-040a 5 · 040b 3 · EN-002a 5 · 002b 8 · US-042 3 · US-043 5 · US-041 5 · US-044 3 · US-045 5 · 047 2 · 046 3 · 048 5 · 049 5 · 050 3 · 051 5 = **67**; Must **24**). Novos ADRs: **ADR-020** (parcela na *k*-ésima fatura, competência no banco), **ADR-021** (protocolo de migração; **corrige o §5.3 do ADR-016**: sobra negativa com pesos não exatos), **ADR-022** (tags e agregado único da Análise), **ADR-023** (`kind` da previsão e cor). Conflitos e hipóteses: **TL-10..TL-22** em [`../manager/pedidos-ao-gestor.md`](../manager/pedidos-ao-gestor.md). Rastreio: US-040/041/042 ➜ [SDD-014](sdd/SDD-014-parcelamento-esboco.md) · EN-002/US-043/044 ➜ [SDD-015](sdd/SDD-015-percentual-por-lancamento-e-migracao-esboco.md) · US-045..049 ➜ [SDD-016](sdd/SDD-016-tags-e-visoes-sinteticas-esboco.md) · US-050/051 ➜ [SDD-017](sdd/SDD-017-cor-e-receitas-previstas-esboco.md). As linhas "(esboço)" da §9 acima estão **superadas**.
