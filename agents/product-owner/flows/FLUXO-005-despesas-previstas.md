@@ -8,7 +8,7 @@
 
 ```mermaid
 flowchart TD
-    HOME["Home ▸ bloco 'A pagar'<br/>(atrasadas + próximos 7 dias)"] -->|Ver todas| LIST["Contas a pagar (mês)"]
+    HOME["Home ▸ bloco 'A pagar'<br/>(do mês: vencimento no mês + atrasadas)"] -->|Ver todas| LIST["Contas a pagar (mês)"]
     MENU["Menu ▸ Contas a pagar"] --> LIST
     LIST -->|Nova despesa prevista| NEW["Drawer de cadastro"]
     NEW --> LIST
@@ -31,7 +31,7 @@ PREVISTO: não mexe em saldo, extrato, totais nem acerto.   PAGO: gera a despesa
 
 ## 3. Especificação de interface
 1. **Contas a pagar**: seletor de mês (por vencimento), total do mês no topo ("A pagar R$ 1.850,00"), abas **A pagar** | **Pagas**. Item: descrição, categoria, valor previsto, vencimento, avatar do **responsável**, marcador Comum/Pessoal e *chip* **Atrasada** (cor + texto). Atrasadas primeiro, depois por vencimento. Faturas fechadas aparecem como item "Fatura {Cartão}" com ação "Ver fatura".
-2. **Bloco "A pagar" na Home**: até 5 itens (atrasadas + próximos 7 dias), "Ver todas"; ação rápida "Dar baixa".
+2. **Bloco "A pagar" na Home**: até 5 itens (vencimento no mês corrente + atrasadas; regra de "próximos 7 dias" removida, DEV-36), "Ver todas"; ação rápida "Dar baixa".
 3. **Cadastro**: descrição, valor (máscara BRL), categoria (grade), responsável (avatares; padrão logado), switch "Dividir com a família"; vencimento e observação em *Mais detalhes*.
 4. **Baixa**: valor pago (padrão o previsto; mostra a diferença ao vivo: "+R$ 32,50 sobre o previsto"), conta com saldo, data (padrão hoje), quem pagou (padrão o responsável), aviso de conta negativa, "Confirmar pagamento".
 5. **Previsão paga**: "Previsto R$ 650,00 · Pago R$ 682,50", *chip* "Pago em dd/mm", ação **Desfazer pagamento**; sem Editar/Excluir.

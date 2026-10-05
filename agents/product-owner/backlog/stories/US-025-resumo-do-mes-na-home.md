@@ -39,7 +39,8 @@ Funcionalidade: Resumo do Mês na Home
     E Lucas está autenticado na Home
 
   Cenário: Resumo do mês corrente com os cinco números
-    Dado receitas realizadas de "R$ 5.000,00" em outubro de 2026
+    Dado o saldo atual das contas de "R$ 9.890,60", já com as receitas e despesas abaixo lançadas
+    E receitas realizadas de "R$ 5.000,00" em outubro de 2026
     E despesas realizadas de "R$ 1.200,00" em outubro de 2026
     E despesas previstas pendentes de "R$ 650,00" e "R$ 129,90" com vencimento em outubro de 2026
     E uma fatura aberta de "R$ 479,00" com vencimento em 15/10/2026
@@ -47,7 +48,7 @@ Funcionalidade: Resumo do Mês na Home
     Então o Resumo do Mês mostra "Receitas R$ 5.000,00" e "Despesas R$ 1.200,00"
     E mostra "Resultado do mês R$ 3.800,00"
     E mostra "A pagar R$ 1.258,90"
-    E mostra "Saldo previsto R$ 6.090,60"
+    E mostra "Saldo previsto R$ 8.631,70"
 
   Cenário: Fórmula do saldo previsto é explicada
     Quando Lucas abre a Home
@@ -134,3 +135,4 @@ Receitas previstas (US-051, R3); tetos e disponibilidade por categoria (AP1); gr
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 8). **Substitui** os itens 1 a 3 da Home da [US-012](US-012-home-dashboard.md) (saldo como destaque, card de acerto e resumo simples).
 - 2026-10-04 — **Revisão pós-TL (D-PO-42, D-PO-35):** tamanho 5 confirmado (limite superior; entregar API ➔ UI); depende também da US-027 (valores já em `Money`); saldo previsto em mês futuro documentado (TL-09).
+- 2026-10-05 — **Ajuste pós-Dev (DEV-35/DEV-36, D-GES-26):** o cenário "cinco números" usa o saldo real da semeadura (R$ 9.890,60 = 7.349,50 + 5.000,00 − 1.200,00 − 1.258,90), logo o saldo previsto é R$ 8.631,70 (9.890,60 − 1.258,90). A fórmula não mudou. "A pagar" é **por vencimento no mês** (SDD-010 §4.2); a regra "hoje + 7 dias" deixou de existir.

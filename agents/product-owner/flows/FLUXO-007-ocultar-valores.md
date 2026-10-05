@@ -40,7 +40,7 @@ stateDiagram-v2
 ┌───────────────────────────┐            ┌───────────────────────────┐
 │ Família Silva  🙈  (M)    │            │ Família Silva  👁  (M)     │
 │ Resultado do mês R$ ••••• │   toque    │ Resultado do mês R$ 3.800 │
-│ Saldo previsto   R$ ••••• │   ──────►  │ Saldo previsto  R$ 6.090,60│
+│ Saldo previsto   R$ ••••• │   ──────►  │ Saldo previsto  R$ 8.631,70│
 │ Acerto do mês: R$ ••••• … │            │ Acerto do mês: R$ 380,00… │
 └───────────────────────────┘            └───────────────────────────┘
 ```

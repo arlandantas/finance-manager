@@ -48,7 +48,7 @@ flowchart TD
 │   │  └ Internet fibra   R$ 129,90 [Atrasada]│
 │   └ Faturas          R$   479,00            │
 │                                             │
-│  Saldo previsto      R$ 6.090,60   (destaque)│
+│  Saldo previsto      R$ 8.631,70   (destaque)│
 │  ⓘ Saldo atual menos o que ainda vai pagar  │
 │     neste mês                               │
 │                                             │
@@ -57,7 +57,7 @@ flowchart TD
 │  1 mês (R$ 260,50)                     ›    │  ← só se houver
 └─────────────────────────────────────────────┘
 ┌─────────────────────────────────────────────┐
-│ Saldos das contas   R$ 7.349,50        ▸    │  ← recolhido; ▾ expande a lista
+│ Saldos das contas   R$ 9.890,60        ▸    │  ← recolhido; ▾ expande a lista
 └─────────────────────────────────────────────┘
 ```
 

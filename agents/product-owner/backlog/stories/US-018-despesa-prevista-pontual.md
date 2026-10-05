@@ -19,7 +19,7 @@ Como **membro da família**, quero **cadastrar contas que vão vencer (aluguel, 
 - Enquanto `PREVISTO`: pode ser **editada** (todos os campos) e **excluída** (com confirmação). `PAGO`: travada (para corrigir, usar "Desfazer pagamento", US-019).
 - **Recorrência** (mensal automática) é AP1: nesta release cada previsão é cadastrada à mão e **independente** das demais (editar uma não mexe nas outras).
 - Todos os membros veem e gerenciam todas as previstas (D-PO-02).
-- **Contas a pagar** (tela e bloco da Home): lista por **mês de vencimento**, com atrasadas primeiro. A Home mostra o bloco **"A pagar"**: atrasadas + as que vencem nos **próximos 7 dias** (hoje incluso), no máximo 5 itens, com link "Ver todas". Faturas de cartão **fechadas e não pagas** (US-017a) aparecem nesse mesmo bloco e na tela, com o rótulo "Fatura".
+- **Contas a pagar** (tela e bloco da Home): lista por **mês de vencimento**, com atrasadas primeiro. A Home mostra o bloco **"A pagar" do mês** (o mesmo "A pagar" do Resumo do Mês, US-025): previstas e faturas **com vencimento no mês corrente** e ainda não pagas, mais as atrasadas de meses anteriores, no máximo 5 itens, com link "Ver todas". A regra antiga de "próximos 7 dias" **deixou de existir** (DEV-36, SDD-010 §3). Faturas de cartão **fechadas e não pagas** (US-017a) aparecem nesse mesmo bloco e na tela, com o rótulo "Fatura".
 
 ## Critérios de aceite (Gherkin)
 
@@ -91,10 +91,11 @@ Funcionalidade: Despesa prevista
     E vê o total a pagar "R$ 1.850,00"
 
   Cenário: Bloco "A pagar" na Home
-    Dado a previsão "Internet" de "R$ 120,00" atrasada, "Luz" de "R$ 200,00" com vencimento em 30/10/2026 e "Condomínio" de "R$ 650,00" em 10/11/2026
+    Dado que hoje é 28/10/2026
+    E a previsão "Internet" de "R$ 120,00" atrasada, "Luz" de "R$ 200,00" com vencimento em 30/10/2026 e "Condomínio" de "R$ 650,00" em 10/11/2026
     Quando Lucas abre a Home
     Então o bloco "A pagar" mostra "Internet" como atrasada e "Luz" vencendo em 30/10
-    E não mostra "Condomínio", que vence depois de 7 dias
+    E não mostra "Condomínio", que vence em novembro
 
   Cenário: Faturas fechadas aparecem em "A pagar"
     Dado a fatura "out/2026" do cartão "Nubank Mariana" fechada com total "R$ 400,00" e vencimento 05/11/2026
@@ -146,3 +147,4 @@ Baixa/pagamento (US-019); recorrência e projeção automática (AP1); parcelame
 - 2026-10-04 — Refinada a partir do esboço (Rascunho → Refinada). Home passa a ter o bloco "A pagar" (cenário próprio).
 - 2026-10-04 — **Revisão pós-homologação (R2.1):** Q-22 revisada: "Dividir com a família" da previsão passa a nascer **Só meu** (US-030, D-PO-16), aguardando ratificação do Gestor.
 - 2026-10-04 — **Cenário atualizado (D-PO-41, D-GES-15):** "Dividir com a família desligado" vira "Previsão nasce como Só meu" (padrão; revisa Q-22); testes de `previstas` ajustados pelo Dev com a US-030.
+- 2026-10-05 — **Ajuste pós-Dev (DEV-35/DEV-36, D-GES-26):** o bloco "A pagar" da Home passa a ser o **do mês** (vencimento no mês corrente, atrasadas primeiro, até 5 itens); removida a regra "hoje + 7 dias"; o cenário "Bloco A pagar na Home" fixa hoje = 28/10/2026 e o motivo é o mês de vencimento.

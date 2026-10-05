@@ -94,7 +94,8 @@ Funcionalidade: Fatura do cartão
     Então vê "Nenhuma compra nesta fatura" e total "R$ 0,00"
 
   Cenário: Fatura fechada aparece em "A pagar"
-    Dado a fatura "out/2026" fechada com total "R$ 400,00" e vencimento 05/11
+    Dado que hoje é 02/11/2026
+    E a fatura "out/2026" fechada com total "R$ 400,00" e vencimento 05/11
     Quando Lucas abre a Home
     Então o bloco "A pagar" mostra "Fatura Nubank Mariana R$ 400,00" com vencimento 05/11
 
@@ -121,3 +122,4 @@ Pagar a fatura (US-017b); faturas futuras/parcelas (AP1); exportar fatura; conci
 
 ## Histórico
 - 2026-10-04 — Refinada a partir do esboço US-017 ("Ver e pagar a fatura"); **fatiada** em 017a (esta, **Must**) e 017b (pagar, **Should**). A D-GES-04 (pagar fatura é Should) permanece; o PO sobe só o **ver a fatura** a Must porque sem ele o cartão não responde "quanto devo e quando" (D-PO-10, a ratificar pelo Gestor).
+- 2026-10-05 — **Ajuste pós-Dev (DEV-35/DEV-36, D-GES-26):** o cenário "Fatura fechada aparece em A pagar" usa hoje = 02/11/2026: "A pagar" é por vencimento no mês, então a fatura que vence em 05/11 só aparece na Home de novembro (a regra "hoje + 7 dias" deixou de existir).
