@@ -149,7 +149,7 @@ export function buildPendingItem(
     payer,
     author: l.me,
     updatedBy: null,
-    isSharedExpense: input.type === "EXPENSE" ? (input.isSharedExpense ?? true) : false,
+    isSharedExpense: input.type === "EXPENSE" ? (input.isSharedExpense ?? false) : false,
     transferGroupId: null,
     plannedExpenseId: null,
     isSettlement: false,

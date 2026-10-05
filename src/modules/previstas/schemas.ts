@@ -20,7 +20,7 @@ export const CreatePlannedExpenseSchema = z
     dueOn: dateISOSchema.optional(), // padrão: hoje (servidor)
     categoryId: z.uuid({ error: "Escolha uma categoria" }), // categoria de DESPESA, ativa
     responsibleMemberId: uuidSchema.optional(), // padrão: membro logado (RN-001.2)
-    isSharedExpense: z.boolean().default(true),
+    isSharedExpense: z.boolean().default(false), // "Só meu" por padrão (US-030, D-GES-15)
     note: noteSchema.optional(),
   })
   .strict();

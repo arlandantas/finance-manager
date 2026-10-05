@@ -108,6 +108,7 @@ export type SettlementDTO = {
   rule: { kind: "EQUAL" | "PROPORTIONAL"; stale: boolean; canEdit: boolean };
   members: SettlementMemberRow[];
   splitExplanation: SplitExplanationDTO | null; // null com total comum = 0 (US-022)
+  personal: { count: number; totalInCents: number }; // despesas "Só meu" do período (US-030)
   suggestions: SettlementSuggestion[];
   settlements: SettlementEntryDTO[];
 };

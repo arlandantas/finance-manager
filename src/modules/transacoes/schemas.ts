@@ -29,7 +29,7 @@ export const CreateExpenseSchema = z
     ...common,
     accountId: common.accountId.optional(),
     cardId: z.uuid({ error: "Escolha um cartão" }).optional(),
-    isSharedExpense: z.boolean().default(true),
+    isSharedExpense: z.boolean().default(false), // "Só meu" por padrão (US-030, D-GES-15)
   })
   .strict()
   .superRefine((v, c) => {
@@ -112,7 +112,7 @@ export type TransactionDefaults = {
   payerMemberId: string;
   today: string;
   // `available` = acerto ligado e 2+ membros ativos (esconde o interruptor "Dividir", US-028/030)
-  split: { available: boolean };
+  split: { available: boolean; ruleShares: Array<{ memberId: string; bps: number }> | null };
 };
 
 // ── Extrato (SDD-005 §2) ──

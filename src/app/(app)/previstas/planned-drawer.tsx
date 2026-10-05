@@ -19,6 +19,7 @@ import {
   type PlannedExpenseDTO,
   UpdatePlannedExpenseSchema,
 } from "@/modules/previstas/schemas";
+import { splitSwitchLabel } from "@/modules/split/shares-label";
 import { useDefaults } from "@/modules/transacoes/hooks";
 
 type FieldKey =
@@ -46,8 +47,9 @@ export function PlannedDrawer({
   const [cents, setCents] = useState(0);
   const [categoryId, setCategoryId] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
-  const [shared, setShared] = useState(true);
-  const splitAvailable = useDefaults(open).data?.split.available ?? false;
+  const [shared, setShared] = useState(false); // "Só meu" por padrão (US-030)
+  const defaultsQ = useDefaults(open);
+  const splitAvailable = defaultsQ.data?.split.available ?? false;
   const [dueOn, setDueOn] = useState("");
   const [note, setNote] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -80,7 +82,7 @@ export function PlannedDrawer({
       setCents(0);
       setCategoryId("");
       setResponsibleId("");
-      setShared(true);
+      setShared(false);
       setDueOn("");
       setNote("");
       setDetailsOpen(false);
@@ -317,6 +319,12 @@ export function PlannedDrawer({
             <div className="flex min-h-11 items-center justify-between gap-3">
               <span id="pl-shared-label" className="text-sm font-medium text-slate-800">
                 Dividir com a família
+                <span
+                  data-testid="split-label"
+                  className="block text-xs font-normal text-slate-500"
+                >
+                  {splitSwitchLabel(shared, defaultsQ.data?.split.ruleShares)}
+                </span>
               </span>
               <button
                 type="button"

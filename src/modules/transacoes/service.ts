@@ -10,6 +10,7 @@ import { getOrCreateInvoice } from "@/modules/cartoes/invoices";
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
+import { currentRuleShares } from "@/modules/split/current-rule";
 import { assertCanShare, isSettlementEnabled } from "@/modules/split/guard";
 import {
   decodeCursor,
@@ -138,7 +139,10 @@ export async function getDefaults(tx: Tx, ctx: RequestContext): Promise<Transact
     cardId,
     payerMemberId: ctx.memberId,
     today: todayInFamilyTz(ctx.clock),
-    split: { available: enabled && members >= 2 },
+    split: {
+      available: enabled && members >= 2,
+      ruleShares: enabled && members >= 2 ? await currentRuleShares(tx, ctx) : null,
+    },
   };
 }
 

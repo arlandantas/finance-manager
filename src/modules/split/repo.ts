@@ -50,6 +50,21 @@ export function splitRepo(tx: Tx, familyId: string) {
         include: { category: true },
         orderBy: [{ occurredOn: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       }),
+    /** Despesas "Só meu" ativas do período, de todos os pagadores (US-030). */
+    personalExpenses: async (start: string, end: string) => {
+      const r = await tx.transaction.aggregate({
+        where: {
+          familyId,
+          kind: "EXPENSE",
+          isSharedExpense: false,
+          deletedAt: null,
+          ...periodFilter(start, end),
+        },
+        _count: { _all: true },
+        _sum: { amountInCents: true },
+      });
+      return { count: r._count._all, total: r._sum.amountInCents ?? 0n };
+    },
     /** Data da 1ª despesa comum ativa (início da varredura de pendências, US-028). */
     firstSharedExpenseDate: async (): Promise<Date | null> =>
       (

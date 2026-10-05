@@ -448,6 +448,18 @@ export function AcertoScreen() {
                   </ul>
                 </section>
               ) : null}
+              {s.personal.count > 0 ? (
+                <p data-testid="personal-line" className="text-sm text-slate-600">
+                  {s.personal.count} {s.personal.count === 1 ? "despesa Só meu" : "despesas Só meu"}{" "}
+                  neste mês (<Money cents={s.personal.totalInCents} />){" "}
+                  <Link
+                    href={`/extrato?period=${s.period.key}&shared=false`}
+                    className="font-semibold text-brand-800 underline"
+                  >
+                    Ver no Extrato
+                  </Link>
+                </p>
+              ) : null}
               <p className="text-sm text-slate-500">Despesas pessoais não entram na divisão.</p>
             </>
           ) : null}

@@ -170,6 +170,7 @@ export type LoadedSettlement = {
   memberInputs: MemberInput[];
   expenseInputs: ExpenseInput[];
   rules: RuleInput[];
+  personal: { count: number; totalInCents: number };
 };
 
 /** Carrega as entradas e roda o motor puro para o período (SDD-002 §5). */
@@ -183,6 +184,7 @@ export async function loadSettlement(
   const period = periodKey ? periodFromKey(periodKey, c.cutDay) : currentPeriod;
   const expenses = await c.repo.sharedExpenses(period.start, period.end);
   const groups = await c.repo.activeSettlements(period.key);
+  const personal = await c.repo.personalExpenses(period.start, period.end);
   const memberInputs = c.members.map((m, i) => ({
     id: m.id,
     ordinal: i,
@@ -230,6 +232,7 @@ export async function loadSettlement(
     memberInputs,
     expenseInputs,
     rules: c.rules,
+    personal: { count: personal.count, totalInCents: toCents(personal.total) },
   };
 }
 
@@ -274,6 +277,7 @@ export function toSettlementDto(l: LoadedSettlement, ctx: RequestContext): Settl
       settledAdjustmentInCents: m.settledAdjustmentInCents,
       balanceInCents: m.balanceInCents,
     })),
+    personal: l.personal,
     splitExplanation: explainByRules({
       period: l.period,
       today: l.today,

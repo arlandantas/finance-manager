@@ -17,6 +17,7 @@ import { useCards } from "@/modules/cartoes/hooks";
 import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
+import { splitSwitchLabel } from "@/modules/split/shares-label";
 import { useCreateTransaction, useDefaults } from "@/modules/transacoes/hooks";
 import {
   type CreateTransactionInput,
@@ -66,7 +67,7 @@ export function TransactionDrawer({
   const [source, setSource] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [payerId, setPayerId] = useState("");
-  const [shared, setShared] = useState(true);
+  const [shared, setShared] = useState(false); // nasce "Só meu" e não lembra a escolha (US-030)
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
   const [note, setNote] = useState("");
@@ -92,7 +93,7 @@ export function TransactionDrawer({
     setKind(initialKind);
     setCents(0);
     setCategoryId("");
-    setShared(true);
+    setShared(false);
     setDate("");
     setDescription("");
     setNote("");
@@ -424,6 +425,9 @@ export function TransactionDrawer({
           <div className="flex min-h-11 items-center justify-between gap-3">
             <span id="tx-shared-label" className="text-sm font-medium text-slate-800">
               Dividir com a família
+              <span data-testid="split-label" className="block text-xs font-normal text-slate-500">
+                {splitSwitchLabel(shared, defaults.data?.split.ruleShares)}
+              </span>
             </span>
             <button
               type="button"
