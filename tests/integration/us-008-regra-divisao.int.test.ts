@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { withClock } from "@/lib/clock";
 import { call } from "../support/call";
 import { resetDb, testDb } from "../support/db";
-import { type FamilyFixture, makeFamily } from "../support/factories";
+import { type FamilyFixture, makeAccount, makeFamily, makeTransaction } from "../support/factories";
 
 const db = testDb();
 const NOW = "2026-10-04T15:00:00Z";
@@ -129,34 +129,17 @@ describe("US-008 Regra de divisão familiar", () => {
   });
 
   it("Mudança de regra não altera meses passados (mês de setembro recalculado idêntico)", async () => {
-    const t = (n: number) => new Date(Date.UTC(2026, 8, 1, 12, 0, n));
-    const account = await db.bankAccount.create({
-      data: {
-        familyId: fx.family.id,
-        name: "Conta",
-        institution: "X",
-        type: "CHECKING",
-        ownerMemberId: fx.byName.Mariana?.memberId as string,
-      },
-    });
-    const cat = await db.category.findFirstOrThrow({
-      where: { familyId: fx.family.id, name: "Supermercado" },
-    });
-    await db.transaction.create({
-      data: {
-        familyId: fx.family.id,
-        kind: "EXPENSE",
-        direction: "DEBIT",
-        accountId: account.id,
-        categoryId: cat.id,
-        amountInCents: 100000n,
-        occurredOn: new Date("2026-09-10T00:00:00Z"),
-        description: "Mercado",
-        payerMemberId: fx.byName.Mariana?.memberId as string,
-        authorMemberId: fx.byName.Mariana?.memberId as string,
-        isSharedExpense: true,
-        createdAt: t(1),
-      },
+    // fábrica (e não `db.transaction.create`): grava o rateio quando a família é STORED (TEST_SPLIT_ENGINE)
+    const account = await makeAccount(fx, { name: "Conta", owner: "Mariana" });
+    await makeTransaction(fx, {
+      account,
+      category: "Supermercado",
+      amountInCents: 100000,
+      occurredOn: "2026-09-10",
+      author: "Mariana",
+      payer: "Mariana",
+      description: "Mercado",
+      createdAt: new Date(Date.UTC(2026, 8, 1, 12, 0, 1)),
     });
     const before = await at(() => call(mariana(), "GET", "/api/v1/settlement?period=2026-09"));
     expect(before.body.members.map((m: { quotaInCents: number }) => m.quotaInCents)).toEqual([
