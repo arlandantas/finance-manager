@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CategoryIcon } from "@/components/category-icon";
+import { InstallmentPreviewText } from "@/components/installment-preview";
 import { useFormatMoney } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
 import { Avatar } from "@/components/ui/avatar";
@@ -14,6 +15,7 @@ import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { invoiceHint } from "@/modules/cartoes/cycle";
 import { useCards } from "@/modules/cartoes/hooks";
+import { MAX_INSTALLMENTS } from "@/modules/cartoes/installments";
 import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
@@ -34,7 +36,8 @@ type FieldKey =
   | "occurredOn"
   | "description"
   | "note"
-  | "payerMemberId";
+  | "payerMemberId"
+  | "installments";
 
 const TEXT: Record<Kind, { title: string; payer: string; save: string; success: string }> = {
   EXPENSE: {
@@ -68,6 +71,7 @@ export function TransactionDrawer({
   const [categoryId, setCategoryId] = useState("");
   const [payerId, setPayerId] = useState("");
   const [shared, setShared] = useState(false); // nasce "Só meu" e não lembra a escolha (US-030)
+  const [installments, setInstallments] = useState(1); // US-040a: só vale com cartão
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
   const [note, setNote] = useState("");
@@ -94,6 +98,7 @@ export function TransactionDrawer({
     setCents(0);
     setCategoryId("");
     setShared(false);
+    setInstallments(1);
     setDate("");
     setDescription("");
     setNote("");
@@ -121,6 +126,10 @@ export function TransactionDrawer({
   const selectedCard = source.startsWith("card:")
     ? cardList.find((c) => `card:${c.id}` === source)
     : undefined;
+  const parcelado = kind === "EXPENSE" && selectedCard !== undefined && installments > 1;
+  // US-042 libera "Dividir" no parcelado; até lá a UI avisa e não envia `isSharedExpense`
+  const splitInstallmentsAvailable = defaults.data?.split.installmentsAvailable ?? false;
+  const splitBlocked = parcelado && !splitInstallmentsAvailable;
   // Receita só entra em conta: se o padrão veio como cartão, volta para a primeira conta.
   const effectiveSource = kind === "INCOME" && source.startsWith("card:") ? "" : source;
 
@@ -147,7 +156,8 @@ export function TransactionDrawer({
       ...(date ? { occurredOn: date } : {}),
       ...(description.trim() ? { description } : {}),
       ...(note.trim() ? { note } : {}),
-      ...(kind === "EXPENSE" ? { isSharedExpense: splitAvailable && shared } : {}),
+      ...(kind === "EXPENSE" ? { isSharedExpense: splitAvailable && shared && !splitBlocked } : {}),
+      ...(fromCard && installments > 1 ? { installments } : {}),
     } as CreateTransactionInput;
   }
 
@@ -273,7 +283,10 @@ export function TransactionDrawer({
             id="tx-account"
             className={inputClass}
             value={effectiveSource}
-            onChange={(e) => setSource(e.target.value)}
+            onChange={(e) => {
+              setSource(e.target.value);
+              if (!e.target.value.startsWith("card:")) setInstallments(1); // conta: volta a 1x
+            }}
             aria-invalid={errors.accountId || errors.cardId ? true : undefined}
           >
             <option value="" disabled>
@@ -315,12 +328,46 @@ export function TransactionDrawer({
             )}
           </p>
         ) : null}
+        {selectedCard && kind === "EXPENSE" ? (
+          <>
+            <Field id="tx-installments" label="Parcelas" error={errors.installments}>
+              <select
+                id="tx-installments"
+                className={inputClass}
+                value={installments}
+                onChange={(e) => {
+                  setInstallments(Number(e.target.value));
+                  setErrors((x) => ({ ...x, installments: undefined }));
+                }}
+                aria-invalid={errors.installments ? true : undefined}
+              >
+                {Array.from({ length: MAX_INSTALLMENTS }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>
+                    {n}x
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <div aria-live="polite" className="-mt-3">
+              {installments > 1 && cents >= installments ? (
+                <InstallmentPreviewText
+                  totalInCents={cents}
+                  count={installments}
+                  purchaseOn={date || defaults.data?.today || new Date().toISOString().slice(0, 10)}
+                  closingDay={selectedCard.closingDay}
+                />
+              ) : null}
+            </div>
+          </>
+        ) : null}
         {overLimit && selectedCard ? (
           <p
             role="alert"
             className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900 dark:text-amber-200"
           >
-            Esta compra ultrapassa o limite disponível do cartão
+            {parcelado
+              ? "Esta compra passa do limite disponível"
+              : "Esta compra ultrapassa o limite disponível do cartão"}
           </p>
         ) : null}
 
@@ -432,24 +479,30 @@ export function TransactionDrawer({
             <span id="tx-shared-label" className="text-sm font-medium text-slate-800">
               Dividir com a família
               <span data-testid="split-label" className="block text-xs font-normal text-slate-500">
-                {splitSwitchLabel(shared, defaults.data?.split.ruleShares)}
+                {splitBlocked
+                  ? "Disponível em breve para compras parceladas"
+                  : splitSwitchLabel(shared, defaults.data?.split.ruleShares)}
               </span>
             </span>
             <button
               type="button"
               role="switch"
-              aria-checked={shared}
+              aria-checked={shared && !splitBlocked}
+              aria-disabled={splitBlocked || undefined}
               aria-labelledby="tx-shared-label"
-              onClick={() => setShared((v) => !v)}
+              onClick={() => {
+                if (!splitBlocked) setShared((v) => !v);
+              }}
               className={cn(
                 "relative h-7 w-12 shrink-0 rounded-full transition-colors",
-                shared ? "bg-brand-700" : "bg-slate-300",
+                shared && !splitBlocked ? "bg-brand-700" : "bg-slate-300",
+                splitBlocked && "opacity-50",
               )}
             >
               <span
                 className={cn(
                   "absolute top-0.5 h-6 w-6 rounded-full bg-white dark:bg-slate-100 shadow transition-all",
-                  shared ? "left-[22px]" : "left-0.5",
+                  shared && !splitBlocked ? "left-[22px]" : "left-0.5",
                 )}
               />
             </button>

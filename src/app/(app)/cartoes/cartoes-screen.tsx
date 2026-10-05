@@ -151,6 +151,14 @@ function CardItem({
           Ver fatura
         </Link>
       </p>
+      {card.installmentsFutureInCents > 0 ? (
+        <p data-testid="card-future-installments" className="col-span-full text-sm text-slate-700">
+          Parcelas futuras{" "}
+          <span className="font-semibold tabular-nums">
+            <Money cents={card.installmentsFutureInCents} />
+          </span>
+        </p>
+      ) : null}
       {card.payableInvoices.map((p) => (
         <p
           key={p.ref}

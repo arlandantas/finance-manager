@@ -24,18 +24,22 @@ const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 function StatusChip({ invoice }: { invoice: InvoiceDTO }) {
   const label = invoice.isOverdue
     ? "Vencida"
-    : invoice.status === "OPEN"
-      ? "Aberta"
+    : invoice.isFuture
+      ? "Futura"
+      : invoice.status === "OPEN"
+        ? "Aberta"
+        : invoice.status === "PAID"
+          ? "Paga"
+          : "Fechada";
+  const tone = invoice.isFuture
+    ? "bg-violet-50 text-violet-800"
+    : invoice.isOverdue
+      ? "bg-red-100 text-red-800 dark:text-red-300"
       : invoice.status === "PAID"
-        ? "Paga"
-        : "Fechada";
-  const tone = invoice.isOverdue
-    ? "bg-red-100 text-red-800 dark:text-red-300"
-    : invoice.status === "PAID"
-      ? "bg-emerald-100 text-emerald-800 dark:text-emerald-300"
-      : invoice.status === "CLOSED"
-        ? "bg-amber-100 text-amber-900 dark:text-amber-200"
-        : "bg-slate-100 text-slate-700";
+        ? "bg-emerald-100 text-emerald-800 dark:text-emerald-300"
+        : invoice.status === "CLOSED"
+          ? "bg-amber-100 text-amber-900 dark:text-amber-200"
+          : "bg-slate-100 text-slate-700";
   return (
     <span
       data-testid="invoice-status"
@@ -236,6 +240,11 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
             <p data-testid="invoice-dates" className="text-sm text-slate-600">
               Fecha em {brDate(inv.closingDate)} · vence em {brDate(inv.dueDate)}
             </p>
+            {inv.futureInstallmentsInCents > 0 ? (
+              <p data-testid="invoice-future-installments" className="text-sm text-slate-600">
+                Parcelas futuras: <Money cents={inv.futureInstallmentsInCents} />
+              </p>
+            ) : null}
             {inv.canPay ? <Button onClick={() => setPaying(true)}>Pagar fatura</Button> : null}
             {inv.payment ? (
               <Button
@@ -276,6 +285,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
                   key={p.id}
                   item={p}
                   highlighted={false}
+                  installmentInTitle
                   onOpen={() => setDetailId(p.id)}
                   onHover={() => undefined}
                 />

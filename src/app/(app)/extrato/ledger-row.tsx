@@ -21,12 +21,21 @@ export function rowTitle(t: PendingTransaction): string {
   return t.description;
 }
 
+/** Fatura (US-040a): "{descrição} {no}/{count}" montado aqui; a descrição gravada não leva o sufixo. */
+export function installmentTitle(t: PendingTransaction): string {
+  return t.installment
+    ? `${t.description} ${t.installment.no}/${t.installment.count}`
+    : rowTitle(t);
+}
+
 export function LedgerRow({
   item,
   highlighted,
   onOpen,
   onHover,
+  installmentInTitle = false,
 }: {
+  installmentInTitle?: boolean;
   item: PendingTransaction;
   highlighted: boolean;
   onOpen: () => void;
@@ -90,7 +99,7 @@ export function LedgerRow({
               item.deletedAt && "line-through",
             )}
           >
-            {rowTitle(item)}
+            {installmentInTitle ? installmentTitle(item) : rowTitle(item)}
           </span>
           <span className="block break-words text-xs text-slate-500 md:hidden">
             {shortDate(item.occurredOn)} · {kindLabel} · {sourceName}
@@ -109,6 +118,7 @@ export function LedgerRow({
             {item.invoice ? (
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
                 Fatura {formatInvoiceLabel(item.invoice.ref)}
+                {item.installment ? ` · ${item.installment.no}/${item.installment.count}` : ""}
               </span>
             ) : null}
             {isTransfer && item.transferGroupId ? (
