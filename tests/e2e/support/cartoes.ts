@@ -74,6 +74,9 @@ export type BuyOptions = {
   date?: string; // ISO
   payer?: string; // primeiro nome
   shared?: boolean;
+  description?: string;
+  /** Rótulo da opção do seletor "Parcelas" (ex.: "10x"); só existe com cartão (US-040a). */
+  installments?: string;
   /** `false` só preenche; `string` clica no botão com esse rótulo; padrão clica "Salvar Despesa". */
   submit?: false | string;
 };
@@ -85,6 +88,12 @@ export async function fillExpense(page: Page, o: BuyOptions) {
   await fillAmount(page, o.amount);
   await pickCategory(page, o.category ?? "Supermercado");
   if (o.card) await chooseSource(page, o.card);
+  if (o.description) await drawer(page).getByLabel("Descrição (opcional)").fill(o.description);
+  if (o.installments) {
+    await drawer(page)
+      .getByLabel("Parcelas", { exact: true })
+      .selectOption({ label: o.installments });
+  }
   if (o.payer) await drawer(page).getByRole("radio", { name: o.payer, exact: true }).click();
   // "Só meu" é o padrão (US-030): o interruptor só é tocado para dividir
   if (o.shared === true) {
