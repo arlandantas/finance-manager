@@ -81,7 +81,7 @@ export function toTransactionDTO(
   row: TxRow,
   ctx: {
     account: { id: string; name: string; archived?: boolean } | null;
-    card?: { id: string; name: string } | null;
+    card?: { id: string; name: string; archived?: boolean } | null;
     invoice?: { ref: string; closingDate: string; dueDate: string } | null;
     plannedExpenseId?: string | null;
     category: CategoryRef | null;
@@ -375,7 +375,9 @@ function dtoFromLoaded(
     account: r.account
       ? { id: r.account.id, name: r.account.name, archived: r.account.archivedAt !== null }
       : null,
-    card: r.card,
+    card: r.card
+      ? { id: r.card.id, name: r.card.name, archived: r.card.archivedAt !== null }
+      : null,
     invoice: r.invoice
       ? {
           ref: r.invoice.referenceMonth,

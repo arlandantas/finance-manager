@@ -6,14 +6,22 @@ const withOwner = { owner: { include: { user: true } } } as const;
 /** Cartões sempre escopados por `familyId` (ADR-013). */
 export function cartoesRepo(tx: Tx, familyId: string) {
   return {
-    list: () =>
+    list: (mode: "active" | "archived" | "all" = "active") =>
       tx.creditCard.findMany({
-        where: { familyId },
+        where: {
+          familyId,
+          deletedAt: null,
+          ...(mode === "active"
+            ? { archivedAt: null }
+            : mode === "archived"
+              ? { archivedAt: { not: null } }
+              : {}),
+        },
         include: withOwner,
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       }),
     findById: (id: string) =>
-      tx.creditCard.findFirst({ where: { id, familyId }, include: withOwner }),
+      tx.creditCard.findFirst({ where: { id, familyId, deletedAt: null }, include: withOwner }),
     /** `FOR UPDATE`: o PATCH do ciclo trava a linha (SDD-008 §4.8). */
     lockForUpdate: async (id: string) => {
       await tx.$queryRaw`SELECT id FROM credit_cards WHERE id = ${id}::uuid AND "familyId" = ${familyId}::uuid FOR UPDATE`;

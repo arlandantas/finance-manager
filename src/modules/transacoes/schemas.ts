@@ -74,7 +74,7 @@ export type TransactionDTO = {
   description: string;
   note: string | null;
   account: { id: string; name: string; archived?: boolean } | null; // null em compra no cartão; `archived` marca "(arquivada)"
-  card: { id: string; name: string } | null; // compra no cartão e pagamento de fatura
+  card: { id: string; name: string; archived?: boolean } | null; // compra no cartão e pagamento de fatura
   invoice: { ref: string; closingDate: string; dueDate: string } | null;
   category: {
     id: string;

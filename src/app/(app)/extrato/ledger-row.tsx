@@ -36,7 +36,11 @@ export function LedgerRow({
   const isTransfer = item.type === "TRANSFER_IN" || item.type === "TRANSFER_OUT";
   const isPayment = item.type === "INVOICE_PAYMENT";
   const neutral = isTransfer || isPayment;
-  const archivedMark = !item.card && item.account?.archived ? " (arquivada)" : "";
+  const archivedMark = item.card?.archived
+    ? " (arquivado)"
+    : !item.card && item.account?.archived
+      ? " (arquivada)"
+      : "";
   const sourceName =
     (isPayment ? (item.account?.name ?? "") : (item.card?.name ?? item.account?.name ?? "")) +
     archivedMark;

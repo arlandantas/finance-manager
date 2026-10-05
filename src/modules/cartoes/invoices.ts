@@ -1,4 +1,5 @@
 import { Prisma } from "@/generated/prisma/client";
+import { unprocessable } from "@/lib/api/errors";
 import type { Tx } from "@/lib/api/types";
 import { invoiceDates } from "@/modules/cartoes/cycle";
 
@@ -17,7 +18,14 @@ export async function getOrCreateInvoice(
   card: { id: string; closingDay: number; dueDay: number },
   ref: string,
 ): Promise<InvoiceRow> {
-  await tx.$queryRaw`SELECT id FROM credit_cards WHERE id = ${card.id}::uuid AND "familyId" = ${familyId}::uuid FOR SHARE`;
+  const locked = await tx.$queryRaw<Array<{ archivedAt: Date | null; deletedAt: Date | null }>>`
+    SELECT "archivedAt", "deletedAt" FROM credit_cards WHERE id = ${card.id}::uuid AND "familyId" = ${familyId}::uuid FOR SHARE`;
+  // US-033: depois do lock, cartão arquivado/excluído não recebe compra nova
+  if (!locked[0] || locked[0].archivedAt !== null || locked[0].deletedAt !== null) {
+    throw unprocessable("INVALID_REFERENCE", "Escolha um cartão", [
+      { path: "cardId", message: "Escolha um cartão" },
+    ]);
+  }
   const { closingDate, dueDate } = invoiceDates(ref, card.closingDay, card.dueDay);
   await tx.$executeRaw`
     INSERT INTO card_invoices (id, "familyId", "cardId", "referenceMonth", "closingDate", "dueDate")

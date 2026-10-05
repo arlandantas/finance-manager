@@ -102,6 +102,9 @@ export type CardDTO = {
   closingDay: number;
   dueDay: number;
   cycleLocked: boolean;
+  archived: boolean; // US-033
+  archivedAt: string | null;
+  neverUsed: boolean; // base de "Excluir" (sem nenhuma compra)
   version: number;
   createdAt: string;
   openInvoice: InvoiceSummaryDTO; // a fatura aberta hoje (virtual, total 0, se não materializada)
@@ -118,3 +121,8 @@ export type PayInvoiceResponse = {
   account: { id: string; balanceInCents: number };
   card: { id: string; usedInCents: number; availableInCents: number };
 };
+
+export const ArchiveCardSchema = z.object({ version: versionSchema }).strict(); // archive / unarchive / delete
+export const ListCardsQuerySchema = z
+  .object({ archived: z.enum(["false", "true", "all"]).default("false") })
+  .strict();

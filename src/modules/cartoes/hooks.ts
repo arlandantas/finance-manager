@@ -23,6 +23,38 @@ export function useCards() {
   });
 }
 
+/** Cartões arquivados (seção recolhida). */
+export function useArchivedCards() {
+  return useQuery({
+    queryKey: [...cardsKey, "archived"],
+    queryFn: () => apiFetch<CardsResponse>("/api/v1/cards?archived=true"),
+    staleTime: 0,
+  });
+}
+
+export function useCardAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (a: {
+      id: string;
+      action: "archive" | "unarchive" | "delete";
+      version: number;
+      idempotencyKey: string;
+    }) =>
+      apiFetch<{ card?: CardDTO; deleted?: true }>(`/api/v1/cards/${a.id}/${a.action}`, {
+        method: "POST",
+        body: { version: a.version },
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: () =>
+      Promise.all(
+        [["cards"], ["card"], ["invoice"], ["home"], ["transactions"]].map((queryKey) =>
+          qc.invalidateQueries({ queryKey }),
+        ),
+      ),
+  });
+}
+
 export function useCard(id: string) {
   return useQuery({
     queryKey: ["card", id],

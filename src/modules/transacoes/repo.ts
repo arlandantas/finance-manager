@@ -4,7 +4,7 @@ import { fromCents } from "@/lib/money";
 
 const loadInclude = {
   account: { select: { id: true, name: true, archivedAt: true } },
-  card: { select: { id: true, name: true } },
+  card: { select: { id: true, name: true, archivedAt: true } },
   invoice: { select: { referenceMonth: true, closingDate: true, dueDate: true } },
   category: true,
   group: true,

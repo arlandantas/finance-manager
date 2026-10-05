@@ -1,16 +1,20 @@
 "use client";
 
-import { MoreHorizontal, Pencil, Plus } from "lucide-react";
+import { Archive, MoreHorizontal, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { Money } from "@/components/money";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Drawer } from "@/components/ui/drawer";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { cycleSentence, formatInvoiceLabel } from "@/modules/cartoes/cycle";
-import { useCards } from "@/modules/cartoes/hooks";
+import { useArchivedCards, useCardAction, useCards } from "@/modules/cartoes/hooks";
 import type { CardDTO } from "@/modules/cartoes/schemas";
+import { useFamily } from "@/modules/familia/hooks";
 import { CardDrawer } from "./card-drawer";
 
 function UsageBar({ card }: { card: CardDTO }) {
@@ -58,7 +62,19 @@ function UsageBar({ card }: { card: CardDTO }) {
   );
 }
 
-function CardItem({ card, onEdit }: { card: CardDTO; onEdit: () => void }) {
+function CardItem({
+  card,
+  isAdmin,
+  onEdit,
+  onArchive,
+  onDelete,
+}: {
+  card: CardDTO;
+  isAdmin: boolean;
+  onEdit: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+}) {
   return (
     <li
       data-testid="card-item"
@@ -81,15 +97,37 @@ function CardItem({ card, onEdit }: { card: CardDTO; onEdit: () => void }) {
         trigger={<MoreHorizontal size={20} aria-hidden="true" />}
       >
         {(close) => (
-          <MenuItem
-            onClick={() => {
-              close();
-              onEdit();
-            }}
-          >
-            <Pencil size={16} aria-hidden="true" />
-            Editar
-          </MenuItem>
+          <>
+            <MenuItem
+              onClick={() => {
+                close();
+                onEdit();
+              }}
+            >
+              <Pencil size={16} aria-hidden="true" />
+              Editar
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                close();
+                onArchive();
+              }}
+            >
+              <Archive size={16} aria-hidden="true" />
+              Arquivar
+            </MenuItem>
+            {isAdmin && card.neverUsed ? (
+              <MenuItem
+                onClick={() => {
+                  close();
+                  onDelete();
+                }}
+              >
+                <Trash2 size={16} aria-hidden="true" />
+                Excluir
+              </MenuItem>
+            ) : null}
+          </>
         )}
       </Menu>
       <p data-testid="card-cycle" className="col-span-full text-sm text-slate-700">
@@ -133,8 +171,84 @@ function CardItem({ card, onEdit }: { card: CardDTO; onEdit: () => void }) {
   );
 }
 
+function ArchivedCards({
+  onReactivate,
+  busyId,
+}: {
+  onReactivate: (c: CardDTO) => void;
+  busyId: string | null;
+}) {
+  const archived = useArchivedCards();
+  const items = archived.data?.items ?? [];
+  if (items.length === 0) return null;
+  return (
+    <details
+      data-testid="archived-cards"
+      className="rounded-xl border border-slate-200 bg-white p-3"
+    >
+      <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-slate-800">
+        Cartões arquivados ({items.length})
+      </summary>
+      <ul className="flex flex-col divide-y divide-slate-100">
+        {items.map((c) => (
+          <li
+            key={c.id}
+            data-testid="archived-card"
+            className="flex items-center justify-between gap-3 py-2 text-sm"
+          >
+            <span className="min-w-0 truncate text-slate-800">{c.name}</span>
+            <Button variant="secondary" disabled={busyId === c.id} onClick={() => onReactivate(c)}>
+              <RotateCcw size={16} aria-hidden="true" />
+              Reativar
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
 export function CartoesScreen() {
   const cards = useCards();
+  const family = useFamily();
+  const isAdmin = family.data?.currentRole === "ADMIN";
+  const action = useCardAction();
+  const keyRef = useRef(newIdempotencyKey());
+  const [archiving, setArchiving] = useState<CardDTO | null>(null);
+  const [deleting, setDeleting] = useState<CardDTO | null>(null);
+  const [blocked, setBlocked] = useState<string | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  function run(c: CardDTO, kind: "archive" | "unarchive" | "delete", ok: string) {
+    if (action.isPending) return;
+    setBanner(null);
+    setBusyId(c.id);
+    action.mutate(
+      { id: c.id, action: kind, version: c.version, idempotencyKey: keyRef.current },
+      {
+        onSuccess: () => {
+          keyRef.current = newIdempotencyKey();
+          setArchiving(null);
+          setDeleting(null);
+          setBlocked(null);
+          toast.success(ok);
+        },
+        onError: (e) => {
+          keyRef.current = newIdempotencyKey();
+          if (
+            e instanceof ApiClientError &&
+            (e.code === "CARD_HAS_UNPAID_INVOICE" || e.code === "CARD_HAS_OPEN_PURCHASES")
+          ) {
+            setBlocked(e.message);
+          } else if (e instanceof NetworkError) setBanner(e.message);
+          else setBanner(e instanceof Error ? e.message : "Erro inesperado. Tente novamente.");
+        },
+        onSettled: () => setBusyId(null),
+      },
+    );
+  }
+
   const [drawer, setDrawer] = useState<{ open: boolean; card: CardDTO | null }>({
     open: false,
     card: null,
@@ -180,10 +294,98 @@ export function CartoesScreen() {
       {data && data.items.length > 0 ? (
         <ul className="flex flex-col gap-3">
           {data.items.map((c) => (
-            <CardItem key={c.id} card={c} onEdit={() => setDrawer({ open: true, card: c })} />
+            <CardItem
+              key={c.id}
+              card={c}
+              isAdmin={isAdmin}
+              onEdit={() => setDrawer({ open: true, card: c })}
+              onArchive={() => {
+                setBlocked(null);
+                setBanner(null);
+                setArchiving(c);
+              }}
+              onDelete={() => {
+                setBanner(null);
+                setDeleting(c);
+              }}
+            />
           ))}
         </ul>
       ) : null}
+
+      {data ? (
+        <ArchivedCards
+          busyId={busyId}
+          onReactivate={(c) => run(c, "unarchive", "Cartão reativado")}
+        />
+      ) : null}
+
+      <Drawer
+        open={archiving !== null}
+        onOpenChange={(o) => !o && setArchiving(null)}
+        title={archiving ? `Arquivar ${archiving.name}?` : "Arquivar cartão"}
+      >
+        {archiving ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-slate-700">
+              O cartão some das listas e do "Pagar com"; compras e faturas pagas permanecem e você
+              pode reativá-lo depois.
+            </p>
+            {blocked ? (
+              <p
+                role="alert"
+                className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900"
+              >
+                {blocked}
+              </p>
+            ) : null}
+            {banner ? (
+              <p role="alert" className="text-sm text-red-800">
+                {banner}
+              </p>
+            ) : null}
+            <Button
+              disabled={action.isPending}
+              onClick={() => run(archiving, "archive", "Cartão arquivado")}
+            >
+              {action.isPending ? "Arquivando…" : "Arquivar"}
+            </Button>
+            <Button variant="ghost" onClick={() => setArchiving(null)}>
+              Cancelar
+            </Button>
+          </div>
+        ) : null}
+      </Drawer>
+
+      <Drawer
+        open={deleting !== null}
+        onOpenChange={(o) => !o && setDeleting(null)}
+        title={deleting ? `Excluir ${deleting.name}?` : "Excluir cartão"}
+      >
+        {deleting ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-slate-700">
+              O cartão nunca teve compras. Ele some de todas as telas e o nome fica livre; isso não
+              pode ser desfeito.
+            </p>
+            {banner ? (
+              <p role="alert" className="text-sm text-red-800">
+                {banner}
+              </p>
+            ) : null}
+            <Button
+              variant="danger"
+              disabled={action.isPending}
+              onClick={() => run(deleting, "delete", "Cartão excluído")}
+            >
+              Excluir definitivamente
+            </Button>
+            <Button variant="ghost" onClick={() => setDeleting(null)}>
+              Cancelar
+            </Button>
+          </div>
+        ) : null}
+      </Drawer>
 
       <CardDrawer
         open={drawer.open}

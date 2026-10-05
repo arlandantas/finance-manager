@@ -46,6 +46,20 @@ export async function cardsWithInvoices(
   return new Set(rows.map((r) => r.cardId));
 }
 
+/** Cartões com ALGUMA transação (compra ou pagamento, em qualquer estado): base de "nunca usado". */
+export async function cardsWithTransactions(
+  tx: Tx,
+  familyId: string,
+  ids: string[],
+): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const rows = await tx.transaction.groupBy({
+    by: ["cardId"],
+    where: { familyId, cardId: { in: ids } },
+  });
+  return new Set(rows.flatMap((r) => (r.cardId ? [r.cardId] : [])));
+}
+
 export type InvoiceTotals = { totalInCents: number; count: number };
 
 /** Total e quantidade de compras ativas por fatura (§4.2). Faturas sem compras = 0. */

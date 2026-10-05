@@ -5,7 +5,12 @@ import { localPart } from "@/lib/auth/dev-login-guard";
 import { todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
 import type { MemberRef } from "@/lib/schemas";
-import { cardInvoiceSummaries, cardsWithInvoices, cardUsage } from "@/modules/cartoes/queries";
+import {
+  cardInvoiceSummaries,
+  cardsWithInvoices,
+  cardsWithTransactions,
+  cardUsage,
+} from "@/modules/cartoes/queries";
 import { cartoesRepo } from "@/modules/cartoes/repo";
 import type {
   CardDTO,
@@ -32,6 +37,7 @@ async function toCardDTOs(tx: Tx, ctx: RequestContext, rows: CardRow[]): Promise
   const today = todayInFamilyTz(ctx.clock);
   const usage = await cardUsage(tx, ctx.familyId, ids);
   const locked = await cardsWithInvoices(tx, ctx.familyId, ids);
+  const usedIds = await cardsWithTransactions(tx, ctx.familyId, ids);
   const invoices = await cardInvoiceSummaries(tx, ctx.familyId, rows, today);
   return rows.map((c) => {
     const used = usage.get(c.id) ?? 0;
@@ -48,6 +54,9 @@ async function toCardDTOs(tx: Tx, ctx: RequestContext, rows: CardRow[]): Promise
       closingDay: c.closingDay,
       dueDay: c.dueDay,
       cycleLocked: locked.has(c.id),
+      archived: c.archivedAt !== null,
+      archivedAt: c.archivedAt?.toISOString() ?? null,
+      neverUsed: !usedIds.has(c.id),
       version: c.version,
       createdAt: c.createdAt.toISOString(),
       openInvoice: inv?.open as CardDTO["openInvoice"],
@@ -56,8 +65,14 @@ async function toCardDTOs(tx: Tx, ctx: RequestContext, rows: CardRow[]): Promise
   });
 }
 
-export async function listCards(tx: Tx, ctx: RequestContext): Promise<CardsResponse> {
-  const rows = await cartoesRepo(tx, ctx.familyId).list();
+export async function listCards(
+  tx: Tx,
+  ctx: RequestContext,
+  archived: "false" | "true" | "all" = "false",
+): Promise<CardsResponse> {
+  const rows = await cartoesRepo(tx, ctx.familyId).list(
+    archived === "false" ? "active" : archived === "true" ? "archived" : "all",
+  );
   const items = await toCardDTOs(tx, ctx, rows);
   return {
     items,
