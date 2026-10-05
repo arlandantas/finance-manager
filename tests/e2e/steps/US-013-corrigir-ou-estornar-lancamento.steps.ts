@@ -85,6 +85,8 @@ async function balanceOf(page: Page, conta: string): Promise<string> {
   await gotoReady(other, "/contas");
   const card = other.getByTestId("account-card").filter({ hasText: conta });
   await expect(card).toBeVisible();
+  // Valores nascem ocultos até a preferência carregar (US-027): espera o valor ficar legível.
+  await expect(card.locator('[data-money="visible"]').first()).toBeVisible();
   const text = normalizeSpaces(await card.innerText());
   await other.close();
   return text;

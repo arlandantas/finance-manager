@@ -106,7 +106,10 @@ Then(
       new RegExp(`^${normalize(saldo).replace(/[$]/g, "\\$")}$`.replace(/ /g, "[\\s\\u00a0]")),
     );
     await expect(balance).toBeVisible();
-    await expect(balance).toHaveClass(/text-red-700/);
+    // a cor vive no contêiner do <Money> (US-027)
+    await expect(
+      balance.locator("xpath=ancestor::span[contains(@class,'text-red-700')]"),
+    ).toHaveCount(1);
   },
 );
 
