@@ -167,6 +167,7 @@ model Family {
   bankAccounts    BankAccount[]
   creditCards     CreditCard[]
   plannedExpenses PlannedExpense[]
+  installmentPlans InstallmentPlan[]
   transactions    Transaction[]
   transferGroups  TransferGroup[]
 
@@ -224,6 +225,8 @@ model Member {
   ownedCards           CreditCard[]
   plannedResponsible   PlannedExpense[] @relation("PlannedResponsible")
   plannedAuthored      PlannedExpense[] @relation("PlannedAuthor")
+  planPayer            InstallmentPlan[] @relation("PlanPayer")
+  planAuthor           InstallmentPlan[] @relation("PlanAuthor")
   paidTransactions     Transaction[]    @relation("TxPayer")
   authoredTransactions Transaction[]    @relation("TxAuthor")
   eventsAsActor        FamilyEvent[]    @relation("EventActor")
@@ -272,6 +275,7 @@ model Category {
   updatedByMemberId String?      @db.Uuid
 
   family          Family           @relation(fields: [familyId], references: [id])
+  installmentPlans InstallmentPlan[]
   transactions    Transaction[]
   plannedExpenses PlannedExpense[]
 
@@ -330,6 +334,7 @@ model CreditCard {
   family       Family        @relation(fields: [familyId], references: [id])
   owner        Member        @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
   invoices     CardInvoice[]
+  installmentPlans InstallmentPlan[]
   transactions Transaction[]
 
   @@unique([familyId, id])
@@ -401,8 +406,15 @@ model Transaction {
   deletedAt         DateTime?       @db.Timestamptz(3)
   deletedByMemberId String?         @db.Uuid
   deletionReason    DeletionReason?
+  // US-040 (ADR-017/020): parcela de compra parcelada. `competenceOn` é SEMPRE derivada pelo gatilho
+  // tx_sync_competence (sem plano = occurredOn; parcela = closingDate da fatura); o default só evita exigi-la no create.
+  installmentPlanId String?         @db.Uuid
+  installmentNo     Int?
+  installmentCount  Int?
+  competenceOn      DateTime        @default(dbgenerated("CURRENT_DATE")) @db.Date
 
   family      Family                @relation(fields: [familyId], references: [id])
+  plan        InstallmentPlan?      @relation(fields: [familyId, installmentPlanId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
   account     BankAccount?          @relation(fields: [familyId, accountId], references: [familyId, id])
   card        CreditCard?           @relation(fields: [familyId, cardId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
   invoice     CardInvoice?          @relation(fields: [familyId, invoiceId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
@@ -420,7 +432,41 @@ model Transaction {
   @@index([familyId, kind, occurredOn])
   @@index([familyId, cardId, occurredOn])
   @@index([familyId, invoiceId])
+  @@index([familyId, competenceOn(sort: Desc), createdAt(sort: Desc), id(sort: Desc)], map: "tx_family_competence_idx")
+  @@index([familyId, kind, competenceOn], map: "tx_family_kind_competence_idx")
   @@map("transactions")
+}
+
+// ───────── Compra parcelada (US-040, ADR-017/020, SDD-014): cabeçalho SEM valor próprio no ledger ─────────
+model InstallmentPlan {
+  id                String    @id @default(uuid()) @db.Uuid
+  familyId          String    @db.Uuid
+  cardId            String    @db.Uuid
+  totalInCents      BigInt // total ORIGINAL (> 0); o corrente é derivado das parcelas
+  installmentCount  Int // 2..24
+  purchaseOn        DateTime  @db.Date
+  description       String // 2..100, sem o sufixo "n/N"
+  note              String?
+  categoryId        String    @db.Uuid
+  payerMemberId     String    @db.Uuid
+  authorMemberId    String    @db.Uuid
+  updatedByMemberId String?   @db.Uuid
+  version           Int       @default(1)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt         DateTime? @db.Timestamptz(3)
+  deletedByMemberId String?   @db.Uuid
+
+  family   Family        @relation(fields: [familyId], references: [id])
+  card     CreditCard    @relation(fields: [familyId, cardId], references: [familyId, id])
+  category Category      @relation(fields: [familyId, categoryId], references: [familyId, id])
+  payer    Member        @relation("PlanPayer", fields: [familyId, payerMemberId], references: [familyId, id])
+  author   Member        @relation("PlanAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+  parcels  Transaction[]
+
+  @@unique([familyId, id])
+  @@index([familyId, cardId, purchaseOn])
+  @@map("installment_plans")
 }
 
 // ───────── Despesas previstas (US-018/019, SDD-009, ADR-015): NÃO é Transaction ─────────
