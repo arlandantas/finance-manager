@@ -14,6 +14,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { CategoryIcon } from "@/components/category-icon";
+import { Money, useFormatMoney } from "@/components/money";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
@@ -21,7 +22,6 @@ import { Drawer } from "@/components/ui/drawer";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
-import { formatBRL } from "@/lib/money";
 import {
   useDeletePlanned,
   usePayables,
@@ -72,7 +72,7 @@ function PayableRow({
       </div>
       <div className="flex items-center gap-1">
         <span className="font-semibold tabular-nums text-slate-900">
-          {formatBRL(item.amountInCents)}
+          <Money cents={item.amountInCents} />
         </span>
         {planned ? (
           <Button variant="secondary" aria-label={`Dar baixa em ${item.title}`} onClick={onPay}>
@@ -135,6 +135,7 @@ function PayableRow({
 
 function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void }) {
   const paid = item.paid;
+  const fmt = useFormatMoney();
   return (
     <li
       id={item.id}
@@ -154,12 +155,12 @@ function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void
       </div>
       {paid ? (
         <p className="text-sm text-slate-700" data-testid="paid-summary">
-          Previsto {formatBRL(item.amountInCents)} · Pago {formatBRL(paid.amountInCents)}
+          Previsto <Money cents={item.amountInCents} /> · Pago <Money cents={paid.amountInCents} />
         </p>
       ) : null}
       {paid ? (
         <p data-testid="paid-difference" className="text-sm font-medium text-slate-700">
-          {differenceLabel(paid.differenceInCents, formatBRL)}
+          {differenceLabel(paid.differenceInCents, fmt)}
         </p>
       ) : null}
       <div>
@@ -286,12 +287,12 @@ export function PrevistasScreen() {
         >
           <p className="text-sm text-brand-100">A pagar</p>
           <p data-testid="payables-total" className="text-3xl font-bold tabular-nums">
-            {formatBRL(payables.data.totals.dueInCents)}
+            <Money cents={payables.data.totals.dueInCents} />
           </p>
           {payables.data.totals.overdueCount > 0 ? (
             <p data-testid="payables-overdue" className="w-full text-sm text-brand-100">
               {payables.data.totals.overdueCount} atrasada(s):{" "}
-              {formatBRL(payables.data.totals.overdueInCents)}
+              <Money cents={payables.data.totals.overdueInCents} />
             </p>
           ) : null}
         </section>

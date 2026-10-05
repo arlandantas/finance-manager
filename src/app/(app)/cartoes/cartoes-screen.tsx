@@ -3,11 +3,11 @@
 import { MoreHorizontal, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Money } from "@/components/money";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatBRL } from "@/lib/money";
 import { cycleSentence, formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import { useCards } from "@/modules/cartoes/hooks";
 import type { CardDTO } from "@/modules/cartoes/schemas";
@@ -36,13 +36,22 @@ function UsageBar({ card }: { card: CardDTO }) {
       </div>
       <div className="flex flex-wrap justify-between gap-x-3 text-sm">
         <span className="text-slate-600">
-          Limite <span data-testid="card-limit">{formatBRL(card.limitInCents)}</span>
+          Limite{" "}
+          <span data-testid="card-limit">
+            <Money cents={card.limitInCents} />
+          </span>
         </span>
         <span className="text-slate-600">
-          Usado <span data-testid="card-used">{formatBRL(card.usedInCents)}</span>
+          Usado{" "}
+          <span data-testid="card-used">
+            <Money cents={card.usedInCents} />
+          </span>
         </span>
         <span className={over ? "font-semibold text-red-700" : "font-semibold text-slate-900"}>
-          Disponível <span data-testid="card-available">{formatBRL(card.availableInCents)}</span>
+          Disponível{" "}
+          <span data-testid="card-available">
+            <Money cents={card.availableInCents} />
+          </span>
         </span>
       </div>
     </div>
@@ -90,7 +99,7 @@ function CardItem({ card, onEdit }: { card: CardDTO; onEdit: () => void }) {
       <p data-testid="card-open-invoice" className="col-span-full text-sm text-slate-700">
         Fatura aberta{" "}
         <span className="font-semibold tabular-nums">
-          {formatBRL(card.openInvoice.totalInCents)}
+          <Money cents={card.openInvoice.totalInCents} />
         </span>{" "}
         ({formatInvoiceLabel(card.openInvoice.ref)}) ·{" "}
         <Link
@@ -109,7 +118,9 @@ function CardItem({ card, onEdit }: { card: CardDTO; onEdit: () => void }) {
           <span className="font-semibold">
             {p.isOverdue ? "Vencida" : "A pagar"} · Fatura {formatInvoiceLabel(p.ref)}
           </span>
-          <span className="tabular-nums">{formatBRL(p.totalInCents)}</span>
+          <span className="tabular-nums">
+            <Money cents={p.totalInCents} />
+          </span>
           <span>
             vence {p.dueDate.slice(8, 10)}/{p.dueDate.slice(5, 7)}
           </span>

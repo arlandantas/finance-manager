@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Money } from "@/components/money";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
-import { formatBRL } from "@/lib/money";
 import { cycleSentence, formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import { useCard, useInvoice, useUndoInvoicePayment } from "@/modules/cartoes/hooks";
 import type { InvoiceDTO } from "@/modules/cartoes/schemas";
@@ -155,10 +155,16 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
             <p className="text-sm text-slate-600">{cycleSentence(c.closingDay, c.dueDay)}</p>
             <div className="mt-3 flex flex-wrap justify-between gap-x-3 text-sm">
               <span className="text-slate-600">
-                Limite <span data-testid="card-limit">{formatBRL(c.limitInCents)}</span>
+                Limite{" "}
+                <span data-testid="card-limit">
+                  <Money cents={c.limitInCents} />
+                </span>
               </span>
               <span className="text-slate-600">
-                Usado <span data-testid="card-used">{formatBRL(c.usedInCents)}</span>
+                Usado{" "}
+                <span data-testid="card-used">
+                  <Money cents={c.usedInCents} />
+                </span>
               </span>
               <span
                 className={cn(
@@ -166,7 +172,10 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
                   c.availableInCents < 0 ? "text-red-700" : "text-slate-900",
                 )}
               >
-                Disponível <span data-testid="card-available">{formatBRL(c.availableInCents)}</span>
+                Disponível{" "}
+                <span data-testid="card-available">
+                  <Money cents={c.availableInCents} />
+                </span>
               </span>
             </div>
           </header>
@@ -216,7 +225,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
               data-testid="invoice-total"
               className="text-3xl font-bold tabular-nums text-slate-900"
             >
-              {formatBRL(inv.totalInCents)}
+              <Money cents={inv.totalInCents} />
             </p>
             <p data-testid="invoice-dates" className="text-sm text-slate-600">
               Fecha em {brDate(inv.closingDate)} · vence em {brDate(inv.dueDate)}
@@ -243,7 +252,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
                 >
                   <Avatar name={m.member.name} image={m.member.image} size={24} />
                   <span>
-                    {m.member.name.split(" ")[0]} {formatBRL(m.totalInCents)}
+                    {m.member.name.split(" ")[0]} <Money cents={m.totalInCents} />
                   </span>
                 </li>
               ))}

@@ -33,6 +33,15 @@ const FORBIDDEN_IN_PURE =
   /from\s+["'](?:next(?:\/[^"']*)?|@prisma\/[^"']+|@\/lib\/db|@\/generated\/[^"']+)["']/;
 const CLOCK_USE = /Date\.now\(|new Date\(\s*\)/;
 
+// SDD-010 §4.4: valores monetários de leitura só são formatados pelo componente `Money`.
+const MONEY_UI = /^src\/(app|components)\//;
+const MONEY_ALLOWED = [/^src\/components\/money\.tsx$/, /^src\/components\/money-input\.tsx$/];
+const MONEY_FORMAT = /\bformatBRL\b|Intl\.NumberFormat\([^)]*currency/;
+
+// SDD-010 §4.1: filtro por período do ledger só em `ledger-where.ts` (predicado único).
+const PERIOD_FILTER = /occurredOn"?\s*(?:BETWEEN\b|:\s*\{\s*(?:gte|lte|gt|lt)\b)/;
+const PERIOD_ALLOWED = [/^src\/modules\/transacoes\/ledger-where\.ts$/, /^tests\//, /^prisma\//];
+
 export function checkFile(file: string, content: string): Violation[] {
   const out: Violation[] = [];
   const rel = file.split(path.sep).join("/");
@@ -59,6 +68,30 @@ export function checkFile(file: string, content: string): Violation[] {
         message: "Regra pura não pode usar Date.now() nem new Date() sem argumento",
       });
     }
+  }
+  if (
+    MONEY_UI.test(rel) &&
+    !MONEY_ALLOWED.some((re) => re.test(rel)) &&
+    MONEY_FORMAT.test(content)
+  ) {
+    out.push({
+      file: rel,
+      rule: "money-format",
+      message:
+        "Valor monetário só é formatado por <Money> (src/components/money.tsx); use <Money cents />",
+    });
+  }
+  if (
+    rel.startsWith("src/") &&
+    !rel.startsWith("src/generated/") &&
+    !PERIOD_ALLOWED.some((re) => re.test(rel)) &&
+    PERIOD_FILTER.test(content)
+  ) {
+    out.push({
+      file: rel,
+      rule: "period-predicate",
+      message: "Filtro de período em occurredOn só em src/modules/transacoes/ledger-where.ts",
+    });
   }
   return out;
 }

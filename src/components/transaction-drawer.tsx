@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CategoryIcon } from "@/components/category-icon";
+import { useFormatMoney } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,6 @@ import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
-import { formatBRL } from "@/lib/money";
 import { invoiceHint } from "@/modules/cartoes/cycle";
 import { useCards } from "@/modules/cartoes/hooks";
 import { useCategories } from "@/modules/categorias/hooks";
@@ -55,6 +55,7 @@ export function TransactionDrawer({
   onOpenChange: (open: boolean) => void;
   initialKind?: Kind;
 }) {
+  const fmt = useFormatMoney();
   const [kind, setKind] = useState<Kind>(initialKind);
   const [cents, setCents] = useState(0);
   // "Pagar com": `accountId` ou `cardId` (um dos dois), guardados juntos como "acc:<id>" / "card:<id>".
@@ -272,7 +273,7 @@ export function TransactionDrawer({
               <optgroup label="Cartões">
                 {cardList.map((c) => (
                   <option key={c.id} value={`card:${c.id}`}>
-                    {c.name} · Disponível {formatBRL(c.availableInCents)}
+                    {c.name} · Disponível {fmt(c.availableInCents)}
                   </option>
                 ))}
               </optgroup>

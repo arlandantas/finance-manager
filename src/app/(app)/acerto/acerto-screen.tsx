@@ -3,14 +3,14 @@
 import { ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { monthLabel, shiftMonthKey } from "@/app/(app)/extrato/filters";
+import { Money, useMoneyText } from "@/components/money";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
-import { formatBRL } from "@/lib/money";
 import { heroText } from "@/modules/split/hero";
 import { useSettlement, useSharedExpenses, useSplitRule } from "@/modules/split/hooks";
 import { formatBpsList } from "@/modules/split/rules";
@@ -18,10 +18,6 @@ import type { SettlementDTO, SettlementSuggestion, SplitRuleDTO } from "@/module
 import { SettleDrawer } from "./settle-drawer";
 
 const firstName = (name: string) => name.split(" ")[0] ?? name;
-
-function signed(cents: number): string {
-  return cents > 0 ? `+${formatBRL(cents)}` : formatBRL(cents);
-}
 
 function MonthSelector({ period, isCurrent }: { period: string; isCurrent: boolean }) {
   const router = useRouter();
@@ -56,6 +52,7 @@ function MonthSelector({ period, isCurrent }: { period: string; isCurrent: boole
 }
 
 function Hero({ s, onSettle }: { s: SettlementDTO; onSettle: (x: SettlementSuggestion) => void }) {
+  const maskText = useMoneyText();
   const hero = heroText(s);
   const ok = s.status === "BALANCED" || s.status === "SETTLED";
   return (
@@ -70,7 +67,7 @@ function Hero({ s, onSettle }: { s: SettlementDTO; onSettle: (x: SettlementSugge
           "bg-white text-slate-900 ring-1 ring-slate-200",
       )}
     >
-      <p className="text-2xl font-bold leading-tight sm:text-3xl">{hero.title}</p>
+      <p className="text-2xl font-bold leading-tight sm:text-3xl">{maskText(hero.title)}</p>
       {hero.detail ? <p className="text-sm opacity-90">{hero.detail}</p> : null}
       {s.status === "NEEDS_MORE_MEMBERS" ? (
         <Link
@@ -93,7 +90,8 @@ function Hero({ s, onSettle }: { s: SettlementDTO; onSettle: (x: SettlementSugge
         <ul data-testid="settlement-suggestions" className="mt-1 flex flex-col gap-1 text-sm">
           {s.suggestions.slice(1).map((x) => (
             <li key={`${x.from.id}-${x.to.id}`} className="flex flex-wrap items-center gap-2">
-              {firstName(x.from.name)} deve {formatBRL(x.amountInCents)} para {firstName(x.to.name)}
+              {firstName(x.from.name)} deve <Money cents={x.amountInCents} /> para{" "}
+              {firstName(x.to.name)}
               <button
                 type="button"
                 onClick={() => onSettle(x)}
@@ -116,7 +114,7 @@ function MemberCard({
   row: SettlementDTO["members"][number];
   showRemaining: boolean;
 }) {
-  const cell = (label: string, value: string, tone = "text-slate-900", testid?: string) => (
+  const cell = (label: string, value: ReactNode, tone = "text-slate-900", testid?: string) => (
     <div className="min-w-0">
       <dt className="text-xs text-slate-500">{label}</dt>
       <dd
@@ -137,11 +135,11 @@ function MemberCard({
         <p className="font-semibold text-slate-900">{firstName(row.member.name)}</p>
       </div>
       <dl className="grid grid-cols-2 gap-3">
-        {cell("Pagou", formatBRL(row.paidInCents), undefined, "paid")}
-        {cell("Cota devida", formatBRL(row.quotaInCents), undefined, "quota")}
+        {cell("Pagou", <Money cents={row.paidInCents} />, undefined, "paid")}
+        {cell("Cota devida", <Money cents={row.quotaInCents} />, undefined, "quota")}
         {cell(
           "Diferença",
-          signed(row.differenceInCents),
+          <Money cents={row.differenceInCents} signed />,
           row.differenceInCents > 0
             ? "text-emerald-700"
             : row.differenceInCents < 0
@@ -150,7 +148,12 @@ function MemberCard({
           "difference",
         )}
         {showRemaining
-          ? cell("Saldo restante", signed(row.balanceInCents), undefined, "remaining")
+          ? cell(
+              "Saldo restante",
+              <Money cents={row.balanceInCents} signed />,
+              undefined,
+              "remaining",
+            )
           : null}
       </dl>
     </li>
@@ -215,7 +218,7 @@ function SharedExpensesList({ period }: { period: string }) {
                   </span>
                 </span>
                 <span className="font-semibold tabular-nums text-slate-900">
-                  {formatBRL(x.amountInCents)}
+                  <Money cents={x.amountInCents} />
                 </span>
               </li>
             ))}
@@ -224,7 +227,7 @@ function SharedExpensesList({ period }: { period: string }) {
             data-testid="shared-expenses-total"
             className="mt-2 border-t border-slate-200 pt-2 text-sm font-semibold text-slate-900"
           >
-            Total: {formatBRL(list.data.totalInCents)}
+            Total: <Money cents={list.data.totalInCents} />
           </p>
         </>
       ) : null}
@@ -306,7 +309,10 @@ export function AcertoScreen() {
           {s.status !== "NEEDS_MORE_MEMBERS" ? (
             <>
               <p data-testid="settlement-total" className="text-sm text-slate-700">
-                Total de despesas comuns: <strong>{formatBRL(s.totalSharedInCents)}</strong>
+                Total de despesas comuns:{" "}
+                <strong>
+                  <Money cents={s.totalSharedInCents} />
+                </strong>
               </p>
               <ul className="grid gap-3 sm:grid-cols-2">
                 {s.members.map((m) => (
@@ -326,7 +332,7 @@ export function AcertoScreen() {
                         className="rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-800"
                       >
                         <p className="font-medium">
-                          {firstName(x.from.name)} transferiu {formatBRL(x.amountInCents)} para{" "}
+                          {firstName(x.from.name)} transferiu <Money cents={x.amountInCents} /> para{" "}
                           {firstName(x.to.name)} em{" "}
                           {x.occurredOn.split("-").reverse().slice(0, 2).join("/")}
                         </p>

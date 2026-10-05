@@ -2,13 +2,13 @@
 
 import { ArrowLeftRight, MoreHorizontal, Pencil, Plus } from "lucide-react";
 import { useState } from "react";
+import { Money } from "@/components/money";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatBRL } from "@/lib/money";
 import { useAccounts } from "@/modules/contas/hooks";
 import { ACCOUNT_TYPE_LABELS, type AccountDTO } from "@/modules/contas/schemas";
 import { NewAccountDrawer } from "./new-account-drawer";
@@ -24,7 +24,7 @@ function Balance({ cents, className }: { cents: number; className?: string }) {
         className,
       )}
     >
-      {formatBRL(cents)}
+      <Money cents={cents} />
     </span>
   );
 }
@@ -135,7 +135,9 @@ export function ContasScreen() {
             data-testid="total-balance"
           >
             <p className="text-sm text-brand-100">Saldo consolidado</p>
-            <p className="text-3xl font-bold tabular-nums">{formatBRL(data.totalBalanceInCents)}</p>
+            <p className="text-3xl font-bold tabular-nums">
+              <Money cents={data.totalBalanceInCents} />
+            </p>
           </section>
           <ul className="flex flex-col gap-3">
             {data.items.map((a) => (

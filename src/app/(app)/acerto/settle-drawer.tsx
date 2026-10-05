@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Money, useFormatMoney } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
-import { formatBRL } from "@/lib/money";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useRegisterSettlement } from "@/modules/split/hooks";
 import { CreateSettlementSchema, type SettlementSuggestion } from "@/modules/split/schemas";
@@ -26,6 +26,7 @@ export function SettleDrawer({
   onClose: () => void;
 }) {
   const open = suggestion !== null;
+  const fmt = useFormatMoney();
   const accounts = useAccounts();
   const defaults = useDefaults(open);
   const items = accounts.data?.items ?? [];
@@ -86,7 +87,7 @@ export function SettleDrawer({
         if (!next[k]) next[k] = i.message;
       }
     } else if (cents > due) {
-      next.amountInCents = `O valor não pode ser maior que o devido (${formatBRL(due)})`;
+      next.amountInCents = `O valor não pode ser maior que o devido (${fmt(due)})`;
     }
     setErrors(next);
     if (Object.keys(next).length === 0) setStep("confirm");
@@ -158,13 +159,14 @@ export function SettleDrawer({
             }}
           >
             <p className="text-sm text-slate-700">
-              {first(suggestion.from.name)} deve {formatBRL(due)} para {first(suggestion.to.name)}.
+              {first(suggestion.from.name)} deve <Money cents={due} /> para{" "}
+              {first(suggestion.to.name)}.
             </p>
             <Field
               id="st-amount"
               label="Valor"
               error={errors.amountInCents}
-              hint={`Máximo: ${formatBRL(due)}`}
+              hint={`Máximo: ${fmt(due)}`}
             >
               <MoneyInput
                 id="st-amount"
@@ -210,7 +212,10 @@ export function SettleDrawer({
               </p>
             ) : null}
             <p className="text-base text-slate-900">
-              {from?.name} → {to?.name}, <strong>{formatBRL(cents)}</strong>
+              {from?.name} → {to?.name},{" "}
+              <strong>
+                <Money cents={cents} />
+              </strong>
             </p>
             <p className="text-sm text-slate-600">
               A transferência será registrada como Acerto de contas e abate o saldo do mês.

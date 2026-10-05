@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Money } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
-import { formatBRL } from "@/lib/money";
 import { useAccounts, useCreateTransfer } from "@/modules/contas/hooks";
 import { CreateTransferSchema } from "@/modules/contas/schemas";
 import { transferPreview } from "@/modules/contas/transfer-preview";
@@ -193,11 +193,14 @@ export function TransferDrawer({
             <p>
               {from.name} ficará com{" "}
               <strong className={cn("tabular-nums", preview.from < 0 && "text-red-700")}>
-                {formatBRL(preview.from)}
+                <Money cents={preview.from} />
               </strong>
             </p>
             <p>
-              {to.name} ficará com <strong className="tabular-nums">{formatBRL(preview.to)}</strong>
+              {to.name} ficará com{" "}
+              <strong className="tabular-nums">
+                <Money cents={preview.to} />
+              </strong>
             </p>
           </section>
         ) : null}

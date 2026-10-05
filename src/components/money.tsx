@@ -2,20 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/components/ui/cn";
+import { MONEY_MASK, maskMoneyInText } from "@/lib/mask-money";
 import { formatBRL } from "@/lib/money";
 import { usePref } from "@/lib/prefs";
 
-/** Máscara de largura fixa: não revela sinal nem ordem de grandeza (US-027). */
-export const MONEY_MASK = "R$ •••••";
+export { MONEY_MASK, maskMoneyInText };
 export const REVEAL_MS = 5000;
 export const HIDE_VALUES_HINT = "Oculta os valores na tela. Não protege seus dados.";
-
-const MONEY_IN_TEXT = /-?R\$\s?\d{1,3}(?:\.\d{3})*,\d{2}/g;
-
-/** Troca valores em reais de um texto vindo do servidor pela máscara (alertas, erros). */
-export function maskMoneyInText(text: string): string {
-  return text.replace(MONEY_IN_TEXT, MONEY_MASK);
-}
 
 /** Estado global (por usuário/dispositivo) de ocultar valores. */
 export function useHideValues(): { hidden: boolean; toggle: () => void } {
@@ -27,6 +20,15 @@ export function useHideValues(): { hidden: boolean; toggle: () => void } {
 export function useMoneyText(): (text: string) => string {
   const { hidden } = useHideValues();
   return (text) => (hidden ? maskMoneyInText(text) : text);
+}
+
+/** Para textos (hints, `aria`, mensagens): "R$ 1,00" visível ou a máscara quando oculto. */
+export function useFormatMoney(): (cents: number, o?: { signed?: boolean }) => string {
+  const { hidden } = useHideValues();
+  return (cents, o) => {
+    if (hidden) return MONEY_MASK;
+    return o?.signed && cents > 0 ? `+${formatBRL(cents)}` : formatBRL(cents);
+  };
 }
 
 /**

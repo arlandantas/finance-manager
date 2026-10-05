@@ -2,9 +2,9 @@
 
 import { ArrowLeftRight } from "lucide-react";
 import { CategoryIcon } from "@/components/category-icon";
+import { Money } from "@/components/money";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
-import { formatBRL } from "@/lib/money";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import type { PendingTransaction } from "@/modules/transacoes/optimistic";
 
@@ -40,7 +40,7 @@ export function LedgerRow({
     ? (item.account?.name ?? "")
     : (item.card?.name ?? item.account?.name ?? "");
   const kindLabel = item.category?.name ?? (isPayment ? "Pagamento de fatura" : "Transferência");
-  const amount = `${income ? "+" : "-"}${formatBRL(item.amountInCents)}`;
+  const signedCents = income ? item.amountInCents : -item.amountInCents;
   return (
     <li>
       <button
@@ -142,7 +142,7 @@ export function LedgerRow({
               item.deletedAt && "line-through",
             )}
           >
-            {amount}
+            <Money cents={signedCents} signed />
           </span>
         </span>
       </button>

@@ -4,10 +4,10 @@ import { Check, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Money, useMoneyText } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatBRL } from "@/lib/money";
 import { useHome } from "@/modules/home/hooks";
 import type { HomeDTO } from "@/modules/home/schemas";
 import { heroText } from "@/modules/split/hero";
@@ -80,6 +80,7 @@ function Checklist({ o }: { o: HomeDTO["onboarding"] }) {
 }
 
 function SettlementCard({ h }: { h: HomeDTO }) {
+  const maskText = useMoneyText();
   const hero = heroText(h.settlement);
   const needs = h.settlement.status === "NEEDS_MORE_MEMBERS";
   const ok = h.settlement.status === "BALANCED" || h.settlement.status === "SETTLED";
@@ -97,7 +98,7 @@ function SettlementCard({ h }: { h: HomeDTO }) {
           Acerto do mês
         </span>
         <span className="text-xl font-bold leading-tight">
-          {needs ? "Convide quem divide as contas" : hero.title}
+          {needs ? "Convide quem divide as contas" : maskText(hero.title)}
         </span>
         {hero.detail && !needs ? <span className="text-sm opacity-90">{hero.detail}</span> : null}
       </span>
@@ -160,7 +161,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                   h.familyBalanceInCents < 0 ? "text-red-700" : "text-slate-900",
                 )}
               >
-                {formatBRL(h.familyBalanceInCents)}
+                <Money cents={h.familyBalanceInCents} />
               </span>
             </p>
             {h.accounts.length > 0 ? (
@@ -179,7 +180,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                           a.balanceInCents < 0 ? "text-red-700" : "text-slate-900",
                         )}
                       >
-                        {formatBRL(a.balanceInCents)}
+                        <Money cents={a.balanceInCents} />
                       </span>
                     </Link>
                   </li>
@@ -202,7 +203,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                     data-testid="home-income"
                     className="text-lg font-semibold tabular-nums text-emerald-700"
                   >
-                    {formatBRL(h.monthSummary.incomeInCents)}
+                    <Money cents={h.monthSummary.incomeInCents} />
                   </p>
                 </div>
                 <div>
@@ -211,7 +212,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                     data-testid="home-expense"
                     className="text-lg font-semibold tabular-nums text-slate-900"
                   >
-                    {formatBRL(h.monthSummary.expenseInCents)}
+                    <Money cents={h.monthSummary.expenseInCents} />
                   </p>
                 </div>
               </div>
@@ -222,7 +223,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                     data-testid="home-member-share"
                     className="flex items-center gap-2 text-sm text-slate-800"
                   >
-                    {first(m.member.name)} {formatBRL(m.paidInCents)} ({m.sharePercent}%)
+                    {first(m.member.name)} <Money cents={m.paidInCents} /> ({m.sharePercent}%)
                   </li>
                 ))}
               </ul>
@@ -251,7 +252,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                     </span>
                     <span className="flex items-center gap-3">
                       <span className="font-semibold tabular-nums text-slate-900">
-                        {formatBRL(p.amountInCents)}
+                        <Money cents={p.amountInCents} />
                       </span>
                       {p.type === "INVOICE" ? (
                         <>

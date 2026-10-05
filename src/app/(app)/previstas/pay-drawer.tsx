@@ -3,6 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Money, useFormatMoney } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,6 @@ import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
-import { formatBRL } from "@/lib/money";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
 import { usePayPlanned, usePlanned } from "@/modules/previstas/hooks";
@@ -29,6 +29,7 @@ export function PayPlannedDrawer({
   onClose: () => void;
 }) {
   const open = plannedId !== null;
+  const fmt = useFormatMoney();
   const detail = usePlanned(plannedId);
   const planned = detail.data?.plannedExpense ?? null;
   const accounts = useAccounts();
@@ -183,7 +184,7 @@ export function PayPlannedDrawer({
             id="pay-amount"
             label="Valor pago"
             error={errors.amountInCents}
-            hint={`Previsto ${formatBRL(planned.amountInCents)}`}
+            hint={`Previsto ${fmt(planned.amountInCents)}`}
           >
             <MoneyInput
               id="pay-amount"
@@ -196,7 +197,7 @@ export function PayPlannedDrawer({
             />
           </Field>
           <p data-testid="pay-difference" className="-mt-3 text-sm font-medium text-slate-700">
-            {differenceLabel(diff, formatBRL)}
+            {differenceLabel(diff, fmt)}
           </p>
 
           <Field id="pay-account" label="Conta" error={errors.accountId}>
@@ -212,7 +213,7 @@ export function PayPlannedDrawer({
               </option>
               {(accounts.data?.items ?? []).map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.name} · Saldo {formatBRL(a.balanceInCents)}
+                  {a.name} · Saldo {fmt(a.balanceInCents)}
                 </option>
               ))}
             </select>

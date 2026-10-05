@@ -1,4 +1,7 @@
 // Cliente HTTP do navegador para /api/v1 (SDD-000 §2 e §7).
+import { maskMoneyInText } from "@/lib/mask-money";
+import { valuesHiddenNow } from "@/lib/prefs";
+
 export type ApiErrorPayload = {
   error: { code: string; message: string; details?: unknown };
 };
@@ -10,7 +13,8 @@ export class ApiClientError extends Error {
     message: string,
     public readonly details?: unknown,
   ) {
-    super(message);
+    // Mensagens do servidor podem embutir valores ("... (R$ 400,00)"): mascara se estiverem ocultos.
+    super(valuesHiddenNow() ? maskMoneyInText(message) : message);
     this.name = "ApiClientError";
   }
 }

@@ -41,3 +41,44 @@ describe("EN-001 check:imports (ADR-013)", () => {
     expect(checkProject()).toEqual([]);
   });
 });
+
+describe("SDD-010 regras de CI: Money e predicado único de período", () => {
+  it("formatBRL em tela ou componente falha; em Money/MoneyInput/lib/money/testes passa", () => {
+    const code = `import { formatBRL } from "@/lib/money"; const x = formatBRL(1);`;
+    expect(checkFile("src/app/(app)/home-screen.tsx", code)[0]?.rule).toBe("money-format");
+    expect(checkFile("src/components/transaction-drawer.tsx", code)[0]?.rule).toBe("money-format");
+    expect(
+      checkFile("src/components/x.tsx", `new Intl.NumberFormat("pt-BR", { style: "currency" })`)[0]
+        ?.rule,
+    ).toBe("money-format");
+    for (const f of [
+      "src/components/money.tsx",
+      "src/components/money-input.tsx",
+      "src/lib/money.ts",
+      "src/modules/split/hero.ts",
+      "tests/unit/lib/money.test.ts",
+    ]) {
+      expect(checkFile(f, code).filter((v) => v.rule === "money-format")).toEqual([]);
+    }
+  });
+
+  it("occurredOn com BETWEEN/gte/lte fora de ledger-where.ts falha", () => {
+    expect(checkFile("src/modules/x/repo.ts", `occurredOn: { gte: a, lte: b }`)[0]?.rule).toBe(
+      "period-predicate",
+    );
+    expect(
+      checkFile("src/modules/transacoes/extrato.ts", `t."occurredOn" BETWEEN a AND b`)[0]?.rule,
+    ).toBe("period-predicate");
+    expect(
+      checkFile("src/modules/transacoes/ledger-where.ts", `t."occurredOn" BETWEEN a AND b`),
+    ).toEqual([]);
+    expect(checkFile("tests/integration/x.int.test.ts", `occurredOn: { gte: a }`)).toEqual([]);
+  });
+
+  it("ordenar ou comparar occurredOn de outra forma não é filtro de período", () => {
+    expect(checkFile("src/modules/x/repo.ts", `orderBy: [{ occurredOn: "desc" }]`)).toEqual([]);
+    expect(checkFile("src/modules/x/service.ts", `existing.occurredOn <= item.occurredOn`)).toEqual(
+      [],
+    );
+  });
+});

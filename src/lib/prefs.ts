@@ -78,7 +78,13 @@ function subscribe(cb: () => void) {
 
 const UserIdContext = createContext<string>("anon");
 
+// Usuário ativo da sessão no navegador: permite a código fora do React (ex.: cliente HTTP) saber se
+// os valores estão ocultos e mascarar mensagens do servidor (SDD-010 §1).
+let activeUserId = "anon";
+export const valuesHiddenNow = (): boolean => readPref(activeUserId, "hideValues");
+
 export function PrefsProvider({ userId, children }: { userId: string; children: ReactNode }) {
+  activeUserId = userId;
   return createElement(UserIdContext.Provider, { value: userId }, children);
 }
 

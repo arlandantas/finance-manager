@@ -4,13 +4,13 @@ import { History, MoreHorizontal, Pencil, RotateCcw, Trash2 } from "lucide-react
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
-import { formatBRL } from "@/lib/money";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import { useUndoInvoicePayment } from "@/modules/cartoes/hooks";
 import { useDefaults, useTransactionDetail, useTransactionState } from "@/modules/transacoes/hooks";
@@ -273,7 +273,7 @@ export function TransactionDetailDrawer({
             <dl>
               <Row label="Valor">
                 {t.direction === "CREDIT" ? "+" : "-"}
-                {formatBRL(t.amountInCents)}
+                <Money cents={t.amountInCents} />
               </Row>
               <Row label="Descrição">{t.description}</Row>
               <Row label="Data">{brDate(t.occurredOn)}</Row>

@@ -3,6 +3,8 @@
 import {
   CalendarClock,
   CreditCard,
+  Eye,
+  EyeOff,
   Home,
   ListOrdered,
   LogOut,
@@ -16,6 +18,7 @@ import { usePathname } from "next/navigation";
 import { type ReactNode, Suspense, useEffect, useRef, useState } from "react";
 import { signOutAction } from "@/app/actions";
 import { JoinedNotice } from "@/components/joined-notice";
+import { HIDE_VALUES_HINT, useHideValues } from "@/components/money";
 import { QuickAddProvider } from "@/components/quick-add";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
@@ -98,6 +101,24 @@ function UserMenu({ user }: { user: ShellUser }) {
   );
 }
 
+function EyeToggle() {
+  const { hidden, toggle } = useHideValues();
+  const Icon = hidden ? EyeOff : Eye;
+  return (
+    <button
+      type="button"
+      data-testid="hide-values-toggle"
+      aria-pressed={hidden}
+      aria-label={hidden ? "Valores ocultos" : "Valores visíveis"}
+      title={HIDE_VALUES_HINT}
+      onClick={toggle}
+      className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100"
+    >
+      <Icon size={20} aria-hidden="true" />
+    </button>
+  );
+}
+
 function OfflineBanner() {
   const [online, setOnline] = useState(true);
   useEffect(() => {
@@ -164,7 +185,10 @@ export function AppShell({
               ))}
             </nav>
           </div>
-          <UserMenu user={user} />
+          <div className="flex items-center gap-1">
+            <EyeToggle />
+            <UserMenu user={user} />
+          </div>
         </div>
       </header>
       <QuickAddProvider>

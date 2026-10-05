@@ -3,12 +3,12 @@
 import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Money } from "@/components/money";
 import { useQuickAdd } from "@/components/quick-add";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatBRL } from "@/lib/money";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { useLedger } from "@/modules/transacoes/hooks";
 import type { LedgerUiFilters } from "@/modules/transacoes/optimistic";
@@ -39,7 +39,7 @@ function Totals({
         data-testid={testid}
         className={cn("break-words text-sm font-semibold tabular-nums sm:text-base", tone)}
       >
-        {formatBRL(value)}
+        <Money cents={value} />
       </p>
     </div>
   );

@@ -3,11 +3,11 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Money, useFormatMoney } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
-import { formatBRL } from "@/lib/money";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import { usePayInvoice } from "@/modules/cartoes/hooks";
 import { type InvoiceDTO, PayInvoiceSchema } from "@/modules/cartoes/schemas";
@@ -28,6 +28,7 @@ export function PayInvoiceDrawer({
   invoice: InvoiceDTO;
   onClose: () => void;
 }) {
+  const fmt = useFormatMoney();
   const accounts = useAccounts();
   const defaults = useDefaults(open);
   const qc = useQueryClient();
@@ -162,7 +163,7 @@ export function PayInvoiceDrawer({
             data-testid="pay-invoice-total"
             className="text-3xl font-bold tabular-nums text-slate-900"
           >
-            {formatBRL(expected)}
+            <Money cents={expected} />
           </p>
           <p className="text-xs text-slate-500">O pagamento é sempre do valor total.</p>
         </div>
@@ -180,7 +181,7 @@ export function PayInvoiceDrawer({
             </option>
             {(accounts.data?.items ?? []).map((a) => (
               <option key={a.id} value={a.id}>
-                {a.name} · Saldo {formatBRL(a.balanceInCents)}
+                {a.name} · Saldo {fmt(a.balanceInCents)}
               </option>
             ))}
           </select>
