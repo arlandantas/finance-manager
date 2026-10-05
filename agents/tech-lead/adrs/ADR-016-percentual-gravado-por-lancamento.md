@@ -71,3 +71,10 @@ Interface única `explainPeriodSplit(period) → { segments, weighted }` com dua
 - Estimativa: **EN-002 = 13** (PO: 5), fatiável em 002a (modelo + motor STORED + gravação nos novos lançamentos, 5) e 002b (script, snapshot, gate, rollback, harness de regressão, 8).
 - Tamanho do conjunto de testes: harness de regressão com **≥ 200 famílias aleatórias** (sementes fixas; N = 2..4; troca de regra no meio do mês; membro que entra no mês; acertos parciais; despesas excluídas; compras no cartão; valores ímpares) mais os **dados homologados** como casos nomeados.
 - `isSharedExpense` fica redundante com `splitMode`; remoção só no AP1 (fora de escopo).
+
+## Errata (2026-10-05) — ver [ADR-021](ADR-021-protocolo-de-migracao-e-corte-do-motor-do-acerto.md)
+Valem **sobre o texto acima**:
+1. **§5.3 (Preencher):** a distribuição das sobras usa **pesos exatos do motor `LEGACY`** (`base = ⌊valor × w_m ÷ W⌋`), **não** `⌊valor × bps ÷ 10000⌋`; a afirmação "`R_m` é sempre ≥ 0" só vale com pesos exatos (com `bps` falha para `EQUAL` com 3 membros). O `bps` gravado continua sendo `apportion(10000, w)` (intenção).
+2. **§5 (Reversível):** não existe "origem `BACKFILL`"; a reversão tem dois níveis (virada de motor sem tocar nos dados; `--rollback --purge` antes da migração de contrato) — ADR-021 §4.
+3. **§4/§5 (escrita durante a migração):** a trava de família `FOR SHARE`/`FOR UPDATE` e "famílias `LEGACY` não gravam rateio" — ADR-021 §2–§3.
+4. **§1 (invariantes):** o `CHECK (isSharedExpense = (splitMode <> 'NONE'))` é aplicado na migração de contrato (`us043_modo_custom`); na expansão vale só o sentido seguro `splitMode <> 'NONE' ⇒ isSharedExpense`.
