@@ -50,16 +50,28 @@ export async function findMembershipByUserId(
 
 /** Escritas da criação da família (ainda sem `familyId`): agrupadas para permitir falha injetada em teste. */
 export const familiaRepo = {
-  insertFamily(tx: Tx, data: { name: string; settlementEnabled?: boolean }) {
-    return tx.family.create({
+  /** EN-002a (ADR-016 §4, ADR-021 §3): famílias novas nascem STORED e com a migração marcada como nativa. */
+  async insertFamily(tx: Tx, data: { name: string; settlementEnabled?: boolean }) {
+    const family = await tx.family.create({
       data: {
         name: data.name,
         settlementEnabled: data.settlementEnabled ?? true,
+        splitEngine: "STORED",
         timezone: "America/Sao_Paulo",
         currency: "BRL",
         cutDay: 1,
       },
     });
+    await tx.dataMigration.create({
+      data: {
+        name: "en002_split_stored",
+        familyId: family.id,
+        state: "DONE",
+        finishedAt: new Date(),
+        report: { native: true },
+      },
+    });
+    return family;
   },
   insertMember(tx: Tx, data: { familyId: string; userId: string; role: Role; joinedAt: Date }) {
     return tx.member.create({ data });

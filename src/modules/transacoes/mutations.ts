@@ -10,7 +10,14 @@ import { type Change, recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
 import { assertAccountsEditable, lockAccountsForPosting } from "@/modules/contas/lock";
 import { assertCanShare } from "@/modules/split/guard";
+import { lockFamilySplit } from "@/modules/split/lock";
 import { splitRepo } from "@/modules/split/repo";
+import {
+  clearSplitRows,
+  insertSplitRows,
+  resolveRuleSplit,
+  rewriteSplitAmounts,
+} from "@/modules/split/write";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
   RevisionDTO,
@@ -154,6 +161,7 @@ export async function updateTransaction(
   id: string,
   input: UpdateTransactionParsed,
 ): Promise<UpdateTransactionResponse> {
+  const engine = await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: primeira trava
   const repo = transacoesRepo(tx, ctx.familyId);
   const row = await loadMutable(tx, ctx.familyId, repo, id);
   if (row.deletedAt) {
@@ -257,7 +265,19 @@ export async function updateTransaction(
   const locked = row.cardId
     ? await lockPurchaseInvoices(tx, ctx, repo, row, wanted.occurredOn)
     : {};
+
+  // EN-002a (SDD-015 §4.3): famílias STORED mantêm o rateio junto do lançamento, na mesma transação
+  const stored = engine === "STORED" && row.kind === "EXPENSE";
+  const becomesShared = stored && !sharedBefore && sharedAfter;
+  const becomesPersonal = stored && sharedBefore && !sharedAfter;
+  const rule = becomesShared
+    ? await resolveRuleSplit(tx, ctx.familyId, {
+        occurredOn: wanted.occurredOn ?? before.occurredOn,
+      })
+    : null;
   const res = await repo.updateVersioned(id, input.version, {
+    ...(rule ? { splitMode: "RULE" as const, splitRuleVersionId: rule.ruleVersionId } : {}),
+    ...(becomesPersonal ? { splitMode: "NONE" as const, splitRuleVersionId: null } : {}),
     ...(wanted.accountId !== undefined ? { accountId: wanted.accountId } : {}),
     ...("newInvoiceId" in locked && locked.newInvoiceId ? { invoiceId: locked.newInvoiceId } : {}),
     ...(wanted.categoryId !== undefined ? { categoryId: wanted.categoryId } : {}),
@@ -270,6 +290,30 @@ export async function updateTransaction(
     updatedByMemberId: ctx.memberId,
   });
   if (res.count === 0) throw await versionConflict(repo, id, await memberNames(repo));
+  if (stored) {
+    const amountAfter = wanted.amountInCents ?? before.amountInCents;
+    const payerAfter = (wanted.payerMemberId ?? before.payerMemberId) as string;
+    if (rule) {
+      await insertSplitRows(tx, ctx.familyId, {
+        transactionId: id,
+        amountInCents: amountAfter,
+        payerMemberId: payerAfter,
+        shares: rule.shares,
+      });
+    } else if (becomesPersonal) {
+      await clearSplitRows(tx, ctx.familyId, id);
+    } else if (
+      sharedBefore &&
+      sharedAfter &&
+      (wanted.amountInCents !== undefined || wanted.payerMemberId !== undefined)
+    ) {
+      await rewriteSplitAmounts(tx, ctx.familyId, {
+        transactionId: id,
+        amountInCents: amountAfter,
+        payerMemberId: payerAfter,
+      });
+    }
+  }
 
   const changes: Change[] = keys.map((field) => ({
     field,
@@ -294,6 +338,7 @@ export async function deleteTransaction(
   id: string,
   input: TransactionStateInput,
 ): Promise<{ transaction: UpdateTransactionResponse["transaction"] }> {
+  await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: o rateio acompanha o lançamento (linhas intactas)
   const repo = transacoesRepo(tx, ctx.familyId);
   const row = await loadMutable(tx, ctx.familyId, repo, id);
   if (row.deletedAt) throw conflict("ALREADY_DELETED", "Este lançamento já foi excluído.");
@@ -328,6 +373,7 @@ export async function restoreTransaction(
   id: string,
   input: TransactionStateInput,
 ): Promise<{ transaction: UpdateTransactionResponse["transaction"] }> {
+  await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2
   const repo = transacoesRepo(tx, ctx.familyId);
   const row = await loadMutable(tx, ctx.familyId, repo, id);
   if (row.paidPlanned) throw unprocessable("LINKED_TO_PLANNED", LINKED_TO_PLANNED);

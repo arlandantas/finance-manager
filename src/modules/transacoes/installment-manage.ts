@@ -6,6 +6,7 @@ import { invoiceStatus } from "@/modules/cartoes/cycle";
 import { lockInvoices } from "@/modules/cartoes/invoices";
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { type Change, recordRevision } from "@/modules/contas/ledger";
+import { lockFamilySplit } from "@/modules/split/lock";
 import { loadInstallmentPlanDTO } from "@/modules/transacoes/installment-plan";
 import { memberNames, requireSettledConfirmation } from "@/modules/transacoes/mutations";
 import { transacoesRepo } from "@/modules/transacoes/repo";
@@ -74,6 +75,7 @@ export async function deleteInstallmentPlan(
   id: string,
   input: DeleteInstallmentPlanInput,
 ): Promise<InstallmentPlanResponse> {
+  await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: primeira trava (depois, o plano e as faturas)
   const plan = await lockPlan(tx, ctx, id);
   if (plan.deletedAt) throw conflict("ALREADY_DELETED", "Esta compra já foi excluída.");
   if (plan.version !== input.version) throw await versionConflict(tx, ctx, plan);
@@ -153,6 +155,7 @@ export async function restoreInstallmentPlan(
   id: string,
   input: RestoreInstallmentPlanInput,
 ): Promise<InstallmentPlanResponse> {
+  await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2
   const plan = await lockPlan(tx, ctx, id);
   if (!plan.deletedAt) {
     throw unprocessable("NOT_RESTORABLE", "Esta compra não pode ser restaurada.");

@@ -8,12 +8,23 @@ import { legacyGroupWeights } from "@/modules/split/settlement-legacy";
  * Rateio por lançamento (EN-002a, ADR-016 §2, SDD-015 §4.1). PURO: centavos inteiros (BigInt interno).
  * `bps` é a intenção ("58% / 42%"); o valor debitado da cota sai de `splitAmount`.
  */
-export type ShareInput = { memberId: string; bps: number; ordinal: number };
+export type ShareInput = {
+  memberId: string;
+  bps: number;
+  ordinal: number;
+  /**
+   * Peso EXATO do rateio quando o vetor em `bps` não é exato (regra EQUAL com N que não divide 10000, ex.: 3
+   * membros ⇒ 3334/3333/3333): os centavos saem de `weight` para que "igual" continue igual (30000 × 3 em
+   * 90000). Ausente ⇒ `bps` (Σ = 10000, caso do modo CUSTOM). Desvio registrado em DEV-49.
+   */
+  weight?: number;
+};
 
 /**
- * `base_m = ⌊amount × bps_m ÷ 10000⌋`; a sobra (0..P-1 centavos, P = participantes com bps > 0):
- * pagador com bps > 0 recebe TODA a sobra; senão, 1 centavo para cada um dos `sobra` participantes de
- * MAIOR resto (`amount × bps mod 10000`; desempate: menor ordinal). A ordem de `shares` não importa.
+ * `base_m = ⌊amount × w_m ÷ W⌋` com `w = weight ?? bps` e `W = Σ w` (com `bps`, `W = 10000`); a sobra
+ * (0..P-1 centavos, P = participantes com peso > 0): pagador com peso > 0 recebe TODA a sobra; senão,
+ * 1 centavo para cada um dos `sobra` participantes de MAIOR resto (`amount × w mod W`; desempate: menor
+ * ordinal). A ordem de `shares` não importa.
  */
 export function splitAmount(i: {
   amountInCents: number;
@@ -22,14 +33,17 @@ export function splitAmount(i: {
 }): Record<string, number> {
   const amount = BigInt(i.amountInCents);
   const shares = [...i.shares].sort((a, b) => a.ordinal - b.ordinal);
+  const weightOf = (s: ShareInput) => s.weight ?? s.bps;
+  const W = shares.reduce((acc, s) => acc + BigInt(weightOf(s)), 0n);
+  if (W === 0n) throw new RangeError("A soma dos pesos do rateio deve ser maior que zero");
   const rows = shares.map((s) => {
-    const raw = amount * BigInt(s.bps);
+    const raw = amount * BigInt(weightOf(s));
     return {
       memberId: s.memberId,
-      bps: s.bps,
+      bps: weightOf(s),
       ordinal: s.ordinal,
-      base: raw / 10000n,
-      rem: raw % 10000n,
+      base: raw / W,
+      rem: raw % W,
     };
   });
   const sobra = Number(amount - rows.reduce((acc, r) => acc + r.base, 0n));
@@ -66,5 +80,10 @@ export function resolveRuleShares(i: {
     (w) => w.weight > 0,
   );
   const bps = apportion(10000, weights);
-  return weights.map((w) => ({ memberId: w.key, bps: bps[w.key] as number, ordinal: w.ordinal }));
+  return weights.map((w) => ({
+    memberId: w.key,
+    bps: bps[w.key] as number,
+    ordinal: w.ordinal,
+    weight: w.weight,
+  }));
 }

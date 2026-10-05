@@ -15,7 +15,7 @@ const mid = (n: "Mariana" | "Lucas") => fx.byName[n]?.memberId as string;
 
 beforeEach(async () => {
   await resetDb();
-  fx = await makeFamily();
+  fx = await makeFamily({ splitEngine: "LEGACY" });
   acc = await makeAccount(fx, { name: "Itaú", owner: "Mariana", openingBalanceInCents: 100000 });
 });
 

@@ -9,6 +9,7 @@ import { assertAccountsEditable, lockAccountsForPosting } from "@/modules/contas
 import { contasRepo } from "@/modules/contas/repo";
 import type { CreateTransferInput, TransferDTO } from "@/modules/contas/schemas";
 import { memberRef } from "@/modules/contas/service";
+import { lockFamilySplit } from "@/modules/split/lock";
 
 type Repo = ReturnType<typeof contasRepo>;
 type GroupRow = NonNullable<Awaited<ReturnType<Repo["findGroup"]>>>;
@@ -166,6 +167,7 @@ export async function undoTransferGroup(
   groupId: string,
   version: number,
 ): Promise<{ transfer: TransferDTO }> {
+  await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: desfazer acerto é escrita do acerto
   const repo = contasRepo(tx, ctx.familyId);
   const group = await repo.findGroup(groupId);
   if (!group) throw notFound("Transferência não encontrada.");

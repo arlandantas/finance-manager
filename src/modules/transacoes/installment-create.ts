@@ -8,6 +8,7 @@ import { getOrCreateInvoice, type InvoiceRow } from "@/modules/cartoes/invoices"
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { recordRevision } from "@/modules/contas/ledger";
 import { assertCanShare } from "@/modules/split/guard";
+import { lockFamilySplit } from "@/modules/split/lock";
 import { loadInstallmentPlanDTO } from "@/modules/transacoes/installment-plan";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
@@ -30,6 +31,7 @@ export async function createInstallmentPurchase(
   ctx: RequestContext,
   input: ExpenseInput,
 ): Promise<CreateTransactionResponse> {
+  await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: primeira trava (a US-042 grava rateio por parcela)
   const repo = transacoesRepo(tx, ctx.familyId);
   const today = todayInFamilyTz(ctx.clock);
   const purchaseOn = input.occurredOn ?? today;

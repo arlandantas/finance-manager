@@ -178,3 +178,41 @@ describe("resolveRuleShares (Pela regra, SDD-015 §4.2)", () => {
     ).toEqual(["m", "l"]);
   });
 });
+
+describe("splitAmount com peso exato (EQUAL com 3 membros; DEV-49)", () => {
+  it("90000 a três iguais => 30000 × 3 (e não 30006/29997/29997 pelo bps 3334/3333/3333)", () => {
+    const shares: ShareInput[] = [
+      { memberId: "a", bps: 3334, ordinal: 0, weight: 1 },
+      { memberId: "b", bps: 3333, ordinal: 1, weight: 1 },
+      { memberId: "c", bps: 3333, ordinal: 2, weight: 1 },
+    ];
+    expect(splitAmount({ amountInCents: 90000, shares, payerMemberId: "a" })).toEqual({
+      a: 30000,
+      b: 30000,
+      c: 30000,
+    });
+  });
+  it("10001 a três iguais: a sobra de 2 centavos vai ao pagador", () => {
+    const shares: ShareInput[] = ["a", "b", "c"].map((memberId, ordinal) => ({
+      memberId,
+      bps: ordinal === 0 ? 3334 : 3333,
+      ordinal,
+      weight: 1,
+    }));
+    expect(splitAmount({ amountInCents: 10001, shares, payerMemberId: "b" })).toEqual({
+      a: 3333,
+      b: 3335,
+      c: 3333,
+    });
+  });
+  it("sem peso o comportamento é o do bps (CUSTOM)", () => {
+    const shares: ShareInput[] = [
+      { memberId: "a", bps: 7000, ordinal: 0 },
+      { memberId: "b", bps: 3000, ordinal: 1 },
+    ];
+    expect(splitAmount({ amountInCents: 1000, shares, payerMemberId: "a" })).toEqual({
+      a: 700,
+      b: 300,
+    });
+  });
+});

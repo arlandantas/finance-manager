@@ -19,6 +19,7 @@ import type {
   UpdatePlannedExpenseParsed,
 } from "@/modules/previstas/schemas";
 import { assertCanShare } from "@/modules/split/guard";
+import { lockFamilySplit } from "@/modules/split/lock";
 import { createExpenseCore } from "@/modules/transacoes/service";
 
 type Repo = ReturnType<typeof previstasRepo>;
@@ -293,6 +294,7 @@ export async function payPlannedExpense(
   id: string,
   input: PayPlannedExpenseParsed,
 ): Promise<PayPlannedResponse> {
+  await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: primeira trava (a baixa cria despesa comum)
   const repo = previstasRepo(tx, ctx.familyId);
   const row = await loadForPay(tx, ctx, repo, id, input.version);
   if (row.status === "PAGO") {
@@ -349,6 +351,7 @@ export async function undoPlannedPayment(
   id: string,
   version: number,
 ): Promise<{ plannedExpense: PlannedExpenseDTO }> {
+  await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2
   const repo = previstasRepo(tx, ctx.familyId);
   const row = await loadForPay(tx, ctx, repo, id, version);
   if (row.status !== "PAGO" || !row.paidTransactionId) {

@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { createDevSession } from "@/lib/auth/dev-login";
 import { DEFAULT_CATEGORIES } from "@/modules/familia/default-categories";
+import { insertSplitRows, resolveRuleSplit } from "@/modules/split/write";
 import type { Caller } from "./call";
 import { testDb } from "./db";
 
@@ -12,6 +13,66 @@ export function useFactoryDb(db: PrismaClient | undefined) {
   dbOverride = db;
 }
 const fdb = (): PrismaClient => dbOverride ?? testDb();
+
+/**
+ * Divisão pedida pelo teste (SDD-015 §5): `NONE`/`RULE`/`CUSTOM` com `shares` por primeiro nome. Famílias
+ * LEGACY gravam só `isSharedExpense` (como o serviço); famílias STORED gravam o rateio (via as mesmas
+ * funções do serviço, na mesma transação). `tags` e `color` são aceitos desde já (R3-B/US-045/US-050).
+ */
+export type SplitFixture = {
+  mode: "NONE" | "RULE" | "CUSTOM";
+  shares?: Array<{ member: string; bps: number }>;
+};
+
+type ExpenseData = Parameters<PrismaClient["transaction"]["create"]>[0]["data"];
+
+async function createExpenseRow(
+  fx: FamilyFixture,
+  data: ExpenseData & { isSharedExpense: boolean; payerMemberId: string },
+  occurredOn: string,
+  split?: SplitFixture,
+) {
+  const db = fdb();
+  const family = await db.family.findUniqueOrThrow({
+    where: { id: fx.family.id },
+    select: { splitEngine: true },
+  });
+  const shared = split ? split.mode !== "NONE" : data.isSharedExpense;
+  const base = { ...data, isSharedExpense: shared };
+  if (family.splitEngine !== "STORED" || !shared) return db.transaction.create({ data: base });
+  return db.$transaction(async (tx) => {
+    const amount = Number(data.amountInCents);
+    let ruleVersionId: string | null = null;
+    let shares: Array<{ memberId: string; bps: number; ordinal: number }>;
+    let mode: "RULE" | "CUSTOM" = "RULE";
+    if (split?.mode === "CUSTOM") {
+      const order = new Map(fx.members.map((m, i) => [m.memberId, i] as const));
+      shares = (split.shares ?? []).map((x) => {
+        const id = fx.byName[x.member]?.memberId as string;
+        return { memberId: id, bps: x.bps, ordinal: order.get(id) ?? 0 };
+      });
+      mode = "CUSTOM";
+    } else {
+      const r = await resolveRuleSplit(tx as never, fx.family.id, { occurredOn });
+      ruleVersionId = r.ruleVersionId;
+      shares = r.shares;
+    }
+    const row = await tx.transaction.create({
+      data: { ...base, splitMode: mode, splitRuleVersionId: ruleVersionId },
+    });
+    await insertSplitRows(tx as never, fx.family.id, {
+      transactionId: row.id,
+      amountInCents: amount,
+      payerMemberId: data.payerMemberId,
+      shares,
+    });
+    return row;
+  });
+}
+
+/** `TEST_SPLIT_ENGINE=STORED pnpm test:int` roda a suíte inteira com famílias STORED (regressão do EN-002). */
+const engineFor = (explicit?: "LEGACY" | "STORED") =>
+  explicit ?? (process.env.TEST_SPLIT_ENGINE === "STORED" ? ("STORED" as const) : undefined);
 
 let counter = 0;
 export const uniqueEmail = (prefix = "user") => `${prefix}${++counter}-${Date.now()}@exemplo.com`;
@@ -65,7 +126,14 @@ const DEFAULT_MEMBERS: MemberFixture[] = [
 
 /** Família com categorias padrão e regra EQUAL (invariantes de US-002), membros e sessões prontas. */
 export async function makeFamily(
-  o: { name?: string; members?: MemberFixture[]; cutDay?: number; uniqueEmails?: boolean } = {},
+  o: {
+    name?: string;
+    members?: MemberFixture[];
+    cutDay?: number;
+    uniqueEmails?: boolean;
+    /** Padrão LEGACY (coluna do banco); `STORED` para os testes do rateio gravado (EN-002). */
+    splitEngine?: "LEGACY" | "STORED";
+  } = {},
 ): Promise<FamilyFixture> {
   const db = fdb();
   const memberFixtures = (o.members ?? DEFAULT_MEMBERS).map((m) =>
@@ -74,6 +142,7 @@ export async function makeFamily(
   const family = await db.family.create({
     data: {
       name: o.name ?? "Família Silva",
+      ...(engineFor(o.splitEngine) ? { splitEngine: engineFor(o.splitEngine) } : {}),
       ...(o.cutDay ? { cutDay: o.cutDay } : {}),
       categories: {
         create: DEFAULT_CATEGORIES.map((c, i) => ({
@@ -123,6 +192,7 @@ export async function makeAccount(
     institution?: string;
     openingBalanceInCents?: number;
     openingDate?: string;
+    color?: string; // aceito desde já (US-050); ignorado até lá
   },
 ): Promise<AccountFixture> {
   const db = fdb();
@@ -177,6 +247,7 @@ export async function makeCard(
     closingDay?: number;
     dueDay?: number;
     institution?: string;
+    color?: string; // aceito desde já (US-050); ignorado até lá
   },
 ): Promise<CardFixture> {
   const db = fdb();
@@ -233,6 +304,8 @@ export async function makeCardPurchase(
     author?: string;
     payer?: string;
     shared?: boolean;
+    split?: SplitFixture;
+    tags?: string[];
     description?: string;
     createdAt?: Date;
     deleted?: boolean;
@@ -247,8 +320,9 @@ export async function makeCardPurchase(
   const author = (o.author ? fx.byName[o.author] : fx.members[0]) ?? fx.members[0];
   const payer = (o.payer ? fx.byName[o.payer] : author) ?? author;
   if (!author || !payer) throw new Error("Família sem membros");
-  return db.transaction.create({
-    data: {
+  return createExpenseRow(
+    fx,
+    {
       familyId: fx.family.id,
       kind: "EXPENSE",
       direction: "DEBIT",
@@ -271,7 +345,9 @@ export async function makeCardPurchase(
           }
         : {}),
     },
-  });
+    o.occurredOn,
+    o.split,
+  );
 }
 
 /** Pagamento de fatura direto no banco (uma perna, DEBIT na conta). */
@@ -368,6 +444,8 @@ export async function makeTransaction(
     author?: string;
     payer?: string;
     shared?: boolean;
+    split?: SplitFixture;
+    tags?: string[];
     description?: string;
     createdAt?: Date;
     deleted?: boolean;
@@ -381,8 +459,9 @@ export async function makeTransaction(
   const author = (o.author ? fx.byName[o.author] : fx.members[0]) ?? fx.members[0];
   const payer = (o.payer ? fx.byName[o.payer] : author) ?? author;
   if (!author || !payer) throw new Error("Família sem membros");
-  return db.transaction.create({
-    data: {
+  return createExpenseRow(
+    fx,
+    {
       familyId: fx.family.id,
       kind: type,
       direction: type === "EXPENSE" ? "DEBIT" : "CREDIT",
@@ -403,7 +482,9 @@ export async function makeTransaction(
           }
         : {}),
     },
-  });
+    o.occurredOn,
+    o.split,
+  );
 }
 
 /** Transferência (ou acerto) com as duas pernas; `undone` marca o grupo e as pernas como desfeitos. */

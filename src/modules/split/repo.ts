@@ -6,6 +6,10 @@ import { periodFilter } from "@/modules/transacoes/ledger-where";
 /** Regra de divisão, despesas comuns e acertos sempre escopados por `familyId` (ADR-013). */
 export function splitRepo(tx: Tx, familyId: string) {
   return {
+    /** Motor do acerto da família (ADR-016 §4). */
+    splitEngine: async (): Promise<"LEGACY" | "STORED"> =>
+      (await tx.family.findFirst({ where: { id: familyId }, select: { splitEngine: true } }))
+        ?.splitEngine ?? "LEGACY",
     cutDay: async (): Promise<number> =>
       (await tx.family.findFirst({ where: { id: familyId }, select: { cutDay: true } }))?.cutDay ??
       1,
@@ -47,7 +51,8 @@ export function splitRepo(tx: Tx, familyId: string) {
           deletedAt: null,
           ...periodFilter(start, end),
         },
-        include: { category: true },
+        // `splits`: leitura do rateio gravado (motor STORED, EN-002a) em uma 2ª consulta, sem multiplicar linhas
+        include: { category: true, splits: true },
         orderBy: [{ occurredOn: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       }),
     /** Despesas "Só meu" ativas do período, de todos os pagadores (US-030). */

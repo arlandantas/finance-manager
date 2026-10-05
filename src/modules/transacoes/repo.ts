@@ -124,6 +124,9 @@ export function transacoesRepo(tx: Tx, familyId: string) {
       payerMemberId: string;
       authorMemberId: string;
       isSharedExpense: boolean;
+      /** EN-002a: só famílias STORED gravam o modo e a regra de origem do rateio. */
+      splitMode?: "NONE" | "RULE" | "CUSTOM";
+      splitRuleVersionId?: string | null;
     }) =>
       tx.transaction.create({
         data: {
@@ -141,6 +144,10 @@ export function transacoesRepo(tx: Tx, familyId: string) {
           payerMemberId: d.payerMemberId,
           authorMemberId: d.authorMemberId,
           isSharedExpense: d.isSharedExpense,
+          ...(d.splitMode ? { splitMode: d.splitMode } : {}),
+          ...(d.splitRuleVersionId !== undefined
+            ? { splitRuleVersionId: d.splitRuleVersionId }
+            : {}),
         },
       }),
     /** Atualização com controle otimista: 0 linhas => versão antiga, excluído ou inexistente. */
@@ -157,6 +164,8 @@ export function transacoesRepo(tx: Tx, familyId: string) {
         description?: string;
         note?: string | null;
         isSharedExpense?: boolean;
+        splitMode?: "NONE" | "RULE" | "CUSTOM";
+        splitRuleVersionId?: string | null;
         updatedByMemberId: string;
       },
     ) =>
@@ -174,6 +183,10 @@ export function transacoesRepo(tx: Tx, familyId: string) {
           ...(data.description !== undefined ? { description: data.description } : {}),
           ...(data.note !== undefined ? { note: data.note } : {}),
           ...(data.isSharedExpense !== undefined ? { isSharedExpense: data.isSharedExpense } : {}),
+          ...(data.splitMode !== undefined ? { splitMode: data.splitMode } : {}),
+          ...(data.splitRuleVersionId !== undefined
+            ? { splitRuleVersionId: data.splitRuleVersionId }
+            : {}),
           updatedByMemberId: data.updatedByMemberId,
           version: { increment: 1 },
         },

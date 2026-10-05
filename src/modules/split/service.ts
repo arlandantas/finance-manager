@@ -8,7 +8,9 @@ import type { TransferDTO } from "@/modules/contas/schemas";
 import { createTransferGroup } from "@/modules/contas/transfers";
 import { explainByRules } from "@/modules/split/explain";
 import { assertSettlementEnabled } from "@/modules/split/guard";
+import { memberInputsOf, ruleInputsOf } from "@/modules/split/inputs";
 import { settlementLabel } from "@/modules/split/labels";
+import { lockFamilySplit } from "@/modules/split/lock";
 import { computeRulePreview, type RulePreviewDTO } from "@/modules/split/preview";
 import { splitRepo } from "@/modules/split/repo";
 import { equalShares, isRuleStale, type RuleInput, ruleAt } from "@/modules/split/rules";
@@ -23,7 +25,7 @@ import type {
   SplitRuleParsed,
 } from "@/modules/split/schemas";
 import {
-  computeSettlement,
+  computeSettlementFor,
   type ExpenseInput,
   type MemberInput,
   type SettlementResult,
@@ -34,17 +36,7 @@ type Repo = ReturnType<typeof splitRepo>;
 type MemberRows = Awaited<ReturnType<Repo["listMembers"]>>;
 type RuleRows = Awaited<ReturnType<Repo["listRules"]>>;
 
-const memberJoinedOn = (m: { joinedAt: Date }) => todayInFamilyTz({ now: () => m.joinedAt });
-
-function toRuleInputs(rows: RuleRows): RuleInput[] {
-  return rows.map((r) => ({
-    id: r.id,
-    kind: r.kind,
-    effectiveFrom: fromDbDate(r.effectiveFrom),
-    createdAt: r.createdAt.toISOString(),
-    shares: r.shares.map((s) => ({ memberId: s.memberId, bps: s.bps })),
-  }));
-}
+const toRuleInputs = (rows: RuleRows): RuleInput[] => ruleInputsOf(rows);
 
 function ruleDto(
   r: RuleInput,
@@ -202,6 +194,7 @@ export async function putSplitRule(
   ctx: RequestContext,
   input: SplitRuleParsed,
 ): Promise<{ rule: SplitRuleDTO }> {
+  await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: a regra nunca muda no meio da migração
   await assertSettlementEnabled(tx, ctx);
   const c = await loadRuleContext(tx, ctx);
   const ids = new Set(c.members.map((m) => m.id));
@@ -257,35 +250,47 @@ export async function loadSettlement(
   const expenses = await c.repo.sharedExpenses(period.start, period.end);
   const groups = await c.repo.activeSettlements(period.key);
   const personal = await c.repo.personalExpenses(period.start, period.end);
-  const memberInputs = c.allMembers.map((m, i) => ({
-    id: m.id,
-    ordinal: i,
-    joinedOn: memberJoinedOn(m),
-    removedOn: m.removedAt ? memberJoinedOn({ joinedAt: m.removedAt }) : null,
-  }));
+  const memberInputs = memberInputsOf(c.allMembers);
   const expenseInputs = expenses.map((e) => ({
     id: e.id,
     amountInCents: toCents(e.amountInCents),
     payerMemberId: e.payerMemberId as string,
     occurredOn: fromDbDate(e.occurredOn),
   }));
-  const result = computeSettlement({
-    period,
-    members: memberInputs,
-    expenses: expenseInputs,
-    rules: c.rules,
-    settlements: groups.flatMap((g) => {
-      const out = g.legs.find((l) => l.kind === "TRANSFER_OUT");
-      if (!out || !g.settlementFromMemberId || !g.settlementToMemberId) return [];
-      return [
-        {
-          fromMemberId: g.settlementFromMemberId,
-          toMemberId: g.settlementToMemberId,
-          amountInCents: toCents(out.amountInCents),
-        },
-      ];
-    }),
+  const settlements = groups.flatMap((g) => {
+    const out = g.legs.find((l) => l.kind === "TRANSFER_OUT");
+    if (!out || !g.settlementFromMemberId || !g.settlementToMemberId) return [];
+    return [
+      {
+        fromMemberId: g.settlementFromMemberId,
+        toMemberId: g.settlementToMemberId,
+        amountInCents: toCents(out.amountInCents),
+      },
+    ];
   });
+  // EN-002a (ADR-016 §4): STORED soma o rateio gravado; LEGACY aplica a regra vigente na data
+  const engine = await c.repo.splitEngine();
+  const result =
+    engine === "STORED"
+      ? computeSettlementFor("STORED", {
+          period,
+          members: memberInputs,
+          settlements,
+          expenses: expenseInputs.map((e, idx) => ({
+            ...e,
+            splits: (expenses[idx]?.splits ?? []).map((s) => ({
+              memberId: s.memberId,
+              amountInCents: toCents(s.amountInCents),
+            })),
+          })),
+        })
+      : computeSettlementFor("LEGACY", {
+          period,
+          members: memberInputs,
+          expenses: expenseInputs,
+          rules: c.rules,
+          settlements,
+        });
   const current = ruleAt(c.rules, c.today);
   // Períodos encerrados não mudam: o tipo exibido é o da regra vigente no último dia coberto.
   const shown = ruleAt(c.rules, compareDate(period.end, c.today) < 0 ? period.end : c.today);
@@ -414,6 +419,7 @@ export async function registerSettlement(
   ctx: RequestContext,
   input: CreateSettlementParsed,
 ): Promise<{ transfer: TransferDTO; settlement: SettlementDTO }> {
+  await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: primeira trava
   await assertSettlementEnabled(tx, ctx);
   const repo = splitRepo(tx, ctx.familyId);
   const members = await repo.listMembers();

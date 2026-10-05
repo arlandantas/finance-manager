@@ -14,6 +14,8 @@ import { accountBalances } from "@/modules/contas/ledger-queries";
 import { lockAccountsForPosting } from "@/modules/contas/lock";
 import { currentRuleShares } from "@/modules/split/current-rule";
 import { assertCanShare, isSettlementEnabled } from "@/modules/split/guard";
+import { lockFamilySplit } from "@/modules/split/lock";
+import { insertSplitRows, resolveRuleSplit } from "@/modules/split/write";
 import {
   decodeCursor,
   encodeCursor,
@@ -188,6 +190,8 @@ export async function createExpenseCore(
   input: ExpenseInput,
   opts: { allowArchivedCategory?: boolean },
 ): Promise<CreateTransactionResponse> {
+  // ADR-021 §2: a trava de família é a PRIMEIRA trava; o motor lido depois dela decide se grava rateio
+  const engine = await lockFamilySplit(tx, ctx.familyId);
   const repo = transacoesRepo(tx, ctx.familyId);
   const today = todayInFamilyTz(ctx.clock);
   const occurredOn = input.occurredOn ?? today;
@@ -238,6 +242,11 @@ export async function createExpenseCore(
   }
 
   const description = input.description ?? category.name;
+  // EN-002a: famílias STORED gravam o rateio por lançamento ("Pela regra" na data da despesa)
+  const rule =
+    engine === "STORED" && input.isSharedExpense
+      ? await resolveRuleSplit(tx, ctx.familyId, { occurredOn })
+      : null;
   const row = await repo.insert({
     kind: "EXPENSE",
     direction: "DEBIT",
@@ -252,7 +261,16 @@ export async function createExpenseCore(
     payerMemberId,
     authorMemberId: ctx.memberId,
     isSharedExpense: input.isSharedExpense,
+    ...(rule ? { splitMode: "RULE" as const, splitRuleVersionId: rule.ruleVersionId } : {}),
   });
+  if (rule) {
+    await insertSplitRows(tx, ctx.familyId, {
+      transactionId: row.id,
+      amountInCents: input.amountInCents,
+      payerMemberId,
+      shares: rule.shares,
+    });
+  }
 
   const dto = toTransactionDTO(row, {
     account,
