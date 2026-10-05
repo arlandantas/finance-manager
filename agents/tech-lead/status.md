@@ -1,6 +1,51 @@
 # Status do Tech Lead
 
-*Atualizado: 2026-10-04 · Ciclos: liberação da **R1** (EN-001, US-001..013) e especificação da **R2** (US-014..019, abaixo)*
+*Atualizado: 2026-10-04 · Ciclos: **R2.1 e R3** (pós-homologação, abaixo), liberação da **R1** (EN-001, US-001..013) e especificação da **R2** (US-014..019)*
+
+## Ciclo R2.1 e R3 (pós-homologação): R2.1 **Especificada** (SDD-010..013); R3 **Esboçada** (SDD-014..017); EN-003 **concluída** (ADR-018)
+Respostas completas, estimativas por história, ordem técnica, riscos e ajustes pedidos ao PO: **[`respostas-r21-r3.md`](respostas-r21-r3.md)**.
+
+| Artefato | Cobre | Observação |
+| :--- | :--- | :--- |
+| [SDD-010 Resumo do Mês, ocultar valores e preferências](sdd/SDD-010-resumo-do-mes-ocultar-valores-e-preferencias.md) | US-025, 026, 027, 036, 037, 038 | Agregado único reconciliado com o Extrato, **predicado único de período** (`ledger-where.ts`), `Money`/`prefs` por usuário e dispositivo, tema por variáveis CSS, detalhe e layout desktop |
+| [SDD-011 Acerto opcional, rótulo e prévia](sdd/SDD-011-acerto-opcional-rotulo-e-previa.md) | US-022, 028, 029, 030, 031 | Motor **intacto**; `splitExplanation`, chave por família (`409 SETTLEMENT_DISABLED`), pendências em janela, default "Só meu" (muda contrato), prévia sem gravar; lista de testes R1/R2 que mudam |
+| [SDD-012 Manutenção de cadastros](sdd/SDD-012-manutencao-de-cadastros.md) | US-032, 033, 034, 035 | Arquivar com lock anti-corrida, **exclusão lógica terminal**, último Administrador atômico, remoção/saída com reatribuição, vetores S14..S16 |
+| [SDD-013 Pagamentos: conta padrão, descrição e polimento](sdd/SDD-013-pagamentos-conta-padrao-descricao-e-polimento.md) | US-023, 024, 039 | Função pura de sugestão, busca `q`, rotação de token do convite |
+| [SDD-014..017 (esboços R3)](sdd/SDD-014-parcelamento-esboco.md) | US-040..051, EN-002 | Parcelamento, percentual por lançamento e migração, tags e Análise, cor e receitas previstas |
+| [ADR-016 Percentual gravado por lançamento](adrs/ADR-016-percentual-gravado-por-lancamento.md) | EN-002, US-042..044 | Rateio por membro em centavos, motor LEGACY/STORED, migração com *gate* de 1 centavo |
+| [ADR-017 Parcelamento e competência](adrs/ADR-017-parcelamento-no-cartao-e-competencia.md) | US-040..042 | N linhas no ledger + `InstallmentPlan`, `competenceOn`, **não puxar para a R2.1** |
+| [ADR-018 Múltiplos grupos (spike)](adrs/ADR-018-multiplos-grupos-spike.md) | EN-003 | N:N estrutural já existe; custos 13 / 13–21; preparar sem construir |
+| [ADR-019 Ciclo de vida do vínculo](adrs/ADR-019-ciclo-de-vida-do-vinculo-ex-membro.md) | US-034, 035 | Ex-membro (`removedAt`), unicidade parcial, reconvite |
+| [`architecture/modelo-de-dados.md` §8–§9](architecture/modelo-de-dados.md) | R2.1, R3 | 4 migrações da R2.1 em ordem; mapa das migrações da R3 |
+
+### Pontos confirmados
+| Release | PO | **TL** | Must | Should | Could | Observação |
+| :-- | :-: | :-: | :-: | :-: | :-: | :-- |
+| **R2.1** | 60 | **67** | 40 | 17 | 10 | +2 US-032, +1 US-033, +3 US-035, +1 US-024; demais confirmadas. **Só Must = 40.** |
+| **R3** | 56 | **67** | 11 (24 com EN-002 Must) | 48 | 8 | +3 US-040, +8 EN-002; EN-003 concluída (2) |
+
+### Decisões e respostas do TL (R2.1/R3)
+| Pergunta / Gap | Resposta |
+| :-- | :-- |
+| Parcelamento na R2.1 (D-GES-17) | **Não**: US-040 = 8 (> 5) e a US-042 depende da EN-002. 1ª entrega da R3 (ADR-017). |
+| Assimetria D-PO-26 | Viável e consistente via `competenceOn` + predicado único; não toca números homologados; +2 pts (ADR-017 §3). |
+| Migração do acerto e modelo do percentual | ADR-016: rateio em centavos, snapshot, gate de 1 centavo, idempotente/reversível; **achado**: arredondamento por lançamento difere do por grupo. |
+| Spike de grupos | ADR-018: N:N estrutural; 1:1 só por `UNIQUE(userId)` e 4 leituras; a=13, privada=13–21; preparar na US-035. |
+| "Excluir de verdade" (conta/cartão) | Exclusão **lógica terminal** (ledger sem `DELETE`; `OPENING` em toda conta). |
+| Copiar link do convite | Exige **rotação do token** (só existe o hash). |
+
+### Riscos técnicos (R2.1/R3)
+| Risco | Mitigação |
+| :-- | :-- |
+| Corrida arquivar × postar; acerto com ex-membro; default `isSharedExpense`; vazamento com "ocultar"; migração do acerto (1 centavo); `competenceOn` esquecido | Ver [`respostas-r21-r3.md` §6](respostas-r21-r3.md) |
+
+### Pendências com outros agentes (R2.1/R3)
+- **PO:** aplicar os ajustes de [`respostas-r21-r3.md` §8](respostas-r21-r3.md) (pontos, parcelamento na R3, EN-002 Must, US-040 com exclusão, US-024 busca, mensagens neutras, ordem US-027 primeiro) e marcar US-022..039 como **Especificadas**.
+- **Gestor:** itens **TL-02..TL-09** em [`../manager/pedidos-ao-gestor.md`](../manager/pedidos-ao-gestor.md) (todos com hipótese conservadora; nenhum bloqueia a R2.1).
+- **Dev & QA:** rodar a linha de base E2E completa (D-GES-19) antes da US-022; seguir a ordem técnica; SDD-011 §9 e SDD-010 §9 listam o que muda em R1/R2.
+- **Stakeholder:** validar a assimetria D-PO-26 (parcela por mês da fatura × à vista por data) na homologação da R3.
+
+---
 
 ## Ciclo R2: todas as histórias da R2 estão **Especificadas** (SDD-007, SDD-008, SDD-009)
 | Artefato | Cobre | Observação |
