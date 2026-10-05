@@ -1,26 +1,26 @@
-# US-041 — Gerenciar compra parcelada (editar parcelas e excluir a compra)
+# US-041 — Gerenciar compra parcelada (editar parcelas e excluir uma parcela)
 
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-20 Cartão Completo (parcelamento) · **R3** |
 | MoSCoW · WSJF · Tamanho (TL) | Should · 2,0 · 5 |
 | Status | **Esboçada** (SDD-014, esboço do Tech Lead) · tamanho confirmado pelo TL; detalhar o SDD antes do Dev |
-| Depende de | US-040, US-016b, US-013a |
-| Corte | **Cortável** (contorno: excluir a compra inteira e lançar de novo) |
+| Depende de | US-040 (inclui a exclusão da compra inteira), US-016b, US-013a; ordem técnica: depois da US-043 (TL, ordem de risco) |
+| Corte | **Cortável** (contorno: excluir a compra inteira, que agora vem na US-040b, e lançar de novo) |
 | Rastreabilidade | NEED-003 (RN-003.7) · Parecer item 6 · FLUXO-014 · D-PO-25 |
 
 ## História
-Como **membro da família**, quero **corrigir uma parcela (só ela ou ela e as seguintes) ou excluir a compra parcelada inteira**, para **manter fatura e limite fiéis quando errei o lançamento**.
+Como **membro da família**, quero **corrigir uma parcela (só ela ou ela e as seguintes) ou excluir uma parcela**, para **manter fatura e limite fiéis quando errei o lançamento**.
 
 ## Regras de negócio aplicáveis
 - Ao editar uma parcela, o app pergunta o **alcance**: **"Somente esta"** ou **"Esta e as próximas"** (RN-003.7). O padrão é "Somente esta".
 - Campos editáveis: valor da parcela, descrição, categoria, observação (data de parcela e nº de parcelas **não** são editáveis; para isso, exclui-se a compra e lança-se de novo).
 - **Parcelas em fatura fechada ou paga ficam travadas** (regra da US-016b/017b); "Esta e as próximas" altera só as parcelas ainda em faturas **abertas**.
 - Mudar o **valor** de uma parcela recalcula na hora o total da fatura e o **limite consumido** (diferença); mudar o valor de "esta e as próximas" aplica o novo valor às seguintes.
-- **Excluir a compra inteira** é uma ação explícita ("Excluir compra parcelada") que remove **todas as parcelas em faturas abertas** e **bloqueia** se alguma parcela já está em fatura fechada/paga ("Há parcelas em faturas já fechadas. Exclua só as parcelas abertas.").
+- **Excluir a compra inteira** (e "Desfazer") **não é desta história**: foi para a **US-040b** (D-PO-33). Aqui a ação "Excluir parcela" convive com a "Excluir compra parcelada" da US-040.
 - Excluir **somente esta parcela** é permitido em fatura aberta e deixa um **registro** ("parcela 3/10 removida"); a compra fica com 9 parcelas ativas.
 - Toda alteração gera trilha de auditoria (autor/data) como na US-013a; conflito de versão 409.
-- Restaurar exclusão: o aviso "Desfazer" vale para a exclusão da compra inteira.
+- Restaurar exclusão: o aviso "Desfazer" (≥ 8 s) vale também para a exclusão de uma parcela.
 
 ## Critérios de aceite (Gherkin)
 
@@ -72,23 +72,6 @@ Funcionalidade: Gerenciar compra parcelada
     Então a fatura de mar/2027 não tem mais "Notebook 5/10"
     E o limite disponível aumenta "R$ 250,00"
 
-  Cenário: Excluir a compra parcelada inteira
-    Quando Lucas toca em "Excluir compra parcelada" e confirma
-    Então nenhuma fatura mostra "Notebook"
-    E o limite disponível volta a "R$ 5.000,00"
-
-  Cenário: Desfazer a exclusão da compra inteira
-    Dado que Lucas excluiu a compra parcelada
-    Quando Lucas toca em "Desfazer" no aviso
-    Então as 10 parcelas voltam às suas faturas
-    E o limite disponível volta a "R$ 2.500,00"
-
-  Cenário: Excluir a compra com parcela em fatura fechada
-    Dado que a fatura de nov/2026 está fechada e não paga
-    Quando Lucas toca em "Excluir compra parcelada"
-    Então vê "Há parcelas em faturas já fechadas. Exclua só as parcelas abertas."
-    E nada é excluído
-
   Cenário: Conflito de versão
     Dado que Mariana e Lucas abriram a edição da parcela "3/10"
     Quando Mariana salva "R$ 300,00"
@@ -106,7 +89,7 @@ Funcionalidade: Gerenciar compra parcelada
 ```
 
 ## Experiência (UX/estados)
-[FLUXO-014](../../flows/FLUXO-014-parcelamento-tags-e-analise.md): diálogo de alcance com a explicação do que muda; na compra, ação "Excluir compra parcelada" separada de "Excluir parcela".
+[FLUXO-014](../../flows/FLUXO-014-parcelamento-tags-e-analise.md): diálogo de alcance com a explicação do que muda; na parcela, "Excluir parcela" fica separada da ação "Excluir compra parcelada" (US-040b).
 
 ## Fora de escopo
 Antecipar ou renegociar parcelas; editar data; mudar de cartão; estorno parcial.
@@ -116,3 +99,4 @@ Antecipar ou renegociar parcelas; editar data; mudar de cartão; estorno parcial
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 6; RN-003.7).
+- 2026-10-04 — **Revisão pós-TL (D-PO-33):** os cenários "Excluir a compra parcelada inteira", "Desfazer a exclusão da compra inteira" e "Excluir a compra com parcela em fatura fechada" **migraram para a US-040b** (recomendação do TL: sem eles, um erro de digitação no Must é irrecuperável). Tamanho 5 confirmado; ordem na R3 depois da US-043.
