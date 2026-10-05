@@ -56,6 +56,11 @@ export const RenameAccountSchema = z
   .strict();
 export type RenameAccountInput = z.infer<typeof RenameAccountSchema>;
 
+export const ArchiveAccountSchema = z.object({ version: versionSchema }).strict(); // archive / unarchive / delete
+export const ListAccountsQuerySchema = z
+  .object({ archived: z.enum(["false", "true", "all"]).default("false") })
+  .strict();
+
 // ── DTOs ──
 export type AccountDTO = {
   id: string;
@@ -66,6 +71,9 @@ export type AccountDTO = {
   balanceInCents: number;
   usageCountByMe: number; // lançamentos do membro logado nos últimos 90 dias (desempate da sugestão, US-023)
   version: number;
+  archived: boolean; // US-032
+  archivedAt: string | null;
+  neverUsed: boolean; // base de "Excluir" (a UI só mostra a ação a ADMIN)
   createdAt: string;
 };
 

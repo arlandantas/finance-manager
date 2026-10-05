@@ -5,6 +5,7 @@ import { compareDate, fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
 import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
+import { assertAccountsEditable, lockAccountsForPosting } from "@/modules/contas/lock";
 import { contasRepo } from "@/modules/contas/repo";
 import type { CreateTransferInput, TransferDTO } from "@/modules/contas/schemas";
 import { memberRef } from "@/modules/contas/service";
@@ -80,6 +81,8 @@ export async function createTransferGroup(
   const repo = contasRepo(tx, ctx.familyId);
   const accounts = await repo.accountsByIds([a.fromAccountId, a.toAccountId]);
   if (accounts.length !== 2) throw notFound("Conta não encontrada.");
+  await lockAccountsForPosting(tx, ctx.familyId, [a.fromAccountId], "fromAccountId");
+  await lockAccountsForPosting(tx, ctx.familyId, [a.toAccountId], "toAccountId");
   const today = todayInFamilyTz(ctx.clock);
   if (compareDate(a.occurredOn, today) > 0) {
     const message = "A data da transferência não pode ser futura";
@@ -166,6 +169,11 @@ export async function undoTransferGroup(
   const repo = contasRepo(tx, ctx.familyId);
   const group = await repo.findGroup(groupId);
   if (!group) throw notFound("Transferência não encontrada.");
+  await assertAccountsEditable(
+    tx,
+    ctx.familyId,
+    group.legs.map((l) => l.accountId),
+  );
   if (group.deletedAt) throw conflict("ALREADY_UNDONE", "Esta transferência já foi desfeita.");
   const now = ctx.clock.now();
   const res = await repo.undoGroup(groupId, version, ctx.memberId, now);

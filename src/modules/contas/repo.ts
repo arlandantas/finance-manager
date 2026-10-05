@@ -7,14 +7,23 @@ const withOwner = { owner: { include: { user: true } } } as const;
 /** Contas sempre escopadas por `familyId` (ADR-013). */
 export function contasRepo(tx: Tx, familyId: string) {
   return {
-    list: () =>
+    /** `active` (padrão), `archived` ou `all`; contas EXCLUÍDAS nunca aparecem. */
+    list: (mode: "active" | "archived" | "all" = "active") =>
       tx.bankAccount.findMany({
-        where: { familyId },
+        where: {
+          familyId,
+          deletedAt: null,
+          ...(mode === "active"
+            ? { archivedAt: null }
+            : mode === "archived"
+              ? { archivedAt: { not: null } }
+              : {}),
+        },
         include: withOwner,
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       }),
     findById: (id: string) =>
-      tx.bankAccount.findFirst({ where: { id, familyId }, include: withOwner }),
+      tx.bankAccount.findFirst({ where: { id, familyId, deletedAt: null }, include: withOwner }),
     memberExists: async (memberId: string) =>
       (await tx.member.count({ where: { id: memberId, familyId } })) > 0,
     insert: (data: {
@@ -50,7 +59,7 @@ export function contasRepo(tx: Tx, familyId: string) {
       }),
     accountsByIds: (ids: string[]) =>
       tx.bankAccount.findMany({
-        where: { familyId, id: { in: ids } },
+        where: { familyId, id: { in: ids }, deletedAt: null },
         select: { id: true, name: true },
       }),
     findMember: (id: string) =>

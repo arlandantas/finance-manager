@@ -8,6 +8,7 @@ import { getOrCreateInvoice, lockInvoices } from "@/modules/cartoes/invoices";
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { type Change, recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
+import { assertAccountsEditable, lockAccountsForPosting } from "@/modules/contas/lock";
 import { assertCanShare } from "@/modules/split/guard";
 import { splitRepo } from "@/modules/split/repo";
 import { transacoesRepo } from "@/modules/transacoes/repo";
@@ -32,9 +33,10 @@ const invalidRef = (path: string, message: string) =>
 type Repo = ReturnType<typeof transacoesRepo>;
 type Row = NonNullable<Awaited<ReturnType<Repo["findById"]>>>;
 
-async function loadMutable(repo: Repo, id: string): Promise<Row> {
+async function loadMutable(tx: Tx, familyId: string, repo: Repo, id: string): Promise<Row> {
   const row = await repo.findById(id);
   if (!row) throw notFound("Lançamento não encontrado.");
+  await assertAccountsEditable(tx, familyId, [row.accountId]); // conta arquivada: lançamento travado
   if (row.kind === "INVOICE_PAYMENT") throw unprocessable("NOT_EDITABLE", PAYMENT_NOT_EDITABLE);
   if (row.kind !== "EXPENSE" && row.kind !== "INCOME") {
     throw unprocessable("NOT_EDITABLE", NOT_EDITABLE);
@@ -147,7 +149,7 @@ export async function updateTransaction(
   input: UpdateTransactionParsed,
 ): Promise<UpdateTransactionResponse> {
   const repo = transacoesRepo(tx, ctx.familyId);
-  const row = await loadMutable(repo, id);
+  const row = await loadMutable(tx, ctx.familyId, repo, id);
   if (row.deletedAt) {
     throw unprocessable(
       "TRANSACTION_DELETED",
@@ -173,6 +175,7 @@ export async function updateTransaction(
   }
   const account = input.accountId ? await repo.findAccount(input.accountId) : null;
   if (input.accountId && !account) throw invalidRef("accountId", "Escolha uma conta");
+  if (account) await lockAccountsForPosting(tx, ctx.familyId, [account.id]);
   // SDD-007 §1: a validação "categoria ativa" só roda quando a categoria enviada difere da atual.
   const changesCategory = input.categoryId !== undefined && input.categoryId !== row.categoryId;
   const category =
@@ -282,7 +285,7 @@ export async function deleteTransaction(
   input: TransactionStateInput,
 ): Promise<{ transaction: UpdateTransactionResponse["transaction"] }> {
   const repo = transacoesRepo(tx, ctx.familyId);
-  const row = await loadMutable(repo, id);
+  const row = await loadMutable(tx, ctx.familyId, repo, id);
   if (row.deletedAt) throw conflict("ALREADY_DELETED", "Este lançamento já foi excluído.");
   if (row.paidPlanned) throw unprocessable("LINKED_TO_PLANNED", LINKED_TO_PLANNED);
   if (row.cardId) await lockPurchaseInvoices(tx, ctx, repo, row);
@@ -316,7 +319,7 @@ export async function restoreTransaction(
   input: TransactionStateInput,
 ): Promise<{ transaction: UpdateTransactionResponse["transaction"] }> {
   const repo = transacoesRepo(tx, ctx.familyId);
-  const row = await loadMutable(repo, id);
+  const row = await loadMutable(tx, ctx.familyId, repo, id);
   if (row.paidPlanned) throw unprocessable("LINKED_TO_PLANNED", LINKED_TO_PLANNED);
   if (!row.deletedAt || row.deletionReason !== "DELETED") {
     throw unprocessable("NOT_RESTORABLE", "Este lançamento não pode ser restaurado.");

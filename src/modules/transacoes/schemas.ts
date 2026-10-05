@@ -73,7 +73,7 @@ export type TransactionDTO = {
   occurredOn: string; // YYYY-MM-DD
   description: string;
   note: string | null;
-  account: { id: string; name: string } | null; // null em compra no cartão
+  account: { id: string; name: string; archived?: boolean } | null; // null em compra no cartão; `archived` marca "(arquivada)"
   card: { id: string; name: string } | null; // compra no cartão e pagamento de fatura
   invoice: { ref: string; closingDate: string; dueDate: string } | null;
   category: {

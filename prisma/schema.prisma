@@ -279,6 +279,12 @@ model BankAccount {
   createdAt     DateTime        @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime        @updatedAt @db.Timestamptz(3)
 
+  // US-032: arquivada some das listas; excluída (lógica, terminal) some de tudo e libera o nome
+  archivedAt         DateTime? @db.Timestamptz(3)
+  archivedByMemberId String?   @db.Uuid
+  deletedAt          DateTime? @db.Timestamptz(3)
+  deletedByMemberId  String?   @db.Uuid
+
   family       Family        @relation(fields: [familyId], references: [id])
   owner        Member        @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
   transactions Transaction[]
@@ -301,6 +307,12 @@ model CreditCard {
   updatedByMemberId String?  @db.Uuid // "alterado por {Nome}" no 409
   createdAt         DateTime @default(now()) @db.Timestamptz(3)
   updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+
+  // US-033: arquivar e excluir (lógico, terminal), como nas contas
+  archivedAt         DateTime? @db.Timestamptz(3)
+  archivedByMemberId String?   @db.Uuid
+  deletedAt          DateTime? @db.Timestamptz(3)
+  deletedByMemberId  String?   @db.Uuid
 
   family       Family        @relation(fields: [familyId], references: [id])
   owner        Member        @relation(fields: [familyId, ownerMemberId], references: [familyId, id])

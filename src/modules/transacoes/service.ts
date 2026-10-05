@@ -10,6 +10,7 @@ import { getOrCreateInvoice } from "@/modules/cartoes/invoices";
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
+import { lockAccountsForPosting } from "@/modules/contas/lock";
 import { currentRuleShares } from "@/modules/split/current-rule";
 import { assertCanShare, isSettlementEnabled } from "@/modules/split/guard";
 import {
@@ -79,7 +80,7 @@ export const categoryRefOf = (c: {
 export function toTransactionDTO(
   row: TxRow,
   ctx: {
-    account: { id: string; name: string } | null;
+    account: { id: string; name: string; archived?: boolean } | null;
     card?: { id: string; name: string } | null;
     invoice?: { ref: string; closingDate: string; dueDate: string } | null;
     plannedExpenseId?: string | null;
@@ -179,6 +180,7 @@ export async function createExpenseCore(
   // 2) referências da família
   const account = input.accountId ? await repo.findAccount(input.accountId) : null;
   if (input.accountId && !account) throw invalidRef("accountId", "Escolha uma conta");
+  if (account) await lockAccountsForPosting(tx, ctx.familyId, [account.id]);
   const card = input.cardId ? await repo.findCard(input.cardId) : null;
   if (input.cardId && !card) throw invalidRef("cardId", "Escolha um cartão");
   const category = opts.allowArchivedCategory
@@ -298,6 +300,7 @@ async function createIncome(
 
   const account = await repo.findAccount(input.accountId);
   if (!account) throw invalidRef("accountId", "Escolha uma conta");
+  await lockAccountsForPosting(tx, ctx.familyId, [account.id]);
   const category = await repo.findCategory(input.categoryId);
   if (!category) throw invalidRef("categoryId", "Escolha uma categoria");
   const payer = await repo.findMember(payerMemberId);
@@ -369,7 +372,9 @@ function dtoFromLoaded(
   counterpart: { id: string; name: string } | null,
 ): TransactionDTO {
   const dto = toTransactionDTO(r, {
-    account: r.account,
+    account: r.account
+      ? { id: r.account.id, name: r.account.name, archived: r.account.archivedAt !== null }
+      : null,
     card: r.card,
     invoice: r.invoice
       ? {

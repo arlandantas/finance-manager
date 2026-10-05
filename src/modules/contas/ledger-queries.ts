@@ -47,3 +47,18 @@ export async function usageCountByMember(
     GROUP BY "accountId"`;
   return new Map(rows.map((r) => [r.accountId, r.n]));
 }
+
+/**
+ * Contas "nunca usadas" (US-032): nenhum lançamento além do OPENING de valor zero da criação.
+ * Base da ação "Excluir definitivamente" (exclusão lógica).
+ */
+export async function neverUsedAccountIds(tx: Tx, familyId: string): Promise<Set<string>> {
+  const rows = await tx.$queryRaw<Array<{ id: string }>>`
+    SELECT a.id FROM bank_accounts a
+    WHERE a."familyId" = ${familyId}::uuid AND a."deletedAt" IS NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM transactions t
+        WHERE t."familyId" = a."familyId" AND t."accountId" = a.id
+          AND NOT (t.kind = 'OPENING' AND t."amountInCents" = 0))`;
+  return new Set(rows.map((r) => r.id));
+}

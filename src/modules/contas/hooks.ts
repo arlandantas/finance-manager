@@ -19,6 +19,33 @@ export function useAccounts() {
   });
 }
 
+/** Contas arquivadas (seção recolhida de Contas). A chave começa com "accounts": toda invalidação a atinge. */
+export function useArchivedAccounts() {
+  return useQuery({
+    queryKey: [...accountsKey, "archived"],
+    queryFn: () => apiFetch<AccountsResponse>("/api/v1/accounts?archived=true"),
+  });
+}
+
+/** Arquivar, reativar ou excluir (SDD-012 §3.1). */
+export function useAccountAction() {
+  const invalidate = useInvalidateAfterAccountChange();
+  return useMutation({
+    mutationFn: (a: {
+      id: string;
+      action: "archive" | "unarchive" | "delete";
+      version: number;
+      idempotencyKey: string;
+    }) =>
+      apiFetch<{ account?: AccountDTO; deleted?: true }>(`/api/v1/accounts/${a.id}/${a.action}`, {
+        method: "POST",
+        body: { version: a.version },
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
 /** SDD-004 §5: contas, extrato e Home dependem do saldo. */
 export function useInvalidateAfterAccountChange() {
   const qc = useQueryClient();

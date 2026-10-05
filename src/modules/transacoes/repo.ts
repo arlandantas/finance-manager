@@ -3,7 +3,7 @@ import { toDbDate } from "@/lib/dates";
 import { fromCents } from "@/lib/money";
 
 const loadInclude = {
-  account: { select: { id: true, name: true } },
+  account: { select: { id: true, name: true, archivedAt: true } },
   card: { select: { id: true, name: true } },
   invoice: { select: { referenceMonth: true, closingDate: true, dueDate: true } },
   category: true,

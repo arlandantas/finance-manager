@@ -17,12 +17,17 @@ import { useDefaults } from "@/modules/transacoes/hooks";
 
 type FieldKey = "fromAccountId" | "toAccountId" | "amountInCents" | "occurredOn" | "note";
 
+export type TransferPrefill = { fromId?: string; toId?: string; amountInCents?: number };
+
 export function TransferDrawer({
   open,
   onOpenChange,
+  prefill,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** "Transferir o saldo" (US-032): origem/destino e valor já preenchidos. */
+  prefill?: TransferPrefill | null;
 }) {
   const accounts = useAccounts();
   const family = useFamily();
@@ -51,11 +56,19 @@ export function TransferDrawer({
     }
     if (initialized.current || items.length < 2) return;
     initialized.current = true;
-    const from = items.find((a) => a.owner.id === currentMemberId) ?? items[0];
-    const to = items.find((a) => a.id !== from?.id);
+    const pf = prefill ?? {};
+    const from =
+      items.find((a) => a.id === pf.fromId) ??
+      (pf.toId
+        ? (items.find((a) => a.id !== pf.toId && a.owner.id === currentMemberId) ??
+          items.find((a) => a.id !== pf.toId))
+        : undefined) ??
+      items.find((a) => a.owner.id === currentMemberId) ??
+      items[0];
+    const to = items.find((a) => a.id === pf.toId) ?? items.find((a) => a.id !== from?.id);
     setFromId(from?.id ?? "");
     setToId(to?.id ?? "");
-    setCents(0);
+    setCents(pf.amountInCents ?? 0);
     setDate("");
     setNote("");
     setErrors({});

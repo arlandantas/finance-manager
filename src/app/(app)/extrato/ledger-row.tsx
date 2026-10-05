@@ -36,9 +36,10 @@ export function LedgerRow({
   const isTransfer = item.type === "TRANSFER_IN" || item.type === "TRANSFER_OUT";
   const isPayment = item.type === "INVOICE_PAYMENT";
   const neutral = isTransfer || isPayment;
-  const sourceName = isPayment
-    ? (item.account?.name ?? "")
-    : (item.card?.name ?? item.account?.name ?? "");
+  const archivedMark = !item.card && item.account?.archived ? " (arquivada)" : "";
+  const sourceName =
+    (isPayment ? (item.account?.name ?? "") : (item.card?.name ?? item.account?.name ?? "")) +
+    archivedMark;
   const kindLabel = item.category?.name ?? (isPayment ? "Pagamento de fatura" : "Transferência");
   const signedCents = income ? item.amountInCents : -item.amountInCents;
   return (

@@ -1,7 +1,16 @@
 "use client";
 
-import { ArrowLeftRight, MoreHorizontal, Pencil, Plus } from "lucide-react";
-import { useState } from "react";
+import {
+  Archive,
+  ArrowLeftRight,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { Money } from "@/components/money";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -9,11 +18,13 @@ import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAccounts } from "@/modules/contas/hooks";
+import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import { useAccountAction, useAccounts, useArchivedAccounts } from "@/modules/contas/hooks";
 import { ACCOUNT_TYPE_LABELS, type AccountDTO } from "@/modules/contas/schemas";
+import { useFamily } from "@/modules/familia/hooks";
 import { NewAccountDrawer } from "./new-account-drawer";
 import { RenameAccountDialog } from "./rename-account-dialog";
-import { TransferDrawer } from "./transfer-drawer";
+import { TransferDrawer, type TransferPrefill } from "./transfer-drawer";
 
 function Balance({ cents, className }: { cents: number; className?: string }) {
   return (
@@ -29,7 +40,19 @@ function Balance({ cents, className }: { cents: number; className?: string }) {
   );
 }
 
-function AccountCard({ account, onRename }: { account: AccountDTO; onRename: () => void }) {
+function AccountCard({
+  account,
+  isAdmin,
+  onRename,
+  onArchive,
+  onDelete,
+}: {
+  account: AccountDTO;
+  isAdmin: boolean;
+  onRename: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+}) {
   return (
     <li
       data-testid="account-card"
@@ -52,18 +75,77 @@ function AccountCard({ account, onRename }: { account: AccountDTO; onRename: () 
         trigger={<MoreHorizontal size={20} aria-hidden="true" />}
       >
         {(close) => (
-          <MenuItem
-            onClick={() => {
-              close();
-              onRename();
-            }}
-          >
-            <Pencil size={16} aria-hidden="true" />
-            Renomear
-          </MenuItem>
+          <>
+            <MenuItem
+              onClick={() => {
+                close();
+                onRename();
+              }}
+            >
+              <Pencil size={16} aria-hidden="true" />
+              Renomear
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                close();
+                onArchive();
+              }}
+            >
+              <Archive size={16} aria-hidden="true" />
+              Arquivar
+            </MenuItem>
+            {isAdmin && account.neverUsed ? (
+              <MenuItem
+                onClick={() => {
+                  close();
+                  onDelete();
+                }}
+              >
+                <Trash2 size={16} aria-hidden="true" />
+                Excluir
+              </MenuItem>
+            ) : null}
+          </>
         )}
       </Menu>
     </li>
+  );
+}
+
+function ArchivedSection({
+  onReactivate,
+  busyId,
+}: {
+  onReactivate: (a: AccountDTO) => void;
+  busyId: string | null;
+}) {
+  const archived = useArchivedAccounts();
+  const items = archived.data?.items ?? [];
+  if (items.length === 0) return null;
+  return (
+    <details
+      data-testid="archived-accounts"
+      className="rounded-xl border border-slate-200 bg-white p-3"
+    >
+      <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-slate-800">
+        Contas arquivadas ({items.length})
+      </summary>
+      <ul className="flex flex-col divide-y divide-slate-100">
+        {items.map((a) => (
+          <li
+            key={a.id}
+            data-testid="archived-account"
+            className="flex items-center justify-between gap-3 py-2 text-sm"
+          >
+            <span className="min-w-0 truncate text-slate-800">{a.name}</span>
+            <Button variant="secondary" disabled={busyId === a.id} onClick={() => onReactivate(a)}>
+              <RotateCcw size={16} aria-hidden="true" />
+              Reativar
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }
 
@@ -83,7 +165,57 @@ export function ContasScreen() {
   const [renaming, setRenaming] = useState<AccountDTO | null>(null);
   const [transferring, setTransferring] = useState(false);
   const [needsAnother, setNeedsAnother] = useState(false);
+  const [prefill, setPrefill] = useState<TransferPrefill | null>(null);
+  const [archiving, setArchiving] = useState<AccountDTO | null>(null);
+  const [deleting, setDeleting] = useState<AccountDTO | null>(null);
+  const [blocked, setBlocked] = useState<{ message: string; balanceInCents: number } | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const family = useFamily();
+  const isAdmin = family.data?.currentRole === "ADMIN";
+  const action = useAccountAction();
+  const keyRef = useRef(newIdempotencyKey());
   const data = accounts.data;
+
+  function run(a: AccountDTO, kind: "archive" | "unarchive" | "delete", ok: string) {
+    if (action.isPending) return;
+    setBanner(null);
+    setBusyId(a.id);
+    action.mutate(
+      { id: a.id, action: kind, version: a.version, idempotencyKey: keyRef.current },
+      {
+        onSuccess: () => {
+          keyRef.current = newIdempotencyKey();
+          setArchiving(null);
+          setDeleting(null);
+          setBlocked(null);
+          toast.success(ok);
+        },
+        onError: (e) => {
+          keyRef.current = newIdempotencyKey();
+          if (e instanceof ApiClientError && e.code === "ACCOUNT_BALANCE_NOT_ZERO") {
+            setBlocked({
+              message: e.message,
+              balanceInCents: (e.details as { balanceInCents: number }).balanceInCents,
+            });
+          } else if (e instanceof NetworkError) setBanner(e.message);
+          else setBanner(e instanceof Error ? e.message : "Erro inesperado. Tente novamente.");
+        },
+        onSettled: () => setBusyId(null),
+      },
+    );
+  }
+
+  function transferBalance(a: AccountDTO, balance: number) {
+    setArchiving(null);
+    setBlocked(null);
+    setPrefill(
+      balance > 0
+        ? { fromId: a.id, amountInCents: balance }
+        : { toId: a.id, amountInCents: Math.abs(balance) },
+    );
+    setTransferring(true);
+  }
 
   return (
     <main className="flex flex-col gap-4">
@@ -141,14 +273,120 @@ export function ContasScreen() {
           </section>
           <ul className="flex flex-col gap-3">
             {data.items.map((a) => (
-              <AccountCard key={a.id} account={a} onRename={() => setRenaming(a)} />
+              <AccountCard
+                key={a.id}
+                account={a}
+                isAdmin={isAdmin}
+                onRename={() => setRenaming(a)}
+                onArchive={() => {
+                  setBlocked(null);
+                  setBanner(null);
+                  setArchiving(a);
+                }}
+                onDelete={() => {
+                  setBanner(null);
+                  setDeleting(a);
+                }}
+              />
             ))}
           </ul>
         </>
       ) : null}
 
+      {data ? (
+        <ArchivedSection
+          busyId={busyId}
+          onReactivate={(a) => run(a, "unarchive", "Conta reativada")}
+        />
+      ) : null}
+
+      <Drawer
+        open={archiving !== null}
+        onOpenChange={(o) => !o && setArchiving(null)}
+        title={archiving ? `Arquivar ${archiving.name}?` : "Arquivar conta"}
+      >
+        {archiving ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-slate-700">
+              A conta some das listas e dos seletores; o histórico permanece e você pode reativá-la
+              depois.
+            </p>
+            {data && data.items.length === 1 ? (
+              <p role="status" className="text-sm font-medium text-amber-900">
+                Sem contas ativas você não poderá lançar despesas em conta nem pagar faturas.
+              </p>
+            ) : null}
+            {blocked ? (
+              <div
+                role="alert"
+                className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3"
+              >
+                <p className="text-sm font-medium text-amber-900">{blocked.message}</p>
+                <Button
+                  variant="secondary"
+                  onClick={() => transferBalance(archiving, blocked.balanceInCents)}
+                >
+                  {blocked.balanceInCents > 0 ? "Transferir o saldo" : "Transferir para esta conta"}
+                </Button>
+              </div>
+            ) : null}
+            {banner ? (
+              <p role="alert" className="text-sm text-red-800">
+                {banner}
+              </p>
+            ) : null}
+            <Button
+              disabled={action.isPending}
+              onClick={() => run(archiving, "archive", "Conta arquivada")}
+            >
+              {action.isPending ? "Arquivando…" : "Arquivar"}
+            </Button>
+            <Button variant="ghost" onClick={() => setArchiving(null)}>
+              Cancelar
+            </Button>
+          </div>
+        ) : null}
+      </Drawer>
+
+      <Drawer
+        open={deleting !== null}
+        onOpenChange={(o) => !o && setDeleting(null)}
+        title={deleting ? `Excluir ${deleting.name}?` : "Excluir conta"}
+      >
+        {deleting ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-slate-700">
+              A conta nunca teve movimentação. Ela some de todas as telas e o nome fica livre; isso
+              não pode ser desfeito.
+            </p>
+            {banner ? (
+              <p role="alert" className="text-sm text-red-800">
+                {banner}
+              </p>
+            ) : null}
+            <Button
+              variant="danger"
+              disabled={action.isPending}
+              onClick={() => run(deleting, "delete", "Conta excluída")}
+            >
+              Excluir definitivamente
+            </Button>
+            <Button variant="ghost" onClick={() => setDeleting(null)}>
+              Cancelar
+            </Button>
+          </div>
+        ) : null}
+      </Drawer>
+
       <NewAccountDrawer open={creating} onOpenChange={setCreating} />
-      <TransferDrawer open={transferring} onOpenChange={setTransferring} />
+      <TransferDrawer
+        open={transferring}
+        onOpenChange={(o) => {
+          setTransferring(o);
+          if (!o) setPrefill(null);
+        }}
+        prefill={prefill}
+      />
       <Drawer
         open={needsAnother}
         onOpenChange={setNeedsAnother}

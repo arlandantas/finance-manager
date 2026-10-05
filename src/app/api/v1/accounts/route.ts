@@ -1,13 +1,13 @@
 import { withApi } from "@/lib/api/with-api";
-import { CreateAccountSchema } from "@/modules/contas/schemas";
+import { CreateAccountSchema, ListAccountsQuerySchema } from "@/modules/contas/schemas";
 import { createAccount, listAccounts } from "@/modules/contas/service";
 
 export const dynamic = "force-dynamic";
 
 // SDD-004 §3
-export const GET = withApi({}, async ({ ctx, tx }) => ({
+export const GET = withApi({ query: ListAccountsQuerySchema }, async ({ ctx, tx, query }) => ({
   status: 200,
-  body: await listAccounts(tx, ctx),
+  body: await listAccounts(tx, ctx, query.archived),
 }));
 
 export const POST = withApi({ body: CreateAccountSchema }, async ({ ctx, tx, body }) => ({

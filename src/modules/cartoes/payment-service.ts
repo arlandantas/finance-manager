@@ -10,6 +10,7 @@ import { cartoesRepo } from "@/modules/cartoes/repo";
 import type { PayInvoiceParsed, PayInvoiceResponse } from "@/modules/cartoes/schemas";
 import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
+import { lockAccountsForPosting } from "@/modules/contas/lock";
 import { loadTransactionDTOs } from "@/modules/transacoes/service";
 
 const CARD_NOT_FOUND = "Cartão não encontrado.";
@@ -92,9 +93,10 @@ export async function payInvoice(
     throw unprocessable("PAYMENT_BEFORE_CLOSING", message, [{ path: "paidOn", message }]);
   }
   const account = await tx.bankAccount.findFirst({
-    where: { id: input.accountId, familyId: ctx.familyId },
+    where: { id: input.accountId, familyId: ctx.familyId, deletedAt: null },
     select: { id: true },
   });
+  if (account) await lockAccountsForPosting(tx, ctx.familyId, [account.id]);
   if (!account) {
     throw unprocessable("INVALID_REFERENCE", "Escolha a conta de pagamento", [
       { path: "accountId", message: "Escolha a conta de pagamento" },

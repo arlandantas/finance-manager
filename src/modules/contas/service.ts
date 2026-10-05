@@ -5,7 +5,11 @@ import { localPart } from "@/lib/auth/dev-login-guard";
 import { addDays, compareDate, todayInFamilyTz } from "@/lib/dates";
 import type { MemberRef } from "@/lib/schemas";
 import { recordRevision } from "@/modules/contas/ledger";
-import { accountBalances, usageCountByMember } from "@/modules/contas/ledger-queries";
+import {
+  accountBalances,
+  neverUsedAccountIds,
+  usageCountByMember,
+} from "@/modules/contas/ledger-queries";
 import { contasRepo } from "@/modules/contas/repo";
 import type {
   AccountDTO,
@@ -25,7 +29,12 @@ export function memberRef(m: {
   return { id: m.id, name: m.user.name ?? localPart(m.user.email), image: m.user.image };
 }
 
-function toDTO(a: AccountRow, balanceInCents: number, usageCountByMe = 0): AccountDTO {
+function toDTO(
+  a: AccountRow,
+  balanceInCents: number,
+  usageCountByMe = 0,
+  neverUsed = false,
+): AccountDTO {
   return {
     id: a.id,
     name: a.name,
@@ -34,14 +43,23 @@ function toDTO(a: AccountRow, balanceInCents: number, usageCountByMe = 0): Accou
     owner: memberRef(a.owner),
     balanceInCents,
     usageCountByMe,
+    archived: a.archivedAt !== null,
+    archivedAt: a.archivedAt?.toISOString() ?? null,
+    neverUsed,
     version: a.version,
     createdAt: a.createdAt.toISOString(),
   };
 }
 
-export async function listAccounts(tx: Tx, ctx: RequestContext): Promise<AccountsResponse> {
+export async function listAccounts(
+  tx: Tx,
+  ctx: RequestContext,
+  archived: "false" | "true" | "all" = "false",
+): Promise<AccountsResponse> {
   const repo = contasRepo(tx, ctx.familyId);
-  const accounts = await repo.list();
+  const accounts = await repo.list(
+    archived === "false" ? "active" : archived === "true" ? "archived" : "all",
+  );
   const balances = await accountBalances(tx, ctx.familyId);
   const usage = await usageCountByMember(
     tx,
@@ -49,8 +67,17 @@ export async function listAccounts(tx: Tx, ctx: RequestContext): Promise<Account
     ctx.memberId,
     addDays(todayInFamilyTz(ctx.clock), -90),
   );
-  const items = accounts.map((a) => toDTO(a, balances.get(a.id) ?? 0, usage.get(a.id) ?? 0));
-  return { items, totalBalanceInCents: items.reduce((sum, a) => sum + a.balanceInCents, 0) };
+  const unused = await neverUsedAccountIds(tx, ctx.familyId);
+  const items = accounts.map((a) =>
+    toDTO(a, balances.get(a.id) ?? 0, usage.get(a.id) ?? 0, unused.has(a.id)),
+  );
+  // o saldo da família soma só contas ATIVAS (SDD-012 §4.1)
+  return {
+    items,
+    totalBalanceInCents: items
+      .filter((a) => !a.archived)
+      .reduce((sum, a) => sum + a.balanceInCents, 0),
+  };
 }
 
 /** US-004 (SDD-004 §4.2): conta + lançamento de abertura na mesma transação. */
@@ -115,7 +142,7 @@ export async function createAccount(
       },
     ],
   });
-  return toDTO(account, opening);
+  return toDTO(account, opening, 0, opening === 0);
 }
 
 export async function renameAccount(
@@ -127,6 +154,9 @@ export async function renameAccount(
   const repo = contasRepo(tx, ctx.familyId);
   const existing = await repo.findById(id);
   if (!existing) throw notFound("Conta não encontrada.");
+  if (existing.archivedAt) {
+    throw unprocessable("ACCOUNT_ARCHIVED_LOCKED", "Reative a conta para alterá-la");
+  }
   let updated: { count: number };
   try {
     updated = await repo.rename(id, input.name.trim(), input.version);
