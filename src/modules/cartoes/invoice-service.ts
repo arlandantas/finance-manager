@@ -168,12 +168,16 @@ export type PayableInvoice = {
  * Faturas fechadas, não pagas e com total > 0 da família (consumido pelo agregador "A pagar" do
  * SDD-009). Mais antigas primeiro.
  */
-export async function listPayableInvoices(tx: Tx, ctx: RequestContext): Promise<PayableInvoice[]> {
+export async function listPayableInvoices(
+  tx: Tx,
+  ctx: RequestContext,
+  opts: { includeOpen?: boolean } = {},
+): Promise<PayableInvoice[]> {
   const today = todayInFamilyTz(ctx.clock);
   const rows = await tx.cardInvoice.findMany({
     where: {
       familyId: ctx.familyId,
-      closingDate: { lt: new Date(`${today}T00:00:00Z`) },
+      ...(opts.includeOpen ? {} : { closingDate: { lt: new Date(`${today}T00:00:00Z`) } }),
     },
     include: { card: { select: { name: true } } },
     orderBy: [{ dueDate: "asc" }, { id: "asc" }],

@@ -102,3 +102,49 @@ export async function homePayables(tx: Tx, ctx: RequestContext): Promise<HomePay
     totalCount: eligible.length,
   };
 }
+
+export type DueItems = {
+  items: PayableItemDTO[]; // todos, atrasados primeiro, depois dueOn, depois título
+  plannedInCents: number;
+  invoicesInCents: number;
+  overdueInCents: number;
+  overdueCount: number;
+};
+
+/**
+ * Itens "a pagar" de um período (SDD-010 §4.2): previstas PREVISTO com vencimento no período +
+ * faturas NÃO pagas (abertas ou fechadas, total > 0) com vencimento no período; no período corrente
+ * entra também todo atrasado de períodos anteriores. Alimenta o Resumo do Mês.
+ */
+export async function listDueItems(
+  tx: Tx,
+  ctx: RequestContext,
+  q: { period: { key: string; start: string; end: string }; isCurrent: boolean; today: string },
+): Promise<DueItems> {
+  const repo = previstasRepo(tx, ctx.familyId);
+  const members = await memberMap(repo);
+  const { period, isCurrent, today } = q;
+  const planned = (await repo.listInRange(period.start, period.end, "PREVISTO")).map((r) =>
+    plannedItem(r, members, today),
+  );
+  const earlier = isCurrent
+    ? (await repo.listOpenBefore(period.start)).map((r) => plannedItem(r, members, today))
+    : [];
+  const invoices = (await listPayableInvoices(tx, ctx, { includeOpen: true }))
+    .filter(
+      (i) =>
+        (i.dueDate >= period.start && i.dueDate <= period.end) ||
+        (isCurrent && i.dueDate < period.start),
+    )
+    .map(invoiceItem);
+  const items = [...planned, ...earlier, ...invoices].sort(comparePayables);
+  const overdue = items.filter((i) => i.isOverdue);
+  const sum = (xs: PayableItemDTO[]) => xs.reduce((s, i) => s + i.amountInCents, 0);
+  return {
+    items,
+    plannedInCents: sum(items.filter((i) => i.type === "PLANNED")),
+    invoicesInCents: sum(items.filter((i) => i.type === "INVOICE")),
+    overdueInCents: sum(overdue),
+    overdueCount: overdue.length,
+  };
+}

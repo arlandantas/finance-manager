@@ -1,15 +1,18 @@
 "use client";
 
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { monthLabel, shiftMonthKey } from "@/app/(app)/extrato/filters";
 import { Money, useMoneyText } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useHome } from "@/modules/home/hooks";
-import type { HomeDTO } from "@/modules/home/schemas";
+import { usePref } from "@/lib/prefs";
+import { SUMMARY_COPY } from "@/modules/home/copy";
+import { useHome, useMonthSummary } from "@/modules/home/hooks";
+import type { HomeDTO, MonthSummaryDTO } from "@/modules/home/schemas";
 import { heroText } from "@/modules/split/hero";
 import { LedgerRow } from "./extrato/ledger-row";
 import { PayPlannedDrawer } from "./previstas/pay-drawer";
@@ -107,66 +110,209 @@ function SettlementCard({ h }: { h: HomeDTO }) {
   );
 }
 
-function HomeSkeleton() {
+function Line({
+  label,
+  testid,
+  children,
+  strong,
+  tone,
+}: {
+  label: string;
+  testid: string;
+  children: React.ReactNode;
+  strong?: boolean;
+  tone?: string;
+}) {
   return (
-    <div aria-busy="true" aria-label="Carregando início" className="grid gap-4 md:grid-cols-2">
-      <Skeleton className="h-52" />
-      <Skeleton className="h-24" />
-      <Skeleton className="h-40" />
-      <Skeleton className="h-72" />
+    <div className="flex items-baseline justify-between gap-3 py-1">
+      <dt className={cn("text-sm text-slate-600", strong && "font-semibold text-slate-900")}>
+        {label}
+      </dt>
+      <dd
+        data-testid={testid}
+        className={cn(
+          "tabular-nums font-semibold",
+          strong ? "text-xl" : "text-base",
+          tone ?? "text-slate-900",
+        )}
+      >
+        {children}
+      </dd>
     </div>
   );
 }
 
-export function HomeScreen({ firstName }: { firstName: string }) {
-  const home = useHome();
-  const router = useRouter();
-  const [payingId, setPayingId] = useState<string | null>(null);
-  const h = home.data;
+function MonthSummaryCard({
+  s,
+  onShift,
+  canNext,
+}: {
+  s: MonthSummaryDTO;
+  onShift: (delta: number) => void;
+  canNext: boolean;
+}) {
+  const maskText = useMoneyText();
+  const negative = s.projectedBalanceInCents < 0;
   return (
-    <main className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold text-slate-900">Olá, {firstName}</h1>
-
-      {home.isPending ? <HomeSkeleton /> : null}
-      {home.isError ? (
-        <div
-          role="alert"
-          className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
-        >
-          <p className="text-sm text-red-800">Não foi possível carregar</p>
-          <Button variant="secondary" onClick={() => home.refetch()}>
-            Tentar de novo
-          </Button>
+    <section
+      aria-label="Resumo do mês"
+      data-testid="home-summary"
+      className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4"
+    >
+      <header className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          Resumo do mês
+        </h2>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-label="Mês anterior"
+            onClick={() => onShift(-1)}
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100"
+          >
+            <ChevronLeft size={20} aria-hidden="true" />
+          </button>
+          <span data-testid="home-period" className="min-w-32 text-center text-sm font-semibold">
+            {monthLabel(s.period.key)}
+          </span>
+          <button
+            type="button"
+            aria-label="Próximo mês"
+            disabled={!canNext}
+            onClick={() => onShift(1)}
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100 disabled:opacity-40"
+          >
+            <ChevronRight size={20} aria-hidden="true" />
+          </button>
         </div>
+      </header>
+
+      {s.isEmpty ? (
+        <p data-testid="home-summary-empty" className="text-sm text-slate-600">
+          {SUMMARY_COPY.empty}
+        </p>
       ) : null}
 
-      {h ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          {h.onboarding.showChecklist ? (
-            <div className="md:col-span-2">
-              <Checklist o={h.onboarding} />
-            </div>
-          ) : null}
-
-          <Card title="Saldo" testid="home-balance">
-            <p
-              data-testid="family-balance"
-              className="flex flex-wrap items-baseline gap-x-2 text-sm text-slate-600"
-            >
-              Saldo da família:{" "}
-              <span
-                data-testid="family-balance-value"
-                className={cn(
-                  "text-3xl font-bold tabular-nums",
-                  h.familyBalanceInCents < 0 ? "text-red-700" : "text-slate-900",
-                )}
+      <dl className="flex flex-col divide-y divide-slate-100">
+        <Line label="Receitas" testid="home-income" tone="text-emerald-700">
+          <Money cents={s.incomeInCents} />
+        </Line>
+        <Line label="Despesas" testid="home-expense">
+          <Money cents={s.expenseInCents} />
+        </Line>
+        <Line
+          label="Resultado do mês"
+          testid="home-result"
+          strong
+          tone={s.resultInCents < 0 ? "text-red-700" : "text-slate-900"}
+        >
+          <Money cents={s.resultInCents} />
+        </Line>
+        <div className="py-1">
+          <Line label="A pagar" testid="home-topay">
+            <Money cents={s.toPay.totalInCents} />
+          </Line>
+          <ul className="mb-1 ml-3 flex flex-col text-sm text-slate-600">
+            <li className="flex justify-between gap-3" data-testid="home-topay-planned">
+              <span>Previstas</span>
+              <Money cents={s.toPay.plannedInCents} />
+            </li>
+            <li className="flex justify-between gap-3" data-testid="home-topay-invoices">
+              <span>Faturas</span>
+              <Money cents={s.toPay.invoicesInCents} />
+            </li>
+            {s.toPay.overdueCount > 0 ? (
+              <li
+                className="flex items-center justify-between gap-3"
+                data-testid="home-topay-overdue"
               >
-                <Money cents={h.familyBalanceInCents} />
-              </span>
+                <span>
+                  <span className="mr-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                    {SUMMARY_COPY.overdue}
+                  </span>
+                  {s.toPay.overdueCount} {s.toPay.overdueCount === 1 ? "atrasada" : "atrasadas"}
+                </span>
+                <Money cents={s.toPay.overdueInCents} />
+              </li>
+            ) : null}
+          </ul>
+        </div>
+        <div className="py-1">
+          <Line
+            label="Saldo previsto"
+            testid="home-projected"
+            strong
+            tone={negative ? "text-red-700" : "text-slate-900"}
+          >
+            <Money cents={s.projectedBalanceInCents} />
+          </Line>
+          <p className="text-xs text-slate-500">{SUMMARY_COPY.projectedHint}</p>
+          {negative ? (
+            <p
+              role="status"
+              data-testid="home-projected-warning"
+              className="mt-1 rounded-lg bg-red-50 px-2 py-1 text-sm font-medium text-red-800"
+            >
+              {maskText(SUMMARY_COPY.projectedNegative)}
             </p>
-            {h.accounts.length > 0 ? (
+          ) : null}
+        </div>
+      </dl>
+      <Link
+        href="/previstas"
+        className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 underline"
+      >
+        Ver contas a pagar
+      </Link>
+    </section>
+  );
+}
+
+function BalancesCard({ b }: { b: HomeDTO["balances"] }) {
+  const [expanded, setExpanded] = usePref("balancesExpanded");
+  return (
+    <section
+      aria-label="Saldos das contas"
+      data-testid="home-balance"
+      className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4"
+    >
+      <button
+        type="button"
+        data-testid="balances-toggle"
+        aria-expanded={expanded}
+        aria-controls="home-balances-list"
+        onClick={() => setExpanded(!expanded)}
+        className="flex min-h-11 w-full items-center justify-between gap-3 text-left"
+      >
+        <span className="flex flex-col">
+          <span className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Saldos das contas
+          </span>
+          <span data-testid="family-balance" className="text-sm text-slate-600">
+            Saldo da família:{" "}
+            <span
+              data-testid="family-balance-value"
+              className={cn(
+                "text-xl font-bold tabular-nums",
+                b.totalInCents < 0 ? "text-red-700" : "text-slate-900",
+              )}
+            >
+              <Money cents={b.totalInCents} />
+            </span>
+          </span>
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          size={20}
+          className={cn("shrink-0 transition-transform", expanded && "rotate-180")}
+        />
+      </button>
+      <div id="home-balances-list" hidden={!expanded}>
+        {expanded ? (
+          b.accounts.length > 0 ? (
+            <>
               <ul className="flex flex-col divide-y divide-slate-100">
-                {h.accounts.map((a) => (
+                {b.accounts.map((a) => (
                   <li key={a.id}>
                     <Link
                       href="/contas"
@@ -186,54 +332,116 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                   </li>
                 ))}
               </ul>
-            ) : (
-              <Link href="/contas" className="text-sm font-semibold text-brand-800 underline">
+              <Link
+                href="/contas"
+                className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 underline"
+              >
                 Cadastrar conta
               </Link>
-            )}
-          </Card>
+            </>
+          ) : null
+        ) : null}
+      </div>
+      {b.accounts.length === 0 ? (
+        <div className="flex flex-col items-start gap-1">
+          <p className="text-sm text-slate-600">Nenhuma conta cadastrada</p>
+          <Link href="/contas" className="text-sm font-semibold text-brand-800 underline">
+            Cadastrar conta
+          </Link>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function HomeSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Carregando início" className="grid gap-4 md:grid-cols-2">
+      <Skeleton className="h-80" />
+      <Skeleton className="h-24" />
+      <Skeleton className="h-16" />
+      <Skeleton className="h-72" />
+    </div>
+  );
+}
+
+export function HomeScreen({ firstName }: { firstName: string }) {
+  const home = useHome();
+  const router = useRouter();
+  const [payingId, setPayingId] = useState<string | null>(null);
+  const [period, setPeriod] = useState<string | undefined>(undefined);
+  const h = home.data;
+  const currentKey = h?.monthSummary.period.key;
+  const viewing = period !== undefined && period !== currentKey;
+  const other = useMonthSummary(period, viewing);
+  const summary: MonthSummaryDTO | undefined = viewing ? other.data : h?.monthSummary;
+  const shift = (delta: number) => {
+    const base = period ?? currentKey;
+    if (base) setPeriod(shiftMonthKey(base, delta));
+  };
+  const canNext =
+    currentKey !== undefined && (period ?? currentKey) < shiftMonthKey(currentKey, 12);
+  const summaryError = home.isError || (viewing && other.isError);
+  return (
+    <main className="flex flex-col gap-4">
+      <h1 className="text-2xl font-semibold text-slate-900">Olá, {firstName}</h1>
+
+      {home.isPending ? <HomeSkeleton /> : null}
+      {summaryError ? (
+        <div
+          role="alert"
+          className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
+        >
+          <p className="text-sm text-red-800">{SUMMARY_COPY.loadError}</p>
+          <Button
+            variant="secondary"
+            onClick={() => (home.isError ? home.refetch() : other.refetch())}
+          >
+            Tentar de novo
+          </Button>
+        </div>
+      ) : null}
+
+      {h ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          {h.onboarding.showChecklist ? (
+            <div className="md:col-span-2">
+              <Checklist o={h.onboarding} />
+            </div>
+          ) : null}
 
           <div className="flex flex-col gap-4">
+            {summary ? (
+              <MonthSummaryCard s={summary} onShift={shift} canNext={canNext} />
+            ) : viewing && other.isPending ? (
+              <Skeleton className="h-80" />
+            ) : null}
             <SettlementCard h={h} />
-            <Card title="Resumo do mês" testid="home-summary">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-slate-500">Receitas</p>
-                  <p
-                    data-testid="home-income"
-                    className="text-lg font-semibold tabular-nums text-emerald-700"
-                  >
-                    <Money cents={h.monthSummary.incomeInCents} />
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500">Despesas</p>
-                  <p
-                    data-testid="home-expense"
-                    className="text-lg font-semibold tabular-nums text-slate-900"
-                  >
-                    <Money cents={h.monthSummary.expenseInCents} />
-                  </p>
-                </div>
-              </div>
-              <ul className="flex flex-col gap-1">
-                {h.monthSummary.byMember.map((m) => (
-                  <li
-                    key={m.member.id}
-                    data-testid="home-member-share"
-                    className="flex items-center gap-2 text-sm text-slate-800"
-                  >
-                    {first(m.member.name)} <Money cents={m.paidInCents} /> ({m.sharePercent}%)
-                  </li>
-                ))}
-              </ul>
-            </Card>
           </div>
 
-          {h.payables.items.length > 0 ? (
+          <div className="flex flex-col gap-4">
+            {summary && summary.byMember.length > 0 ? (
+              <Card title="Participação por membro" testid="home-participation">
+                <ul className="flex flex-col gap-1">
+                  {summary.byMember.map((m) => (
+                    <li
+                      key={m.member.id}
+                      data-testid="home-member-share"
+                      className="flex items-center gap-2 text-sm text-slate-800"
+                    >
+                      {first(m.member.name)} <Money cents={m.paidInCents} /> ({m.sharePercent}%)
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            ) : null}
+            <BalancesCard b={h.balances} />
+          </div>
+
+          {summary && summary.toPay.items.length > 0 ? (
             <Card title="A pagar" testid="home-payables" className="md:col-span-2">
               <ul className="flex flex-col divide-y divide-slate-100">
-                {h.payables.items.map((p) => (
+                {summary.toPay.items.map((p) => (
                   <li
                     key={`${p.type}-${p.id}`}
                     data-testid="home-payable"
