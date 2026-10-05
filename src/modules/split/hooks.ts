@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
+import type { RulePreviewDTO } from "@/modules/split/preview";
 import type {
   CreateSettlementInput,
   SettlementDTO,
@@ -90,5 +91,22 @@ export function useSplitHistory(enabled: boolean) {
     queryKey: [...splitRuleKey, "history"],
     queryFn: () => apiFetch<SplitHistoryResponse>("/api/v1/split-rule/history"),
     enabled,
+  });
+}
+
+/** Prévia da regra (US-031): sem cache, cancelável; só roda com entrada válida. */
+export function useRulePreview(input: SplitRuleInput | null) {
+  return useQuery({
+    queryKey: ["split-rule-preview", input],
+    queryFn: ({ signal }) =>
+      apiFetch<RulePreviewDTO>("/api/v1/split-rule/preview", {
+        method: "POST",
+        body: input,
+        signal,
+      }),
+    enabled: input !== null,
+    gcTime: 0,
+    staleTime: 0,
+    retry: false,
   });
 }

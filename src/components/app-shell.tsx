@@ -25,6 +25,9 @@ import { cn } from "@/components/ui/cn";
 
 export type ShellUser = { name: string; email: string; image: string | null };
 
+/** Telas de formulário de página inteira: o "+" não pode cobrir "Salvar" (SDD-010 §6.4). */
+const HIDE_FAB_ROUTES = ["/acerto/regra"];
+
 const NAV_ITEMS: Array<{ href: string; label: string; icon: typeof Home }> = [
   { href: "/", label: "Início", icon: Home },
   { href: "/extrato", label: "Extrato", icon: ListOrdered },
@@ -194,7 +197,7 @@ export function AppShell({
           </div>
         </div>
       </header>
-      <QuickAddProvider>
+      <QuickAddProvider hideFab={HIDE_FAB_ROUTES.includes(pathname)}>
         <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
           <Suspense fallback={null}>
             <JoinedNotice familyName={familyName} />

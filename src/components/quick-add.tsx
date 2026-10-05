@@ -21,7 +21,13 @@ export const useQuickAdd = () => useContext(QuickAddContext);
  * FAB "+" e drawer de lançamento rápido (FLUXO-001). Sem contas, orienta a cadastrar uma
  * (SDD-001 §5.1) e não abre o formulário.
  */
-export function QuickAddProvider({ children }: { children: ReactNode }) {
+export function QuickAddProvider({
+  children,
+  hideFab = false,
+}: {
+  children: ReactNode;
+  hideFab?: boolean;
+}) {
   const qc = useQueryClient();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [noAccounts, setNoAccounts] = useState(false);
@@ -61,14 +67,16 @@ export function QuickAddProvider({ children }: { children: ReactNode }) {
   return (
     <QuickAddContext.Provider value={api}>
       {children}
-      <button
-        type="button"
-        aria-label="Novo lançamento"
-        onClick={() => void open()}
-        className="fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-brand-700 text-white shadow-lg hover:bg-brand-800 md:bottom-6 md:right-6"
-      >
-        <Plus size={28} aria-hidden="true" />
-      </button>
+      {hideFab ? null : (
+        <button
+          type="button"
+          aria-label="Novo lançamento"
+          onClick={() => void open()}
+          className="fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-brand-700 text-white shadow-lg hover:bg-brand-800 md:bottom-6 md:right-6"
+        >
+          <Plus size={28} aria-hidden="true" />
+        </button>
+      )}
       <TransactionDrawer open={drawerOpen} onOpenChange={setDrawerOpen} initialKind={kind} />
       <Drawer open={noAccounts} onOpenChange={setNoAccounts} title="Cadastre uma conta primeiro">
         <div className="flex flex-col gap-4">

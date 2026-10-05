@@ -2,15 +2,19 @@
 
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { Money } from "@/components/money";
+import { MoneyInput } from "@/components/money-input";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Field, inputClass } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
-import { usePutSplitRule, useSplitRule } from "@/modules/split/hooks";
+import { usePutSplitRule, useRulePreview, useSplitRule } from "@/modules/split/hooks";
+import { suggestBpsFromIncomes } from "@/modules/split/preview";
 import { equalShares, formatBps, formatBpsList, parsePercentToBps } from "@/modules/split/rules";
 import type { SplitRuleDTO } from "@/modules/split/schemas";
 import { DisabledNotice, isDisabled } from "../acerto-screen";
@@ -19,6 +23,22 @@ const RANGE_MSG = "Informe um percentual entre 0% e 100%";
 const SUM_MSG = "Os percentuais precisam somar 100%";
 
 type Kind = "EQUAL" | "PROPORTIONAL";
+
+const MONTHS = [
+  "janeiro",
+  "fevereiro",
+  "março",
+  "abril",
+  "maio",
+  "junho",
+  "julho",
+  "agosto",
+  "setembro",
+  "outubro",
+  "novembro",
+  "dezembro",
+];
+const monthName = (key: string) => MONTHS[Number(key.slice(5, 7)) - 1] ?? key;
 
 function Form({ rule }: { rule: SplitRuleDTO }) {
   const equal = equalShares(rule.members.map((m, i) => ({ id: m.id, ordinal: i })));
@@ -38,11 +58,50 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
   const [key, setKey] = useState(newIdempotencyKey);
   const submitting = useRef(false);
   const put = usePutSplitRule(key);
-
   const parsed = rule.members.map((m) => parsePercentToBps(values[m.id] ?? ""));
   const total = parsed.reduce<number>((s, v) => s + (v ?? 0), 0);
   const readOnly = !rule.canEdit;
   const equalLabel = `Dividir igualmente (${formatBpsList(equal)})`;
+  const router = useRouter();
+  const [incomes, setIncomes] = useState<Record<string, number>>({});
+  const [incomeError, setIncomeError] = useState<string | null>(null);
+
+  // Prévia (US-031): só com entrada válida, com debounce de 300 ms
+  const sumOk = kind === "EQUAL" || (parsed.every((v) => v !== null) && total === 10000);
+  const previewInput = (() => {
+    if (readOnly || !sumOk) return null;
+    if (kind === "EQUAL") return { kind: "EQUAL" as const };
+    return {
+      kind: "PROPORTIONAL" as const,
+      shares: rule.members.map((m, i) => ({ memberId: m.id, bps: parsed[i] as number })),
+    };
+  })();
+  const previewKey = JSON.stringify(previewInput);
+  const [debouncedKey, setDebouncedKey] = useState(previewKey);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedKey(previewKey), 300);
+    return () => clearTimeout(t);
+  }, [previewKey]);
+  const preview = useRulePreview(debouncedKey === previewKey ? previewInput : null);
+
+  function suggest() {
+    try {
+      const out = suggestBpsFromIncomes(
+        rule.members.map((m, i) => ({
+          memberId: m.id,
+          ordinal: i,
+          incomeInCents: incomes[m.id] ?? 0,
+        })),
+      );
+      setKind("PROPORTIONAL");
+      setValues(Object.fromEntries(out.map((s) => [s.memberId, formatBps(s.bps)])));
+      setIncomeError(null);
+      setSumError(null);
+      setFieldErrors({});
+    } catch {
+      setIncomeError("Informe as rendas");
+    }
+  }
 
   function submit() {
     if (submitting.current || readOnly) return;
@@ -77,8 +136,9 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
     submitting.current = true;
     put.mutate(input, {
       onSuccess: () => {
-        toast.success("Regra de divisão salva");
+        toast.success("Regra de divisão atualizada");
         setKey(newIdempotencyKey());
+        router.push("/acerto");
       },
       onError: (e) => {
         if (e instanceof NetworkError) setBanner(e.message);
@@ -195,15 +255,60 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
           >
             Total: {formatBps(total)}%
           </p>
-          {sumError ? (
+          {sumError || (parsed.every((v) => v !== null) && total !== 10000) ? (
             <p role="alert" className="text-sm text-red-700">
-              {sumError}
+              {sumError ?? SUM_MSG}
             </p>
           ) : null}
         </section>
       ) : null}
 
-      <p className="text-sm text-slate-600">A mudança vale a partir de agora.</p>
+      {preview.data ? (
+        <section
+          aria-label="Prévia"
+          data-testid="rule-preview"
+          className="flex flex-col gap-1 rounded-xl bg-slate-50 p-3 text-sm text-slate-700"
+        >
+          <p data-testid="preview-effective">
+            Vale a partir de {preview.data.effectiveFrom.split("-").reverse().join("/")}.
+            Lançamentos anteriores não mudam.
+          </p>
+          <p data-testid="preview-impact">
+            Impacto no acerto de {monthName(preview.data.period.key)}:{" "}
+            <Money cents={preview.data.impactInCents} />
+          </p>
+        </section>
+      ) : (
+        <p className="text-sm text-slate-600">A mudança vale a partir de agora.</p>
+      )}
+
+      {!readOnly ? (
+        <details className="rounded-lg border border-slate-200 p-3">
+          <summary className="min-h-6 cursor-pointer text-sm font-medium text-slate-700">
+            Sugerir pela renda
+          </summary>
+          <div className="mt-3 flex flex-col gap-3">
+            {rule.members.map((m) => (
+              <Field key={m.id} id={`inc-${m.id}`} label={`Renda de ${m.name.split(" ")[0]}`}>
+                <MoneyInput
+                  id={`inc-${m.id}`}
+                  value={incomes[m.id] ?? 0}
+                  onChange={(c) => setIncomes((v) => ({ ...v, [m.id]: c }))}
+                />
+              </Field>
+            ))}
+            <p className="text-xs text-slate-500">As rendas informadas não são guardadas</p>
+            {incomeError ? (
+              <p role="alert" className="text-sm text-red-700">
+                {incomeError}
+              </p>
+            ) : null}
+            <Button type="button" variant="secondary" onClick={suggest}>
+              Sugerir pela renda
+            </Button>
+          </div>
+        </details>
+      ) : null}
 
       {!readOnly ? (
         <>
@@ -227,7 +332,13 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
               </Field>
             </div>
           </details>
-          <Button type="submit" disabled={put.isPending}>
+          <Button
+            type="submit"
+            disabled={
+              put.isPending ||
+              (kind === "PROPORTIONAL" && parsed.every((v) => v !== null) && total !== 10000)
+            }
+          >
             {put.isPending ? "Salvando…" : "Salvar regra"}
           </Button>
         </>

@@ -9,6 +9,7 @@ import { createTransferGroup } from "@/modules/contas/transfers";
 import { explainByRules } from "@/modules/split/explain";
 import { assertSettlementEnabled } from "@/modules/split/guard";
 import { settlementLabel } from "@/modules/split/labels";
+import { computeRulePreview, type RulePreviewDTO } from "@/modules/split/preview";
 import { splitRepo } from "@/modules/split/repo";
 import { equalShares, isRuleStale, type RuleInput, ruleAt } from "@/modules/split/rules";
 import type {
@@ -55,7 +56,16 @@ function ruleDto(
     id: r.id,
     kind: r.kind,
     effectiveFrom: r.effectiveFrom,
-    shares: r.kind === "EQUAL" ? equalShares(canonical) : r.shares,
+    // sempre na ordem canônica dos membros (a ordem das linhas do banco não é estável)
+    shares:
+      r.kind === "EQUAL"
+        ? equalShares(canonical)
+        : [...canonical]
+            .sort((x, y) => x.ordinal - y.ordinal)
+            .flatMap((m) => {
+              const s = r.shares.find((x) => x.memberId === m.id);
+              return s ? [s] : [];
+            }),
     createdAt: r.createdAt,
     createdBy: createdBy ? (refs.get(createdBy) ?? null) : null,
   };
@@ -122,6 +132,67 @@ export async function getSplitHistory(tx: Tx, ctx: RequestContext): Promise<Spli
     )
     .map((r) => ruleDto(r, canonical, refs, createdBy.get(r.id) ?? null));
   return { items };
+}
+
+/** POST /api/v1/split-rule/preview (SDD-011 §4.6): mesmas validações do PUT, sem gravar nada. */
+export async function previewRule(
+  tx: Tx,
+  ctx: RequestContext,
+  input: SplitRuleParsed,
+): Promise<RulePreviewDTO> {
+  await assertSettlementEnabled(tx, ctx);
+  const c = await loadRuleContext(tx, ctx);
+  const ids = new Set(c.members.map((m) => m.id));
+  if (input.kind === "PROPORTIONAL") {
+    const given = new Set(input.shares.map((s) => s.memberId));
+    const same = given.size === ids.size && [...given].every((id) => ids.has(id));
+    if (!same) {
+      throw unprocessable("SHARES_MEMBER_MISMATCH", "Informe o percentual de todos os membros", [
+        { path: "shares", message: "Informe o percentual de todos os membros" },
+      ]);
+    }
+  }
+  const effectiveFrom = input.effectiveFrom ?? c.today;
+  const period = periodOf(c.today, c.cutDay);
+  if (compareDate(effectiveFrom, period.start) < 0) {
+    const message = "A regra só pode valer a partir do período atual";
+    throw unprocessable("EFFECTIVE_FROM_IN_PAST", message, [{ path: "effectiveFrom", message }]);
+  }
+  const l = await loadSettlement(tx, ctx, period.key);
+  const canonical = c.members.map((m, i) => ({ id: m.id, ordinal: i }));
+  const sharesOf = (r: {
+    kind: "EQUAL" | "PROPORTIONAL";
+    shares: Array<{ memberId: string; bps: number }>;
+  }) => (r.kind === "EQUAL" ? equalShares(canonical) : r.shares);
+  const current = ruleAt(c.rules, c.today);
+  return computeRulePreview({
+    period,
+    members: l.memberInputs,
+    expenses: l.expenseInputs,
+    rules: c.rules,
+    settlements: l.groups.flatMap((g) => {
+      const out = g.legs.find((x) => x.kind === "TRANSFER_OUT");
+      if (!out || !g.settlementFromMemberId || !g.settlementToMemberId) return [];
+      return [
+        {
+          fromMemberId: g.settlementFromMemberId,
+          toMemberId: g.settlementToMemberId,
+          amountInCents: toCents(out.amountInCents),
+        },
+      ];
+    }),
+    candidate:
+      input.kind === "PROPORTIONAL"
+        ? { kind: "PROPORTIONAL", shares: input.shares }
+        : { kind: "EQUAL", shares: [] },
+    effectiveFrom,
+    nowIso: ctx.clock.now().toISOString(),
+    currentShares: sharesOf(current),
+    nextShares: sharesOf({
+      kind: input.kind,
+      shares: input.kind === "PROPORTIONAL" ? input.shares : [],
+    }),
+  });
 }
 
 /** PUT /api/v1/split-rule (SDD-002 §5.5): sempre uma nova versão; nunca altera as antigas. */
