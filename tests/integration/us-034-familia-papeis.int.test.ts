@@ -85,7 +85,7 @@ describe("US-034 editar família e papéis", () => {
     );
   });
 
-  it("corrida: dois Administradores se rebaixam ao mesmo tempo => 1×200 e 1×422; sempre sobra 1 ADMIN", async () => {
+  it("corrida: dois Administradores se rebaixam ao mesmo tempo => 1×200 e o outro 422/403; sempre sobra 1 ADMIN", async () => {
     for (let i = 0; i < 6; i++) {
       await resetDb();
       fx = await makeFamily();
@@ -94,7 +94,10 @@ describe("US-034 editar família e papéis", () => {
         role(mariana(), mid("Lucas"), "MEMBER"),
         role(lucas(), mid("Mariana"), "MEMBER"),
       ]);
-      expect([a.status, b.status].sort()).toEqual([200, 422]);
+      // o perdedor recebe 422 (último ADMIN) ou 403 (já perdeu o papel quando a requisição foi lida)
+      const sorted = [a.status, b.status].sort();
+      expect(sorted[0]).toBe(200);
+      expect([403, 422]).toContain(sorted[1]);
       expect(await db.member.count({ where: { role: "ADMIN" } })).toBe(1);
     }
   }, 120_000);

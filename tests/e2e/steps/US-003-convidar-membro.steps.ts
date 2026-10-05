@@ -89,8 +89,8 @@ When("Lucas entra com o Google usando {string}", async ({ page }, email: string)
 
 Then("ele é vinculado à {string} com o papel do convite", async ({}, nome: string) => {
   const user = await db.user.findUniqueOrThrow({ where: { email: "lucas@exemplo.com" } });
-  const member = await db.member.findUniqueOrThrow({
-    where: { userId: user.id },
+  const member = await db.member.findFirstOrThrow({
+    where: { userId: user.id, removedAt: null },
     include: { family: true },
   });
   expect(member.family.name).toBe(nome);

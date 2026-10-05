@@ -22,7 +22,9 @@ describe("US-002 Criar família com sucesso", () => {
     const family = await db.family.findUniqueOrThrow({ where: { id: res.body.family.id } });
     expect(family).toMatchObject({ timezone: "America/Sao_Paulo", currency: "BRL", cutDay: 1 });
 
-    const member = await db.member.findUniqueOrThrow({ where: { userId: as.userId } });
+    const member = await db.member.findFirstOrThrow({
+      where: { userId: as.userId, removedAt: null },
+    });
     expect(member).toMatchObject({ id: res.body.member.id, familyId: family.id, role: "ADMIN" });
 
     const cats = await db.category.findMany({

@@ -288,3 +288,70 @@ describe("US-009 computeSettlement: propriedades (semente fixa)", () => {
     }
   });
 });
+
+describe("US-035 ex-membro no motor (ADR-019 §6, S14..S16)", () => {
+  const Xr = (removedOn: string): MemberInput => ({ ...X, removedOn });
+
+  it("S14: 3 membros EQUAL; X removido em 15/10: participa de outubro e NÃO participa de novembro", () => {
+    const oct = computeSettlement(
+      base({
+        members: [M, L, Xr("2026-10-15")],
+        rules: [EQUAL],
+        expenses: [exp("m", 30000, "2026-10-10")],
+      }),
+    );
+    expect(oct.members.map((m) => m.quotaInCents)).toEqual([10000, 10000, 10000]);
+    const nov = computeSettlement(
+      base({
+        period: periodFromKey("2026-11"),
+        members: [M, L, Xr("2026-10-15")],
+        rules: [EQUAL],
+        expenses: [exp("m", 30000, "2026-11-10")],
+      }),
+    );
+    expect(nov.members.map((m) => m.memberId)).toEqual(["m", "l"]);
+    expect(nov.members.map((m) => m.quotaInCents)).toEqual([15000, 15000]);
+  });
+
+  it("S15: despesa paga pelo ex-membro continua creditada a ele (mesmo se removido antes do período)", () => {
+    const r = computeSettlement(
+      base({
+        period: periodFromKey("2026-11"),
+        members: [M, L, Xr("2026-10-15")],
+        rules: [EQUAL],
+        expenses: [exp("x", 30000, "2026-11-02")],
+      }),
+    );
+    const x = r.members.find((m) => m.memberId === "x");
+    expect(x?.paidInCents).toBe(30000);
+    expect(r.suggestions.length).toBeGreaterThan(0);
+  });
+
+  it("S16: regra PROPORTIONAL com ex-membro: só os presentes dividem (a regra fica 'stale' por isRuleStale)", () => {
+    const rule = prop("r1", "2026-01-01", [
+      ["m", 4000],
+      ["l", 3000],
+      ["x", 3000],
+    ]);
+    const r = computeSettlement(
+      base({
+        period: periodFromKey("2026-11"),
+        members: [M, L, Xr("2026-10-15")],
+        rules: [EQUAL, rule],
+        expenses: [exp("m", 70000, "2026-11-02")],
+      }),
+    );
+    expect(r.members.map((m) => m.quotaInCents)).toEqual([40000, 30000]);
+    expect(r.members.reduce((s, m) => s + m.quotaInCents, 0)).toBe(70000);
+  });
+
+  it("períodos que terminam antes da remoção não mudam (regressão: removedOn depois do fim)", () => {
+    const withX = computeSettlement(
+      base({ members: [M, L, Xr("2026-12-01")], rules: [EQUAL], expenses: [exp("m", 30000)] }),
+    );
+    const sem = computeSettlement(
+      base({ members: [M, L, X], rules: [EQUAL], expenses: [exp("m", 30000)] }),
+    );
+    expect(withX).toEqual(sem);
+  });
+});

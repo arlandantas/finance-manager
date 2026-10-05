@@ -117,7 +117,9 @@ describe("US-003 Convidado entra e é vinculado automaticamente", () => {
     expect(user.email).toBe("lucas@exemplo.com");
     const result = await accept(user);
     expect(result).toEqual({ status: "JOINED", familyName: "Família Silva" });
-    const member = await db.member.findUniqueOrThrow({ where: { userId: user.id } });
+    const member = await db.member.findFirstOrThrow({
+      where: { userId: user.id, removedAt: null },
+    });
     expect(member).toMatchObject({ familyId: fx.family.id, role: "ADMIN" });
     const inv = await db.invitation.findFirstOrThrow();
     expect(inv).toMatchObject({ status: "ACCEPTED", acceptedByUserId: user.id });

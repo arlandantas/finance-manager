@@ -27,7 +27,7 @@ Then("a família {string} é criada", async ({ page }, nome: string) => {
 
 Then("Mariana é membro com papel {string}", async ({}, papel: string) => {
   const user = await db.user.findUniqueOrThrow({ where: { email: "mariana@exemplo.com" } });
-  const member = await db.member.findUniqueOrThrow({ where: { userId: user.id } });
+  const member = await db.member.findFirstOrThrow({ where: { userId: user.id, removedAt: null } });
   expect(member.role).toBe(papel === "Administrador" ? "ADMIN" : "MEMBER");
 });
 

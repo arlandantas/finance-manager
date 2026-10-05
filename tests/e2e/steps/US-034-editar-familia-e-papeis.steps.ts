@@ -40,7 +40,11 @@ When("Lucas abre a tela Família", async ({ world, page }) => {
 });
 Then("não vê o botão {string} nem ações de papel", async ({ page }, b: string) => {
   await expect(page.getByRole("button", { name: b })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /^Ações de/ })).toHaveCount(0);
+  // o Membro só tem o menu da própria linha ("Sair da família"), sem "Alterar papel" nem "Remover"
+  await expect(page.getByRole("button", { name: /^Ações de/ })).toHaveCount(1);
+  await page.getByRole("button", { name: /^Ações de/ }).click();
+  await expect(page.getByRole("menuitem", { name: "Alterar papel" })).toHaveCount(0);
+  await expect(page.getByRole("menuitem", { name: "Remover" })).toHaveCount(0);
 });
 When(
   "Mariana altera o papel de {string} para {string}",

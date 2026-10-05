@@ -211,7 +211,7 @@ describe("US-011 Registrar o acerto de contas", () => {
     // Mariana é credora (envolvida) e ADMIN; o ADMIN não envolvido é coberto trocando o papel de Lucas
     await db.member.update({ where: { id: id("Lucas") }, data: { role: "MEMBER" } });
     await db.member.update({ where: { id: id("Mariana") }, data: { role: "MEMBER" } });
-    await db.member.update({ where: { userId: user.id }, data: { role: "ADMIN" } });
+    await db.member.updateMany({ where: { userId: user.id }, data: { role: "ADMIN" } });
     expect((await settle(xavier, body({ amountInCents: 10000 }))).status).toBe(201);
   });
 
