@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import type { Tx } from "@/lib/api/types";
 import { toDbDate } from "@/lib/dates";
+import { periodFilter } from "@/modules/transacoes/ledger-where";
 
 /** Regra de divisão, despesas comuns e acertos sempre escopados por `familyId` (ADR-013). */
 export function splitRepo(tx: Tx, familyId: string) {
@@ -44,7 +45,7 @@ export function splitRepo(tx: Tx, familyId: string) {
           kind: "EXPENSE",
           isSharedExpense: true,
           deletedAt: null,
-          occurredOn: { gte: toDbDate(start), lte: toDbDate(end) },
+          ...periodFilter(start, end),
         },
         include: { category: true },
         orderBy: [{ occurredOn: "desc" }, { createdAt: "desc" }, { id: "desc" }],

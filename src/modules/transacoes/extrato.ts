@@ -1,6 +1,7 @@
 import { Prisma } from "@/generated/prisma/client";
 import type { Tx } from "@/lib/api/types";
 import { toCents } from "@/lib/money";
+import { periodPredicate } from "@/modules/transacoes/ledger-where";
 import type { LedgerFilters, LedgerTotalsDTO } from "@/modules/transacoes/schemas";
 
 /**
@@ -11,7 +12,7 @@ export function buildLedgerWhere(f: LedgerFilters): Prisma.Sql {
   const parts: Prisma.Sql[] = [
     Prisma.sql`t."familyId" = ${f.familyId}::uuid`,
     Prisma.sql`t.kind <> 'OPENING'`,
-    Prisma.sql`t."occurredOn" BETWEEN ${f.start}::date AND ${f.end}::date`,
+    periodPredicate("t", f.start, f.end),
   ];
   if (!f.includeDeleted) parts.push(Prisma.sql`t."deletedAt" IS NULL`);
   if (f.accountId) parts.push(Prisma.sql`t."accountId" = ${f.accountId}::uuid`);

@@ -1,6 +1,6 @@
 import type { Tx } from "@/lib/api/types";
-import { toDbDate } from "@/lib/dates";
 import { toCents } from "@/lib/money";
+import { periodFilter } from "@/modules/transacoes/ledger-where";
 
 /** Despesas (comuns e pessoais) ativas do período somadas por quem pagou (SDD-005 §3.2). */
 export function homeRepo(tx: Tx, familyId: string) {
@@ -12,7 +12,7 @@ export function homeRepo(tx: Tx, familyId: string) {
           familyId,
           kind: "EXPENSE",
           deletedAt: null,
-          occurredOn: { gte: toDbDate(start), lte: toDbDate(end) },
+          ...periodFilter(start, end),
         },
         _sum: { amountInCents: true },
       });
