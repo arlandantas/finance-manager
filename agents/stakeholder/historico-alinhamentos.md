@@ -257,3 +257,13 @@ Nenhuma objeção bloqueante. As observações acima (D-PO-03, Q-13, Q-17) são 
 ### Entregas
 - [x] Atualização de [`cronograma-e-releases.md`](cronograma-e-releases.md): NEED-007 no AP0/R1, fatiamento R1/R2, AP1..AP3 coerentes.
 - [x] Esta entrada de validação.
+
+---
+
+## [2026-10-04] - Homologação de valor R1 + R2 (teste pelo navegador)
+
+- **Participantes:** Agente Stakeholder (execução do teste como usuário real, desktop e mobile 375 px).
+- **Resultado:** **Homologa com ressalvas**. Fluxo lançar → acerto → pagar fatura → baixar previstas funciona e é rápido (lançamento em ~4 toques); sem bloqueantes. Ressalvas importantes: rótulo da regra de divisão contradiz os números do acerto, dívida de mês anterior sem sinalização na Início e conta de origem padrão inadequada em pagamentos.
+- **Posição Q-18..Q-22:** Q-18/Q-19/Q-21/Q-22 de acordo; Q-20 sensível (decisão do casal pelo Gestor).
+- **Entrega:** [`homologacao-r1-r2.md`](homologacao-r1-r2.md). Dados criados no banco de demonstração listados no relatório.
+
