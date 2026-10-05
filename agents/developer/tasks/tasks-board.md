@@ -1,6 +1,6 @@
 # 📋 Quadro de Tarefas & QA do Desenvolvedor
 
-*Atualizado: 2026-10-04 (R2 em andamento) · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Incremento 1 (walking skeleton) concluído: EN-001 → US-001 → US-002 → US-004 → US-005 → US-006 → US-007 → US-003. Incremento 2 (fechar o mês), ordem do PO: US-008 → US-009a → US-010 → US-011 → US-012 → US-009b → US-013a → US-013b.*
+*Atualizado: 2026-10-05 (R2.1 lote 1 concluído; retomar em US-028) · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Incremento 1 (walking skeleton) concluído: EN-001 → US-001 → US-002 → US-004 → US-005 → US-006 → US-007 → US-003. Incremento 2 (fechar o mês), ordem do PO: US-008 → US-009a → US-010 → US-011 → US-012 → US-009b → US-013a → US-013b.*
 
 ## 📌 Fluxo de Execução
 
@@ -39,6 +39,12 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-023 | US-017b | Pagar a fatura (R2, Should) | US-017a, US-013a | SDD-008 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-024 | US-016b | Corrigir compra no cartão e filtrar por cartão (R2, Should) | US-016a, US-013a | SDD-008 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-025 | EN-001 | Ambiente dev multi-origem (localhost, IP da LAN, túnel) e diagnóstico do Google | EN-001 | SDD-000 | 2 | Concluído (aguardando validação do Gestor) |
+| TASK-026 | US-027 | Ocultar valores (`Money`, `prefs`, olho, `maskMoneyInText`, regra de CI) | — | SDD-010 | 5 | Concluído (aguardando validação do Gestor) |
+| TASK-027 | US-022 | Rótulo honesto da regra (`explainByRules`, `splitExplanation`, histórico) | US-008/009a | SDD-011 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-028 | US-023 | Conta de origem padrão (`suggestSourceAccount`, `usageCountByMe`) | US-017b, US-019 | SDD-013 | 3 | Concluído (aguardando validação do Gestor); cenário "arquivada" liga com a US-032 |
+| TASK-029 | US-024 | Descrição visível e opcional + busca `q` no Extrato | US-005/006/016a | SDD-013 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-030 | US-025 | Resumo do Mês (`getMonthSummary`, `GET /month-summary`, `listDueItems`, `ledger-where`) | US-012, US-017a, US-018 | SDD-010 | 5 | Concluído (aguardando validação do Gestor) |
+| TASK-031 | US-026 | Saldos das contas em card recolhível | US-025 | SDD-010 | 2 | Concluído (aguardando validação do Gestor) |
 
 ---
 
@@ -345,3 +351,37 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 - **Arquivos**: `src/lib/dev-origins.ts` (novo), `next.config.ts`, `package.json` (`next dev -H 0.0.0.0`), `src/lib/auth/dev-login-guard.ts`, `src/lib/api/with-api.ts` (CSRF), `src/lib/env.ts` (`publicBaseUrl`), `invitations/{service,route}.ts`, `src/app/layout.tsx` + `components/tunnel-retry.tsx`, `src/lib/http.ts` (fallback de UUID), `.env.example`, `README.md`.
 - **QA**: U (`dev-origins`, `auth-pure`, `env`, `http-idempotency-key`); I (CSRF multi-origem, link de convite por origem); validado no navegador embutido em `http://192.168.1.81:3102` (2ª instância): login de teste até a Home. A validação achou o bug do `crypto.randomUUID` em http (DEV-28).
 - **Desvios**: DEV-27 a DEV-31.
+
+
+---
+
+# R2.1 — Lote 1 (D-GES-19/D-GES-14..20)
+
+> **Ponto de retomada**: lote 1 (US-027, 022, 023, 024, 025, 026) concluído e commitado. Próxima: **US-028** (SDD-011, migração `r21_familia_configuracoes`), depois US-029 → 039 e a R3-A (D-GES-23). Linha de base: [`qa-r21-baseline.md`](qa-r21-baseline.md).
+
+## ✅ [TASK-026] US-027 — Ocultar valores
+- **SDD-010** §1, §4.4. **Arquivos**: `src/lib/prefs.ts`, `src/lib/mask-money.ts`, `src/components/money.tsx` (`Money`, `useFormatMoney`, `useMoneyText`), olho em `app-shell.tsx`, `PrefsProvider` no `(app)/layout`, `ApiClientError` mascara valores de mensagens do servidor, todas as telas migradas, regra `check:imports` (`money-format`, `period-predicate`).
+- **QA**: U (prefs 7, Money 7, regras de CI 3); E2E 15 cenários x 2 (`@valores-ocultos`); E2E legados rodam com um shim que simula "preferência = visível" por contexto (`hooks.ts`). Mobile 375 px sem overflow (E2E "Máscara em todo o app").
+- **Desvios**: DEV-32, DEV-33.
+
+## ✅ [TASK-027] US-022 — Rótulo honesto da regra
+- **SDD-011** §4.1. `split/explain.ts` (puro), `SettlementDTO.splitExplanation`, `GET /split-rule/history`, tela de Acerto (rótulo, ponderado, histórico).
+- **QA**: U (X1..X8 + 3 trechos + homologado), I (7), E2E 7 x 2. Números homologados preservados (set 717,00/358,50; out 3.169,90/1.584,95); `computeSettlement` e `rules.ts` intocados.
+- **Desvios**: DEV-34.
+
+## ✅ [TASK-028] US-023 — Conta de origem padrão
+- **SDD-013** §4.1. `contas/suggest-source.ts` (A1..A10), `AccountDTO.usageCountByMe` (90 dias), hook `useSourceAccount` nos drawers "Pagar fatura" e "Dar baixa" (motivo, "saldo insuficiente", `userPicked`).
+- **QA**: U 11, I 4, E2E 11 x 2. Regressão: `defaults` do lançamento inalterado.
+
+## ✅ [TASK-029] US-024 — Descrição visível e opcional + busca
+- **SDD-013** §4.2. Campo "Descrição (opcional)" fora de "Mais detalhes"; `DESCRIPTION_MSG` única; `q` em `buildLedgerWhere` (ILIKE escapado); campo "Buscar" no painel de filtros.
+- **QA**: U 3, I 11 (inclui `%`/`_` literais e Σ itens = totais), E2E 10 x 2.
+
+## ✅ [TASK-030] US-025 — Resumo do Mês
+- **SDD-010** §4.1–§4.3. `ledger-where.ts` (único ponto de período; `periodFilter` para o Prisma), `getMonthSummary`, `listDueItems`, `GET /month-summary`, novo `HomeDTO`, card herói com setas.
+- **QA**: I 8 (inclui propriedade de 200 conjuntos com semente fixa: resumo = Extrato; Σ byMember = despesas); ajustados us-012/016a/017b/018; E2E 5 x 2.
+- **Desvios**: DEV-35, DEV-36.
+
+## ✅ [TASK-031] US-026 — Card de saldos recolhível
+- **SDD-010** §6.2. `BalancesCard` com `usePref("balancesExpanded")`, `aria-expanded`, "Nenhuma conta cadastrada".
+- **QA**: E2E 4 x 2 (recolhido por padrão, expandir/recolher, lembrado e por dispositivo, Enter). "Ignora arquivadas" liga com a US-032.
