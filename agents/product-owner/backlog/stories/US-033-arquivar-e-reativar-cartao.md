@@ -13,8 +13,9 @@
 Como **membro da família**, quero **arquivar um cartão que não uso mais**, para **tirá-lo dos seletores sem perder as faturas e compras passadas**.
 
 ## Regras de negócio aplicáveis
-- Só arquiva **sem fatura em aberto ou não paga** (aberta com compras, fechada ou vencida) e **sem parcelas futuras** (US-040; até a R3 existir, a regra de parcelas é trivialmente satisfeita).
+- Só arquiva **sem fatura em aberto ou não paga** (aberta com compras, fechada ou vencida) e **sem parcelas futuras** (US-040; até a R3 existir, a regra de parcelas é trivialmente satisfeita e o critério "parcelas futuras" só fecha na R3, com o bloqueio `CARD_HAS_FUTURE_INSTALLMENTS` reservado pelo TL).
 - Cartão arquivado some da lista de cartões e do "Pagar com"; compras, faturas pagas e limite histórico permanecem; aparece em "Cartões arquivados" com **Reativar**.
+- **"Excluir" = exclusão lógica terminal** (D-PO-36, TL-04): o cartão some de todas as telas, libera o nome e não reativa; efeito idêntico ao de excluir de verdade para o usuário.
 - **Exclusão definitiva** só de cartão **sem nenhuma compra**, pelo Administrador, com confirmação.
 - Mensagem de bloqueio **diz o motivo** e o próximo passo ("Pague a fatura de out/2026 antes de arquivar").
 
@@ -93,3 +94,4 @@ Cancelar cartão no banco; transferir faturas entre cartões; arquivar cartão c
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 13).
+- 2026-10-04 — **Revisão pós-TL (D-PO-36):** TL = 3 (PO: 2); exclusão = exclusão lógica terminal; o bloqueio por parcelas futuras só fecha na R3.

@@ -16,7 +16,7 @@ Como **membro da família**, quero **tocar num lançamento da Home e ver o detal
 - Tocar num dos "Últimos lançamentos" da Home abre o **detalhe** (gaveta no mobile; painel lateral no desktop), **sem sair da Home**.
 - O detalhe mostra: descrição, valor, data, categoria, conta ou cartão, **quem pagou**, autor, divisão ("Só meu" ou "Dividido 50% / 50%"), observação, situação ("excluída" quando aplicável) e, para compra no cartão, a **fatura** em que cai.
 - **Ações rotuladas e visíveis** (achado 7): **Editar**, **Excluir**, **Histórico**; nada escondido atrás de "…". As regras de edição/exclusão são as da US-013a/013b/016b (ex.: despesa gerada por baixa ⇒ "Use Desfazer pagamento").
-- "Ver no Extrato" é um link explícito (leva ao Extrato com o lançamento em destaque); a aba Extrato continua existindo.
+- "Ver no Extrato" é um link explícito (leva ao Extrato do mês do lançamento com ele em destaque); a aba Extrato continua existindo. O destaque é o parâmetro de interface **`highlight`** (D-PO-40): **só a tela do Extrato o lê** (rola e destaca o item); **não há contrato de API** para ele e a API o ignora. O detalhe abre por estado local e pode ser reaberto por `?tx=<id>`, sem rotas paralelas.
 - Transferências e acertos abrem o detalhe com as ações cabíveis (desfazer), sem "Editar" (US-013b).
 - O mesmo detalhe também é usado no **Extrato** (um único componente), eliminando a divergência de comportamento.
 - Excluir mostra o aviso **"Desfazer"** por pelo menos 8 segundos (achado 7); restaurar continua em "Mostrar excluídos".
@@ -63,6 +63,11 @@ Funcionalidade: Detalhe da transação na Home
     Então vê o link "Ver no Extrato"
     E ao tocar nele vê o Extrato com "Mercado do bairro" em destaque
 
+  Cenário: Destaque de lançamento inexistente é ignorado
+    Dado um endereço do Extrato com destaque de um lançamento que não existe
+    Quando Lucas abre o endereço
+    Então o Extrato abre normalmente sem nenhum item em destaque
+
   Cenário: Transferência abre o detalhe sem Editar
     Dado uma transferência de "R$ 200,00" de "Nubank Conjunta" para "Poupança"
     Quando Lucas abre o detalhe da transferência
@@ -103,7 +108,8 @@ Funcionalidade: Detalhe da transação na Home
 Anexos e comprovantes; comentários no lançamento; duplicar lançamento; corrigir forma de pagamento (achado 6, fica para depois).
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- Reaproveitamento do detalhe do Extrato (`TransactionDetail`) e roteamento (rota paralela vs. estado local).
+- **Respondido pelo TL** (SDD-010 §4.6): estado local + `?tx=<id>` (sem rotas paralelas); componente único `TransactionDetail` compartilhado com o Extrato.
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 12) e do achado 7 da homologação.
+- 2026-10-04 — **Revisão pós-TL (D-PO-40):** `highlight` é parâmetro de UI sem contrato de API; acrescentado o cenário de destaque inexistente. Tamanho 3 confirmado.

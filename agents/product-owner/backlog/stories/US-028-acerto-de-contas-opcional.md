@@ -17,8 +17,10 @@ Como **Administrador da família**, quero **ligar ou desligar o acerto de contas
 - A configuração é **da família** e só o **Administrador** altera. Membro vê o estado, em leitura.
 - **Desligado**: somem o item de menu "Acerto", o indicador na Home, o campo "Dividir" no lançamento, a regra de divisão e os avisos de pendência. **Nada é apagado**: lançamentos marcados como divididos, regra e histórico de acertos permanecem; **religar restaura tudo** (RN-019.1).
 - Totais de despesas, categorias e saldos **não mudam** com o recurso ligado ou desligado (RN-019.3).
-- Desligar com **diferença em aberto** (qualquer mês): aviso "Há R$ X a acertar entre os membros. Ao desligar, o valor fica guardado e volta se você religar." + confirmação. A diferença **não desaparece** (RN-019.2).
+- Desligar com **diferença em aberto em qualquer mês** (a confirmação considera **todos os meses** desde a primeira despesa dividida, teto técnico de 120 meses; D-PO-37): aviso "Há R$ X a acertar entre os membros. Ao desligar, o valor fica guardado e volta se você religar." + confirmação. A diferença **não desaparece** (RN-019.2).
 - Linguagem neutra no acerto: "diferença do mês" e "valor a acertar" em lugar de "deve" (RN-019.4); a frase-herói do FLUXO-003 passa a "Para equilibrar o mês: Lucas transfere R$ X para Mariana".
+- O aviso de meses anteriores na Home (US-029) usa uma **janela de 12 meses**; os dois textos coexistem, cada um no seu lugar: a **confirmação de desligar** olha tudo, a **Home** só os últimos 12 meses.
+- **Religar não recalcula nada**: o recurso só volta a mostrar o que ficou guardado (nenhum lançamento, regra ou acerto é alterado).
 - Endereço direto das telas de acerto com o recurso desligado: "O acerto de contas está desligado nesta família" (sem erro técnico).
 
 ## Critérios de aceite (Gherkin)
@@ -65,6 +67,12 @@ Funcionalidade: Acerto de contas opcional
     Quando Mariana desliga a chave "Acerto de contas entre membros"
     Então vê o aviso "Há R$ 380,00 a acertar entre os membros"
     E o recurso só desliga depois de ela tocar em "Desligar mesmo assim"
+
+  Cenário: Desligar considera a diferença de qualquer mês
+    Dado que hoje é 12/10/2026
+    E uma diferença a acertar de "R$ 90,00" em maio de 2025 sem acerto registrado
+    Quando Mariana desliga a chave "Acerto de contas entre membros"
+    Então vê o aviso "Há R$ 90,00 a acertar entre os membros"
 
   Cenário: Cancelar o desligamento mantém tudo como estava
     Dado uma diferença a acertar de "R$ 380,00" em outubro de 2026
@@ -119,8 +127,9 @@ Funcionalidade: Acerto de contas opcional
 Acerto ligado/desligado **por usuário** (Q-F01: por família); ocultar a diferença só para um membro (usa "ocultar valores", US-027); mexer no cálculo do acerto.
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- Onde guardar a configuração (coluna na `Family` ou tabela de preferências) e como as rotas/API reagem ao estado desligado (ver `pedidos-ao-tech-lead-r21-r3.md`).
+- **Respondido pelo TL** (SDD-011): coluna `Family.settlementEnabled` (famílias existentes ligadas); a API devolve `409 SETTLEMENT_DISABLED` nas rotas de acerto e de regra (desfazer acerto e Extrato seguem funcionando); religar não recalcula nada (teste de *checksum*).
 - Os campos `isSharedExpense` e os acertos já registrados **permanecem** intactos; confirmar que nenhum job os recalcula ao religar.
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer do Stakeholder (item 2, Q-F01) e da NEED-019.
+- 2026-10-04 — **Revisão pós-TL (D-PO-37):** a confirmação de desligar considera **todos os meses** e o aviso da Home usa a janela de 12 meses (cada um no seu lugar); acrescentado o cenário "Desligar considera a diferença de qualquer mês". Tamanho 5 confirmado.

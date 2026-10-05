@@ -19,6 +19,8 @@ Como **membro da família**, quero **ver o campo de descrição ao lançar uma d
 - Em **despesa, receita e compra no cartão** (e na baixa de previsão, que já tem descrição).
 - Descrição **não bloqueia** o salvar e **não é focada** automaticamente (o foco continua no valor): **mesmos quatro toques** do fluxo mínimo (valor, categoria, salvar).
 - Sugestões de descrições recentes ao digitar (auto-completar) ficam para o futuro.
+- **Mensagem única** (TL-08): em despesa, receita e compra no cartão a validação de descrição devolve sempre **"A descrição precisa ter entre 2 e 100 caracteres"** (curta ou longa demais). A despesa **prevista** (US-018) mantém as suas mensagens.
+- **Busca por descrição no Extrato** (contrato novo, D-PO-38): campo **"Buscar"** no painel de filtros; parâmetro `q` com **2 a 50 caracteres** (menos que isso: "Digite ao menos 2 letras"); casa **trecho** da descrição e **não diferencia maiúsculas de minúsculas**, mas **diferencia acentos** (limitação conhecida: "cafe" não encontra "Café"); caracteres especiais (`%`, `_`) são buscados como texto; vale para a **lista e para os totais** do Extrato e combina com os demais filtros.
 - Edição de lançamento (US-013a) mostra e permite alterar a descrição.
 
 ## Critérios de aceite (Gherkin)
@@ -85,6 +87,37 @@ Funcionalidade: Descrição visível e opcional
     Dado uma despesa com a descrição "Mercado do bairro"
     Quando Lucas busca por "bairro" no Extrato
     Então a despesa aparece no resultado
+
+  Cenário: Busca não diferencia maiúsculas de minúsculas
+    Dado uma despesa com a descrição "Mercado do bairro"
+    Quando Lucas busca por "BAIRRO" no Extrato
+    Então a despesa aparece no resultado
+
+  Cenário: Busca filtra a lista e os totais
+    Dado despesas "Mercado do bairro" de "R$ 100,00" e "Farmácia" de "R$ 50,00" em outubro de 2026
+    Quando Lucas busca por "bairro" no Extrato de outubro de 2026
+    Então o Extrato mostra só "Mercado do bairro"
+    E o total de despesas do Extrato é "R$ 100,00"
+
+  Cenário: Busca curta demais
+    Dado uma despesa com a descrição "Mercado do bairro"
+    Quando Lucas busca por "a" no Extrato
+    Então vê "Digite ao menos 2 letras"
+
+  Cenário: Busca diferencia acentos
+    Dado uma despesa com a descrição "Café da manhã"
+    Quando Lucas busca por "cafe" no Extrato
+    Então a despesa não aparece no resultado
+
+  Cenário: Caracteres especiais são buscados como texto
+    Dado uma despesa com a descrição "Mercado 100%" e outra com a descrição "Padaria"
+    Quando Lucas busca por "100%" no Extrato
+    Então só "Mercado 100%" aparece no resultado
+
+  Cenário: Despesa prevista mantém a sua mensagem de descrição
+    Dado que Lucas abre o cadastro de despesa prevista
+    Quando Lucas informa a descrição "a"
+    Então vê "A descrição deve ter no mínimo 2 caracteres"
 ```
 
 ## Experiência (UX/estados)
@@ -94,7 +127,8 @@ Funcionalidade: Descrição visível e opcional
 Auto-completar por descrições anteriores; descrição obrigatória por família; anexos/comprovantes.
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- Manter `min(2)` do contrato com preenchimento do padrão (nome da categoria) no cliente ou no servidor (Q-05); definir onde ocorre para que a API e a UI concordem.
+- **Respondido pelo TL** (SDD-013): o servidor **já** aplica "vazio = nome da categoria" (Q-05); a história é só de interface, mais a busca `q` (+1 pt) e a mensagem única.
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 5, Q-F13). Revisa o parágrafo "Descrição" da [US-005](US-005-lancar-despesa.md) (campo visível, não mais em "Mais detalhes").
+- 2026-10-04 — **Revisão pós-TL (D-PO-38):** TL = 3 (PO: 2). Acrescentado o contrato da **busca por descrição** (`q`, 2..50, sem acento-insensibilidade) com 5 cenários e a **mensagem única** de descrição (previsões mantêm a sua).

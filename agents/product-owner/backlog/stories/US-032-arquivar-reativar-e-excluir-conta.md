@@ -13,7 +13,8 @@
 Como **membro da família**, quero **arquivar uma conta que não uso mais (ou excluir uma criada por engano)**, para **manter listas e seletores limpos sem perder o histórico**.
 
 ## Regras de negócio aplicáveis
-- **Excluir de verdade**: só se a conta **nunca teve movimentação**: nenhum lançamento, transferência, acerto, baixa ou lançamento de abertura além do saldo inicial zero. Exige confirmação. (Conta criada com saldo inicial ≠ 0 já tem lançamento de abertura ⇒ só arquiva.)
+- **"Excluir" = exclusão lógica terminal** (D-PO-36, TL-04): o ledger não aceita `DELETE` e toda conta nasce com um lançamento de abertura, então a conta excluída **some de todas as telas** (inclusive de "Contas arquivadas"), **libera o nome** e **não pode ser reativada**; para o usuário o efeito é o de excluir de verdade, e o texto "Excluir definitivamente" continua válido.
+- **Excluir**: só se a conta **nunca teve movimentação**: nenhum lançamento, transferência, acerto, baixa ou lançamento de abertura além do saldo inicial zero. Exige confirmação. (Conta criada com saldo inicial ≠ 0 já tem lançamento de abertura ⇒ só arquiva.)
 - **Arquivar**: exige **saldo zero** (Q-F11). Com saldo ≠ 0, o app bloqueia e oferece **"Transferir o saldo"** (leva à US-010 com a conta pré-selecionada).
 - Conta arquivada **some** das listas, dos seletores de lançamento/transferência/baixa e do **saldo da família**; o **histórico** (lançamentos, extrato, acertos, faturas pagas por ela) permanece intacto e a conta aparece nele com o marcador "(arquivada)" (RN-020.1).
 - Seção "Contas arquivadas" na tela de Contas (recolhida) com **Reativar**.
@@ -78,6 +79,16 @@ Funcionalidade: Arquivar e excluir conta
     Então vê "Conta excluída"
     E "Carteira antiga" não existe em nenhuma lista
 
+  Cenário: Excluir libera o nome da conta
+    Dado que a conta "Carteira antiga" foi excluída
+    Quando Mariana cadastra uma conta chamada "Carteira antiga"
+    Então a conta é criada sem aviso de nome já usado
+
+  Cenário: Conta arquivada continua ocupando o nome
+    Dado que a conta "Poupança" foi arquivada
+    Quando Mariana cadastra uma conta chamada "Poupança"
+    Então vê o aviso de que o nome já está em uso
+
   Cenário: Conta com histórico só pode ser arquivada
     Quando Mariana abre as ações da conta "Poupança"
     Então vê "Arquivar"
@@ -116,3 +127,4 @@ Arquivar cartão (US-033); mesclar contas; excluir conta com histórico; reorden
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 13, Q-F11).
+- 2026-10-04 — **Revisão pós-TL (D-PO-36):** TL = 5 (PO: 3: o lock em todos os caminhos de postagem pesa); "excluir" passa a ser **exclusão lógica terminal** (efeito idêntico para o usuário); acrescentados os cenários de nome liberado × nome de conta arquivada.

@@ -88,3 +88,6 @@ Reenvio automático, convite por link/QR genérico, remoção de membro, transfe
 ## Perguntas em aberto / pontos para o Tech Lead
 - **Q-03 (respondida, D-GES-07)**: validade do convite = **7 dias**.
 - **Q-01 (respondida, D-GES-06)**: dependentes sem login ficam **fora do MVP** (US-021). No MVP só há membros com login.
+
+## Histórico
+- 2026-10-04 — **Nota pós-TL (US-039, D-PO-39):** "Copiar link" e "Reenviar e-mail" do convite pendente passam a **rotacionar o token** (o link anterior deixa de valer; validade de 7 dias mantida). Os cenários da US-003 não mudam; o teste de integração do convite deve cobrir o token antigo inválido.

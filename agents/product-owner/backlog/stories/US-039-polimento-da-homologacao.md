@@ -15,7 +15,7 @@ Como **membro da família**, quero **pequenos ajustes de uso (erros que somem ao
 ## Regras de negócio aplicáveis
 - **Achado 5 — validação reativa**: mensagem de erro de um campo **some assim que o campo fica válido**, sem esperar novo envio, e **sem saltar o layout** (espaço da mensagem reservado). Vale para Transferir, Nova despesa prevista e demais formulários.
 - **Achado 8 — Categorias**: item **"Categorias"** em "Configurações" no menu (além do link no formulário).
-- **Achado 11 — Convite**: convite pendente ganha **Copiar link** e **Reenviar e-mail**; a tela de convite avisa antes de enviar "A pessoa precisa entrar com a conta Google do mesmo e-mail". Reenviar **não** estende a validade de 7 dias (D-GES-07), apenas reenvia.
+- **Achado 11 — Convite**: convite pendente ganha **Copiar link** e **Reenviar e-mail**; a tela de convite avisa antes de enviar "A pessoa precisa entrar com a conta Google do mesmo e-mail". "Copiar link" e "Reenviar e-mail" **rotacionam o token do convite** (D-PO-39, TL-05; o sistema guarda só o *hash*, então o link original não pode ser recuperado): o **link anterior deixa de valer**, e a tela avisa **"O link anterior deixa de valer."**. A validade de 7 dias (D-GES-07) **não** é estendida. **Limite de 3 reenvios de e-mail por convite**; "Copiar link" não envia e-mail e não conta no limite. Convite vencido não é copiado nem reenviado.
 - **Achado 12 — Filtros do Extrato**: botão **"Limpar filtros"** visível quando há filtro ativo; selects com **rótulo acessível** ("Membro: todos", "Cartão: todos").
 - **Achado 13 — Salvar regra**: ver US-031 (volta ao Acerto e FAB não cobre o botão); aqui só o FAB oculto em telas de formulário de página inteira.
 - Fora deste pacote: achados 6 (corrigir forma de pagamento), 9 (transferência em duas linhas), 10 (faturas em Contas a pagar), 14 (liquidez, AP2), 15 (ruído de console do túnel).
@@ -48,12 +48,37 @@ Funcionalidade: Polimento da homologação
     Dado um convite pendente para "vovo@example.com"
     Quando Mariana toca em "Copiar link" no convite
     Então vê "Link copiado"
+    E vê o aviso "O link anterior deixa de valer."
 
   Cenário: Reenviar o e-mail do convite
     Dado um convite pendente para "vovo@example.com" enviado há 2 dias
     Quando Mariana toca em "Reenviar e-mail"
     Então vê "E-mail reenviado"
+    E vê o aviso "O link anterior deixa de valer."
     E a validade do convite continua com o prazo original de 7 dias
+
+  Cenário: Copiar link invalida o link anterior
+    Dado um convite pendente para "vovo@example.com" com o link já enviado por e-mail
+    Quando Mariana toca em "Copiar link" no convite
+    Então o link enviado antes não abre mais o convite
+    E o link copiado abre o convite
+    E a validade do convite continua com o prazo original de 7 dias
+
+  Cenário: Reenviar o e-mail invalida o link anterior
+    Dado um convite pendente para "vovo@example.com" com o link já enviado por e-mail
+    Quando Mariana toca em "Reenviar e-mail"
+    Então o link do e-mail anterior não abre mais o convite
+    E o link do novo e-mail abre o convite
+
+  Cenário: Limite de reenvios
+    Dado um convite pendente para "vovo@example.com" já reenviado 3 vezes
+    Quando Mariana toca em "Reenviar e-mail"
+    Então vê "Limite de reenvios atingido. Cancele e crie um novo convite."
+
+  Cenário: Convite vencido não é copiado nem reenviado
+    Dado um convite pendente para "vovo@example.com" vencido
+    Quando Mariana toca em "Copiar link" no convite
+    Então vê "Convite expirado. Cancele e crie um novo convite."
 
   Cenário: Aviso da conta Google antes de enviar o convite
     Quando Mariana abre o formulário de convite
@@ -92,7 +117,8 @@ Funcionalidade: Polimento da homologação
 Achados 6, 9, 10, 14 e 15 (ver regras). O envio real de e-mail depende do SMTP já configurado (Mailpit em dev; ver `pendencias-externas.md`).
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- Endpoint de reenvio de convite e política de limite de reenvios (hipótese do PO: no máximo 3 por convite).
+- **Respondido pelo TL** (SDD-013): rotas `resend` e `link` que rotacionam o token; 3 reenvios por convite (hipótese do PO adotada); dois Administradores rotacionando ao mesmo tempo: vale a última rotação.
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (§9 item 13) e dos achados 5, 8, 11, 12, 13 da homologação.
+- 2026-10-04 — **Revisão pós-TL (D-PO-39):** "Copiar link" e "Reenviar e-mail" **rotacionam o token** (o link anterior deixa de valer); aviso "O link anterior deixa de valer."; acrescentados 4 cenários (invalida o anterior, limite de 3 reenvios, convite vencido). Tamanho 5 confirmado.
