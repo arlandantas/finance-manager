@@ -189,10 +189,10 @@ export function AppShell({
   const navItems = settlementEnabled ? NAV_ITEMS : NAV_ITEMS.filter((i) => i.href !== "/acerto");
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 pb-20 md:pb-0">
+    <div className="flex min-h-screen flex-col bg-slate-50 pb-20 lg:pb-0">
       <OfflineBanner />
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white dark:bg-slate-100">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-3 px-4">
+        <div className="mx-auto flex h-14 w-full max-w-[960px] items-center justify-between gap-3 px-4">
           <div className="flex min-w-0 items-center gap-6">
             <Link
               href="/"
@@ -201,7 +201,7 @@ export function AppShell({
             >
               {familyName}
             </Link>
-            <nav aria-label="Principal" className="hidden items-center gap-1 md:flex">
+            <nav aria-label="Principal" className="hidden items-center gap-1 lg:flex">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
@@ -226,7 +226,7 @@ export function AppShell({
         </div>
       </header>
       <QuickAddProvider hideFab={HIDE_FAB_ROUTES.includes(pathname)}>
-        <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
+        <div className="mx-auto w-full max-w-[960px] flex-1 px-4 py-6">
           <Suspense fallback={null}>
             <JoinedNotice familyName={familyName} />
           </Suspense>
@@ -235,7 +235,7 @@ export function AppShell({
       </QuickAddProvider>
       <nav
         aria-label="Principal (celular)"
-        className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white dark:bg-slate-100 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white dark:bg-slate-100 lg:hidden"
       >
         {navItems.map((item) => {
           const Icon = item.icon;

@@ -72,7 +72,7 @@ export function QuickAddProvider({
           type="button"
           aria-label="Novo lançamento"
           onClick={() => void open()}
-          className="fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-brand-700 text-white shadow-lg hover:bg-brand-800 md:bottom-6 md:right-6"
+          className="fixed bottom-20 right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-brand-700 text-white shadow-lg hover:bg-brand-800 lg:bottom-6 lg:right-[max(1rem,calc((100vw-960px)/2+1rem))]"
         >
           <Plus size={28} aria-hidden="true" />
         </button>
