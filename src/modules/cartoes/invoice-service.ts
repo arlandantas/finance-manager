@@ -68,9 +68,15 @@ export async function listInvoices(
 
 function memberRefOf(m: {
   id: string;
+  removedAt?: Date | null;
   user: { name: string | null; email: string; image: string | null };
 }): MemberRef {
-  return { id: m.id, name: m.user.name ?? localPart(m.user.email), image: m.user.image };
+  return {
+    id: m.id,
+    name: m.user.name ?? localPart(m.user.email),
+    image: m.user.image,
+    ...(m.removedAt ? { removed: true as const } : {}),
+  };
 }
 
 /** GET /cards/:id/invoices/:ref (SDD-008 §3.1). 404 se a ref é posterior à aberta ou não existe. */

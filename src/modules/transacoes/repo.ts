@@ -31,9 +31,10 @@ export function transacoesRepo(tx: Tx, familyId: string) {
       }),
     findAccount: (id: string) =>
       tx.bankAccount.findFirst({ where: { id, familyId }, select: { id: true, name: true } }),
-    countMembers: () => tx.member.count({ where: { familyId } }),
+    countMembers: () => tx.member.count({ where: { familyId, removedAt: null } }),
+    /** Ativo: referência de pagador/responsável (ex-membro => INVALID_REFERENCE). */
     findMember: (id: string) =>
-      tx.member.findFirst({ where: { id, familyId }, include: { user: true } }),
+      tx.member.findFirst({ where: { id, familyId, removedAt: null }, include: { user: true } }),
     listMembers: () => tx.member.findMany({ where: { familyId }, include: { user: true } }),
     lastAccountUsedBy: async (memberId: string): Promise<string | null> => {
       const last = await tx.transaction.findFirst({

@@ -20,6 +20,7 @@ import {
   setEmailStatus,
   withDbTransaction,
 } from "@/modules/familia/invitations/repo";
+import { findActiveMembership } from "@/modules/familia/repo";
 import { toRole } from "@/modules/familia/roles";
 import type { CreateInvitationResponse, InvitationDTO } from "@/modules/familia/schemas";
 
@@ -188,7 +189,7 @@ export async function acceptPendingInvitation(
   const now = clock.now();
   try {
     return await withDbTransaction(async (tx): Promise<AcceptResult> => {
-      if (await tx.member.findUnique({ where: { userId: user.id } })) return { status: "NONE" };
+      if (await findActiveMembership(user.id, tx)) return { status: "NONE" };
       const invitation = await loginInvitations.findValid(tx, email, now);
       if (invitation) {
         await loginInvitations.insertMember(tx, {

@@ -6,6 +6,7 @@ import type {
   CreateInvitationResponse,
   FamilyDTO,
   InvitationDTO,
+  RemovalReviewDTO,
   Role,
 } from "@/modules/familia/schemas";
 
@@ -85,6 +86,43 @@ export function useUpdateFamilySettings() {
           qc.invalidateQueries({ queryKey: [k] }),
         ),
       ),
+  });
+}
+
+export function useRemovalReview(memberId: string | null, self: boolean) {
+  return useQuery({
+    queryKey: ["removal-review", memberId, self],
+    queryFn: () =>
+      apiFetch<RemovalReviewDTO>(
+        self ? "/api/v1/family/leave-review" : `/api/v1/members/${memberId}/removal-review`,
+      ),
+    enabled: memberId !== null,
+    gcTime: 0,
+    staleTime: 0,
+  });
+}
+
+export function useRemoveMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (a: {
+      memberId: string;
+      self: boolean;
+      body: {
+        acknowledgeSettlement: boolean;
+        reassign: {
+          accounts: Record<string, string>;
+          cards: Record<string, string>;
+          plannedTo?: string;
+        };
+      };
+      idempotencyKey: string;
+    }) =>
+      apiFetch<{ removed?: true; left?: true }>(
+        a.self ? "/api/v1/family/leave" : `/api/v1/members/${a.memberId}/remove`,
+        { method: "POST", body: a.body, idempotencyKey: a.idempotencyKey },
+      ),
+    onSuccess: () => qc.invalidateQueries(),
   });
 }
 

@@ -9,7 +9,13 @@ import {
   acceptPendingInvitation,
   listPendingInvitations,
 } from "@/modules/familia/invitations/service";
-import { familiaRepo, findMembershipByUserId, type Membership } from "@/modules/familia/repo";
+import {
+  familiaRepo,
+  findActiveMembership,
+  findMembershipByUserId,
+  findPendingRemovalNotice,
+  type Membership,
+} from "@/modules/familia/repo";
 import { toRole } from "@/modules/familia/roles";
 import type {
   CreateFamilyInput,
@@ -36,6 +42,9 @@ export async function resolveAppEntry(user: SessionUser): Promise<AppEntry> {
   if (accepted.status === "JOINED") return { redirectTo: "/?joined=1", membership: null };
   if (accepted.status === "EXPIRED")
     return { redirectTo: "/onboarding?notice=invite_expired", membership: null };
+  // ADR-019 §4: removido e ainda não avisado => aviso único de acesso encerrado
+  const removed = await findPendingRemovalNotice(user.userId);
+  if (removed) return { redirectTo: "/api/auth/membership-ended", membership: null };
   return { redirectTo: "/onboarding", membership: null };
 }
 
@@ -71,7 +80,7 @@ export async function createFamily(
   ctx: Pick<UserContext, "userId" | "clock">,
   input: CreateFamilyInput,
 ): Promise<CreateFamilyResponse> {
-  if (await tx.member.findUnique({ where: { userId: ctx.userId } })) {
+  if (await findActiveMembership(ctx.userId, tx)) {
     throw conflict("ALREADY_IN_FAMILY", ALREADY_IN_FAMILY);
   }
   try {
@@ -153,6 +162,12 @@ export async function getFamily(tx: Tx, ctx: RequestContext): Promise<FamilyDTO>
       role: toRole(m.role),
       joinedAt: m.joinedAt.toISOString(),
       canChangeRole: ctx.role === "ADMIN",
+    })),
+    exMembers: (await repos.familia.listExMembers()).map((m) => ({
+      id: m.id,
+      name: m.user.name ?? localPart(m.user.email),
+      image: m.user.image,
+      removedAt: (m.removedAt as Date).toISOString(),
     })),
     events: await listFamilyEvents(tx, ctx),
     pendingInvitations: ctx.role === "ADMIN" ? await listPendingInvitations(tx, ctx) : [],

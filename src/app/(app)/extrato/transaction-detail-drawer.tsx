@@ -318,6 +318,7 @@ export function TransactionDetailDrawer({
               {t.payer ? (
                 <p>
                   {isIncome ? "Recebido por" : "Pago por"} <strong>{t.payer.name}</strong>
+                  {t.payer.removed ? " (ex-membro)" : ""}
                 </p>
               ) : null}
               <p>

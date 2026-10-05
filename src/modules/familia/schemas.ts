@@ -111,6 +111,7 @@ export type FamilyDTO = {
   currentMemberId: string;
   currentRole: Role;
   members: Array<MemberDTO & { canChangeRole: boolean }>;
+  exMembers: Array<{ id: string; name: string; image: string | null; removedAt: string }>; // histórico (sem e-mail)
   events: FamilyEventDTO[]; // últimos 20 (trilha simples: autor e data)
   pendingInvitations: InvitationDTO[]; // [] para quem não é ADMIN
 };
@@ -124,4 +125,47 @@ export type CreateInvitationResponse = {
   invitation: InvitationDTO;
   inviteUrl: string;
   emailStatus: "SENT" | "FAILED";
+};
+
+export const RemoveMemberSchema = z
+  .object({
+    acknowledgeSettlement: z.boolean().default(false),
+    reassign: z
+      .object({
+        accounts: z.record(z.uuid(), z.uuid()).default({}), // contaId => novo titular
+        cards: z.record(z.uuid(), z.uuid()).default({}), // cartaoId => novo titular
+        plannedTo: z.uuid().optional(), // padrão: quem remove (na saída: um ADMIN ativo escolhido)
+      })
+      .strict()
+      .default({ accounts: {}, cards: {} }),
+  })
+  .strict();
+export type RemoveMemberInput = z.input<typeof RemoveMemberSchema>;
+export type RemoveMemberParsed = z.output<typeof RemoveMemberSchema>;
+
+export type RemovalReviewDTO = {
+  member: { id: string; name: string; image: string | null };
+  isSelf: boolean;
+  settlement: {
+    enabled: boolean;
+    totalInCents: number;
+    months: Array<{ period: string; toSettleInCents: number }>;
+  };
+  accounts: Array<{
+    id: string;
+    name: string;
+    balanceInCents: number;
+    mustReassign: boolean;
+    defaultAction: "ARCHIVE" | "REASSIGN";
+  }>;
+  cards: Array<{
+    id: string;
+    name: string;
+    unpaidInCents: number;
+    mustReassign: boolean;
+    defaultAction: "ARCHIVE" | "REASSIGN";
+  }>;
+  planned: Array<{ id: string; description: string; dueOn: string }>;
+  candidates: Array<{ id: string; name: string; role: Role }>;
+  blockers: Array<"LAST_ADMIN" | "ONLY_MEMBER">;
 };

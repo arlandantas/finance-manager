@@ -8,7 +8,12 @@ import {
   type RuleInput,
   ruleAt,
 } from "@/modules/split/rules";
-import type { ExpenseInput, MemberInput, SettlementResult } from "@/modules/split/settlement";
+import {
+  type ExpenseInput,
+  isPresent,
+  type MemberInput,
+  type SettlementResult,
+} from "@/modules/split/settlement";
 
 /** Explicação da divisão aplicada no mês (US-022, SDD-011 §4.1): pura, mesma fonte das cotas. */
 export type SplitSegmentDTO = {
@@ -40,9 +45,10 @@ export function explainByRules(i: {
 }): SplitExplanationDTO | null {
   if (i.result.totalSharedInCents === 0) return null;
   const limit = i.period.end < i.today ? i.period.end : i.today;
-  const members = [...i.members].sort(
-    (a, b) => a.ordinal - b.ordinal || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
-  );
+  const payers = new Set(i.expenses.map((e) => e.payerMemberId));
+  const members = [...i.members]
+    .filter((m) => isPresent(m, i.period) || payers.has(m.id))
+    .sort((a, b) => a.ordinal - b.ordinal || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
   // Datas de início de trecho: início do período + vigências dentro de (início, limite].
   const starts = [

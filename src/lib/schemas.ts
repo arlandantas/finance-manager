@@ -10,5 +10,6 @@ export const memberRefSchema = z.object({
   id: uuidSchema,
   name: z.string(),
   image: z.string().nullable(),
+  removed: z.literal(true).optional(), // ex-membro (ADR-019): UI mostra "(ex-membro)"; nunca o e-mail
 });
 export type MemberRef = z.infer<typeof memberRefSchema>;

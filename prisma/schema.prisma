@@ -96,7 +96,7 @@ model User {
 
   accounts    Account[]
   sessions    Session[]
-  member      Member?
+  members     Member[]
   idempotency IdempotencyRecord[]
 
   @@map("users")
@@ -173,6 +173,11 @@ model Family {
   @@map("families")
 }
 
+enum MemberRemovalKind {
+  REMOVED
+  LEFT
+}
+
 enum FamilyEventType {
   FAMILY_RENAMED
   ROLE_CHANGED
@@ -206,6 +211,12 @@ model Member {
   role     Role
   joinedAt DateTime @default(now()) @db.Timestamptz(3)
 
+  // US-035 (ADR-019): ex-membro. Nunca se apaga `Member`; "ativo" = removedAt nulo
+  removedAt         DateTime?          @db.Timestamptz(3)
+  removedByMemberId String?            @db.Uuid
+  removalKind       MemberRemovalKind?
+  removalNoticeAt   DateTime?          @db.Timestamptz(3)
+
   family Family @relation(fields: [familyId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
 
@@ -217,9 +228,9 @@ model Member {
   authoredTransactions Transaction[]    @relation("TxAuthor")
   eventsAsActor        FamilyEvent[]    @relation("EventActor")
 
-  @@unique([userId]) // R1: 1 família por usuário (relaxar por migração se N famílias)
-  @@unique([familyId, userId])
   @@unique([familyId, id])
+  // Unicidade (userId) e (familyId, userId) só entre ATIVOS: índices parciais em SQL cru (r21_ex_membro)
+  @@index([familyId, userId])
   @@map("members")
 }
 

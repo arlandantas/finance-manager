@@ -119,8 +119,10 @@ export function previstasRepo(tx: Tx, familyId: string) {
         },
       }),
     findCategory: (id: string) => tx.category.findFirst({ where: { id, familyId } }),
+    /** Ativo (referência de responsável). */
     findMember: (id: string) =>
-      tx.member.findFirst({ where: { id, familyId }, include: { user: true } }),
+      tx.member.findFirst({ where: { id, familyId, removedAt: null }, include: { user: true } }),
+    /** Todos (nomes no histórico, inclusive ex-membros). */
     listMembers: () => tx.member.findMany({ where: { familyId }, include: { user: true } }),
     cutDay: async (): Promise<number> =>
       (await tx.family.findFirst({ where: { id: familyId }, select: { cutDay: true } }))?.cutDay ??

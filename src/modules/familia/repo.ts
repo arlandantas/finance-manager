@@ -11,13 +11,30 @@ export type Membership = {
   settlementEnabled: boolean;
 };
 
+/** Única forma de ler o vínculo de um usuário (ADR-019 §2): o ATIVO (`removedAt` nulo). */
+export function findActiveMembership(userId: string, db: Pick<Tx, "member"> = getDb()) {
+  return db.member.findFirst({ where: { userId, removedAt: null } });
+}
+
+/** Vínculo REMOVED ainda sem o aviso de acesso encerrado (ADR-019 §4). */
+export function findPendingRemovalNotice(userId: string, db: Pick<Tx, "member"> = getDb()) {
+  return db.member.findFirst({
+    where: { userId, removedAt: { not: null }, removalKind: "REMOVED", removalNoticeAt: null },
+    orderBy: { removedAt: "desc" },
+  });
+}
+
+export function markRemovalNoticed(memberId: string, at: Date, db: Pick<Tx, "member"> = getDb()) {
+  return db.member.update({ where: { id: memberId }, data: { removalNoticeAt: at } });
+}
+
 /** Consulta fora do contexto de família (gate de entrada, /api/v1/me): vínculo do usuário. */
 export async function findMembershipByUserId(
   userId: string,
   db: Pick<Tx, "member"> = getDb(),
 ): Promise<Membership | null> {
-  const m = await db.member.findUnique({
-    where: { userId },
+  const m = await db.member.findFirst({
+    where: { userId, removedAt: null },
     include: { family: { select: { name: true, settlementEnabled: true } } },
   });
   return m
@@ -76,9 +93,16 @@ export function familiaScoped(tx: Tx, familyId: string) {
     getFamily: () => tx.family.findFirst({ where: { id: familyId } }),
     listMembers: () =>
       tx.member.findMany({
-        where: { familyId },
+        where: { familyId, removedAt: null },
         include: { user: true },
         orderBy: [{ joinedAt: "asc" }, { id: "asc" }],
+      }),
+    /** Ex-membros (histórico; só nome, nunca e-mail). */
+    listExMembers: () =>
+      tx.member.findMany({
+        where: { familyId, removedAt: { not: null } },
+        include: { user: true },
+        orderBy: [{ removedAt: "desc" }, { id: "asc" }],
       }),
   };
 }

@@ -25,7 +25,7 @@ export function contasRepo(tx: Tx, familyId: string) {
     findById: (id: string) =>
       tx.bankAccount.findFirst({ where: { id, familyId, deletedAt: null }, include: withOwner }),
     memberExists: async (memberId: string) =>
-      (await tx.member.count({ where: { id: memberId, familyId } })) > 0,
+      (await tx.member.count({ where: { id: memberId, familyId, removedAt: null } })) > 0,
     insert: (data: {
       name: string;
       institution: string;

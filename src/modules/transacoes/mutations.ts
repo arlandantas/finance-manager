@@ -188,7 +188,11 @@ export async function updateTransaction(
       [{ path: "categoryId", message: "A categoria não combina com o tipo do lançamento" }],
     );
   }
-  if (input.payerMemberId && !(await repo.findMember(input.payerMemberId))) {
+  if (
+    input.payerMemberId &&
+    input.payerMemberId !== row.payerMemberId &&
+    !(await repo.findMember(input.payerMemberId))
+  ) {
     throw invalidRef("payerMemberId", "Membro inválido");
   }
   if (input.occurredOn && compareDate(input.occurredOn, today) > 0) {

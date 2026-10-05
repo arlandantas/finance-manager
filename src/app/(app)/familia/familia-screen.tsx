@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal, Pencil, UserCog, UserPlus, X } from "lucide-react";
+import { LogOut, MoreHorizontal, Pencil, UserCog, UserMinus, UserPlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -22,6 +22,7 @@ import {
   useUpdateFamilySettings,
 } from "@/modules/familia/hooks";
 import type { FamilyDTO, InvitationDTO, Role } from "@/modules/familia/schemas";
+import { RemoveMemberDialog } from "./remove-member-dialog";
 
 const ROLE_LABEL = { ADMIN: "Administrador", MEMBER: "Membro" } as const;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -290,6 +291,11 @@ export function FamiliaScreen() {
   const [inviting, setInviting] = useState(false);
   const [canceling, setCanceling] = useState<InvitationDTO | null>(null);
   const [renaming, setRenaming] = useState(false);
+  const [removing, setRemoving] = useState<{
+    memberId: string;
+    name: string;
+    self: boolean;
+  } | null>(null);
   const [rolling, setRolling] = useState<{ memberId: string; name: string; role: Role } | null>(
     null,
   );
@@ -371,21 +377,46 @@ export function FamiliaScreen() {
                   >
                     {ROLE_LABEL[m.role]}
                   </span>
-                  {m.canChangeRole ? (
+                  {m.canChangeRole || m.memberId === data.currentMemberId ? (
                     <Menu
                       label={`Ações de ${m.name.split(" ")[0]}`}
                       trigger={<MoreHorizontal size={20} aria-hidden="true" />}
                     >
                       {(close) => (
-                        <MenuItem
-                          onClick={() => {
-                            close();
-                            setRolling({ memberId: m.memberId, name: m.name, role: m.role });
-                          }}
-                        >
-                          <UserCog size={16} aria-hidden="true" />
-                          Alterar papel
-                        </MenuItem>
+                        <>
+                          {m.canChangeRole ? (
+                            <MenuItem
+                              onClick={() => {
+                                close();
+                                setRolling({ memberId: m.memberId, name: m.name, role: m.role });
+                              }}
+                            >
+                              <UserCog size={16} aria-hidden="true" />
+                              Alterar papel
+                            </MenuItem>
+                          ) : null}
+                          {m.memberId === data.currentMemberId ? (
+                            <MenuItem
+                              onClick={() => {
+                                close();
+                                setRemoving({ memberId: m.memberId, name: m.name, self: true });
+                              }}
+                            >
+                              <LogOut size={16} aria-hidden="true" />
+                              Sair da família
+                            </MenuItem>
+                          ) : isAdmin ? (
+                            <MenuItem
+                              onClick={() => {
+                                close();
+                                setRemoving({ memberId: m.memberId, name: m.name, self: false });
+                              }}
+                            >
+                              <UserMinus size={16} aria-hidden="true" />
+                              Remover
+                            </MenuItem>
+                          ) : null}
+                        </>
                       )}
                     </Menu>
                   ) : null}
@@ -399,6 +430,21 @@ export function FamiliaScreen() {
             version={data.family.version}
             isAdmin={isAdmin}
           />
+
+          {data.exMembers.length > 0 ? (
+            <section aria-labelledby="ex-title" className="flex flex-col gap-2">
+              <h2 id="ex-title" className="text-lg font-semibold text-slate-900">
+                Ex-membros
+              </h2>
+              <ul className="flex flex-col gap-1 text-sm text-slate-600">
+                {data.exMembers.map((x) => (
+                  <li key={x.id} data-testid="ex-member">
+                    {x.name} (ex-membro)
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           {data.events.length > 0 ? (
             <section aria-labelledby="events-title" className="flex flex-col gap-2">
@@ -466,6 +512,11 @@ export function FamiliaScreen() {
         />
       ) : null}
       <RoleDialog member={rolling} onClose={() => setRolling(null)} />
+      <RemoveMemberDialog
+        target={removing}
+        familyName={data?.family.name ?? ""}
+        onClose={() => setRemoving(null)}
+      />
 
       <Drawer open={inviting} onOpenChange={setInviting} title="Convidar membro">
         <InviteForm onDone={() => setInviting(false)} />

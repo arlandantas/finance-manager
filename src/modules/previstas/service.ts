@@ -31,6 +31,7 @@ export const memberRefOf = (m: MemberRow): MemberRef => ({
   id: m.id,
   name: m.user.name ?? localPart(m.user.email),
   image: m.user.image,
+  ...(m.removedAt ? { removed: true as const } : {}),
 });
 
 export async function memberMap(repo: Repo): Promise<Map<string, MemberRef>> {

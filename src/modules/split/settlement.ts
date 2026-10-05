@@ -4,7 +4,18 @@ import type { Period } from "@/lib/period";
 import { isRuleStale, type RuleInput, ruleAt } from "@/modules/split/rules";
 
 /** Motor do acerto de contas (SDD-002 §4): puro, centavos inteiros, sem I/O nem relógio. */
-export type MemberInput = { id: string; ordinal: number; joinedOn: DateISO };
+export type MemberInput = {
+  id: string;
+  ordinal: number;
+  joinedOn: DateISO;
+  removedOn?: DateISO | null;
+};
+
+/** Não saiu antes do início do período (ADR-019 §6; `removedOn >= início`). A entrada tardia é tratada pelo motor. */
+export function isPresent(m: MemberInput, period: { start: DateISO; end: DateISO }): boolean {
+  void period.end;
+  return m.removedOn == null || m.removedOn >= period.start;
+}
 /** Somente despesas comuns ativas (kind EXPENSE, isSharedExpense, sem exclusão). */
 export type ExpenseInput = {
   id: string;
@@ -75,7 +86,10 @@ export function suggestSettlements(
 }
 
 export function computeSettlement(i: SettlementInput): SettlementResult {
-  const members = [...i.members].sort(byOrdinal);
+  const everyone = [...i.members].sort(byOrdinal);
+  // quem já saiu antes do período não participa; quem pagou despesa do período sempre entra (crédito preservado)
+  const payers = new Set(i.expenses.map((e) => e.payerMemberId));
+  const members = everyone.filter((m) => isPresent(m, i.period) || payers.has(m.id));
   const expenses = [...i.expenses].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
   const paid = new Map(members.map((m) => [m.id, 0]));

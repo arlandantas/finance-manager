@@ -23,6 +23,7 @@ import { isAllowedDevHost } from "@/lib/dev-origins";
 import { getEnv } from "@/lib/env";
 import { newId } from "@/lib/ids";
 import { logger } from "@/lib/logger";
+import { findActiveMembership } from "@/modules/familia/repo";
 
 export type AuthMode = "family" | "user" | "none";
 
@@ -120,7 +121,7 @@ export function withApi<A extends AuthMode = "family", B = undefined, Q = undefi
         };
         ctx = base;
         if (auth === "family") {
-          const member = await db.member.findUnique({ where: { userId: user.userId } });
+          const member = await findActiveMembership(user.userId, db);
           if (!member) throw forbidden("Você ainda não faz parte de uma família.", "NO_FAMILY");
           if (opts.role && member.role !== opts.role) throw forbidden();
           ctx = {

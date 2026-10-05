@@ -51,12 +51,15 @@ export async function getMonthSummary(
   });
   const paid = await homeRepo(tx, ctx.familyId).paidByMember(start, end);
   const members = await split.listMembers();
-  const withPaid = members.map((m, i) => ({
-    ref: memberRefOf(m),
-    id: m.id,
-    ordinal: i,
-    paid: paid.get(m.id) ?? 0,
-  }));
+  // ativos + ex-membros com despesa paga no período (ADR-019)
+  const withPaid = members
+    .filter((m) => !m.removedAt || (paid.get(m.id) ?? 0) > 0)
+    .map((m, i) => ({
+      ref: memberRefOf(m),
+      id: m.id,
+      ordinal: i,
+      paid: paid.get(m.id) ?? 0,
+    }));
   const totalPaid = withPaid.reduce((s, m) => s + m.paid, 0);
   const shares =
     totalPaid > 0
@@ -106,7 +109,9 @@ export async function getHome(tx: Tx, ctx: RequestContext, periodKey?: string): 
     to: "2999-12-31",
     limit: 5,
   });
-  const memberCount = (await splitRepo(tx, ctx.familyId).listMembers()).length;
+  const memberCount = (await splitRepo(tx, ctx.familyId).listMembers()).filter(
+    (m) => !m.removedAt,
+  ).length;
   const hasTransaction = await familyHasTransactions(tx, ctx.familyId);
   const hasAccount = accounts.items.length > 0;
   return {

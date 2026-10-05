@@ -31,7 +31,7 @@ export function cartoesRepo(tx: Tx, familyId: string) {
       await tx.$queryRaw`SELECT id FROM credit_cards WHERE id = ${id}::uuid AND "familyId" = ${familyId}::uuid FOR SHARE`;
     },
     memberExists: async (memberId: string) =>
-      (await tx.member.count({ where: { id: memberId, familyId } })) > 0,
+      (await tx.member.count({ where: { id: memberId, familyId, removedAt: null } })) > 0,
     member: (memberId: string) =>
       tx.member.findFirst({ where: { id: memberId, familyId }, include: { user: true } }),
     insert: (d: {

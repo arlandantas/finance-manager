@@ -14,7 +14,7 @@ export const MAX_PENDING_MONTHS = 120;
 export async function pendingSettlementMonths(
   tx: Tx,
   ctx: RequestContext,
-  a: { fromPeriodKey?: string; toPeriodKey: string; capMonths?: number },
+  a: { fromPeriodKey?: string; toPeriodKey: string; capMonths?: number; involving?: string },
 ): Promise<Array<{ periodKey: string; toSettleInCents: number }>> {
   const repo = splitRepo(tx, ctx.familyId);
   const cutDay = await repo.cutDay();
@@ -41,7 +41,12 @@ export async function pendingSettlementMonths(
     const expenses = await repo.sharedExpenses(p.start, p.end);
     if (expenses.length === 0) continue;
     const l = await loadSettlement(tx, ctx, key);
-    const total = l.result.suggestions.reduce((s, x) => s + x.amountInCents, 0);
+    const mine = a.involving
+      ? l.result.suggestions.filter(
+          (x) => x.fromMemberId === a.involving || x.toMemberId === a.involving,
+        )
+      : l.result.suggestions;
+    const total = mine.reduce((s, x) => s + x.amountInCents, 0);
     if (l.result.status === "PENDING" && total > 0)
       out.push({ periodKey: key, toSettleInCents: total });
   }

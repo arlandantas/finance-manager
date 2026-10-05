@@ -32,12 +32,17 @@ import type {
   TransactionDTO,
 } from "@/modules/transacoes/schemas";
 
-type MemberRow = { id: string; user: { name: string | null; email: string; image: string | null } };
+type MemberRow = {
+  id: string;
+  removedAt?: Date | null;
+  user: { name: string | null; email: string; image: string | null };
+};
 
 export const memberRefOf = (m: MemberRow): MemberRef => ({
   id: m.id,
   name: m.user.name ?? localPart(m.user.email),
   image: m.user.image,
+  ...(m.removedAt ? { removed: true as const } : {}),
 });
 
 type TxRow = {

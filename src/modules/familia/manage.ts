@@ -1,4 +1,4 @@
-import { conflict, notFound, unprocessable } from "@/lib/api/errors";
+import { conflict, forbidden, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import type { UpdateFamilyInput } from "@/modules/familia/schemas";
@@ -6,9 +6,22 @@ import type { UpdateFamilyInput } from "@/modules/familia/schemas";
 export const LAST_ADMIN_MSG =
   "A família precisa de pelo menos um Administrador. Promova outro membro antes.";
 
-/** Lock de família (ADR-019 §5): serializa rebaixar/remover/sair. */
-export async function lockFamilyAdmins(tx: Tx, familyId: string): Promise<void> {
-  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`family:${familyId}`}, 0))`;
+/**
+ * Lock de família (ADR-019 §5): serializa rebaixar/remover/sair. Depois do lock, reconfere que quem age
+ * ainda é membro ATIVO (e, se `needAdmin`, ainda Administrador): o papel lido no início da requisição
+ * pode ter mudado enquanto esperava o lock.
+ */
+export async function lockFamilyAdmins(
+  tx: Tx,
+  ctx: { familyId: string; memberId: string },
+  needAdmin = false,
+): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`family:${ctx.familyId}`}, 0))`;
+  const actor = await tx.member.findFirst({
+    where: { id: ctx.memberId, familyId: ctx.familyId, removedAt: null },
+    select: { role: true },
+  });
+  if (!actor || (needAdmin && actor.role !== "ADMIN")) throw forbidden();
 }
 
 async function nameOf(tx: Tx, familyId: string, memberId: string | null): Promise<string> {
@@ -78,9 +91,9 @@ export async function changeRole(
   memberId: string,
   role: "ADMIN" | "MEMBER",
 ) {
-  await lockFamilyAdmins(tx, ctx.familyId);
+  await lockFamilyAdmins(tx, ctx, true);
   const target = await tx.member.findFirst({
-    where: { id: memberId, familyId: ctx.familyId },
+    where: { id: memberId, familyId: ctx.familyId, removedAt: null },
     include: { user: true },
   });
   if (!target) throw notFound("Membro não encontrado.");
@@ -94,7 +107,7 @@ export async function changeRole(
   if (target.role === role) return dto(role);
   if (target.role === "ADMIN" && role === "MEMBER") {
     const admins = await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT id FROM members WHERE "familyId" = ${ctx.familyId}::uuid AND role = 'ADMIN' ORDER BY id FOR UPDATE`;
+      SELECT id FROM members WHERE "familyId" = ${ctx.familyId}::uuid AND role = 'ADMIN' AND "removedAt" IS NULL ORDER BY id FOR UPDATE`;
     if (admins.length <= 1) throw unprocessable("LAST_ADMIN", LAST_ADMIN_MSG);
   }
   await tx.member.update({ where: { id: target.id }, data: { role } });

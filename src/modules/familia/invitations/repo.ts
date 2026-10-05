@@ -18,7 +18,10 @@ export function convitesRepo(tx: Tx, familyId: string) {
         data: { status: "EXPIRED" },
       }),
     memberWithEmail: (email: string) =>
-      tx.member.findFirst({ where: { familyId, user: { email } }, select: { id: true } }),
+      tx.member.findFirst({
+        where: { familyId, removedAt: null, user: { email } },
+        select: { id: true },
+      }),
     insert: (data: {
       email: string;
       role: "ADMIN" | "MEMBER";
@@ -36,7 +39,8 @@ export function convitesRepo(tx: Tx, familyId: string) {
       tx.invitation.update({ where: { id }, data: { status: "CANCELED", canceledAt: now } }),
     family: () =>
       tx.family.findFirst({ where: { id: familyId }, select: { id: true, name: true } }),
-    members: () => tx.member.findMany({ where: { familyId }, include: { user: true } }),
+    members: () =>
+      tx.member.findMany({ where: { familyId, removedAt: null }, include: { user: true } }),
   };
 }
 

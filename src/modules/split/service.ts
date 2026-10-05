@@ -74,11 +74,12 @@ function ruleDto(
 async function loadRuleContext(tx: Tx, ctx: RequestContext) {
   const repo = splitRepo(tx, ctx.familyId);
   // Sequencial: uma transação interativa usa uma única conexão (pg avisa sobre consultas concorrentes).
-  const members = await repo.listMembers();
+  const allMembers = await repo.listMembers();
+  const members = allMembers.filter((m) => !m.removedAt); // ativos: edição de regra, seletores
   const ruleRows = await repo.listRules();
   const cutDay = await repo.cutDay();
   const today = todayInFamilyTz(ctx.clock);
-  return { repo, members, ruleRows, cutDay, today, rules: toRuleInputs(ruleRows) };
+  return { repo, members, allMembers, ruleRows, cutDay, today, rules: toRuleInputs(ruleRows) };
 }
 
 function refsOf(members: MemberRows): Map<string, MemberRef> {
@@ -89,7 +90,7 @@ function buildRuleDto(
   c: Awaited<ReturnType<typeof loadRuleContext>>,
   ctx: RequestContext,
 ): SplitRuleDTO {
-  const refs = refsOf(c.members);
+  const refs = refsOf(c.allMembers);
   const canonical = c.members.map((m, i) => ({ id: m.id, ordinal: i }));
   const createdBy = new Map(c.ruleRows.map((r) => [r.id, r.createdByMemberId] as const));
   const dto = (r: RuleInput) => ruleDto(r, canonical, refs, createdBy.get(r.id) ?? null);
@@ -122,7 +123,7 @@ export async function getSplitRule(tx: Tx, ctx: RequestContext): Promise<SplitRu
 export async function getSplitHistory(tx: Tx, ctx: RequestContext): Promise<SplitHistoryResponse> {
   await assertSettlementEnabled(tx, ctx);
   const c = await loadRuleContext(tx, ctx);
-  const refs = refsOf(c.members);
+  const refs = refsOf(c.allMembers);
   const canonical = c.members.map((m, i) => ({ id: m.id, ordinal: i }));
   const createdBy = new Map(c.ruleRows.map((r) => [r.id, r.createdByMemberId] as const));
   const items = [...c.rules]
@@ -256,10 +257,11 @@ export async function loadSettlement(
   const expenses = await c.repo.sharedExpenses(period.start, period.end);
   const groups = await c.repo.activeSettlements(period.key);
   const personal = await c.repo.personalExpenses(period.start, period.end);
-  const memberInputs = c.members.map((m, i) => ({
+  const memberInputs = c.allMembers.map((m, i) => ({
     id: m.id,
     ordinal: i,
     joinedOn: memberJoinedOn(m),
+    removedOn: m.removedAt ? memberJoinedOn({ joinedAt: m.removedAt }) : null,
   }));
   const expenseInputs = expenses.map((e) => ({
     id: e.id,
@@ -291,8 +293,8 @@ export async function loadSettlement(
     period,
     isCurrent: period.key === currentPeriod.key,
     today: c.today,
-    refs: refsOf(c.members),
-    members: c.members,
+    refs: refsOf(c.allMembers),
+    members: c.allMembers,
     result,
     stale: isRuleStale(
       current,
@@ -386,7 +388,7 @@ export async function listSharedExpenses(
   const c = await loadRuleContext(tx, ctx);
   const period = periodKey ? periodFromKey(periodKey, c.cutDay) : periodOf(c.today, c.cutDay);
   const rows = await c.repo.sharedExpenses(period.start, period.end);
-  const refs = refsOf(c.members);
+  const refs = refsOf(c.allMembers);
   const items = rows.map((e) => ({
     id: e.id,
     description: e.description,
