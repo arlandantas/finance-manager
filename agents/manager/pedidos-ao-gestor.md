@@ -69,4 +69,8 @@
 | DEV-39 | 2026-10-05 | US-032 | O filtro "Conta" do Extrato e os seletores usam só contas ativas; uma conta arquivada não pode ser filtrada | Mantido (conta arquivada só aparece como marcador "(arquivada)" nas linhas); se o PO quiser filtrar por conta arquivada, incluir `archived=all` no filtro | PO decide |
 | DEV-40 | 2026-10-05 | US-028 | O passo "Como vocês dividem as despesas?" do onboarding é um grupo de opções na mesma tela do nome (não uma tela separada) | Mantém 1 clique e o BDD ("opção marcada", "Só controlar") | PO/UX avaliam |
 | DEV-41 | 2026-10-05 | US-028/029 | O E2E do BDD "Desligar considera qualquer mês" usa despesa paga por um só membro (diferença = metade) | Semente dobra o valor ("diferença de R$ 90,00" = despesa de R$ 180,00) | Nenhum |
-
+| DEV-42 | 2026-10-05 | US-036 | O BDD fala "Só meu" / "Dividida com a família" e toast de exclusão; os textos atuais eram "Pessoal"/"Comum" na tela de detalhe | Detalhe usa os rótulos do BDD; toast "Despesa excluída" | Ratificar |
+| DEV-43 | 2026-10-05 | US-033 | Ex-membro não tem e-mail utilizável para novo convite no fluxo de reentrada | Reentrada pelo convite normal (novo vínculo, `Member` antigo permanece com `removedAt`) | Ratificar |
+| DEV-44 | 2026-10-05 | US-037 | O tema usa sobrescrita de variáveis em `:root[data-theme="dark"]` + variantes `dark:` só nos textos que dividiam paleta com fundos | Contraste AA coberto por teste unitário | Ratificar |
+| DEV-45 | 2026-10-05 | US-039 | O campo de formulário reserva ~20 px para a mensagem de erro (sem salto de layout); formulários ficam um pouco mais altos | Mantido (critério "não saltar" do BDD); "Limpar filtros" passa a zerar todos os filtros | Ratificar |
+| DEV-46 | 2026-10-05 | US-039 | Os selects de filtro anunciam o valor aplicado ("Membro: Lucas"), quebrando `getByLabel(exact)` nos E2E legados | Passos legados (US-007, US-014, US-016b) passam a casar `^Rótulo(:|$)` | Ratificar |

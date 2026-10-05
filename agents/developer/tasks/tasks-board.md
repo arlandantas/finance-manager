@@ -54,6 +54,9 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-038 | US-034 | Editar nome da família, papéis, trilha de eventos (último Administrador sob lock) | US-028 | SDD-012 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-039 | US-035 | Remover membro e sair (ex-membro, migração `r21_ex_membro`, motor com `removedOn`, S14..S16, aviso único) | US-034, US-032 | SDD-012, ADR-019 | 8 | Concluído (aguardando validação do Gestor) |
 | TASK-040 | US-036 | Detalhe do lançamento na Home (ações rotuladas, `?tx=`, "Ver no Extrato" + `highlight`) | US-013a | SDD-010 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-041 | US-037 | Tema claro, escuro e do sistema (script anti-flash, menu Aparência, contraste AA) | US-027 | SDD-012 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-042 | US-038 | Menu superior no desktop, conteúdo contido a 960 px, barra inferior até 1023 px | US-037 | SDD-012 | 2 | Concluído (aguardando validação do Gestor) |
+| TASK-043 | US-039 | Copiar link / reenviar convite (rotação de token), polimento de filtros e validação reativa | US-033 | SDD-012 | 3 | Concluído (aguardando validação do Gestor) |
 
 ---
 
@@ -366,7 +369,7 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 
 # R2.1 — Lote 1 (D-GES-19/D-GES-14..20)
 
-> **Ponto de retomada**: R2.1 concluída até a US-036 (TASK-026..040). Próxima: **US-037** (tema), 038, 039 e a R3-A (D-GES-23).
+> **Ponto de retomada**: R2.1 concluída (TASK-026..043, US-022..039). Migração `20261005130000_r21_convites_reenvio` aplicada no banco de dev (`db:deploy`). Próxima: **R3-A** (US-040a/b + EN-002a/b, D-GES-23).
 
 ## ✅ [TASK-026] US-027 — Ocultar valores
 - **SDD-010** §1, §4.4. **Arquivos**: `src/lib/prefs.ts`, `src/lib/mask-money.ts`, `src/components/money.tsx` (`Money`, `useFormatMoney`, `useMoneyText`), olho em `app-shell.tsx`, `PrefsProvider` no `(app)/layout`, `ApiClientError` mascara valores de mensagens do servidor, todas as telas migradas, regra `check:imports` (`money-format`, `period-predicate`).

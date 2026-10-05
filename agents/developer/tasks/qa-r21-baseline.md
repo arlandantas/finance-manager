@@ -25,3 +25,15 @@ Números homologados do acerto cobertos pelos testes de R1 (out: 3.169,90 / cota
 | E2E mobile (Pixel 7) | 291/291 |
 
 Números homologados mantidos (testes de regressão do acerto verdes: out 3.169,90 / 1.584,95; set 717,00 / 358,50). Nenhuma migração de banco neste lote.
+
+## Após o lote 3 (US-033..039) — 2026-10-05
+
+| Verificação | Resultado |
+| :-- | :-- |
+| `pnpm lint` / `typecheck` / `check:imports` | OK |
+| `pnpm test` (unidade) | 323/323 |
+| `pnpm test:int` | 485/485 |
+| E2E desktop | 373/373 (6 falhas da primeira execução: 5 por rótulo dos filtros nos passos legados e 1 medição de layout em passo da US-039; corrigidos nos passos, repetição verde) |
+| E2E mobile (Pixel 7) | 373/373 (1 timeout de compilação a frio em US-016a, verde na repetição) |
+
+Verificação visual no navegador embutido (1280 e 375 px, claro/escuro): Contas/arquivar, Família/remover membro, lançar despesa, Home, menu desktop; console sem erros (só o WebSocket de HMR da instância temporária). Números homologados mantidos. Migrações novas: `20261005120000_r21_ex_membro`, `20261005130000_r21_convites_reenvio` (dev: `db:deploy` aplicado).
