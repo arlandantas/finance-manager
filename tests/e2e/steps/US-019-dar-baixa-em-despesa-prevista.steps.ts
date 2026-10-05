@@ -438,9 +438,7 @@ When("Lucas tenta excluí-la pelo extrato", async ({ page, world }) => {
   const d = dlg(page, "Detalhe do lançamento");
   await expect(d).toBeVisible();
   // A UI não oferece "Excluir" para despesa vinda de previsão; o servidor também recusa.
-  await d.getByRole("button", { name: "Ações do lançamento" }).click();
-  await expect(page.getByRole("menuitem", { name: "Excluir" })).toHaveCount(0);
-  await d.getByRole("button", { name: "Ações do lançamento" }).click(); // fecha o menu
+  await expect(page.getByRole("button", { name: "Excluir", exact: true })).toHaveCount(0);
   const t = await db.transaction.findFirstOrThrow({ where: { kind: "EXPENSE" } });
   const res = await apiPost(page, `/api/v1/transactions/${t.id}/delete`, { version: t.version });
   world.data.apiError = res.body.error;
@@ -458,8 +456,7 @@ When("Lucas corrige o valor no extrato para {string}", async ({ page }, valor: s
   await gotoReady(page, `/extrato?period=${PERIOD_NOV}`);
   await page.getByTestId("ledger-row").first().click();
   const detail = dlg(page, "Detalhe do lançamento");
-  await detail.getByRole("button", { name: "Ações do lançamento" }).click();
-  await page.getByRole("menuitem", { name: "Editar" }).click();
+  await page.getByRole("button", { name: "Editar", exact: true }).click();
   const form = dlg(page, "Editar lançamento");
   await form.getByLabel("Valor", { exact: true }).fill(valor);
   await form.getByRole("button", { name: "Salvar alterações" }).click();

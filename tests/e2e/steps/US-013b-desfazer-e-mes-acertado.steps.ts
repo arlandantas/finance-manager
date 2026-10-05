@@ -41,10 +41,7 @@ Given("que outubro foi quitado", async ({ world, page }) => {
 When("edito o valor de uma despesa comum de outubro", async ({ page }) => {
   await gotoReady(page, "/extrato");
   await page.getByTestId("ledger-row").filter({ hasText: "Supermercado" }).first().click();
-  await dlg(page, "Detalhe do lançamento")
-    .getByRole("button", { name: "Ações do lançamento" })
-    .click();
-  await page.getByRole("menuitem", { name: "Editar" }).click();
+  await page.getByRole("button", { name: "Editar", exact: true }).click();
   const form = dlg(page, "Editar lançamento");
   await form.getByLabel("Valor", { exact: true }).fill("R$ 300,00");
   await form.getByRole("button", { name: "Salvar alterações" }).click();
@@ -106,6 +103,6 @@ When("abro o detalhe de uma transferência", async ({ world, page }) => {
 Then("não há {string}, apenas {string}", async ({ page }, proibida: string, unica: string) => {
   const d = dlg(page, "Detalhe do lançamento");
   await expect(d.getByRole("button", { name: unica })).toBeVisible();
-  await expect(d.getByRole("button", { name: "Ações do lançamento" })).toHaveCount(0);
+
   await expect(d.getByText(proibida, { exact: true })).toHaveCount(0);
 });

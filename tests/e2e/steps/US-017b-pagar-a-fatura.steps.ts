@@ -313,8 +313,7 @@ When("Lucas tenta editar ou excluir uma compra dela", async ({ page, world }) =>
   await gotoInvoice(page, world, "2026-10");
   await page.getByTestId("ledger-row").first().click();
   const detail = dlg(page, "Detalhe do lançamento");
-  await detail.getByRole("button", { name: "Ações do lançamento" }).click();
-  await page.getByRole("menuitem", { name: "Editar" }).click();
+  await page.getByRole("button", { name: "Editar", exact: true }).click();
   const form = dlg(page, "Editar lançamento");
   await form.getByLabel("Valor", { exact: true }).fill("R$ 100,00");
   await form.getByRole("button", { name: "Salvar alterações" }).click();
@@ -336,7 +335,7 @@ Then(
   async ({ page }, _a: string, _b: string, acao: string) => {
     const d = dlg(page, "Detalhe do lançamento");
     await expect(d.getByRole("button", { name: acao })).toBeVisible();
-    await expect(d.getByRole("button", { name: "Ações do lançamento" })).toHaveCount(0);
+
     await expect(d.getByText("Editar", { exact: true })).toHaveCount(0);
     await expect(d.getByText("Excluir", { exact: true })).toHaveCount(0);
   },

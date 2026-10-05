@@ -66,10 +66,7 @@ async function openDetail(
 }
 
 async function openMenu(page: Page, item: string) {
-  await dlg(page, "Detalhe do lançamento")
-    .getByRole("button", { name: "Ações do lançamento" })
-    .click();
-  await page.getByRole("menuitem", { name: item }).click();
+  await page.getByRole("button", { name: item, exact: true }).click();
 }
 
 async function editAmount(page: Page, valor: string) {
@@ -149,7 +146,7 @@ When(
     await openMenu(page, acao);
     await expect(dlg(page, titulo)).toBeVisible();
     await dlg(page, titulo).getByRole("button", { name: "Excluir", exact: true }).click();
-    await expect(page.getByText("Lançamento excluído")).toBeVisible();
+    await expect(page.getByText("Despesa excluída")).toBeVisible();
     await expect(page.getByRole("button", { name: "Desfazer" })).toBeVisible();
   },
 );
@@ -206,8 +203,7 @@ Given("que Mariana e Lucas abriram o mesmo lançamento", async ({ world, page, b
   await loginAs(lucasPage, { email: "lucas@exemplo.com", name: "Lucas Silva" });
   await gotoReady(lucasPage, "/extrato");
   await lucasPage.getByTestId("ledger-row").filter({ hasText: "Compra do mês" }).first().click();
-  await lucasPage.getByRole("button", { name: "Ações do lançamento" }).click();
-  await lucasPage.getByRole("menuitem", { name: "Editar" }).click();
+  await lucasPage.getByRole("button", { name: "Editar", exact: true }).click();
   await expect(dlg(lucasPage, "Editar lançamento")).toBeVisible();
   world.data.lucasPage = lucasPage;
 });
@@ -259,7 +255,7 @@ When(
     await dlg(page, "Excluir lançamento?")
       .getByRole("button", { name: "Excluir", exact: true })
       .click();
-    await expect(page.getByText("Lançamento excluído")).toBeVisible();
+    await expect(page.getByText("Despesa excluída")).toBeVisible();
     await gotoReady(page, "/acerto");
   },
 );

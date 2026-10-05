@@ -37,8 +37,7 @@ async function openPurchaseDetail(page: Page, url = "/extrato?period=2026-10") {
 
 async function openEditForm(page: Page, url?: string) {
   const d = await openPurchaseDetail(page, url);
-  await d.getByRole("button", { name: "Ações do lançamento" }).click();
-  await page.getByRole("menuitem", { name: "Editar" }).click();
+  await page.getByRole("button", { name: "Editar", exact: true }).click();
   const form = dlg(page, "Editar lançamento");
   await expect(form).toBeVisible();
   return form;
@@ -73,12 +72,11 @@ Then("a compra passa para a fatura de {string}", async ({}, rotulo: string) => {
 
 When("Mariana exclui a compra", async ({ page }) => {
   const d = await openPurchaseDetail(page);
-  await d.getByRole("button", { name: "Ações do lançamento" }).click();
-  await page.getByRole("menuitem", { name: "Excluir" }).click();
+  await page.getByRole("button", { name: "Excluir", exact: true }).click();
   await dlg(page, "Excluir lançamento?")
     .getByRole("button", { name: "Excluir", exact: true })
     .click();
-  await expect(page.getByText("Lançamento excluído")).toBeVisible();
+  await expect(page.getByText("Despesa excluída")).toBeVisible();
 });
 
 Then("a compra some da fatura e do extrato padrão", async ({ page }) => {
