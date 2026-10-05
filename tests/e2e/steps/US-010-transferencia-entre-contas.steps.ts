@@ -53,7 +53,7 @@ async function openTransfer(world: World, page: Page) {
   await openContas(world, page);
   await page.getByRole("button", { name: "Transferir" }).click();
   await expect(dialog(page)).toBeVisible();
-  await expect(dialog(page).getByLabel("Valor")).toBeFocused();
+  await expect(dialog(page).getByLabel("Valor", { exact: true })).toBeFocused();
 }
 
 async function fillTransfer(page: Page, o: { valor?: string; origem?: string; destino?: string }) {

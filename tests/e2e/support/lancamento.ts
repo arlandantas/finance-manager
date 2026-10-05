@@ -35,12 +35,12 @@ export async function ensureWorld(
 }
 
 export const drawer = (page: Page) =>
-  page.getByRole("dialog").filter({ has: page.getByLabel("Valor") });
+  page.getByRole("dialog").filter({ has: page.getByLabel("Valor", { exact: true }) });
 
 export async function openDrawer(page: Page) {
   await page.getByRole("button", { name: "Novo lançamento" }).click();
   await expect(drawer(page)).toBeVisible();
-  await expect(page.getByLabel("Valor")).toBeFocused();
+  await expect(page.getByLabel("Valor", { exact: true })).toBeFocused();
 }
 
 export async function fillAmount(page: Page, valor: string) {

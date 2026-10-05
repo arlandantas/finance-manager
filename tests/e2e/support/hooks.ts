@@ -12,6 +12,20 @@ Before(async () => {
   }).catch(() => undefined);
 });
 
+// US-027: o app começa com valores ocultos (padrão). Os cenários antigos conferem valores na tela,
+// então o navegador de teste simula "o usuário já escolheu mostrar" (preferência ausente => visível),
+// exceto nos cenários marcados com @valores-ocultos, que exercitam o padrão real.
+Before(async ({ page, $tags }) => {
+  if ($tags.includes("@valores-ocultos")) return;
+  await page.addInitScript(() => {
+    const real = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (this: Storage, key: string) {
+      const v = real.call(this, key);
+      return v === null && /^fm:v1:u:.+:hideValues$/.test(key) ? "false" : v;
+    };
+  });
+});
+
 After(async () => {
   await closeTestDb();
 });
