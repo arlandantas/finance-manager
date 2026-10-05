@@ -1,6 +1,6 @@
 # 📋 Quadro de Tarefas & QA do Desenvolvedor
 
-*Atualizado: 2026-10-05 (R2.1 lote 1 concluído; retomar em US-028) · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Incremento 1 (walking skeleton) concluído: EN-001 → US-001 → US-002 → US-004 → US-005 → US-006 → US-007 → US-003. Incremento 2 (fechar o mês), ordem do PO: US-008 → US-009a → US-010 → US-011 → US-012 → US-009b → US-013a → US-013b.*
+*Atualizado: 2026-10-05 (R2.1 lotes 1 e 2 concluídos; retomar em US-033) · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Incremento 1 (walking skeleton) concluído: EN-001 → US-001 → US-002 → US-004 → US-005 → US-006 → US-007 → US-003. Incremento 2 (fechar o mês), ordem do PO: US-008 → US-009a → US-010 → US-011 → US-012 → US-009b → US-013a → US-013b.*
 
 ## 📌 Fluxo de Execução
 
@@ -45,6 +45,11 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-029 | US-024 | Descrição visível e opcional + busca `q` no Extrato | US-005/006/016a | SDD-013 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-030 | US-025 | Resumo do Mês (`getMonthSummary`, `GET /month-summary`, `listDueItems`, `ledger-where`) | US-012, US-017a, US-018 | SDD-010 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-031 | US-026 | Saldos das contas em card recolhível | US-025 | SDD-010 | 2 | Concluído (aguardando validação do Gestor) |
+| TASK-032 | US-028 | Acerto opcional (`Family.settlementEnabled`, `FamilyEvent`, `PATCH /family/settings`, guarda `SETTLEMENT_DISABLED`, onboarding, linguagem neutra) | US-009a/011/012 | SDD-011 | 5 | Concluído (aguardando validação do Gestor) |
+| TASK-033 | US-029 | Indicador neutro de acerto no Resumo + aviso de meses anteriores (janela de 12 meses) | US-028, US-025 | SDD-011 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-034 | US-030 | Despesa e previsão nascem "Só meu"; rótulo da regra; linha "Só meu" no Acerto | US-028 | SDD-011 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-035 | US-031 | Prévia de impacto da regra, sugestão pela renda, FAB oculto na regra | US-022 | SDD-011 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-036 | US-032 | Arquivar, reativar e excluir (lógico) conta; lock de postagem; migração `r21_arquivamento` | US-004/010 | SDD-012 | 5 | Concluído (aguardando validação do Gestor); fecha os cenários "arquivada" das US-023/026 |
 
 ---
 
@@ -357,7 +362,7 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 
 # R2.1 — Lote 1 (D-GES-19/D-GES-14..20)
 
-> **Ponto de retomada**: lote 1 (US-027, 022, 023, 024, 025, 026) concluído e commitado. Próxima: **US-028** (SDD-011, migração `r21_familia_configuracoes`), depois US-029 → 039 e a R3-A (D-GES-23). Linha de base: [`qa-r21-baseline.md`](qa-r21-baseline.md).
+> **Ponto de retomada**: lotes 1 e 2 (US-027, 022..026, 028..032) concluídos e commitados. Próxima: **US-033** (cartão arquivar/reativar; migração `r21_arquivamento` já aplicada, colunas de `credit_cards` prontas), depois US-034, 035a/b, 036, 037, 038, 039 e a R3-A (D-GES-23). Linha de base: [`qa-r21-baseline.md`](qa-r21-baseline.md).
 
 ## ✅ [TASK-026] US-027 — Ocultar valores
 - **SDD-010** §1, §4.4. **Arquivos**: `src/lib/prefs.ts`, `src/lib/mask-money.ts`, `src/components/money.tsx` (`Money`, `useFormatMoney`, `useMoneyText`), olho em `app-shell.tsx`, `PrefsProvider` no `(app)/layout`, `ApiClientError` mascara valores de mensagens do servidor, todas as telas migradas, regra `check:imports` (`money-format`, `period-predicate`).
@@ -385,3 +390,23 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 ## ✅ [TASK-031] US-026 — Card de saldos recolhível
 - **SDD-010** §6.2. `BalancesCard` com `usePref("balancesExpanded")`, `aria-expanded`, "Nenhuma conta cadastrada".
 - **QA**: E2E 4 x 2 (recolhido por padrão, expandir/recolher, lembrado e por dispositivo, Enter). "Ignora arquivadas" liga com a US-032.
+
+## Lote 2 (US-028..032)
+
+### ✅ [TASK-032] US-028 — Acerto opcional
+- **SDD-011** §4.4, §5. Migração `r21_familia_configuracoes` (colunas de `families`, `family_events` append-only, default `false` em `planned_expenses`), `updateFamilySettings` (lock `FOR UPDATE`, `VERSION_CONFLICT` com nome, `SETTLEMENT_PENDING` com todos os meses), `pendingSettlementMonths`, guarda `409 SETTLEMENT_DISABLED` em todas as rotas de acerto/regra, `422` ao gravar despesa dividida desligado, `split.available` em `defaults`, menu sem "Acerto", onboarding com a pergunta, `copy.ts` (sem "deve").
+- **QA**: U (copy 4), I (11: ligar/desligar, 409/422, checksum de imutabilidade, homologado, Membro 403, conflito, duplo clique, append-only, isolamento), E2E 10 x 2.
+
+### ✅ [TASK-033] US-029 — Indicador de acerto
+- `split/indicator.ts` (fonte única `loadSettlement`; `previous` em janela de 12 meses), `HomeDTO.settlementIndicator` substitui o card; linhas no Resumo. **QA**: I (6, inclui reconciliação por semente fixa), E2E 7 x 2.
+
+### ✅ [TASK-034] US-030 — Só meu por padrão
+- Defaults Zod `false` (despesa e previsão), `defaults.split.ruleShares`, rótulo dinâmico do interruptor, `SettlementDTO.personal` e linha com link `shared=false`. Testes R1/R2 ajustados (isSharedExpense explícito nas fábricas de API). **QA**: I (5), E2E 8 x 2.
+
+### ✅ [TASK-035] US-031 — Prévia da regra
+- `split/preview.ts` (P1/P2, R1..R3), `POST /split-rule/preview` (ADMIN, sem gravar), prévia com debounce, "Sugerir pela renda" (renda nunca sai do navegador), "Salvar regra" desabilitado se soma ≠ 100%, volta ao painel, `HIDE_FAB_ROUTES`. **QA**: U 6, I 3, E2E 5 x 2.
+- **Achado**: `rule.current.shares` vinha na ordem das linhas do banco; agora segue a ordem canônica dos membros (DEV-38).
+
+### ✅ [TASK-036] US-032 — Arquivar/excluir conta
+- `contas/lock.ts` (`lockAccountsForPosting` `FOR SHARE` ordenado, `assertAccountsEditable`), `contas/archive.ts` (`FOR UPDATE`), rotas archive/unarchive/delete, `GET /accounts?archived=`, `neverUsed`, índices de nome parciais, marcador "(arquivada)" no Extrato, seção "Contas arquivadas", "Transferir o saldo" pré-preenchido. **QA**: I 11 (inclui corrida arquivar x postar nas duas ordens), E2E 9 x 2.
+- **Desvios**: DEV-38, DEV-39.
