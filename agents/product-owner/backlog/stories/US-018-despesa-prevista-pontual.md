@@ -101,9 +101,10 @@ Funcionalidade: Despesa prevista
     Quando Lucas abre "Contas a pagar" de novembro
     Então vê o item "Fatura Nubank Mariana" de "R$ 400,00" vencendo em 05/11
 
-  Cenário: Dividir com a família desligado
-    Quando Lucas cadastra a previsão "Plano de saúde de Lucas" de "R$ 300,00" com "Dividir com a família" desligado
-    Então a previsão fica marcada como "Pessoal"
+  Cenário: Previsão nasce como Só meu
+    Dado que o interruptor "Dividir com a família" está desligado, que é o padrão
+    Quando Lucas cadastra a previsão "Plano de saúde de Lucas" de "R$ 300,00" sem ligar "Dividir com a família"
+    Então a previsão fica marcada como "Só meu"
 
   Cenário: Nenhuma despesa prevista
     Dado que a família não tem despesas previstas
@@ -144,3 +145,4 @@ Baixa/pagamento (US-019); recorrência e projeção automática (AP1); parcelame
 ## Histórico
 - 2026-10-04 — Refinada a partir do esboço (Rascunho → Refinada). Home passa a ter o bloco "A pagar" (cenário próprio).
 - 2026-10-04 — **Revisão pós-homologação (R2.1):** Q-22 revisada: "Dividir com a família" da previsão passa a nascer **Só meu** (US-030, D-PO-16), aguardando ratificação do Gestor.
+- 2026-10-04 — **Cenário atualizado (D-PO-41, D-GES-15):** "Dividir com a família desligado" vira "Previsão nasce como Só meu" (padrão; revisa Q-22); testes de `previstas` ajustados pelo Dev com a US-030.

@@ -30,7 +30,7 @@ Funcionalidade: Desfazer transferência/acerto e aviso de mês acertado
   Cenário: Desfazer um acerto
     Dado um acerto registrado de "R$ 400,00"
     Quando escolho "Desfazer acerto" e confirmo
-    Então as duas pernas são estornadas e o painel volta a exibir "Lucas deve R$ 400,00 para Mariana"
+    Então as duas pernas são estornadas e o painel volta a exibir "Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana"
 
   Cenário: Transferência não é editável
     Quando abro o detalhe de uma transferência
@@ -45,3 +45,6 @@ O mesmo da US-013a.
 
 ## Nota de corte
 Primeira fatia a ser cortada se o prazo apertar (ordem: 13b, 9b, 13a). Sem ela, a R1 ainda permite corrigir/excluir lançamentos; transferências e acertos errados ficam sem remédio na UI (registrar como débito conhecido).
+
+## Histórico
+- 2026-10-04 — **Cenário atualizado (D-PO-41, SDD-011 §9, US-028):** "Desfazer um acerto" com o texto neutro do herói; valores inalterados.

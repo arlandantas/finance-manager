@@ -28,7 +28,7 @@ Como **membro da família**, quero **ver quanto cada um pagou em despesas comuns
 Regra 50/50. Total comum: R$ 4.000,00 (`400000`).
 - Mariana pagou R$ 2.400,00 (`240000`) → cota R$ 2.000,00 → diferença **+R$ 400,00**.
 - Lucas pagou R$ 1.600,00 (`160000`) → cota R$ 2.000,00 → diferença **−R$ 400,00**.
-- Sugestão: **Lucas deve R$ 400,00 para Mariana**.
+- Sugestão: **"Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana"** (texto neutro desde a R2.1, RN-019.4; na R1 era "Lucas deve R$ 400,00 para Mariana"), com a linha "Valor a acertar: R$ 400,00".
 
 ## Critérios de aceite (Gherkin)
 
@@ -44,7 +44,8 @@ Funcionalidade: Painel de acerto de contas
       | Lucas      | R$ 1.200,00  |
       | Lucas      | R$ 400,00    |
     Quando abro o painel de acerto de outubro
-    Então vejo "Lucas deve R$ 400,00 para Mariana"
+    Então vejo "Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana"
+    E vejo "Valor a acertar: R$ 400,00"
     E Mariana: pagou "R$ 2.400,00", cota "R$ 2.000,00", diferença "+R$ 400,00"
     E Lucas: pagou "R$ 1.600,00", cota "R$ 2.000,00", diferença "-R$ 400,00"
 
@@ -57,7 +58,7 @@ Funcionalidade: Painel de acerto de contas
     Dado a regra 60% / 40% e total comum de "R$ 1.000,00" pago integralmente por Mariana
     Quando abro o painel
     Então a cota de Mariana é "R$ 600,00" e a de Lucas é "R$ 400,00"
-    E vejo "Lucas deve R$ 400,00 para Mariana"
+    E vejo "Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana"
 
   Cenário: Centavo ímpar não se perde
     Dado a regra 50/50 e uma única despesa comum de "R$ 100,01" paga por Mariana
@@ -73,7 +74,7 @@ Funcionalidade: Painel de acerto de contas
   Cenário: Mês sem despesas comuns
     Dado que não há despesas comuns no mês
     Quando abro o painel
-    Então vejo o estado vazio explicativo e nenhum valor devido
+    Então vejo "Nenhuma despesa dividida neste mês" e nenhum valor a acertar
 
   Cenário: Família com um só membro
     Dado que a família tem apenas Mariana
@@ -99,3 +100,4 @@ Exibição para 3+ membros e lista expansível de despesas (US-009b), registrar 
 
 ## Histórico
 - 2026-10-04 — **Revisão pós-homologação (R2.1):** o painel só existe com o acerto **ligado** (US-028), usa linguagem neutra, mostra o rótulo honesto da regra (US-022) e a linha de despesas "Só meu" (US-030). O cálculo não muda.
+- 2026-10-04 — **Cenários atualizados (D-PO-41, SDD-011 §9, US-028/US-022):** texto neutro do herói ("Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana" e "Valor a acertar") e estado vazio "Nenhuma despesa dividida neste mês". O cálculo não muda.

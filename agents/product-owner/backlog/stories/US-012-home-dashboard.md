@@ -11,7 +11,7 @@
 ## História
 Como **membro da família**, quero **uma tela inicial que mostre saldos, o acerto do mês e os últimos lançamentos**, para **entender a situação em 3 segundos e lançar rápido**.
 
-## Conteúdo da Home (de cima para baixo)
+## Conteúdo da Home (de cima para baixo) — *versão da R1; a ordem vigente desde a R2.1 está no Histórico (US-025, US-026, US-029)*
 1. **Saldo consolidado** da família (soma das contas) e lista de contas com saldo.
 2. **Card "Acerto do mês"**: frase-herói do [FLUXO-003](../../flows/FLUXO-003-acerto-de-contas.md) (ou "Tudo certo neste mês"); toque abre o painel.
 3. **Resumo do mês**: total de receitas, total de despesas e quanto cada membro gastou (percentual de participação).
@@ -33,9 +33,9 @@ Funcionalidade: Home da família
   Cenário: Home com dados
     Dado contas "Itaú Mariana" (R$ 6.500,00) e "Nubank Conjunta" (R$ 849,50)
     Quando abro a Home
-    Então vejo "Saldo da família: R$ 7.349,50"
-    E a lista de contas com seus saldos
-    E o card "Acerto do mês"
+    Então vejo o Resumo do Mês
+    E o card "Saldos das contas" recolhido com o total "R$ 7.349,50"
+    E a linha "Acerto do mês" dentro do Resumo
     E os últimos 5 lançamentos
 
   Cenário: Resumo do mês exclui transferências e acertos
@@ -48,8 +48,9 @@ Funcionalidade: Home da família
     Quando abro a Home
     Então vejo "Mariana R$ 900,00 (75%)" e "Lucas R$ 300,00 (25%)"
 
-  Cenário: Card de acerto abre o painel
-    Quando toco no card "Acerto do mês"
+  Cenário: Linha de acerto abre o painel
+    Dado uma diferença a acertar de "R$ 380,00" no mês corrente
+    Quando toco na linha "Acerto do mês"
     Então sou levado ao painel de acerto do mês corrente
 
   Cenário: Botão de lançamento rápido
@@ -79,3 +80,4 @@ Gráficos, orçamento/disponibilidade por categoria (AP1), termômetro de liquid
 
 ## Histórico
 - 2026-10-04 — **Revisão pós-homologação (R2.1):** o layout (saldo em destaque, card "Acerto do mês" e resumo simples) é **substituído** pelo Resumo do Mês (US-025), card de saldos recolhível (US-026), indicador neutro de acerto (US-029) e detalhe da transação (US-036). Ver FLUXO-006.
+- 2026-10-04 — **Cenários atualizados (D-PO-41, SDD-010 §9):** "Home com dados" e "Card de acerto abre o painel" refletem a Home reorganizada (Resumo do Mês, card de saldos recolhido e linha neutra de acerto; ver US-025, US-026, US-029). "Resumo do mês exclui transferências e acertos" e "Participação por membro" continuam válidos.

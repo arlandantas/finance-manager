@@ -26,7 +26,7 @@ Como **membro devedor (ou credor)**, quero **registrar com 1 toque a transferên
 Funcionalidade: Registro do acerto de contas
 
   Contexto:
-    Dado o acerto de outubro: "Lucas deve R$ 400,00 para Mariana"
+    Dado o acerto de outubro: "Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana"
 
   Cenário: Quitar integralmente
     Quando Lucas toca em "Registrar acerto" e escolhe a conta origem "Itaú Lucas" e a conta destino "Nubank Mariana"
@@ -37,7 +37,7 @@ Funcionalidade: Registro do acerto de contas
 
   Cenário: Acerto parcial
     Quando Lucas registra "R$ 150,00" como acerto
-    Então o painel exibe "Lucas deve R$ 250,00 para Mariana"
+    Então o painel exibe "Para equilibrar o mês: Lucas transfere R$ 250,00 para Mariana"
 
   Cenário: Valor acima do devido
     Quando Lucas informa "R$ 500,00"
@@ -54,7 +54,7 @@ Funcionalidade: Registro do acerto de contas
   Cenário: Nova despesa comum após o acerto
     Dado que o mês foi quitado
     Quando Mariana lança nova despesa comum de "R$ 200,00"
-    Então o painel exibe "Lucas deve R$ 100,00 para Mariana"
+    Então o painel exibe "Para equilibrar o mês: Lucas transfere R$ 100,00 para Mariana"
 
   Cenário: Duplo clique não duplica
     Quando toco duas vezes em "Confirmar acerto"
@@ -73,3 +73,6 @@ Pix/integração bancária, lembrete ou cobrança ao devedor, desfazer acerto (t
 
 ## Perguntas em aberto / pontos para o Tech Lead
 - Persistir `settlementPeriod` na transferência; garantir que `acerto` seja excluído dos totais de despesa/receita e do extrato de gasto.
+
+## Histórico
+- 2026-10-04 — **Cenários atualizados (D-PO-41, SDD-011 §9, US-028):** texto neutro do herói no contexto e nos cenários "Acerto parcial" e "Nova despesa comum após o acerto" (RN-019.4). Valores e cálculo inalterados.

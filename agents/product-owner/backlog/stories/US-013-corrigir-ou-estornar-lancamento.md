@@ -57,9 +57,9 @@ Funcionalidade: Correção e exclusão de lançamentos
     E sua alteração não é gravada
 
   Cenário: Acerto de contas recalculado
-    Dado "Lucas deve R$ 400,00 para Mariana" no painel
+    Dado "Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana" no painel
     Quando a despesa comum de Mariana de "R$ 400,00" é excluída
-    Então o painel exibe "Lucas deve R$ 200,00 para Mariana"
+    Então o painel exibe "Para equilibrar o mês: Lucas transfere R$ 200,00 para Mariana"
 
 
 
@@ -78,3 +78,6 @@ Aviso de mês acertado e desfazer transferência/acerto (US-013b), edição em l
 ## Perguntas em aberto / pontos para o Tech Lead
 - Como mapear "editar" sobre o *ledger* imutável (estorno + novo lançamento vs. versionamento com histórico). **Comportamento observável acima é o contrato do PO.**
 - **Q-13**: Should (e não Must) por se tratar de correção; sem ela erros de digitação ficam sem remédio. O Gestor decide se sobe para Must.
+
+## Histórico
+- 2026-10-04 — **Cenário atualizado (D-PO-41, SDD-011 §9, US-028):** "Acerto de contas recalculado" com o texto neutro do herói; valores inalterados.

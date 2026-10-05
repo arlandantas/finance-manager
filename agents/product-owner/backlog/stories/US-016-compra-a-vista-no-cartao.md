@@ -14,7 +14,7 @@ Como **membro da família**, quero **lançar uma compra à vista no cartão pelo
 ## Regras de negócio aplicáveis
 - No drawer de despesa, o chip **"Conta"** vira **"Pagar com"** e lista **contas e cartões**. Padrão = o último meio usado pelo membro (conta **ou** cartão). Sem cartões cadastrados, nada muda em relação à US-005.
 - **Receita só entra em conta**: no modo Receita o seletor lista apenas contas.
-- A compra no cartão é uma **despesa** como qualquer outra (valor > 0 em centavos, categoria obrigatória, descrição opcional, data padrão hoje, **quem pagou** = quem comprou, **dividir com a família** ligado por padrão, autor automático) e **continua no extrato, nos totais do mês e no acerto de contas** pela **data da compra** (RN-003.3; a despesa de consumo ocorre na compra, não no pagamento da fatura).
+- A compra no cartão é uma **despesa** como qualquer outra (valor > 0 em centavos, categoria obrigatória, descrição opcional, data padrão hoje, **quem pagou** = quem comprou, **dividir com a família** desligado por padrão ("Só meu", US-030), autor automático) e **continua no extrato, nos totais do mês e no acerto de contas** pela **data da compra** (RN-003.3; a despesa de consumo ocorre na compra, não no pagamento da fatura).
 - **Não altera o saldo de nenhuma conta** (RN-003.1) e **consome o limite imediatamente**.
 - **Fatura da compra** (ciclo do cartão): a compra entra na fatura que **fecha no primeiro dia de fechamento maior ou igual à data da compra** (compras **até o dia do fechamento, inclusive**, ficam naquela fatura; D-PO-06). Exemplo, fecha dia 25 e vence dia 5: compra de 15/10 ➔ fatura de out/2026 (fecha 25/10, vence 05/11); 25/10 ➔ mesma; 26/10 ➔ fatura de nov/2026 (fecha 25/11, vence 05/12); 26/12 ➔ fatura de jan/2027.
 - **Limite**: compra que ultrapassa o disponível **não é bloqueada** (a compra já aconteceu): a interface avisa e pede confirmação; o disponível pode ficar negativo (D-PO-08).
@@ -71,15 +71,16 @@ Funcionalidade: Compra à vista no cartão
     Então o autor é "Lucas" e quem pagou é "Mariana"
 
   Cenário: Compra pessoal no cartão
-    Quando Lucas lança "R$ 80,00" em "Lazer e restaurantes" no cartão com "Dividir com a família" desligado
-    Então a compra é registrada como pessoal
+    Dado que o interruptor "Dividir com a família" está desligado, que é o padrão
+    Quando Lucas lança "R$ 80,00" em "Lazer e restaurantes" no cartão sem ligar "Dividir com a família"
+    Então a compra é registrada como "Só meu"
     E não entra no acerto de contas
 
   Cenário: Compra compartilhada no cartão entra no acerto pela data da compra
     Dado a regra de divisão "igualitária"
-    E que Mariana lançou "R$ 300,00" em "Supermercado" no cartão "Nubank Mariana" em 15/10/2026
+    E que Mariana lançou "R$ 300,00" em "Supermercado" no cartão "Nubank Mariana" em 15/10/2026 com "Dividir com a família" ligado
     Quando abro o acerto de outubro
-    Então vejo "Lucas deve R$ 150,00 a Mariana"
+    Então vejo "Para equilibrar o mês: Lucas transfere R$ 150,00 para Mariana"
 
   Cenário: Compra no cartão entra nos totais do mês
     Quando Lucas lança "R$ 300,00" no cartão "Nubank Mariana"
@@ -150,3 +151,4 @@ Parcelamento e projeção nas faturas seguintes (AP1); compra futura; estorno/cr
 
 ## Histórico
 - 2026-10-04 — Refinada a partir do esboço; **fatiada** em 016a (esta) e 016b (corrigir/excluir e filtro por cartão), para respeitar o tamanho ≤ 5.
+- 2026-10-04 — **Cenários atualizados (D-PO-41, SDD-011 §9):** "Compra pessoal no cartão" é o padrão "Só meu"; "Compra compartilhada…" exige **ligar** o interruptor; texto neutro do acerto ("Para equilibrar o mês: Lucas transfere R$ 150,00 para Mariana"; substitui "deve … a", ver DEV-19).

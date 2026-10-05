@@ -14,7 +14,7 @@ Como **membro da família**, quero **registrar uma despesa no celular em menos d
 ## Regras de negócio aplicáveis
 - **Autor do cadastro**: automático (usuário logado), imutável (RN-001.1).
 - **Quem pagou** (D-PO-01): padrão = usuário logado; pode ser **outro membro** (RN-001.3). No MVP preenche *responsável pelo gasto* e *pagador*.
-- **Dividir com a família?**: padrão **ligado** (despesa comum). Desligado = despesa pessoal, fora do rateio (RN-007.2).
+- **Dividir com a família?**: padrão **Só meu** (despesa pessoal, fora do rateio, RN-007.2) desde a R2.1 (US-030, D-PO-16); a despesa comum exige **ligar** o interruptor. *(Na R1 o padrão era ligado.)*
 - Despesa **reduz o saldo da conta** escolhida na data do lançamento (RN-002.2).
 - Valor > 0, em **centavos inteiros**; data padrão = hoje; data retroativa permitida; data futura **não** nesta história (previstas = US-018).
 - Descrição: 2 a 100 caracteres. **Opcional na UI** (vazia assume o nome da categoria) — ver Q-05.
@@ -33,7 +33,7 @@ Funcionalidade: Lançamento rápido de despesa
     E Lucas está autenticado
 
   Cenário: Despesa comum com sucesso
-    Quando Lucas toca no botão "+", digita "R$ 150,50", escolhe a categoria "Supermercado" e toca em "Salvar Despesa"
+    Quando Lucas toca no botão "+", digita "R$ 150,50", escolhe a categoria "Supermercado", liga "Dividir com a família" e toca em "Salvar Despesa"
     Então a despesa é registrada com autor "Lucas", quem pagou "Lucas", conta "Nubank Conjunta" e data de hoje
     E está marcada como "Dividir com a família"
     E o saldo de "Nubank Conjunta" passa a "R$ 849,50"
@@ -45,8 +45,9 @@ Funcionalidade: Lançamento rápido de despesa
     Então o autor é "Lucas" e quem pagou é "Mariana"
 
   Cenário: Despesa pessoal
-    Quando Lucas lança "R$ 80,00" em "Lazer e restaurantes" com "Dividir com a família" desligado
-    Então a despesa é registrada como pessoal
+    Dado que o interruptor "Dividir com a família" está desligado, que é o padrão
+    Quando Lucas lança "R$ 80,00" em "Lazer e restaurantes" sem ligar "Dividir com a família"
+    Então a despesa é registrada como "Só meu"
     E não entra no acerto de contas
 
   Cenário: Valor obrigatório e positivo
@@ -105,3 +106,4 @@ Receita (US-006), despesa prevista (US-018), compra no cartão (US-016), parcela
 
 ## Histórico
 - 2026-10-04 — **Revisão pós-homologação (R2.1):** o padrão de "Dividir com a família" passa de **ligado** para **Só meu** (US-030, D-PO-16) e a descrição passa a ser **campo visível e opcional** (US-024). Os cenários com "Dividir" ligado por padrão desta história refletem a R1 e serão atualizados pelo Dev junto com a US-030.
+- 2026-10-04 — **Cenários atualizados (D-PO-41, SDD-011 §9):** "Despesa comum com sucesso" passa a **ligar** o interruptor e "Despesa pessoal" é o **padrão** "Só meu"; texto da regra de negócio ajustado. O Dev atualiza o `.feature` e o teste de integração com a US-030.
