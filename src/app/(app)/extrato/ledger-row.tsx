@@ -51,6 +51,7 @@ export function LedgerRow({
       <button
         type="button"
         data-testid="ledger-row"
+        data-highlighted={highlighted ? "true" : undefined}
         data-pending={item.pending ? "true" : undefined}
         onClick={onOpen}
         onMouseEnter={() => onHover(item.transferGroupId)}

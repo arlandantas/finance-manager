@@ -1,13 +1,12 @@
 "use client";
 
-import { History, MoreHorizontal, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { History, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
-import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
@@ -32,14 +31,20 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
+/** Desktop (>= 1024): painel lateral à direita; abaixo disso, gaveta/modal (SDD-010 §4.6). */
+const SIDE_PANEL =
+  "lg:inset-y-0 lg:left-auto lg:right-0 lg:top-0 lg:h-full lg:max-h-none lg:w-[440px] lg:max-w-none lg:translate-x-0 lg:translate-y-0 lg:rounded-none lg:rounded-l-2xl";
+
 type Mode = "view" | "edit" | "history";
 
 export function TransactionDetailDrawer({
   id,
   onClose,
+  source = "extrato",
 }: {
   id: string | null;
   onClose: () => void;
+  source?: "home" | "extrato";
 }) {
   const detail = useTransactionDetail(id && !id.startsWith("pending-") ? id : null);
   const defaults = useDefaults(id !== null);
@@ -116,8 +121,8 @@ export function TransactionDetailDrawer({
           setSettled(null);
           if (action === "delete") {
             const after = res.transaction;
-            toast.success("Lançamento excluído", {
-              duration: 5000,
+            toast.success(after.type === "INCOME" ? "Receita excluída" : "Despesa excluída", {
+              duration: 8000, // SDD-010 §4.6: "Desfazer" visível por pelo menos 8 s
               action: {
                 label: "Desfazer",
                 onClick: () => restoreFromToast(after),
@@ -158,7 +163,12 @@ export function TransactionDetailDrawer({
   const isIncome = t?.type === "INCOME";
   return (
     <>
-      <Drawer open={id !== null} onOpenChange={(open) => !open && onClose()} title={title}>
+      <Drawer
+        open={id !== null}
+        onOpenChange={(open) => !open && onClose()}
+        title={title}
+        className={SIDE_PANEL}
+      >
         {detail.isPending ? (
           <div className="flex flex-col gap-3" aria-busy="true">
             <Skeleton className="h-8" />
@@ -204,7 +214,7 @@ export function TransactionDetailDrawer({
 
         {t && mode === "view" ? (
           <>
-            <div className="mb-2 flex items-center justify-end gap-2">
+            <div className="mb-2 flex flex-wrap items-center justify-end gap-2">
               {t.deletedAt && t.deletionReason === "DELETED" && editable ? (
                 <Button
                   variant="secondary"
@@ -227,47 +237,23 @@ export function TransactionDetailDrawer({
                   {t.isSettlement ? "Desfazer acerto" : "Desfazer transferência"}
                 </Button>
               ) : null}
+              {editable && !t.deletedAt ? (
+                <Button variant="secondary" onClick={() => setMode("edit")}>
+                  <Pencil size={16} aria-hidden="true" />
+                  Editar
+                </Button>
+              ) : null}
+              {editable && !t.deletedAt && !t.plannedExpenseId ? (
+                <Button variant="secondary" onClick={() => setConfirmingDelete(true)}>
+                  <Trash2 size={16} aria-hidden="true" />
+                  Excluir
+                </Button>
+              ) : null}
               {editable ? (
-                <Menu
-                  label="Ações do lançamento"
-                  trigger={<MoreHorizontal size={20} aria-hidden="true" />}
-                >
-                  {(close) => (
-                    <>
-                      {!t.deletedAt ? (
-                        <MenuItem
-                          onClick={() => {
-                            close();
-                            setMode("edit");
-                          }}
-                        >
-                          <Pencil size={16} aria-hidden="true" />
-                          Editar
-                        </MenuItem>
-                      ) : null}
-                      {!t.deletedAt && !t.plannedExpenseId ? (
-                        <MenuItem
-                          onClick={() => {
-                            close();
-                            setConfirmingDelete(true);
-                          }}
-                        >
-                          <Trash2 size={16} aria-hidden="true" />
-                          Excluir
-                        </MenuItem>
-                      ) : null}
-                      <MenuItem
-                        onClick={() => {
-                          close();
-                          setMode("history");
-                        }}
-                      >
-                        <History size={16} aria-hidden="true" />
-                        Histórico
-                      </MenuItem>
-                    </>
-                  )}
-                </Menu>
+                <Button variant="secondary" onClick={() => setMode("history")}>
+                  <History size={16} aria-hidden="true" />
+                  Histórico
+                </Button>
               ) : null}
             </div>
             <dl>
@@ -291,7 +277,7 @@ export function TransactionDetailDrawer({
                 </Row>
               ) : null}
               {t.type === "EXPENSE" ? (
-                <Row label="Divisão">{t.isSharedExpense ? "Despesa comum" : "Despesa pessoal"}</Row>
+                <Row label="Divisão">{t.isSharedExpense ? "Dividida com a família" : "Só meu"}</Row>
               ) : null}
               {t.note ? <Row label="Observação">{t.note}</Row> : null}
               {t.deletedAt ? (
@@ -324,6 +310,14 @@ export function TransactionDetailDrawer({
               <p>
                 Registrado por <strong>{t.author.name}</strong>
               </p>
+              {source === "home" ? (
+                <Link
+                  href={`/extrato?period=${t.occurredOn.slice(0, 7)}&highlight=${t.id}`}
+                  className="mt-1 inline-flex min-h-11 items-center font-semibold text-brand-800 underline"
+                >
+                  Ver no Extrato
+                </Link>
+              ) : null}
               {t.editedBy ? (
                 <p>
                   Editado por <strong>{t.editedBy.name}</strong>

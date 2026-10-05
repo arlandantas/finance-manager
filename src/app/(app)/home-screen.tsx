@@ -2,7 +2,7 @@
 
 import { Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { monthLabel, shiftMonthKey } from "@/app/(app)/extrato/filters";
 import { Money, useMoneyText } from "@/components/money";
@@ -15,6 +15,7 @@ import { useHome, useMonthSummary } from "@/modules/home/hooks";
 import type { HomeDTO, MonthSummaryDTO } from "@/modules/home/schemas";
 import { SPLIT_COPY } from "@/modules/split/copy";
 import { LedgerRow } from "./extrato/ledger-row";
+import { TransactionDetailDrawer } from "./extrato/transaction-detail-drawer";
 import { PayPlannedDrawer } from "./previstas/pay-drawer";
 
 const first = (n: string) => n.split(" ")[0] ?? n;
@@ -388,6 +389,12 @@ function HomeSkeleton() {
 export function HomeScreen({ firstName }: { firstName: string }) {
   const home = useHome();
   const router = useRouter();
+  const pathname = usePathname();
+  const search = useSearchParams();
+  // Detalhe por estado local, reabrível por `?tx=<id>` (sem rotas paralelas, SDD-010 §4.6)
+  const detailId = search.get("tx");
+  const openDetail = (id: string) => router.push(`${pathname}?tx=${id}`, { scroll: false });
+  const closeDetail = () => router.replace(pathname, { scroll: false });
   const [payingId, setPayingId] = useState<string | null>(null);
   const [period, setPeriod] = useState<string | undefined>(undefined);
   const h = home.data;
@@ -530,7 +537,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                     key={t.id}
                     item={t}
                     highlighted={false}
-                    onOpen={() => router.push("/extrato")}
+                    onOpen={() => openDetail(t.id)}
                     onHover={() => {}}
                   />
                 ))}
@@ -545,6 +552,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
           </Card>
         </div>
       ) : null}
+      <TransactionDetailDrawer id={detailId} source="home" onClose={closeDetail} />
       <PayPlannedDrawer plannedId={payingId} onClose={() => setPayingId(null)} />
     </main>
   );

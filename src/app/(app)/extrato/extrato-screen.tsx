@@ -80,6 +80,8 @@ export function ExtratoScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [hoverGroup, setHoverGroup] = useState<string | null>(null);
+  // `highlight=<id>`: parâmetro só de interface (SDD-010 §4.6); id que não existe é ignorado
+  const highlightId = searchParams.get("highlight");
 
   const filters = useMemo(() => parseFilters(searchParams), [searchParams]);
   const ledger = useLedger(filters);
@@ -125,6 +127,14 @@ export function ExtratoScreen() {
     observer.observe(el);
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  useEffect(() => {
+    if (highlightId && items.some((i) => i.id === highlightId)) {
+      document
+        .querySelector("[data-highlighted='true']")
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, [highlightId, items]);
 
   const filterCount = activeFilterCount(filters);
   const noTransactionsAtAll =
@@ -235,7 +245,10 @@ export function ExtratoScreen() {
             <LedgerRow
               key={item.id}
               item={item}
-              highlighted={hoverGroup !== null && hoverGroup === item.transferGroupId}
+              highlighted={
+                item.id === highlightId ||
+                (hoverGroup !== null && hoverGroup === item.transferGroupId)
+              }
               onOpen={() => setDetailId(item.id)}
               onHover={setHoverGroup}
             />
