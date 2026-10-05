@@ -598,3 +598,96 @@ GROUP BY t."payerMemberId";
 
 -- Saldo (SDD-004 §4.1) passa a filtrar contas: ... AND "accountId" IS NOT NULL
 ```
+
+## 8. R2.1 — Acerto opcional, arquivamento, ex-membro e convites (US-028..035, US-039)
+
+*Acrescentado em 2026-10-04. Referências: [ADR-019](../adrs/ADR-019-ciclo-de-vida-do-vinculo-ex-membro.md), [ADR-016](../adrs/ADR-016-percentual-gravado-por-lancamento.md) (preparação), [ADR-018](../adrs/ADR-018-multiplos-grupos-spike.md), [SDD-010](../sdd/SDD-010-resumo-do-mes-ocultar-valores-e-preferencias.md) a [SDD-013](../sdd/SDD-013-pagamentos-conta-padrao-descricao-e-polimento.md). **A R2.1 não altera `transactions`, `split_*` nem `card_invoices`**; só acrescenta colunas/tabelas e troca índices de nome e de membro. Mesmas regras: nunca editar migração aplicada; o SQL cru dos SDDs é normativo.*
+
+### 8.1 Acréscimos (ER em texto)
+```text
+Family            += settlementEnabled bool (default true), version int, updatedAt, updatedByMemberId   [r21_familia_configuracoes]
+FamilyEvent (novo) : id, familyId FK, type enum, actorMemberId (FK composta), targetMemberId?, changes jsonb, at   -- append-only
+PlannedExpense    :  default de isSharedExpense passa a false (linhas existentes inalteradas)
+BankAccount       += archivedAt, archivedByMemberId, deletedAt, deletedByMemberId                       [r21_arquivamento]
+CreditCard        += archivedAt, archivedByMemberId, deletedAt, deletedByMemberId                       [r21_arquivamento]
+Member            += removedAt, removedByMemberId, removalKind enum {REMOVED,LEFT}, removalNoticeAt    [r21_ex_membro]
+Invitation        += resendCount int (0..3), lastSentAt                                                  [r21_convites_reenvio]
+Índices           :  bank_accounts_family_name_uq / credit_cards_family_name_uq passam a PARCIAIS (WHERE deletedAt IS NULL)
+                     members_userId_key e members_familyId_userId_key  =>  members_user_active_uq / members_family_user_active_uq (WHERE removedAt IS NULL)
+```
+
+### 8.2 Migrações (ordem de execução; uma por história que a introduz)
+| Ordem | Migração | História | Conteúdo | Cuidados |
+| :-: | :-- | :-- | :-- | :-- |
+| 1 | `r21_familia_configuracoes` | US-028 | colunas de `families`, `family_events` (+ trigger `forbid_mutation`), `DEFAULT false` em `planned_expenses.isSharedExpense` | linhas existentes ficam ligadas (`settlementEnabled = true`); rodar S1..S13 e os dados homologados **depois** |
+| 2 | `r21_convites_reenvio` | US-039 | `resendCount`, `lastSentAt`, `CHECK 0..3` | — |
+| 3 | `r21_arquivamento` | US-032/033 | colunas + índices de nome parciais + índice de apoio "ativas" | `DROP INDEX` e `CREATE UNIQUE INDEX` na **mesma** migração; testar nome de arquivada ocupado e de excluída liberado |
+| 4 | `r21_ex_membro` | US-035 (e costura do ADR-018) | colunas de `members`, enum, `CHECK members_removal_chk`, **troca** dos índices únicos por parciais | `schema.prisma` perde os `@@unique` de `userId`; **toda** leitura por `userId` passa por `findActiveMembership`; rodar `test:int` completo |
+Sem migração em US-022..027, US-029..031, US-036..038 e US-023/024. **Nenhuma** migração faz `DELETE` em tabela do ledger (trigger `transactions_no_delete`).
+
+### 8.3 Consultas novas (referência)
+```sql
+-- Contas ATIVAS (listas, seletores, saldo da família)
+SELECT * FROM bank_accounts WHERE "familyId" = $1 AND "archivedAt" IS NULL AND "deletedAt" IS NULL;
+
+-- Conta "nunca usada" (habilita Excluir): nenhuma transação além do OPENING com valor 0
+SELECT NOT EXISTS (SELECT 1 FROM transactions t WHERE t."familyId" = $1 AND t."accountId" = $2
+                   AND NOT (t.kind = 'OPENING' AND t."amountInCents" = 0)) AS never_used;
+
+-- Uso recente por membro (sugestão de conta de origem, SDD-013 §4.1)
+SELECT "accountId", count(*) FROM transactions
+WHERE "familyId" = $1 AND "authorMemberId" = $2 AND "deletedAt" IS NULL AND "accountId" IS NOT NULL
+  AND kind IN ('EXPENSE','INVOICE_PAYMENT','TRANSFER_OUT') AND "occurredOn" >= $3 GROUP BY "accountId";
+
+-- Vínculo ativo (única forma de ler Member por usuário)
+SELECT * FROM members WHERE "userId" = $1 AND "removedAt" IS NULL;
+
+-- Último Administrador (dentro do lock de família)
+SELECT id FROM members WHERE "familyId" = $1 AND role = 'ADMIN' AND "removedAt" IS NULL ORDER BY id FOR UPDATE;
+```
+**Predicado único de período/visibilidade** (`ledger-where.ts`, SDD-010 §4.1): na R2.1 `occurredOn BETWEEN`; na R3 passa a `competenceOn` (§9) sem tocar nos consumidores.
+
+## 9. R3 — Parcelamento, percentual por lançamento, tags, cor e receitas previstas (previsão; detalhada nos SDD-014..017)
+
+*Acrescentado em 2026-10-04 como **previsão de modelo**, para que a R2.1 não gere retrabalho. O normativo de cada migração será fechado quando o SDD correspondente sair do esboço.*
+
+```mermaid
+erDiagram
+    Family ||--o{ InstallmentPlan : ""
+    InstallmentPlan ||--|{ Transaction : "N parcelas (installmentNo 1..N)"
+    Transaction ||--o{ TransactionSplit : "rateio por membro (splitMode RULE|CUSTOM)"
+    Member ||--o{ TransactionSplit : ""
+    SplitRuleVersion ||--o{ Transaction : "splitRuleVersionId (sugestão/origem)"
+    Family ||--o{ Tag : ""
+    Transaction ||--o{ TransactionTag : ""
+    Tag ||--o{ TransactionTag : ""
+    Family ||--o{ SplitMigrationSnapshot : "EN-002 (antes/depois)"
+
+    InstallmentPlan { uuid id PK
+      bigint totalInCents
+      int installmentCount "2..24"
+      date purchaseOn
+      int version }
+    Transaction { date competenceOn "= occurredOn exceto parcelas (= closingDate da fatura)"
+      enum splitMode "NONE|RULE|CUSTOM"
+      int installmentNo
+      int installmentCount }
+    TransactionSplit { uuid transactionId PK
+      uuid memberId PK
+      int bps "0..10000"
+      bigint amountInCents }
+    Tag { uuid id PK
+      string name
+      string nameKey "único por família" }
+```
+
+| Migração prevista | Histórias | Conteúdo-chave | Risco / regressão |
+| :-- | :-- | :-- | :-- |
+| `us040_parcelamento` | US-040 | `installment_plans`; `transactions.installmentPlanId/No/Count`, **`competenceOn`** (retropreenchido = `occurredOn`, `NOT NULL`, `CHECK (installmentPlanId IS NOT NULL OR competenceOn = occurredOn)`, trigger `BEFORE INSERT OR UPDATE` que sincroniza), índice `(familyId, competenceOn DESC, createdAt DESC, id DESC)`, `CHECK` de consistência/unicidade das parcelas | **Alto**: toda consulta por período troca para `competenceOn` (um ponto, SDD-010); rodar S1..S13 + dados homologados + suíte completa antes e depois |
+| `en002_percentual_por_lancamento` | EN-002 | `SplitMode`, `transactions.splitMode`, `splitRuleVersionId`, `transaction_splits` (+ *constraint trigger* deferrable), `families.splitEngine`, `split_migration_snapshots`, `data_migrations`, `CHECK (isSharedExpense = (splitMode <> 'NONE'))` | **O mais alto do produto**: gate de 1 centavo (ADR-016 §5); só **expande** no SQL; a migração de dados é o script |
+| `us044_dividir_por_categoria` | US-044 | `categories.defaultSplit`, `settlement_review_dismissals` | baixo |
+| `us045_tags` | US-045 | `tags`, `transaction_tags`, índices, FKs compostas | baixo |
+| `us050_cores` | US-050 | `AccountColor`, `color NOT NULL` com backfill por `createdAt` | baixo |
+| `us051_previstas_receita` | US-051 | `PlannedKind`, `planned_expenses.kind DEFAULT 'EXPENSE'`, `CHECK` de não divisão para receita | médio (regressão das consultas de previstas) |
+
+**Restrições herdadas a respeitar em todas**: sem `DELETE` no ledger e nas revisões (`forbid_mutation`); `tx_kind_shape_chk` só é reescrita se necessário (a parcela é compra de cartão e **não** a altera); FKs compostas `(familyId, id)`; `prisma migrate reset` indisponível em sessão de IA (DEV-13) — testes usam `TRUNCATE` no `db-test`; nunca editar migração aplicada.
