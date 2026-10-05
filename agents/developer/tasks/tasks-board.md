@@ -1,6 +1,6 @@
 # 📋 Quadro de Tarefas & QA do Desenvolvedor
 
-*Atualizado: 2026-10-05 (R2.1 lotes 1 e 2 concluídos; retomar em US-033) · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Incremento 1 (walking skeleton) concluído: EN-001 → US-001 → US-002 → US-004 → US-005 → US-006 → US-007 → US-003. Incremento 2 (fechar o mês), ordem do PO: US-008 → US-009a → US-010 → US-011 → US-012 → US-009b → US-013a → US-013b.*
+*Atualizado: 2026-10-05 (R2.1 até US-036 concluída; retomar em US-037) · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Incremento 1 (walking skeleton) concluído: EN-001 → US-001 → US-002 → US-004 → US-005 → US-006 → US-007 → US-003. Incremento 2 (fechar o mês), ordem do PO: US-008 → US-009a → US-010 → US-011 → US-012 → US-009b → US-013a → US-013b.*
 
 ## 📌 Fluxo de Execução
 
@@ -50,6 +50,10 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-034 | US-030 | Despesa e previsão nascem "Só meu"; rótulo da regra; linha "Só meu" no Acerto | US-028 | SDD-011 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-035 | US-031 | Prévia de impacto da regra, sugestão pela renda, FAB oculto na regra | US-022 | SDD-011 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-036 | US-032 | Arquivar, reativar e excluir (lógico) conta; lock de postagem; migração `r21_arquivamento` | US-004/010 | SDD-012 | 5 | Concluído (aguardando validação do Gestor); fecha os cenários "arquivada" das US-023/026 |
+| TASK-037 | US-033 | Arquivar, reativar e excluir cartão (bloqueios de fatura, `getOrCreateInvoice` recusa arquivado) | US-032 | SDD-012 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-038 | US-034 | Editar nome da família, papéis, trilha de eventos (último Administrador sob lock) | US-028 | SDD-012 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-039 | US-035 | Remover membro e sair (ex-membro, migração `r21_ex_membro`, motor com `removedOn`, S14..S16, aviso único) | US-034, US-032 | SDD-012, ADR-019 | 8 | Concluído (aguardando validação do Gestor) |
+| TASK-040 | US-036 | Detalhe do lançamento na Home (ações rotuladas, `?tx=`, "Ver no Extrato" + `highlight`) | US-013a | SDD-010 | 3 | Concluído (aguardando validação do Gestor) |
 
 ---
 
@@ -362,7 +366,7 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 
 # R2.1 — Lote 1 (D-GES-19/D-GES-14..20)
 
-> **Ponto de retomada**: lotes 1 e 2 (US-027, 022..026, 028..032) concluídos e commitados. Próxima: **US-033** (cartão arquivar/reativar; migração `r21_arquivamento` já aplicada, colunas de `credit_cards` prontas), depois US-034, 035a/b, 036, 037, 038, 039 e a R3-A (D-GES-23). Linha de base: [`qa-r21-baseline.md`](qa-r21-baseline.md).
+> **Ponto de retomada**: R2.1 concluída até a US-036 (TASK-026..040). Próxima: **US-037** (tema), 038, 039 e a R3-A (D-GES-23).
 
 ## ✅ [TASK-026] US-027 — Ocultar valores
 - **SDD-010** §1, §4.4. **Arquivos**: `src/lib/prefs.ts`, `src/lib/mask-money.ts`, `src/components/money.tsx` (`Money`, `useFormatMoney`, `useMoneyText`), olho em `app-shell.tsx`, `PrefsProvider` no `(app)/layout`, `ApiClientError` mascara valores de mensagens do servidor, todas as telas migradas, regra `check:imports` (`money-format`, `period-predicate`).
@@ -410,3 +414,9 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 ### ✅ [TASK-036] US-032 — Arquivar/excluir conta
 - `contas/lock.ts` (`lockAccountsForPosting` `FOR SHARE` ordenado, `assertAccountsEditable`), `contas/archive.ts` (`FOR UPDATE`), rotas archive/unarchive/delete, `GET /accounts?archived=`, `neverUsed`, índices de nome parciais, marcador "(arquivada)" no Extrato, seção "Contas arquivadas", "Transferir o saldo" pré-preenchido. **QA**: I 11 (inclui corrida arquivar x postar nas duas ordens), E2E 9 x 2.
 - **Desvios**: DEV-38, DEV-39.
+
+## Lote 3 (US-033..036)
+- **US-033**: `cartoes/archive.ts`, `cardsWithTransactions`, `getOrCreateInvoice` recusa cartão arquivado após o `FOR SHARE`; UI "Cartões arquivados". QA: I 5 (inclui corrida), E2E 6 x 2.
+- **US-034**: `familia/manage.ts` (`updateFamily`, `changeRole` sob advisory lock + conferência do ator dentro do lock), `GET /family` com `events` e `exMembers`. QA: I 7 (corrida de rebaixamento), E2E 5 x 2.
+- **US-035**: migração `r21_ex_membro` (índices parciais; `User.members`), `findActiveMembership`, `MemberRef.removed`, `computeSettlement` com `removedOn` (S14..S16), `removal.ts` (revisão + remoção atômica), `/members/:id/{removal-review,remove}`, `/family/{leave,leave-review}`, `/api/auth/membership-ended`. QA: U 4, I 17 (inclui corrida remover x rebaixar, atomicidade, reconvite, estrutural), E2E 7 x 2. **Bug achado e corrigido pela corrida**: `changeRole` contava Administradores removidos.
+- **US-036**: `TransactionDetailDrawer` com botões Editar/Excluir/Histórico, painel lateral >= 1024 px, toast de 8 s, "Despesa excluída"; Home abre por `?tx=`; Extrato lê `highlight`. QA: E2E 7 x 2; passos legados migrados do menu "…" para botões.
