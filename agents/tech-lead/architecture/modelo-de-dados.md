@@ -713,7 +713,6 @@ erDiagram
     Family ||--o{ Tag : ""
     Transaction ||--o{ TransactionTag : "só EXPENSE/INCOME"
     Tag ||--o{ TransactionTag : ""
-    Category ||--o{ SettlementReviewDismissal : "—"
     Family ||--o{ SettlementReviewDismissal : "por (familyId, periodKey)"
     BankAccount { enum color "AccountColor (10)" }
     CreditCard  { enum color "AccountColor (10)" }
