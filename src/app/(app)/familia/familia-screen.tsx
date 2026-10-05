@@ -18,6 +18,7 @@ import {
   useCancelInvitation,
   useChangeRole,
   useFamily,
+  useRotateInvitation,
   useUpdateFamily,
   useUpdateFamilySettings,
 } from "@/modules/familia/hooks";
@@ -285,6 +286,72 @@ function RoleDialog({
   );
 }
 
+function InvitationActions({ inv }: { inv: InvitationDTO }) {
+  const rotate = useRotateInvitation();
+  const [link, setLink] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  function run(mode: "link" | "resend") {
+    if (rotate.isPending) return;
+    setMsg(null);
+    rotate.mutate(
+      { id: inv.id, mode, idempotencyKey: newIdempotencyKey() },
+      {
+        onSuccess: async (r) => {
+          setLink(r.inviteUrl);
+          if (mode === "link") {
+            try {
+              await navigator.clipboard.writeText(r.inviteUrl);
+            } catch {
+              // sem permissão de área de transferência: o link aparece abaixo para copiar à mão
+            }
+            toast.success("Link copiado", { description: "O link anterior deixa de valer." });
+          } else {
+            toast.success(
+              r.emailStatus === "FAILED"
+                ? "Convite renovado, mas o e-mail falhou"
+                : "E-mail reenviado",
+              {
+                description: "O link anterior deixa de valer.",
+              },
+            );
+          }
+        },
+        onError: (e) =>
+          setMsg(e instanceof Error ? e.message : "Erro inesperado. Tente novamente."),
+      },
+    );
+  }
+
+  return (
+    <div className="flex w-full flex-col gap-2">
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="secondary"
+          disabled={inv.isExpired || rotate.isPending}
+          onClick={() => run("link")}
+        >
+          Copiar link
+        </Button>
+        <Button variant="secondary" disabled={rotate.isPending} onClick={() => run("resend")}>
+          Reenviar e-mail
+        </Button>
+        <span className="self-center text-xs text-slate-500">
+          {Math.max(0, 3 - inv.resendCount)} reenvios restantes
+        </span>
+      </div>
+      {msg ? (
+        <p role="alert" className="text-sm text-red-800 dark:text-red-300">
+          {msg}
+        </p>
+      ) : null}
+      {link ? (
+        <input readOnly aria-label="Link do convite" value={link} className={inputClass} />
+      ) : null}
+    </div>
+  );
+}
+
 export function FamiliaScreen() {
   const family = useFamily();
   const cancel = useCancelInvitation();
@@ -478,7 +545,7 @@ export function FamiliaScreen() {
                     <li
                       key={inv.id}
                       data-testid="invitation-row"
-                      className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
+                      className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium text-slate-900">{inv.email}</p>
@@ -496,6 +563,7 @@ export function FamiliaScreen() {
                         <X size={16} aria-hidden="true" />
                         Cancelar convite
                       </Button>
+                      <InvitationActions inv={inv} />
                     </li>
                   ))}
                 </ul>

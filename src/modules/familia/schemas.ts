@@ -45,6 +45,8 @@ export const UpdateFamilySchema = z
 export type UpdateFamilyInput = z.infer<typeof UpdateFamilySchema>;
 export const ChangeRoleSchema = z.object({ role: RoleSchema }).strict();
 
+export const ResendInvitationSchema = z.object({}).strict();
+
 export const CreateInvitationSchema = z
   .object({
     email: emailSchema,
@@ -90,6 +92,14 @@ export type InvitationDTO = {
   isExpired: boolean;
   createdAt: string;
   invitedBy: { memberId: string; name: string };
+  resendCount: number;
+  canResend: boolean; // PENDING, não vencido e resendCount < 3
+};
+
+export type RotatedInvitationResponse = {
+  invitation: InvitationDTO;
+  inviteUrl: string;
+  emailStatus?: "SENT" | "FAILED"; // só no reenvio
 };
 
 export type FamilyEventDTO = {

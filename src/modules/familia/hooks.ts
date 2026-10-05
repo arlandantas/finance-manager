@@ -8,6 +8,7 @@ import type {
   InvitationDTO,
   RemovalReviewDTO,
   Role,
+  RotatedInvitationResponse,
 } from "@/modules/familia/schemas";
 
 export const familyKey = ["family"] as const;
@@ -153,6 +154,20 @@ export function useChangeRole() {
       apiFetch<unknown>(`/api/v1/members/${a.memberId}`, {
         method: "PATCH",
         body: { role: a.role },
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+/** Copiar link / Reenviar e-mail (US-039): rotacionam o token; o link anterior deixa de valer. */
+export function useRotateInvitation() {
+  const invalidate = useInvalidateFamilyAll();
+  return useMutation({
+    mutationFn: (a: { id: string; mode: "link" | "resend"; idempotencyKey: string }) =>
+      apiFetch<RotatedInvitationResponse>(`/api/v1/invitations/${a.id}/${a.mode}`, {
+        method: "POST",
+        body: {},
         idempotencyKey: a.idempotencyKey,
       }),
     onSuccess: invalidate,

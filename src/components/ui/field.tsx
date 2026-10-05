@@ -23,12 +23,15 @@ export function Field({
         {label}
       </label>
       {children}
-      {hint && !error ? <p className="text-xs text-slate-500">{hint}</p> : null}
-      {error ? (
-        <p id={`${id}-error`} role="alert" className="text-sm text-red-700 dark:text-red-300">
-          {error}
-        </p>
-      ) : null}
+      {/* altura reservada: a mensagem entra e sai sem empurrar o formulário (US-039) */}
+      <div className="min-h-5">
+        {hint && !error ? <p className="text-xs text-slate-500">{hint}</p> : null}
+        {error ? (
+          <p id={`${id}-error`} role="alert" className="text-sm text-red-700 dark:text-red-300">
+            {error}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -217,7 +217,11 @@ export function PlannedDrawer({
               id="pl-amount"
               large
               value={cents}
-              onChange={setCents}
+              onChange={(c) => {
+                setCents(c);
+                // validação reativa: o erro some assim que o valor fica válido (US-039)
+                if (c > 0) setErrors((e) => ({ ...e, amountInCents: undefined }));
+              }}
               invalid={Boolean(errors.amountInCents)}
               describedBy={errors.amountInCents ? "pl-amount-error" : undefined}
             />

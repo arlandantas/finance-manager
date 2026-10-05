@@ -1,5 +1,5 @@
 import { isUniqueViolation } from "@/lib/api/db-errors";
-import { conflict, notFound } from "@/lib/api/errors";
+import { conflict, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import { normalizeEmail } from "@/lib/auth/email";
@@ -22,7 +22,11 @@ import {
 } from "@/modules/familia/invitations/repo";
 import { findActiveMembership } from "@/modules/familia/repo";
 import { toRole } from "@/modules/familia/roles";
-import type { CreateInvitationResponse, InvitationDTO } from "@/modules/familia/schemas";
+import type {
+  CreateInvitationResponse,
+  InvitationDTO,
+  RotatedInvitationResponse,
+} from "@/modules/familia/schemas";
 
 type InvitationRow = {
   id: string;
@@ -32,7 +36,10 @@ type InvitationRow = {
   expiresAt: Date;
   createdAt: Date;
   invitedByMemberId: string;
+  resendCount: number;
 };
+
+export const MAX_RESENDS = 3;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -50,6 +57,11 @@ export function toInvitationDTO(
     isExpired: row.status === "PENDING" && row.expiresAt.getTime() <= now.getTime(),
     createdAt: row.createdAt.toISOString(),
     invitedBy: { memberId: row.invitedByMemberId, name: inviterName(row.invitedByMemberId) },
+    resendCount: row.resendCount,
+    canResend:
+      row.status === "PENDING" &&
+      row.expiresAt.getTime() > now.getTime() &&
+      row.resendCount < MAX_RESENDS,
   };
 }
 
@@ -149,6 +161,89 @@ export async function createInvitation(
         emailStatus = "FAILED";
       }
       await setEmailStatus(row.id, emailStatus).catch(() => {});
+      return { emailStatus };
+    },
+  };
+}
+
+/**
+ * US-039 (SDD-013 §4.3): "Copiar link" e "Reenviar e-mail" ROTACIONAM o token (só o hash é guardado):
+ * o link anterior deixa de valer; a validade original não é estendida. O reenvio conta (máx. 3).
+ */
+export async function rotateInvitation(
+  tx: Tx,
+  ctx: RequestContext,
+  id: string,
+  opts: { sendEmail: boolean },
+  requestOrigin?: string | null,
+): Promise<{
+  body: RotatedInvitationResponse;
+  afterCommit?: () => Promise<{ emailStatus: "SENT" | "FAILED" }>;
+}> {
+  const now = ctx.clock.now();
+  const rows = await tx.$queryRaw<
+    Array<{ id: string; email: string; status: string; expiresAt: Date; resendCount: number }>
+  >`SELECT id, email, status, "expiresAt", "resendCount" FROM invitations
+    WHERE id = ${id}::uuid AND "familyId" = ${ctx.familyId}::uuid FOR UPDATE`;
+  const inv = rows[0];
+  if (!inv) throw notFound("Convite não encontrado.");
+  if (inv.status !== "PENDING") {
+    throw conflict("INVITATION_NOT_PENDING", "Este convite não está mais pendente");
+  }
+  if (inv.expiresAt.getTime() <= now.getTime()) {
+    throw unprocessable("INVITATION_EXPIRED", "Convite expirado. Cancele e crie um novo convite.");
+  }
+  if (opts.sendEmail && inv.resendCount >= MAX_RESENDS) {
+    throw unprocessable(
+      "RESEND_LIMIT_REACHED",
+      "Limite de reenvios atingido. Cancele e crie um novo convite.",
+    );
+  }
+  const token = randomToken(32);
+  const row = await tx.invitation.update({
+    where: { id },
+    data: {
+      tokenHash: sha256Hex(token),
+      lastSentAt: now,
+      ...(opts.sendEmail ? { resendCount: { increment: 1 } } : {}),
+    },
+  });
+  if (opts.sendEmail) {
+    await tx.familyEvent.create({
+      data: {
+        familyId: ctx.familyId,
+        type: "INVITATION_RESENT",
+        actorMemberId: ctx.memberId,
+        changes: { email: inv.email, resendCount: row.resendCount },
+      },
+    });
+  }
+  const repo = convitesRepo(tx, ctx.familyId);
+  const [family, name] = await Promise.all([repo.family(), memberNames(tx, ctx.familyId)]);
+  const inviteUrl = `${publicBaseUrl(undefined, requestOrigin)}/convite/${token}`;
+  const body: RotatedInvitationResponse = {
+    invitation: toInvitationDTO(row, name, now),
+    inviteUrl,
+  };
+  if (!opts.sendEmail) return { body };
+  const message = {
+    to: inv.email,
+    ...invitationEmail({
+      inviterName: name(ctx.memberId),
+      familyName: family?.name ?? "família",
+      inviteUrl,
+      email: inv.email,
+    }),
+  };
+  return {
+    body: { ...body, emailStatus: "SENT" },
+    afterCommit: async () => {
+      let emailStatus: "SENT" | "FAILED" = "SENT";
+      try {
+        await withTimeout(getMailer().send(message), MAIL_SEND_TIMEOUT_MS);
+      } catch {
+        emailStatus = "FAILED";
+      }
       return { emailStatus };
     },
   };

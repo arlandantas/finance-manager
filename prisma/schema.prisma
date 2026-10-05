@@ -248,6 +248,8 @@ model Invitation {
   acceptedAt        DateTime?        @db.Timestamptz(3)
   acceptedByUserId  String?          @db.Uuid
   canceledAt        DateTime?        @db.Timestamptz(3)
+  resendCount       Int              @default(0) // 0..3 (CHECK em SQL cru)
+  lastSentAt        DateTime?        @db.Timestamptz(3)
 
   family Family @relation(fields: [familyId], references: [id])
 

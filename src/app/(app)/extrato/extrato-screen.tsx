@@ -178,6 +178,11 @@ export function ExtratoScreen() {
           className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
         >
           <FiltersPanel filters={filters} onChange={patchFilters} idPrefix="f" />
+          {filterCount > 0 ? (
+            <Button variant="ghost" className="mt-2" onClick={() => replaceFilters({})}>
+              Limpar filtros
+            </Button>
+          ) : null}
         </section>
       ) : (
         <div className="flex items-center gap-2">

@@ -107,6 +107,11 @@ function UserMenu({ user }: { user: ShellUser }) {
               ))}
             </div>
           </div>
+          <div role="group" aria-label="Configurações" className="px-3 pt-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Configurações
+            </p>
+          </div>
           <Link
             href="/categorias"
             role="menuitem"

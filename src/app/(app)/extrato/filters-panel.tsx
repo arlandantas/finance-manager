@@ -68,6 +68,7 @@ export function FiltersPanel({
       <Field id={id("account")} label="Conta">
         <select
           id={id("account")}
+          aria-label={`Conta: ${(accounts.data?.items ?? []).find((a) => a.id === filters.accountId)?.name ?? "todas"}`}
           className={inputClass}
           value={filters.accountId ?? ""}
           onChange={(e) => onChange({ accountId: empty(e.target.value) })}
@@ -83,6 +84,7 @@ export function FiltersPanel({
       <Field id={id("card")} label="Cartão">
         <select
           id={id("card")}
+          aria-label={`Cartão: ${(cards.data?.items ?? []).find((c) => c.id === filters.cardId)?.name ?? "todos"}`}
           className={inputClass}
           value={filters.cardId ?? ""}
           onChange={(e) => onChange({ cardId: empty(e.target.value) })}
@@ -98,6 +100,7 @@ export function FiltersPanel({
       <Field id={id("member")} label="Membro">
         <select
           id={id("member")}
+          aria-label={`Membro: ${(family.data?.members ?? []).find((m) => m.memberId === filters.memberId)?.name.split(" ")[0] ?? "todos"}`}
           className={inputClass}
           value={filters.memberId ?? ""}
           onChange={(e) => onChange({ memberId: empty(e.target.value) })}
@@ -113,6 +116,7 @@ export function FiltersPanel({
       <Field id={id("category")} label="Categoria">
         <select
           id={id("category")}
+          aria-label={`Categoria: ${(categories.data?.items ?? []).find((c) => c.id === filters.categoryId)?.name ?? "todas"}`}
           className={inputClass}
           value={filters.categoryId ?? ""}
           onChange={(e) => onChange({ categoryId: empty(e.target.value) })}

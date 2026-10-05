@@ -146,6 +146,9 @@ export function InviteForm({
           aria-describedby={error ? "invite-email-error" : undefined}
         />
       </Field>
+      <p className="text-xs text-slate-500">
+        A pessoa precisa entrar com a conta Google do mesmo e-mail
+      </p>
       {showRole ? (
         <Field id="invite-role" label="Papel">
           <select
