@@ -3,7 +3,7 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-20 Cartão Completo (parcelamento) · **R3, 1ª entrega** (candidata a puxar para a R2.1 se o Tech Lead estimar ≤ 5, ver `pedidos-ao-tech-lead-r21-r3.md`) |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Must · 3,5 · 5 |
+| MoSCoW · WSJF · Tamanho (PO, preliminar) | Must · 3,4 · 5 |
 | Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
 | Depende de | US-016a, US-017a, US-015 (já entregues); US-024 (descrição) |
 | Corte | **Não cortar** (item 6: "dia a dia do cartão no Brasil") |

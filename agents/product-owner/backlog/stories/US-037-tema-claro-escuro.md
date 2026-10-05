@@ -3,7 +3,7 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-19 Ergonomia e Preferências · **R2.1** |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Could · 1,8 · 3 |
+| MoSCoW · WSJF · Tamanho (PO, preliminar) | Could · 1,7 · 3 |
 | Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
 | Depende de | nenhuma (transversal); a cor por conta (US-050) depende desta |
 | Corte | **Primeiro item a cortar da R2.1** (depois da US-039) |

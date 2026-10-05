@@ -3,7 +3,7 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-21 Classificação e Análise · **R3** |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Should · 1,8 · 3 |
+| MoSCoW · WSJF · Tamanho (PO, preliminar) | Should · 1,7 · 3 |
 | Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
 | Depende de | US-045 |
 | Corte | **Cortável** (contorno: tags continuam utilizáveis e filtráveis sem a tela de gestão) |

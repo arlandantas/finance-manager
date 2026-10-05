@@ -3,7 +3,7 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-20 Cartão Completo (parcelamento) · **R3** |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Should · 2,4 · 5 |
+| MoSCoW · WSJF · Tamanho (PO, preliminar) | Should · 2,0 · 5 |
 | Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
 | Depende de | US-040, US-016b, US-013a |
 | Corte | **Cortável** (contorno: excluir a compra inteira e lançar de novo) |
