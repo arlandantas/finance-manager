@@ -13,7 +13,9 @@ function Shell({ title, children }: { title: string; children?: React.ReactNode 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-4 py-10">
       <header className="flex flex-col gap-2 text-center">
-        <p className="text-sm font-semibold text-brand-800">Finance Manager</p>
+        <p className="text-sm font-semibold text-brand-800 dark:text-emerald-300">
+          Finance Manager
+        </p>
         <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
       </header>
       {children}
@@ -25,7 +27,7 @@ function HomeLink() {
   return (
     <Link
       href="/"
-      className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+      className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white dark:bg-slate-100 px-4 text-sm font-semibold text-slate-900 hover:bg-slate-50"
     >
       Ir para o início
     </Link>

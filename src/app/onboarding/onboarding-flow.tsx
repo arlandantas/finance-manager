@@ -91,7 +91,7 @@ export function OnboardingFlow({ userName, userImage, suggestedName, notice }: P
         </header>
         <section
           aria-labelledby="invite-step"
-          className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4"
+          className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-4"
         >
           <h2 id="invite-step" className="text-base font-semibold text-slate-900">
             Convidar membro
@@ -121,7 +121,7 @@ export function OnboardingFlow({ userName, userImage, suggestedName, notice }: P
       {notice ? (
         <p
           role="status"
-          className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+          className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200"
         >
           {notice}
         </p>
@@ -129,7 +129,7 @@ export function OnboardingFlow({ userName, userImage, suggestedName, notice }: P
       {banner ? (
         <p
           role="alert"
-          className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+          className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:text-red-300"
         >
           {banner}
         </p>
@@ -156,7 +156,7 @@ export function OnboardingFlow({ userName, userImage, suggestedName, notice }: P
           ].map((o) => (
             <label
               key={String(o.v)}
-              className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+              className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 bg-white dark:bg-slate-100 px-3 text-sm text-slate-900"
             >
               <input
                 type="radio"
@@ -171,7 +171,7 @@ export function OnboardingFlow({ userName, userImage, suggestedName, notice }: P
             Você pode mudar isso depois em Configurações da família
           </p>
         </fieldset>
-        <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white p-4 md:static md:border-0 md:bg-transparent md:p-0">
+        <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white dark:bg-slate-100 p-4 md:static md:border-0 md:bg-transparent md:p-0">
           <Button type="submit" className="w-full" disabled={create.isPending}>
             {create.isPending ? "Criando…" : "Criar família"}
           </Button>

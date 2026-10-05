@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { HydrationMarker } from "@/components/hydration-marker";
 import { TunnelRetry } from "@/components/tunnel-retry";
 import { hostnameOf } from "@/lib/dev-origins";
+import { THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,7 +18,10 @@ const tunnelHost =
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
+      </head>
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
         <HydrationMarker />
         {tunnelHost ? <TunnelRetry host={tunnelHost} /> : null}

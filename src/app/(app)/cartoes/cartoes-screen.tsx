@@ -51,7 +51,11 @@ function UsageBar({ card }: { card: CardDTO }) {
             <Money cents={card.usedInCents} />
           </span>
         </span>
-        <span className={over ? "font-semibold text-red-700" : "font-semibold text-slate-900"}>
+        <span
+          className={
+            over ? "font-semibold text-red-700 dark:text-red-300" : "font-semibold text-slate-900"
+          }
+        >
           Disponível{" "}
           <span data-testid="card-available">
             <Money cents={card.availableInCents} />
@@ -78,7 +82,7 @@ function CardItem({
   return (
     <li
       data-testid="card-item"
-      className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-slate-200 bg-white p-4"
+      className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-4"
     >
       <Avatar name={card.owner.name} image={card.owner.image} size={40} />
       <div className="min-w-0">
@@ -142,7 +146,7 @@ function CardItem({
         ({formatInvoiceLabel(card.openInvoice.ref)}) ·{" "}
         <Link
           href={`/cartoes/${card.id}?ref=${card.openInvoice.ref}`}
-          className="font-medium text-brand-800 underline"
+          className="font-medium text-brand-800 dark:text-emerald-300 underline"
         >
           Ver fatura
         </Link>
@@ -151,7 +155,7 @@ function CardItem({
         <p
           key={p.ref}
           data-testid="card-payable-invoice"
-          className="col-span-full flex flex-wrap items-center gap-x-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900"
+          className="col-span-full flex flex-wrap items-center gap-x-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:text-amber-200"
         >
           <span className="font-semibold">
             {p.isOverdue ? "Vencida" : "A pagar"} · Fatura {formatInvoiceLabel(p.ref)}
@@ -184,7 +188,7 @@ function ArchivedCards({
   return (
     <details
       data-testid="archived-cards"
-      className="rounded-xl border border-slate-200 bg-white p-3"
+      className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
     >
       <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-slate-800">
         Cartões arquivados ({items.length})
@@ -277,7 +281,7 @@ export function CartoesScreen() {
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
         >
-          <p className="text-sm text-red-800">Não foi possível carregar</p>
+          <p className="text-sm text-red-800 dark:text-red-300">Não foi possível carregar</p>
           <Button variant="secondary" onClick={() => cards.refetch()}>
             Tentar de novo
           </Button>
@@ -285,7 +289,7 @@ export function CartoesScreen() {
       ) : null}
 
       {data && data.items.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-8 text-center">
           <p className="text-slate-700">Cadastre seu primeiro cartão</p>
           <Button onClick={() => setDrawer({ open: true, card: null })}>Novo cartão</Button>
         </div>
@@ -334,13 +338,13 @@ export function CartoesScreen() {
             {blocked ? (
               <p
                 role="alert"
-                className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900"
+                className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900 dark:text-amber-200"
               >
                 {blocked}
               </p>
             ) : null}
             {banner ? (
-              <p role="alert" className="text-sm text-red-800">
+              <p role="alert" className="text-sm text-red-800 dark:text-red-300">
                 {banner}
               </p>
             ) : null}
@@ -369,7 +373,7 @@ export function CartoesScreen() {
               pode ser desfeito.
             </p>
             {banner ? (
-              <p role="alert" className="text-sm text-red-800">
+              <p role="alert" className="text-sm text-red-800 dark:text-red-300">
                 {banner}
               </p>
             ) : null}

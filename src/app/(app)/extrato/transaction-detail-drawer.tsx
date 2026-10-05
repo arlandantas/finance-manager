@@ -178,7 +178,7 @@ export function TransactionDetailDrawer({
         ) : null}
         {detail.isError ? (
           <div role="alert" className="flex flex-col items-start gap-3">
-            <p className="text-sm text-red-800">Não foi possível carregar</p>
+            <p className="text-sm text-red-800 dark:text-red-300">Não foi possível carregar</p>
             <Button variant="secondary" onClick={() => detail.refetch()}>
               Tentar de novo
             </Button>
@@ -187,7 +187,7 @@ export function TransactionDetailDrawer({
         {banner ? (
           <p
             role="alert"
-            className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+            className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:text-red-300"
           >
             {banner}
           </p>
@@ -294,7 +294,7 @@ export function TransactionDetailDrawer({
                 <span>Esta despesa veio de uma despesa prevista. Use Desfazer pagamento.</span>{" "}
                 <Link
                   href={`/previstas#${t.plannedExpenseId}`}
-                  className="font-medium text-brand-800 underline"
+                  className="font-medium text-brand-800 dark:text-emerald-300 underline"
                 >
                   Ver despesa prevista
                 </Link>
@@ -313,7 +313,7 @@ export function TransactionDetailDrawer({
               {source === "home" ? (
                 <Link
                   href={`/extrato?period=${t.occurredOn.slice(0, 7)}&highlight=${t.id}`}
-                  className="mt-1 inline-flex min-h-11 items-center font-semibold text-brand-800 underline"
+                  className="mt-1 inline-flex min-h-11 items-center font-semibold text-brand-800 dark:text-emerald-300 underline"
                 >
                   Ver no Extrato
                 </Link>

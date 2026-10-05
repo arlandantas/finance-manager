@@ -30,11 +30,11 @@ function StatusChip({ invoice }: { invoice: InvoiceDTO }) {
         ? "Paga"
         : "Fechada";
   const tone = invoice.isOverdue
-    ? "bg-red-100 text-red-800"
+    ? "bg-red-100 text-red-800 dark:text-red-300"
     : invoice.status === "PAID"
-      ? "bg-emerald-100 text-emerald-800"
+      ? "bg-emerald-100 text-emerald-800 dark:text-emerald-300"
       : invoice.status === "CLOSED"
-        ? "bg-amber-100 text-amber-900"
+        ? "bg-amber-100 text-amber-900 dark:text-amber-200"
         : "bg-slate-100 text-slate-700";
   return (
     <span
@@ -109,14 +109,17 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
     <main className="flex flex-col gap-4">
       <Link
         href="/cartoes"
-        className="flex min-h-11 items-center gap-1 self-start text-sm font-medium text-brand-800"
+        className="flex min-h-11 items-center gap-1 self-start text-sm font-medium text-brand-800 dark:text-emerald-300"
       >
         <ArrowLeft size={16} aria-hidden="true" />
         Cartões
       </Link>
 
       {notFound ? (
-        <div role="alert" className="rounded-xl border border-slate-200 bg-white p-6 text-center">
+        <div
+          role="alert"
+          className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-6 text-center"
+        >
           <p className="font-semibold text-slate-900">Não encontrado</p>
           <p className="text-sm text-slate-600">Este cartão ou fatura não existe na sua família.</p>
         </div>
@@ -127,7 +130,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
         >
-          <p className="text-sm text-red-800">Não foi possível carregar</p>
+          <p className="text-sm text-red-800 dark:text-red-300">Não foi possível carregar</p>
           <Button
             variant="secondary"
             onClick={() => {
@@ -150,7 +153,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
 
       {c && inv ? (
         <>
-          <header className="rounded-xl border border-slate-200 bg-white p-4">
+          <header className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-4">
             <h1 className="text-2xl font-semibold text-slate-900">{c.name}</h1>
             <p className="text-sm text-slate-600">{cycleSentence(c.closingDay, c.dueDay)}</p>
             <div className="mt-3 flex flex-wrap justify-between gap-x-3 text-sm">
@@ -169,7 +172,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
               <span
                 className={cn(
                   "font-semibold",
-                  c.availableInCents < 0 ? "text-red-700" : "text-slate-900",
+                  c.availableInCents < 0 ? "text-red-700 dark:text-red-300" : "text-slate-900",
                 )}
               >
                 Disponível{" "}
@@ -182,7 +185,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
 
           <section
             aria-label="Fatura"
-            className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4"
+            className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-4"
           >
             <div className="flex items-center justify-between gap-2">
               <Button
@@ -210,13 +213,16 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
               {inv.payment ? (
                 <span
                   data-testid="invoice-paid-on"
-                  className="text-sm font-semibold text-emerald-800"
+                  className="text-sm font-semibold text-emerald-800 dark:text-emerald-300"
                 >
                   Paga em {brDate(inv.payment.paidOn)}
                 </span>
               ) : null}
               {inv.status === "CLOSED" && inv.totalInCents > 0 ? (
-                <span data-testid="invoice-to-pay" className="text-sm font-semibold text-amber-900">
+                <span
+                  data-testid="invoice-to-pay"
+                  className="text-sm font-semibold text-amber-900 dark:text-amber-200"
+                >
                   A pagar
                 </span>
               ) : null}
@@ -260,7 +266,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
           </section>
 
           {inv.purchases.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-slate-700">
+            <p className="rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-6 text-center text-slate-700">
               Nenhuma compra nesta fatura
             </p>
           ) : (
@@ -296,7 +302,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
             voltam a consumir o limite.
           </p>
           {undoError ? (
-            <p role="alert" className="text-sm text-red-700">
+            <p role="alert" className="text-sm text-red-700 dark:text-red-300">
               {undoError}
             </p>
           ) : null}

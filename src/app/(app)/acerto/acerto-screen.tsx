@@ -70,9 +70,9 @@ function Hero({ s, onSettle }: { s: SettlementDTO; onSettle: (x: SettlementSugge
       data-status={s.status}
       className={cn(
         "flex flex-col gap-2 rounded-2xl p-5",
-        ok ? "bg-emerald-50 text-emerald-900" : "bg-brand-800 text-white",
+        ok ? "bg-emerald-50 text-emerald-900 dark:text-emerald-300" : "bg-brand-800 text-white",
         (s.status === "EMPTY" || s.status === "NEEDS_MORE_MEMBERS") &&
-          "bg-white text-slate-900 ring-1 ring-slate-200",
+          "bg-white dark:bg-slate-100 text-slate-900 ring-1 ring-slate-200",
       )}
     >
       <p className="text-2xl font-bold leading-tight sm:text-3xl">{maskText(hero.title)}</p>
@@ -136,7 +136,7 @@ function MemberCard({
   return (
     <li
       data-testid="member-card"
-      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4"
+      className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-4"
     >
       <div className="flex items-center gap-3">
         <Avatar name={row.member.name} image={row.member.image} size={36} />
@@ -149,9 +149,9 @@ function MemberCard({
           "Diferença",
           <Money cents={row.differenceInCents} signed />,
           row.differenceInCents > 0
-            ? "text-emerald-700"
+            ? "text-emerald-700 dark:text-emerald-300"
             : row.differenceInCents < 0
-              ? "text-red-700"
+              ? "text-red-700 dark:text-red-300"
               : "text-slate-900",
           "difference",
         )}
@@ -177,7 +177,7 @@ function RuleHistory() {
   return (
     <details
       data-testid="rule-history"
-      className="rounded-xl border border-slate-200 bg-white p-3"
+      className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
       onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
     >
       <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-slate-800">
@@ -185,7 +185,10 @@ function RuleHistory() {
       </summary>
       {history.isPending && open ? <Skeleton className="h-16" /> : null}
       {history.isError ? (
-        <div role="alert" className="flex flex-col items-start gap-2 text-sm text-red-800">
+        <div
+          role="alert"
+          className="flex flex-col items-start gap-2 text-sm text-red-800 dark:text-red-300"
+        >
           <p>Não foi possível carregar a regra de divisão</p>
           <Button variant="secondary" onClick={() => history.refetch()}>
             Tentar de novo
@@ -250,7 +253,7 @@ function SharedExpensesList({ period }: { period: string }) {
   return (
     <details
       data-testid="shared-expenses"
-      className="rounded-xl border border-slate-200 bg-white p-3"
+      className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
       onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
     >
       <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-slate-800">
@@ -263,7 +266,10 @@ function SharedExpensesList({ period }: { period: string }) {
         </div>
       ) : null}
       {list.isError ? (
-        <div role="alert" className="flex flex-col items-start gap-2 text-sm text-red-800">
+        <div
+          role="alert"
+          className="flex flex-col items-start gap-2 text-sm text-red-800 dark:text-red-300"
+        >
           Não foi possível carregar
           <Button variant="secondary" onClick={() => list.refetch()}>
             Tentar de novo
@@ -314,10 +320,10 @@ export function DisabledNotice() {
   return (
     <div
       data-testid="settlement-disabled"
-      className="flex flex-col items-start gap-3 rounded-xl border border-slate-200 bg-white p-4"
+      className="flex flex-col items-start gap-3 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-4"
     >
       <p className="text-slate-800">{SPLIT_COPY.disabled}</p>
-      <Link href="/" className="font-semibold text-brand-800 underline">
+      <Link href="/" className="font-semibold text-brand-800 dark:text-emerald-300 underline">
         {SPLIT_COPY.backHome}
       </Link>
     </div>
@@ -370,7 +376,7 @@ export function AcertoScreen() {
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
         >
-          <p className="text-sm text-red-800">Não foi possível carregar</p>
+          <p className="text-sm text-red-800 dark:text-red-300">Não foi possível carregar</p>
           <Button variant="secondary" onClick={() => settlement.refetch()}>
             Tentar de novo
           </Button>
@@ -382,7 +388,7 @@ export function AcertoScreen() {
           {s.rule.stale ? (
             <p
               role="alert"
-              className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+              className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200"
             >
               Regra de divisão desatualizada.{" "}
               {s.rule.canEdit ? (
@@ -426,7 +432,7 @@ export function AcertoScreen() {
                       <li
                         key={x.groupId}
                         data-testid="settlement-entry"
-                        className="rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-800"
+                        className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3 text-sm text-slate-800"
                       >
                         <p className="font-medium">
                           {firstName(x.from.name)} transferiu <Money cents={x.amountInCents} /> para{" "}
@@ -454,7 +460,7 @@ export function AcertoScreen() {
                   neste mês (<Money cents={s.personal.totalInCents} />){" "}
                   <Link
                     href={`/extrato?period=${s.period.key}&shared=false`}
-                    className="font-semibold text-brand-800 underline"
+                    className="font-semibold text-brand-800 dark:text-emerald-300 underline"
                   >
                     Ver no Extrato
                   </Link>

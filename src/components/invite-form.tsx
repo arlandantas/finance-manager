@@ -77,7 +77,7 @@ export function InviteForm({
       <div className="flex flex-col gap-3">
         <p
           role="alert"
-          className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+          className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200"
         >
           Convite criado, mas o e-mail não foi enviado
         </p>
@@ -126,7 +126,7 @@ export function InviteForm({
       {banner ? (
         <p
           role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:text-red-300"
         >
           {banner}
         </p>

@@ -44,7 +44,7 @@ export function Menu({
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-30 mt-1 min-w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-lg"
+          className="absolute right-0 z-30 mt-1 min-w-44 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-1 shadow-lg"
         >
           {children(() => setOpen(false))}
         </div>

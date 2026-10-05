@@ -16,7 +16,7 @@ import {
 
 export type UserPrefKey = "hideValues" | "balancesExpanded";
 export const DEFAULT_USER_PREFS = { hideValues: true, balancesExpanded: false } as const;
-export const THEME_KEY = "fm:v1:theme";
+export { THEME_KEY } from "@/lib/theme";
 export const prefKey = (userId: string, k: UserPrefKey) => `fm:v1:u:${userId}:${k}`;
 
 // Todas as preferências atuais são booleanas.

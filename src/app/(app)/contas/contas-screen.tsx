@@ -31,7 +31,7 @@ function Balance({ cents, className }: { cents: number; className?: string }) {
     <span
       className={cn(
         "font-semibold tabular-nums",
-        cents < 0 ? "text-red-700" : "text-slate-900",
+        cents < 0 ? "text-red-700 dark:text-red-300" : "text-slate-900",
         className,
       )}
     >
@@ -56,7 +56,7 @@ function AccountCard({
   return (
     <li
       data-testid="account-card"
-      className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-[auto_1fr_auto_auto]"
+      className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-1 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-4 sm:grid-cols-[auto_1fr_auto_auto]"
     >
       <Avatar name={account.owner.name} image={account.owner.image} size={40} />
       <div className="min-w-0">
@@ -125,7 +125,7 @@ function ArchivedSection({
   return (
     <details
       data-testid="archived-accounts"
-      className="rounded-xl border border-slate-200 bg-white p-3"
+      className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
     >
       <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-slate-800">
         Contas arquivadas ({items.length})
@@ -245,7 +245,7 @@ export function ContasScreen() {
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
         >
-          <p className="text-sm text-red-800">Não foi possível carregar</p>
+          <p className="text-sm text-red-800 dark:text-red-300">Não foi possível carregar</p>
           <Button variant="secondary" onClick={() => accounts.refetch()}>
             Tentar de novo
           </Button>
@@ -253,7 +253,7 @@ export function ContasScreen() {
       ) : null}
 
       {data && data.items.length === 0 ? (
-        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-8 text-center">
           <p className="text-slate-700">Cadastre sua primeira conta para começar</p>
           <Button onClick={() => setCreating(true)}>Nova conta</Button>
         </div>
@@ -312,7 +312,7 @@ export function ContasScreen() {
               depois.
             </p>
             {data && data.items.length === 1 ? (
-              <p role="status" className="text-sm font-medium text-amber-900">
+              <p role="status" className="text-sm font-medium text-amber-900 dark:text-amber-200">
                 Sem contas ativas você não poderá lançar despesas em conta nem pagar faturas.
               </p>
             ) : null}
@@ -321,7 +321,9 @@ export function ContasScreen() {
                 role="alert"
                 className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3"
               >
-                <p className="text-sm font-medium text-amber-900">{blocked.message}</p>
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                  {blocked.message}
+                </p>
                 <Button
                   variant="secondary"
                   onClick={() => transferBalance(archiving, blocked.balanceInCents)}
@@ -331,7 +333,7 @@ export function ContasScreen() {
               </div>
             ) : null}
             {banner ? (
-              <p role="alert" className="text-sm text-red-800">
+              <p role="alert" className="text-sm text-red-800 dark:text-red-300">
                 {banner}
               </p>
             ) : null}
@@ -360,7 +362,7 @@ export function ContasScreen() {
               não pode ser desfeito.
             </p>
             {banner ? (
-              <p role="alert" className="text-sm text-red-800">
+              <p role="alert" className="text-sm text-red-800 dark:text-red-300">
                 {banner}
               </p>
             ) : null}

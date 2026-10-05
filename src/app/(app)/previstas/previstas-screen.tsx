@@ -43,7 +43,7 @@ const first = (n: string) => n.split(" ")[0] ?? n;
 
 function OverdueChip() {
   return (
-    <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+    <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 dark:text-red-300">
       Atrasada
     </span>
   );
@@ -64,7 +64,7 @@ function PayableRow({
       id={item.id}
       data-testid="payable-item"
       data-overdue={item.isOverdue ? "true" : undefined}
-      className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 rounded-xl border border-slate-200 bg-white p-3"
+      className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
     >
       <div className="min-w-0">
         <p className="truncate font-semibold text-slate-900">{item.title}</p>
@@ -124,7 +124,10 @@ function PayableRow({
             </span>
           </>
         ) : (
-          <Link href={item.href} className="text-sm font-medium text-brand-800 underline">
+          <Link
+            href={item.href}
+            className="text-sm font-medium text-brand-800 dark:text-emerald-300 underline"
+          >
             Ver fatura
           </Link>
         )}
@@ -140,7 +143,7 @@ function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void
     <li
       id={item.id}
       data-testid="paid-item"
-      className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-3"
+      className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
     >
       <div className="flex items-center justify-between gap-3">
         <span className="flex min-w-0 items-center gap-2 font-semibold text-slate-900">
@@ -148,7 +151,7 @@ function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void
           <span className="truncate">{item.description}</span>
         </span>
         {paid ? (
-          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
             Pago em {brDate(paid.paidOn)}
           </span>
         ) : null}
@@ -317,7 +320,7 @@ export function PrevistasScreen() {
             onClick={() => setTab(k)}
             className={cn(
               "min-h-11 rounded-lg text-sm font-semibold",
-              tab === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-600",
+              tab === k ? "bg-white dark:bg-slate-100 text-slate-900 shadow-sm" : "text-slate-600",
             )}
           >
             {label}
@@ -342,7 +345,7 @@ export function PrevistasScreen() {
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
         >
-          <p className="text-sm text-red-800">Não foi possível carregar</p>
+          <p className="text-sm text-red-800 dark:text-red-300">Não foi possível carregar</p>
           <Button variant="secondary" onClick={() => active.refetch()}>
             Tentar de novo
           </Button>
@@ -351,7 +354,7 @@ export function PrevistasScreen() {
 
       {tab === "pay" && payables.data ? (
         payables.data.items.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-8 text-center">
             <p className="text-slate-700">Nenhuma conta a pagar neste mês</p>
             <Button onClick={() => setCreating(true)}>Nova despesa prevista</Button>
           </div>
@@ -371,7 +374,7 @@ export function PrevistasScreen() {
 
       {tab === "paid" && paidList.data ? (
         paidList.data.items.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-slate-700">
+          <p className="rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-6 text-center text-slate-700">
             Nenhuma conta paga neste mês
           </p>
         ) : (
@@ -403,7 +406,7 @@ export function PrevistasScreen() {
             previsão volta a ficar pendente.
           </p>
           {deleteError ? (
-            <p role="alert" className="text-sm text-red-700">
+            <p role="alert" className="text-sm text-red-700 dark:text-red-300">
               {deleteError}
             </p>
           ) : null}
@@ -426,7 +429,7 @@ export function PrevistasScreen() {
             A previsão deixa de aparecer em Contas a pagar. Nenhum saldo ou lançamento é alterado.
           </p>
           {deleteError ? (
-            <p role="alert" className="text-sm text-red-700">
+            <p role="alert" className="text-sm text-red-700 dark:text-red-300">
               {deleteError}
             </p>
           ) : null}

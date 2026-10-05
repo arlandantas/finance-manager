@@ -46,15 +46,15 @@ function Totals({
   return (
     <section
       aria-label="Totais do filtro"
-      className="sticky top-14 z-10 flex gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+      className="sticky top-14 z-10 flex gap-3 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3 shadow-sm"
     >
-      {cell("Receitas", income, "totals-income", "text-emerald-700")}
+      {cell("Receitas", income, "totals-income", "text-emerald-700 dark:text-emerald-300")}
       {cell("Despesas", expense, "totals-expense", "text-slate-900")}
       {cell(
         "Saldo do filtro",
         balance,
         "totals-balance",
-        balance < 0 ? "text-red-700" : "text-slate-900",
+        balance < 0 ? "text-red-700 dark:text-red-300" : "text-slate-900",
       )}
     </section>
   );
@@ -173,7 +173,10 @@ export function ExtratoScreen() {
       </header>
 
       {isDesktop ? (
-        <section aria-label="Filtros" className="rounded-xl border border-slate-200 bg-white p-3">
+        <section
+          aria-label="Filtros"
+          className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
+        >
           <FiltersPanel filters={filters} onChange={patchFilters} idPrefix="f" />
         </section>
       ) : (
@@ -208,7 +211,7 @@ export function ExtratoScreen() {
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
         >
-          <p className="text-sm text-red-800">Não foi possível carregar</p>
+          <p className="text-sm text-red-800 dark:text-red-300">Não foi possível carregar</p>
           <Button variant="secondary" onClick={() => ledger.refetch()}>
             Tentar de novo
           </Button>
@@ -224,14 +227,14 @@ export function ExtratoScreen() {
       ) : null}
 
       {noTransactionsAtAll ? (
-        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-8 text-center">
           <p className="text-slate-700">Faça seu primeiro lançamento</p>
           <Button onClick={() => quickAdd.open()}>Novo lançamento</Button>
         </div>
       ) : null}
 
       {first && items.length === 0 && !noTransactionsAtAll ? (
-        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-8 text-center">
           <p className="text-slate-700">Nenhum lançamento encontrado</p>
           <Button variant="secondary" onClick={() => replaceFilters({})}>
             Limpar filtros

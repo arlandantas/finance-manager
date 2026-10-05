@@ -174,7 +174,7 @@ export function EditTransactionForm({
       {banner ? (
         <p
           role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:text-red-300"
         >
           {banner}
         </p>
@@ -247,7 +247,7 @@ export function EditTransactionForm({
           >
             <span
               className={cn(
-                "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all",
+                "absolute top-0.5 h-6 w-6 rounded-full bg-white dark:bg-slate-100 shadow transition-all",
                 shared ? "left-[22px]" : "left-0.5",
               )}
             />

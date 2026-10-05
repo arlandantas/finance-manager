@@ -22,7 +22,7 @@ export function JoinedNotice({ familyName }: { familyName: string }) {
   return (
     <p
       role="status"
-      className="mb-4 rounded-xl border border-brand-100 bg-brand-50 p-4 font-medium text-brand-800"
+      className="mb-4 rounded-xl border border-brand-100 bg-brand-50 p-4 font-medium text-brand-800 dark:text-emerald-300"
     >
       Você entrou na {familyName}
     </p>

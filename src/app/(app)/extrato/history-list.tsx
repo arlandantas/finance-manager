@@ -42,7 +42,7 @@ export function HistoryList({ id }: { id: string }) {
   if (history.isPending) return <Skeleton className="h-20" />;
   if (history.isError)
     return (
-      <p role="alert" className="text-sm text-red-800">
+      <p role="alert" className="text-sm text-red-800 dark:text-red-300">
         Não foi possível carregar
       </p>
     );

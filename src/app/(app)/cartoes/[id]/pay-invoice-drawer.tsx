@@ -146,7 +146,7 @@ export function PayInvoiceDrawer({
         {banner ? (
           <p
             role="alert"
-            className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+            className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:text-red-300"
           >
             {banner}
           </p>
@@ -154,7 +154,7 @@ export function PayInvoiceDrawer({
         {info ? (
           <p
             role="alert"
-            className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900"
+            className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900 dark:text-amber-200"
           >
             {info}
           </p>
@@ -199,7 +199,7 @@ export function PayInvoiceDrawer({
         {negative ? (
           <p
             role="alert"
-            className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900"
+            className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900 dark:text-amber-200"
           >
             A conta de origem ficará negativa
           </p>
@@ -234,7 +234,7 @@ export function PayInvoiceDrawer({
           </div>
         </details>
 
-        <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white p-4">
+        <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white dark:bg-slate-100 p-4">
           <Button
             type="submit"
             variant={negative ? "danger" : "primary"}

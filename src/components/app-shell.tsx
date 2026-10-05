@@ -22,6 +22,7 @@ import { HIDE_VALUES_HINT, useHideValues } from "@/components/money";
 import { QuickAddProvider } from "@/components/quick-add";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
+import { useTheme } from "@/lib/use-theme";
 
 export type ShellUser = { name: string; email: string; image: string | null };
 
@@ -40,6 +41,7 @@ const NAV_ITEMS: Array<{ href: string; label: string; icon: typeof Home }> = [
 
 function UserMenu({ user }: { user: ShellUser }) {
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useTheme();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -73,11 +75,37 @@ function UserMenu({ user }: { user: ShellUser }) {
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-30 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+          className="absolute right-0 z-30 mt-2 w-64 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-2 shadow-lg"
         >
           <div className="px-3 py-2">
             <p className="truncate text-sm font-semibold text-slate-900">{user.name}</p>
             <p className="truncate text-xs text-slate-500">{user.email}</p>
+          </div>
+          <div role="group" aria-label="Aparência" className="px-3 py-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Aparência
+            </p>
+            <div className="mt-1 flex flex-col">
+              {(
+                [
+                  ["system", "Sistema"],
+                  ["light", "Claro"],
+                  ["dark", "Escuro"],
+                ] as const
+              ).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={theme === v}
+                  onClick={() => setTheme(v)}
+                  className="flex min-h-11 w-full items-center gap-2 rounded-lg px-2 text-left text-sm font-medium text-slate-800 hover:bg-slate-100"
+                >
+                  <span className="w-4">{theme === v ? "✓" : ""}</span>
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
           <Link
             href="/categorias"
@@ -139,7 +167,7 @@ function OfflineBanner() {
   return (
     <p
       role="status"
-      className="bg-amber-100 px-4 py-2 text-center text-sm font-medium text-amber-900"
+      className="bg-amber-100 px-4 py-2 text-center text-sm font-medium text-amber-900 dark:text-amber-200"
     >
       Sem conexão.
     </p>
@@ -163,12 +191,12 @@ export function AppShell({
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 pb-20 md:pb-0">
       <OfflineBanner />
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
+      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white dark:bg-slate-100">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-3 px-4">
           <div className="flex min-w-0 items-center gap-6">
             <Link
               href="/"
-              className="truncate text-base font-bold text-brand-800"
+              className="truncate text-base font-bold text-brand-800 dark:text-emerald-300"
               data-testid="family-name"
             >
               {familyName}
@@ -182,7 +210,7 @@ export function AppShell({
                   className={cn(
                     "flex min-h-11 items-center rounded-lg px-3 text-sm font-medium",
                     isActive(item.href)
-                      ? "bg-brand-50 text-brand-800"
+                      ? "bg-brand-50 text-brand-800 dark:text-emerald-300"
                       : "text-slate-700 hover:bg-slate-100",
                   )}
                 >
@@ -207,7 +235,7 @@ export function AppShell({
       </QuickAddProvider>
       <nav
         aria-label="Principal (celular)"
-        className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white md:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white dark:bg-slate-100 md:hidden"
       >
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -218,7 +246,7 @@ export function AppShell({
               aria-current={isActive(item.href) ? "page" : undefined}
               className={cn(
                 "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-medium",
-                isActive(item.href) ? "text-brand-800" : "text-slate-600",
+                isActive(item.href) ? "text-brand-800 dark:text-emerald-300" : "text-slate-600",
               )}
             >
               <Icon size={20} aria-hidden="true" />

@@ -106,7 +106,9 @@ export function CategoriasScreen() {
             onClick={() => router.replace(`/categorias?kind=${t.kind}`)}
             className={cn(
               "min-h-11 rounded-lg text-sm font-semibold",
-              kind === t.kind ? "bg-white text-slate-900 shadow-sm" : "text-slate-600",
+              kind === t.kind
+                ? "bg-white dark:bg-slate-100 text-slate-900 shadow-sm"
+                : "text-slate-600",
             )}
           >
             {t.label}
@@ -127,7 +129,7 @@ export function CategoriasScreen() {
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
         >
-          <p className="text-sm text-red-800">Não foi possível carregar</p>
+          <p className="text-sm text-red-800 dark:text-red-300">Não foi possível carregar</p>
           <Button variant="secondary" onClick={() => list.refetch()}>
             Tentar de novo
           </Button>
@@ -140,7 +142,7 @@ export function CategoriasScreen() {
             <li
               key={c.id}
               data-testid="category-item"
-              className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2 pl-4"
+              className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-2 pl-4"
             >
               <span className="text-slate-700">
                 <CategoryIcon icon={c.icon} />
@@ -188,7 +190,7 @@ export function CategoriasScreen() {
       ) : null}
 
       {archived.length > 0 ? (
-        <details className="rounded-xl border border-slate-200 bg-white p-3">
+        <details className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3">
           <summary className="min-h-6 cursor-pointer text-sm font-medium text-slate-700">
             Arquivadas ({archived.length})
           </summary>

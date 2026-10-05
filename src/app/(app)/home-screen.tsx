@@ -36,7 +36,7 @@ function Card({
       aria-label={title}
       data-testid={testid}
       className={cn(
-        "flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4",
+        "flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white dark:bg-slate-100 p-4",
         className,
       )}
     >
@@ -67,7 +67,7 @@ function Checklist({ o }: { o: HomeDTO["onboarding"] }) {
                   "flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold",
                   s.done
                     ? "bg-emerald-600 text-white"
-                    : "bg-white text-brand-800 ring-1 ring-brand-700",
+                    : "bg-white dark:bg-slate-100 text-brand-800 dark:text-emerald-300 ring-1 ring-brand-700",
                 )}
               >
                 {s.done ? <Check size={16} /> : i + 1}
@@ -177,7 +177,7 @@ function MonthSummaryCard({
     <section
       aria-label="Resumo do mês"
       data-testid="home-summary"
-      className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4"
+      className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white dark:bg-slate-100 p-4"
     >
       <header className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
@@ -214,7 +214,7 @@ function MonthSummaryCard({
       ) : null}
 
       <dl className="flex flex-col divide-y divide-slate-100">
-        <Line label="Receitas" testid="home-income" tone="text-emerald-700">
+        <Line label="Receitas" testid="home-income" tone="text-emerald-700 dark:text-emerald-300">
           <Money cents={s.incomeInCents} />
         </Line>
         <Line label="Despesas" testid="home-expense">
@@ -224,7 +224,7 @@ function MonthSummaryCard({
           label="Resultado do mês"
           testid="home-result"
           strong
-          tone={s.resultInCents < 0 ? "text-red-700" : "text-slate-900"}
+          tone={s.resultInCents < 0 ? "text-red-700 dark:text-red-300" : "text-slate-900"}
         >
           <Money cents={s.resultInCents} />
         </Line>
@@ -247,7 +247,7 @@ function MonthSummaryCard({
                 data-testid="home-topay-overdue"
               >
                 <span>
-                  <span className="mr-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                  <span className="mr-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 dark:text-red-300">
                     {SUMMARY_COPY.overdue}
                   </span>
                   {s.toPay.overdueCount} {s.toPay.overdueCount === 1 ? "atrasada" : "atrasadas"}
@@ -262,7 +262,7 @@ function MonthSummaryCard({
             label="Saldo previsto"
             testid="home-projected"
             strong
-            tone={negative ? "text-red-700" : "text-slate-900"}
+            tone={negative ? "text-red-700 dark:text-red-300" : "text-slate-900"}
           >
             <Money cents={s.projectedBalanceInCents} />
           </Line>
@@ -271,7 +271,7 @@ function MonthSummaryCard({
             <p
               role="status"
               data-testid="home-projected-warning"
-              className="mt-1 rounded-lg bg-red-50 px-2 py-1 text-sm font-medium text-red-800"
+              className="mt-1 rounded-lg bg-red-50 px-2 py-1 text-sm font-medium text-red-800 dark:text-red-300"
             >
               {maskText(SUMMARY_COPY.projectedNegative)}
             </p>
@@ -281,7 +281,7 @@ function MonthSummaryCard({
       {indicator && s.period.isCurrent ? <SettlementLines ind={indicator} /> : null}
       <Link
         href="/previstas"
-        className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 underline"
+        className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 dark:text-emerald-300 underline"
       >
         Ver contas a pagar
       </Link>
@@ -295,7 +295,7 @@ function BalancesCard({ b }: { b: HomeDTO["balances"] }) {
     <section
       aria-label="Saldos das contas"
       data-testid="home-balance"
-      className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-4"
+      className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white dark:bg-slate-100 p-4"
     >
       <button
         type="button"
@@ -315,7 +315,7 @@ function BalancesCard({ b }: { b: HomeDTO["balances"] }) {
               data-testid="family-balance-value"
               className={cn(
                 "text-xl font-bold tabular-nums",
-                b.totalInCents < 0 ? "text-red-700" : "text-slate-900",
+                b.totalInCents < 0 ? "text-red-700 dark:text-red-300" : "text-slate-900",
               )}
             >
               <Money cents={b.totalInCents} />
@@ -344,7 +344,9 @@ function BalancesCard({ b }: { b: HomeDTO["balances"] }) {
                       <span
                         className={cn(
                           "font-semibold tabular-nums",
-                          a.balanceInCents < 0 ? "text-red-700" : "text-slate-900",
+                          a.balanceInCents < 0
+                            ? "text-red-700 dark:text-red-300"
+                            : "text-slate-900",
                         )}
                       >
                         <Money cents={a.balanceInCents} />
@@ -355,7 +357,7 @@ function BalancesCard({ b }: { b: HomeDTO["balances"] }) {
               </ul>
               <Link
                 href="/contas"
-                className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 underline"
+                className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 dark:text-emerald-300 underline"
               >
                 Cadastrar conta
               </Link>
@@ -366,7 +368,10 @@ function BalancesCard({ b }: { b: HomeDTO["balances"] }) {
       {b.accounts.length === 0 ? (
         <div className="flex flex-col items-start gap-1">
           <p className="text-sm text-slate-600">Nenhuma conta cadastrada</p>
-          <Link href="/contas" className="text-sm font-semibold text-brand-800 underline">
+          <Link
+            href="/contas"
+            className="text-sm font-semibold text-brand-800 dark:text-emerald-300 underline"
+          >
             Cadastrar conta
           </Link>
         </div>
@@ -419,7 +424,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
         >
-          <p className="text-sm text-red-800">{SUMMARY_COPY.loadError}</p>
+          <p className="text-sm text-red-800 dark:text-red-300">{SUMMARY_COPY.loadError}</p>
           <Button
             variant="secondary"
             onClick={() => (home.isError ? home.refetch() : other.refetch())}
@@ -482,7 +487,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                       <span className="block truncate font-medium text-slate-900">{p.title}</span>
                       <span className="text-slate-600">
                         {p.isOverdue ? (
-                          <span className="mr-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                          <span className="mr-2 rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 dark:text-red-300">
                             Atrasada
                           </span>
                         ) : null}
@@ -495,12 +500,15 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                       </span>
                       {p.type === "INVOICE" ? (
                         <>
-                          <Link href={p.href} className="font-medium text-brand-800 underline">
+                          <Link
+                            href={p.href}
+                            className="font-medium text-brand-800 dark:text-emerald-300 underline"
+                          >
                             Ver fatura
                           </Link>
                           <Link
                             href={`${p.href}&pay=1`}
-                            className="font-medium text-brand-800 underline"
+                            className="font-medium text-brand-800 dark:text-emerald-300 underline"
                           >
                             Pagar fatura
                           </Link>
@@ -520,7 +528,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
               </ul>
               <Link
                 href="/previstas"
-                className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 underline"
+                className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 dark:text-emerald-300 underline"
               >
                 Ver todas
               </Link>
@@ -545,7 +553,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
             )}
             <Link
               href="/extrato"
-              className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 underline"
+              className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 dark:text-emerald-300 underline"
             >
               Ver extrato
             </Link>

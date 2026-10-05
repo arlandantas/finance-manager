@@ -22,3 +22,37 @@ body {
   outline: 2px solid var(--color-brand-700);
   outline-offset: 2px;
 }
+
+/* ───────── Tema escuro (US-037, SDD-010 §4.5) ─────────
+   O Tailwind 4 expõe a paleta como variáveis CSS; o tema escuro as redefine (sem tocar cada componente).
+   Cores usadas como TEXTO sobre fundos de marca ou de perigo (brand/red 700-800) não são invertidas:
+   os componentes trazem `dark:` próprio para o texto. `text-white` e `bg-brand-*` ficam intactos. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-slate-50: #0b1220;
+  --color-slate-100: #131c2e;
+  --color-slate-200: #1f2a3d;
+  --color-slate-300: #334155;
+  --color-slate-400: #7b8aa0;
+  --color-slate-500: #94a3b8;
+  --color-slate-600: #b4c0d0;
+  --color-slate-700: #cbd5e1;
+  --color-slate-800: #e2e8f0;
+  --color-slate-900: #f1f5f9;
+  --color-slate-950: #f8fafc;
+  --color-red-50: #3b1212;
+  --color-red-100: #4a1a1a;
+  --color-red-200: #7f1d1d;
+  --color-amber-50: #2d2208;
+  --color-amber-100: #3a2a0a;
+  --color-amber-300: #92400e;
+  --color-amber-400: #b45309;
+  --color-emerald-50: #052e22;
+  --color-emerald-100: #064e3b;
+  --color-brand-50: #052e22;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}

@@ -192,7 +192,7 @@ export function PlannedDrawer({
           {banner ? (
             <p
               role="alert"
-              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:text-red-300"
             >
               {banner}
             </p>
@@ -249,8 +249,8 @@ export function PlannedDrawer({
                   className={cn(
                     "flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-center text-xs font-medium",
                     categoryId === c.id
-                      ? "border-brand-700 bg-brand-50 text-brand-800"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                      ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
+                      : "border-slate-200 bg-white dark:bg-slate-100 text-slate-700 hover:bg-slate-50",
                   )}
                 >
                   <CategoryIcon icon={c.icon} />
@@ -268,8 +268,8 @@ export function PlannedDrawer({
                   className={cn(
                     "flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-center text-xs font-medium",
                     categoryId === planned.category.id
-                      ? "border-brand-700 bg-brand-50 text-brand-800"
-                      : "border-slate-200 bg-white text-slate-700",
+                      ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
+                      : "border-slate-200 bg-white dark:bg-slate-100 text-slate-700",
                   )}
                 >
                   <CategoryIcon icon={planned.category.icon} />
@@ -278,7 +278,7 @@ export function PlannedDrawer({
               ) : null}
             </div>
             {errors.categoryId ? (
-              <p role="alert" className="text-sm text-red-700">
+              <p role="alert" className="text-sm text-red-700 dark:text-red-300">
                 {errors.categoryId}
               </p>
             ) : null}
@@ -304,8 +304,8 @@ export function PlannedDrawer({
                   className={cn(
                     "flex min-h-11 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm font-medium",
                     responsibleId === m.memberId
-                      ? "border-brand-700 bg-brand-50 text-brand-800"
-                      : "border-slate-200 bg-white text-slate-700",
+                      ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
+                      : "border-slate-200 bg-white dark:bg-slate-100 text-slate-700",
                   )}
                 >
                   <Avatar name={m.name} image={m.image} size={32} />
@@ -339,7 +339,7 @@ export function PlannedDrawer({
               >
                 <span
                   className={cn(
-                    "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all",
+                    "absolute top-0.5 h-6 w-6 rounded-full bg-white dark:bg-slate-100 shadow transition-all",
                     shared ? "left-[22px]" : "left-0.5",
                   )}
                 />
@@ -383,7 +383,7 @@ export function PlannedDrawer({
             </div>
           </details>
 
-          <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white p-4">
+          <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white dark:bg-slate-100 p-4">
             <Button type="submit" className="w-full" disabled={pending}>
               {pending ? "Salvando…" : "Salvar"}
             </Button>

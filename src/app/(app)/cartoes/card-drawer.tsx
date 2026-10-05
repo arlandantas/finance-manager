@@ -182,7 +182,7 @@ export function CardDrawer({
           {banner ? (
             <p
               role="alert"
-              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:text-red-300"
             >
               {banner}
             </p>
@@ -286,7 +286,7 @@ export function CardDrawer({
               {sentence}
             </p>
           ) : null}
-          <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white p-4">
+          <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white dark:bg-slate-100 p-4">
             <Button type="submit" className="w-full" disabled={pending}>
               {pending ? "Salvando…" : "Salvar cartão"}
             </Button>

@@ -168,7 +168,7 @@ export function CategoryDrawer({
           {banner ? (
             <p
               role="alert"
-              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:text-red-300"
             >
               {banner}
             </p>
@@ -222,8 +222,8 @@ export function CategoryDrawer({
                     className={cn(
                       "flex min-h-11 min-w-11 items-center justify-center rounded-xl border focus-visible:outline-2 focus-visible:outline-brand-700",
                       icon === k
-                        ? "border-brand-700 bg-brand-50 text-brand-800"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                        ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
+                        : "border-slate-200 bg-white dark:bg-slate-100 text-slate-700 hover:bg-slate-50",
                     )}
                   >
                     <CategoryIcon icon={k} />
@@ -231,13 +231,13 @@ export function CategoryDrawer({
                 ))}
               </div>
               {iconError ? (
-                <p role="alert" className="text-sm text-red-700">
+                <p role="alert" className="text-sm text-red-700 dark:text-red-300">
                   {iconError}
                 </p>
               ) : null}
             </div>
           ) : null}
-          <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white p-4">
+          <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white dark:bg-slate-100 p-4">
             <Button type="submit" className="w-full" disabled={pending}>
               {pending ? "Salvando…" : "Salvar"}
             </Button>

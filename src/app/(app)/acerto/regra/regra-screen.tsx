@@ -164,7 +164,7 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
       {rule.stale && rule.canEdit ? (
         <p
           role="alert"
-          className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+          className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200"
         >
           Um novo membro entrou. Redefina os percentuais.
         </p>
@@ -177,7 +177,7 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
       {banner ? (
         <p
           role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:text-red-300"
         >
           {banner}
         </p>
@@ -193,8 +193,8 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
             className={cn(
               "flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm font-medium",
               kind === k
-                ? "border-brand-700 bg-brand-50 text-brand-800"
-                : "border-slate-200 bg-white text-slate-800",
+                ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
+                : "border-slate-200 bg-white dark:bg-slate-100 text-slate-800",
             )}
           >
             <input
@@ -250,13 +250,13 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
             aria-live="polite"
             className={cn(
               "text-sm font-semibold",
-              total === 10000 ? "text-emerald-700" : "text-slate-700",
+              total === 10000 ? "text-emerald-700 dark:text-emerald-300" : "text-slate-700",
             )}
           >
             Total: {formatBps(total)}%
           </p>
           {sumError || (parsed.every((v) => v !== null) && total !== 10000) ? (
-            <p role="alert" className="text-sm text-red-700">
+            <p role="alert" className="text-sm text-red-700 dark:text-red-300">
               {sumError ?? SUM_MSG}
             </p>
           ) : null}
@@ -299,7 +299,7 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
             ))}
             <p className="text-xs text-slate-500">As rendas informadas não são guardadas</p>
             {incomeError ? (
-              <p role="alert" className="text-sm text-red-700">
+              <p role="alert" className="text-sm text-red-700 dark:text-red-300">
                 {incomeError}
               </p>
             ) : null}
@@ -391,7 +391,7 @@ export function RegraScreen() {
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
         >
-          <p className="text-sm text-red-800">Não foi possível carregar</p>
+          <p className="text-sm text-red-800 dark:text-red-300">Não foi possível carregar</p>
           <Button variant="secondary" onClick={() => rule.refetch()}>
             Tentar de novo
           </Button>

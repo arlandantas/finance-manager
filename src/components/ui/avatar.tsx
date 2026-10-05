@@ -35,7 +35,7 @@ export function Avatar({
       role="img"
       aria-label={`Avatar de ${name}`}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-brand-100 font-semibold text-brand-800",
+        "inline-flex shrink-0 items-center justify-center rounded-full bg-brand-100 font-semibold text-brand-800 dark:text-emerald-300",
         className,
       )}
       style={style}

@@ -118,14 +118,14 @@ export function RemoveMemberDialog({
         <div className="flex flex-col gap-4">
           {review.isPending ? <p className="text-sm text-slate-600">Carregando revisão…</p> : null}
           {review.isError ? (
-            <p role="alert" className="text-sm text-red-800">
+            <p role="alert" className="text-sm text-red-800 dark:text-red-300">
               Não foi possível carregar
             </p>
           ) : null}
           {error ? (
             <p
               role="alert"
-              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:text-red-300"
             >
               {error}
             </p>
@@ -135,7 +135,7 @@ export function RemoveMemberDialog({
             <p
               role="alert"
               data-testid="removal-blocked"
-              className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900"
+              className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900 dark:text-amber-200"
             >
               {r.blockers.includes("ONLY_MEMBER")
                 ? "Você é a única pessoa na família. Convide alguém antes de sair."

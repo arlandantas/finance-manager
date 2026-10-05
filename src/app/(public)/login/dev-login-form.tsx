@@ -44,7 +44,7 @@ export function DevLoginForm({ callbackUrl }: { callbackUrl: string }) {
       aria-labelledby="dev-login-title"
       className="mt-6 flex flex-col gap-3 rounded-xl border border-dashed border-amber-400 bg-amber-50 p-4"
     >
-      <h2 id="dev-login-title" className="text-sm font-semibold text-amber-900">
+      <h2 id="dev-login-title" className="text-sm font-semibold text-amber-900 dark:text-amber-200">
         Entrar como (teste)
       </h2>
       <form

@@ -68,7 +68,7 @@ export function MoneyInput({
           aria-label="Alternar sinal do valor"
           aria-pressed={value < 0 || negativeZero}
           onClick={toggleSign}
-          className="min-h-11 min-w-11 rounded-lg border border-slate-300 bg-white text-lg font-semibold text-slate-700 hover:bg-slate-50 aria-pressed:border-red-600 aria-pressed:text-red-700"
+          className="min-h-11 min-w-11 rounded-lg border border-slate-300 bg-white dark:bg-slate-100 text-lg font-semibold text-slate-700 hover:bg-slate-50 aria-pressed:border-red-600 aria-pressed:text-red-700 dark:text-red-300"
         >
           ±
         </button>
