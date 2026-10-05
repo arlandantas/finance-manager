@@ -79,6 +79,7 @@ export function TransactionDrawer({
   const categoryRef = useRef<HTMLDivElement>(null);
 
   const defaults = useDefaults(open);
+  const splitAvailable = defaults.data?.split.available ?? false;
   const accounts = useAccounts();
   const cards = useCards();
   const family = useFamily();
@@ -145,7 +146,7 @@ export function TransactionDrawer({
       ...(date ? { occurredOn: date } : {}),
       ...(description.trim() ? { description } : {}),
       ...(note.trim() ? { note } : {}),
-      ...(kind === "EXPENSE" ? { isSharedExpense: shared } : {}),
+      ...(kind === "EXPENSE" ? { isSharedExpense: splitAvailable && shared } : {}),
     } as CreateTransactionInput;
   }
 
@@ -419,7 +420,7 @@ export function TransactionDrawer({
           </div>
         </div>
 
-        {kind === "EXPENSE" ? (
+        {kind === "EXPENSE" && splitAvailable ? (
           <div className="flex min-h-11 items-center justify-between gap-3">
             <span id="tx-shared-label" className="text-sm font-medium text-slate-800">
               Dividir com a família

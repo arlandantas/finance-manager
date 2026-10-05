@@ -82,14 +82,14 @@ function Checklist({ o }: { o: HomeDTO["onboarding"] }) {
   );
 }
 
-function SettlementCard({ h }: { h: HomeDTO }) {
+function SettlementCard({ settlement }: { settlement: NonNullable<HomeDTO["settlement"]> }) {
   const maskText = useMoneyText();
-  const hero = heroText(h.settlement);
-  const needs = h.settlement.status === "NEEDS_MORE_MEMBERS";
-  const ok = h.settlement.status === "BALANCED" || h.settlement.status === "SETTLED";
+  const hero = heroText(settlement);
+  const needs = settlement.status === "NEEDS_MORE_MEMBERS";
+  const ok = settlement.status === "BALANCED" || settlement.status === "SETTLED";
   return (
     <Link
-      href={needs ? "/familia" : `/acerto?period=${h.settlement.period.key}`}
+      href={needs ? "/familia" : `/acerto?period=${settlement.period.key}`}
       data-testid="home-settlement"
       className={cn(
         "flex items-center justify-between gap-3 rounded-2xl p-4 text-white",
@@ -416,7 +416,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
             ) : viewing && other.isPending ? (
               <Skeleton className="h-80" />
             ) : null}
-            <SettlementCard h={h} />
+            {h.settlement ? <SettlementCard settlement={h.settlement} /> : null}
           </div>
 
           <div className="flex flex-col gap-4">

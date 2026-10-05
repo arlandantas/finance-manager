@@ -31,6 +31,7 @@ export function transacoesRepo(tx: Tx, familyId: string) {
       }),
     findAccount: (id: string) =>
       tx.bankAccount.findFirst({ where: { id, familyId }, select: { id: true, name: true } }),
+    countMembers: () => tx.member.count({ where: { familyId } }),
     findMember: (id: string) =>
       tx.member.findFirst({ where: { id, familyId }, include: { user: true } }),
     listMembers: () => tx.member.findMany({ where: { familyId }, include: { user: true } }),

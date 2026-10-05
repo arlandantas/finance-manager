@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
+import { ApiClientError } from "@/lib/http";
+import { SPLIT_COPY } from "@/modules/split/copy";
 import { formatSplitLabel } from "@/modules/split/explain";
 import { heroText } from "@/modules/split/hero";
 import {
@@ -96,7 +98,7 @@ function Hero({ s, onSettle }: { s: SettlementDTO; onSettle: (x: SettlementSugge
         <ul data-testid="settlement-suggestions" className="mt-1 flex flex-col gap-1 text-sm">
           {s.suggestions.slice(1).map((x) => (
             <li key={`${x.from.id}-${x.to.id}`} className="flex flex-wrap items-center gap-2">
-              {firstName(x.from.name)} deve <Money cents={x.amountInCents} /> para{" "}
+              {firstName(x.from.name)} transfere <Money cents={x.amountInCents} /> para{" "}
               {firstName(x.to.name)}
               <button
                 type="button"
@@ -237,11 +239,6 @@ function RuleSummary({ s, rule }: { s: SettlementDTO; rule: SplitRuleDTO | undef
           {explained.weightedLine}
         </p>
       ) : null}
-      {s.splitExplanation === null ? (
-        <p data-testid="rule-empty" className="text-sm text-slate-600">
-          Nenhuma despesa dividida neste mês
-        </p>
-      ) : null}
       <RuleHistory />
     </div>
   );
@@ -309,6 +306,24 @@ function SharedExpensesList({ period }: { period: string }) {
   );
 }
 
+export function isDisabled(e: unknown): boolean {
+  return e instanceof ApiClientError && e.code === "SETTLEMENT_DISABLED";
+}
+
+export function DisabledNotice() {
+  return (
+    <div
+      data-testid="settlement-disabled"
+      className="flex flex-col items-start gap-3 rounded-xl border border-slate-200 bg-white p-4"
+    >
+      <p className="text-slate-800">{SPLIT_COPY.disabled}</p>
+      <Link href="/" className="font-semibold text-brand-800 underline">
+        {SPLIT_COPY.backHome}
+      </Link>
+    </div>
+  );
+}
+
 function PanelSkeleton() {
   return (
     <div aria-busy="true" aria-label="Carregando acerto" className="flex flex-col gap-4">
@@ -348,7 +363,9 @@ export function AcertoScreen() {
 
       {settlement.isPending ? <PanelSkeleton /> : null}
 
-      {settlement.isError ? (
+      {settlement.isError && isDisabled(settlement.error) ? <DisabledNotice /> : null}
+
+      {settlement.isError && !isDisabled(settlement.error) ? (
         <div
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
@@ -382,6 +399,12 @@ export function AcertoScreen() {
 
           {s.status !== "NEEDS_MORE_MEMBERS" ? (
             <>
+              {s.status === "PENDING" ? (
+                <p data-testid="to-settle" className="text-sm font-medium text-slate-800">
+                  Valor a acertar:{" "}
+                  <Money cents={s.suggestions.reduce((t, x) => t + x.amountInCents, 0)} />
+                </p>
+              ) : null}
               <p data-testid="settlement-total" className="text-sm text-slate-700">
                 Total de despesas comuns:{" "}
                 <strong>

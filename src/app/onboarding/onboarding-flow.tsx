@@ -28,6 +28,7 @@ export function OnboardingFlow({ userName, userImage, suggestedName, notice }: P
   const queryClient = useQueryClient();
   const [created, setCreated] = useState<CreateFamilyResponse | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [settlementEnabled, setSettlementEnabled] = useState(true);
   // ADR-009: a chave nasce com o formulário e é reaproveitada nos reenvios até o sucesso.
   const idempotencyKey = useRef(newIdempotencyKey());
   const submitting = useRef(false);
@@ -71,7 +72,7 @@ export function OnboardingFlow({ userName, userImage, suggestedName, notice }: P
     if (submitting.current) return; // duplo clique: a mesma intenção só sai uma vez
     submitting.current = true;
     setBanner(null);
-    create.mutate(values);
+    create.mutate({ ...values, settlementEnabled });
   });
 
   const firstName = userName.split(" ")[0] ?? userName;
@@ -82,6 +83,11 @@ export function OnboardingFlow({ userName, userImage, suggestedName, notice }: P
         <header className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold text-slate-900">{created.family.name} criada!</h1>
           <p className="text-slate-600">Convide quem divide as contas com você.</p>
+          {!settlementEnabled ? (
+            <p data-testid="settlement-hint" className="text-sm text-slate-600">
+              Você pode mudar isso depois em Configurações da família
+            </p>
+          ) : null}
         </header>
         <section
           aria-labelledby="invite-step"
@@ -140,6 +146,31 @@ export function OnboardingFlow({ userName, userImage, suggestedName, notice }: P
             {...form.register("name")}
           />
         </Field>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-sm font-medium text-slate-800">
+            Como vocês dividem as despesas?
+          </legend>
+          {[
+            { v: true, label: "Quero acertar as diferenças entre os membros" },
+            { v: false, label: "Só controlar, sem dividir" },
+          ].map((o) => (
+            <label
+              key={String(o.v)}
+              className="flex min-h-11 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            >
+              <input
+                type="radio"
+                name="settlement"
+                checked={settlementEnabled === o.v}
+                onChange={() => setSettlementEnabled(o.v)}
+              />
+              {o.label}
+            </label>
+          ))}
+          <p className="text-xs text-slate-500">
+            Você pode mudar isso depois em Configurações da família
+          </p>
+        </fieldset>
         <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white p-4 md:static md:border-0 md:bg-transparent md:p-0">
           <Button type="submit" className="w-full" disabled={create.isPending}>
             {create.isPending ? "Criando…" : "Criar família"}

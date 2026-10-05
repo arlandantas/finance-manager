@@ -153,7 +153,14 @@ model Family {
   cutDay    Int      @default(1) // CHECK 1..28; sem UI no R1 (ADR-010)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
+  // US-028: acerto de contas opcional; `version` protege o conflito de edição ("alterada por")
+  settlementEnabled Boolean  @default(true)
+  version           Int      @default(1)
+  updatedAt         DateTime @default(now()) @updatedAt @db.Timestamptz(3)
+  updatedByMemberId String?  @db.Uuid
+
   members         Member[]
+  familyEvents    FamilyEvent[]
   invitations     Invitation[]
   categories      Category[]
   splitRules      SplitRuleVersion[]
@@ -164,6 +171,32 @@ model Family {
   transferGroups  TransferGroup[]
 
   @@map("families")
+}
+
+enum FamilyEventType {
+  FAMILY_RENAMED
+  ROLE_CHANGED
+  SETTLEMENT_TOGGLED
+  MEMBER_REMOVED
+  MEMBER_LEFT
+  INVITATION_RESENT
+}
+
+// Trilha append-only de eventos da família (trigger forbid_mutation em SQL cru)
+model FamilyEvent {
+  id             String          @id @default(uuid()) @db.Uuid
+  familyId       String          @db.Uuid
+  type           FamilyEventType
+  actorMemberId  String          @db.Uuid
+  targetMemberId String?         @db.Uuid
+  changes        Json            @default("{}")
+  at             DateTime        @default(now()) @db.Timestamptz(3)
+
+  family Family @relation(fields: [familyId], references: [id])
+  actor  Member @relation("EventActor", fields: [familyId, actorMemberId], references: [familyId, id])
+
+  @@index([familyId, at(sort: Desc)])
+  @@map("family_events")
 }
 
 model Member {
@@ -182,6 +215,7 @@ model Member {
   plannedAuthored      PlannedExpense[] @relation("PlannedAuthor")
   paidTransactions     Transaction[]    @relation("TxPayer")
   authoredTransactions Transaction[]    @relation("TxAuthor")
+  eventsAsActor        FamilyEvent[]    @relation("EventActor")
 
   @@unique([userId]) // R1: 1 família por usuário (relaxar por migração se N famílias)
   @@unique([familyId, userId])
@@ -373,7 +407,7 @@ model PlannedExpense {
   dueOn               DateTime             @db.Date
   categoryId          String               @db.Uuid
   responsibleMemberId String               @db.Uuid
-  isSharedExpense     Boolean              @default(true)
+  isSharedExpense     Boolean              @default(false)
   note                String?
   status              PlannedExpenseStatus @default(PREVISTO)
   paidTransactionId   String?              @unique @db.Uuid

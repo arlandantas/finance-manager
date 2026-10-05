@@ -17,9 +17,19 @@ export const CreateFamilySchema = z
       .trim()
       .min(2, "Informe um nome com pelo menos 2 caracteres")
       .max(60, "O nome deve ter no máximo 60 caracteres"),
+    settlementEnabled: z.boolean().optional(), // padrão: ligado (US-028)
   })
   .strict();
 export type CreateFamilyInput = z.infer<typeof CreateFamilySchema>;
+
+export const UpdateFamilySettingsSchema = z
+  .object({
+    version: z.number().int().min(1),
+    settlementEnabled: z.boolean(),
+    confirmPending: z.boolean().optional(), // true = "Desligar mesmo assim"
+  })
+  .strict();
+export type UpdateFamilySettingsInput = z.infer<typeof UpdateFamilySettingsSchema>;
 
 export const CreateInvitationSchema = z
   .object({
@@ -39,7 +49,13 @@ export const DevLoginSchema = z
 // ── DTOs ──
 export type MeDTO = {
   user: { id: string; name: string | null; email: string; image: string | null };
-  membership: null | { memberId: string; familyId: string; familyName: string; role: Role };
+  membership: null | {
+    memberId: string;
+    familyId: string;
+    familyName: string;
+    role: Role;
+    settlementEnabled: boolean;
+  };
 };
 
 export type MemberDTO = {
@@ -63,7 +79,7 @@ export type InvitationDTO = {
 };
 
 export type FamilyDTO = {
-  family: { id: string; name: string };
+  family: { id: string; name: string; settlementEnabled: boolean; version: number };
   currentMemberId: string;
   currentRole: Role;
   members: MemberDTO[];

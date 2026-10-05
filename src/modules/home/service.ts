@@ -7,6 +7,7 @@ import { listAccounts } from "@/modules/contas/service";
 import { homeRepo } from "@/modules/home/repo";
 import type { HomeDTO, MonthSummaryDTO } from "@/modules/home/schemas";
 import { listDueItems } from "@/modules/previstas/payables";
+import { isSettlementEnabled } from "@/modules/split/guard";
 import { splitRepo } from "@/modules/split/repo";
 import { loadSettlement, toSettlementDto } from "@/modules/split/service";
 import { familyHasTransactions, ledgerTotals } from "@/modules/transacoes/extrato";
@@ -97,8 +98,9 @@ export async function getMonthSummary(
 export async function getHome(tx: Tx, ctx: RequestContext, periodKey?: string): Promise<HomeDTO> {
   const monthSummary = await getMonthSummary(tx, ctx, periodKey);
   const accounts = await listAccounts(tx, ctx);
+  const enabled = await isSettlementEnabled(tx, ctx.familyId);
   const loaded = await loadSettlement(tx, ctx, periodKey);
-  const settlement = toSettlementDto(loaded, ctx);
+  const settlement = enabled ? toSettlementDto(loaded, ctx) : null;
   const recent = await listTransactions(tx, ctx, {
     from: "1970-01-01",
     to: "2999-12-31",
@@ -114,12 +116,14 @@ export async function getHome(tx: Tx, ctx: RequestContext, periodKey?: string): 
     },
     monthSummary,
     balances: { totalInCents: accounts.totalBalanceInCents, accounts: accounts.items },
-    settlement: {
-      period: settlement.period,
-      status: settlement.status,
-      suggestions: settlement.suggestions,
-      rule: settlement.rule,
-    },
+    settlement: settlement
+      ? {
+          period: settlement.period,
+          status: settlement.status,
+          suggestions: settlement.suggestions,
+          rule: settlement.rule,
+        }
+      : null,
     recent: recent.items,
     onboarding: {
       hasAccount,

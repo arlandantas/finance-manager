@@ -10,6 +10,7 @@ import { getOrCreateInvoice } from "@/modules/cartoes/invoices";
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
+import { assertCanShare, isSettlementEnabled } from "@/modules/split/guard";
 import {
   decodeCursor,
   encodeCursor,
@@ -130,7 +131,15 @@ export async function getDefaults(tx: Tx, ctx: RequestContext): Promise<Transact
     (await repo.ownedAccountId(ctx.memberId)) ??
     (await repo.firstAccountId());
   const cardId = await repo.lastCardUsedBy(ctx.memberId);
-  return { accountId, cardId, payerMemberId: ctx.memberId, today: todayInFamilyTz(ctx.clock) };
+  const members = await repo.countMembers();
+  const enabled = await isSettlementEnabled(tx, ctx.familyId);
+  return {
+    accountId,
+    cardId,
+    payerMemberId: ctx.memberId,
+    today: todayInFamilyTz(ctx.clock),
+    split: { available: enabled && members >= 2 },
+  };
 }
 
 type ExpenseInput = Extract<CreateTransactionParsed, { type: "EXPENSE" }>;
@@ -142,6 +151,7 @@ export async function createTransaction(
   ctx: RequestContext,
   input: CreateTransactionParsed,
 ): Promise<CreateTransactionResponse> {
+  if (input.type === "EXPENSE" && input.isSharedExpense) await assertCanShare(tx, ctx);
   return input.type === "EXPENSE"
     ? createExpenseCore(tx, ctx, input, {})
     : createIncome(tx, ctx, input);

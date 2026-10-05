@@ -146,13 +146,16 @@ function OfflineBanner() {
 export function AppShell({
   user,
   familyName,
+  settlementEnabled = true,
   children,
 }: {
   user: ShellUser;
   familyName: string;
+  settlementEnabled?: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname();
+  const navItems = settlementEnabled ? NAV_ITEMS : NAV_ITEMS.filter((i) => i.href !== "/acerto");
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 pb-20 md:pb-0">
@@ -168,7 +171,7 @@ export function AppShell({
               {familyName}
             </Link>
             <nav aria-label="Principal" className="hidden items-center gap-1 md:flex">
-              {NAV_ITEMS.map((item) => (
+              {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -203,7 +206,7 @@ export function AppShell({
         aria-label="Principal (celular)"
         className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white md:hidden"
       >
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           return (
             <Link

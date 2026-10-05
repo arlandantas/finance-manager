@@ -50,6 +50,15 @@ export function splitRepo(tx: Tx, familyId: string) {
         include: { category: true },
         orderBy: [{ occurredOn: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       }),
+    /** Data da 1ª despesa comum ativa (início da varredura de pendências, US-028). */
+    firstSharedExpenseDate: async (): Promise<Date | null> =>
+      (
+        await tx.transaction.findFirst({
+          where: { familyId, kind: "EXPENSE", isSharedExpense: true, deletedAt: null },
+          orderBy: { occurredOn: "asc" },
+          select: { occurredOn: true },
+        })
+      )?.occurredOn ?? null,
     /** SDD-002 §5.2: acertos ativos do período com as pernas e contas. */
     activeSettlements: (periodKey: string) =>
       tx.transferGroup.findMany({

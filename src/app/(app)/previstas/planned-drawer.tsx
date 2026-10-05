@@ -19,6 +19,7 @@ import {
   type PlannedExpenseDTO,
   UpdatePlannedExpenseSchema,
 } from "@/modules/previstas/schemas";
+import { useDefaults } from "@/modules/transacoes/hooks";
 
 type FieldKey =
   | "description"
@@ -46,6 +47,7 @@ export function PlannedDrawer({
   const [categoryId, setCategoryId] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
   const [shared, setShared] = useState(true);
+  const splitAvailable = useDefaults(open).data?.split.available ?? false;
   const [dueOn, setDueOn] = useState("");
   const [note, setNote] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -117,7 +119,7 @@ export function PlannedDrawer({
       amountInCents: cents,
       categoryId,
       ...(responsibleId ? { responsibleMemberId: responsibleId } : {}),
-      isSharedExpense: shared,
+      isSharedExpense: splitAvailable ? shared : (planned?.isSharedExpense ?? false),
       ...(dueOn ? { dueOn } : {}),
     };
     const parsed = planned
@@ -311,29 +313,31 @@ export function PlannedDrawer({
             </div>
           </div>
 
-          <div className="flex min-h-11 items-center justify-between gap-3">
-            <span id="pl-shared-label" className="text-sm font-medium text-slate-800">
-              Dividir com a família
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={shared}
-              aria-labelledby="pl-shared-label"
-              onClick={() => setShared((v) => !v)}
-              className={cn(
-                "relative h-7 w-12 shrink-0 rounded-full transition-colors",
-                shared ? "bg-brand-700" : "bg-slate-300",
-              )}
-            >
-              <span
+          {splitAvailable ? (
+            <div className="flex min-h-11 items-center justify-between gap-3">
+              <span id="pl-shared-label" className="text-sm font-medium text-slate-800">
+                Dividir com a família
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={shared}
+                aria-labelledby="pl-shared-label"
+                onClick={() => setShared((v) => !v)}
                 className={cn(
-                  "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all",
-                  shared ? "left-[22px]" : "left-0.5",
+                  "relative h-7 w-12 shrink-0 rounded-full transition-colors",
+                  shared ? "bg-brand-700" : "bg-slate-300",
                 )}
-              />
-            </button>
-          </div>
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all",
+                    shared ? "left-[22px]" : "left-0.5",
+                  )}
+                />
+              </button>
+            </div>
+          ) : null}
 
           <details
             open={detailsOpen}

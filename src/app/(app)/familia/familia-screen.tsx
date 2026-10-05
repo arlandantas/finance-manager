@@ -1,15 +1,22 @@
 "use client";
 
 import { UserPlus, X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { InviteForm } from "@/components/invite-form";
+import { Money } from "@/components/money";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApiClientError, newIdempotencyKey } from "@/lib/http";
-import { useCancelInvitation, useFamily } from "@/modules/familia/hooks";
+import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import {
+  type SettlementPending,
+  useCancelInvitation,
+  useFamily,
+  useUpdateFamilySettings,
+} from "@/modules/familia/hooks";
 import type { InvitationDTO } from "@/modules/familia/schemas";
 
 const ROLE_LABEL = { ADMIN: "Administrador", MEMBER: "Membro" } as const;
@@ -19,6 +26,102 @@ function validity(inv: InvitationDTO): string {
   if (inv.isExpired) return "Expirado";
   const days = Math.max(1, Math.ceil((new Date(inv.expiresAt).getTime() - Date.now()) / DAY_MS));
   return `Expira em ${days} ${days === 1 ? "dia" : "dias"}`;
+}
+
+function SettlementSetting({
+  enabled,
+  version,
+  isAdmin,
+}: {
+  enabled: boolean;
+  version: number;
+  isAdmin: boolean;
+}) {
+  const update = useUpdateFamilySettings();
+  const router = useRouter();
+  const [pending, setPending] = useState<SettlementPending | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
+  const keyRef = useRef(newIdempotencyKey());
+
+  function send(next: boolean, confirmPending = false) {
+    if (update.isPending) return;
+    setBanner(null);
+    update.mutate(
+      { version, settlementEnabled: next, confirmPending, idempotencyKey: keyRef.current },
+      {
+        onSuccess: () => {
+          keyRef.current = newIdempotencyKey();
+          setPending(null);
+          router.refresh(); // o menu (server component) reflete a chave
+          toast.success(next ? "Acerto de contas ligado" : "Acerto de contas desligado");
+        },
+        onError: (e) => {
+          if (e instanceof ApiClientError && e.code === "SETTLEMENT_PENDING") {
+            keyRef.current = newIdempotencyKey(); // a 409 não fica gravada: o reenvio usa chave nova
+            setPending(e.details as SettlementPending);
+          } else if (e instanceof NetworkError) setBanner(e.message);
+          else setBanner(e instanceof Error ? e.message : "Erro inesperado. Tente novamente.");
+        },
+      },
+    );
+  }
+
+  return (
+    <section aria-labelledby="settings-title" className="flex flex-col gap-3">
+      <h2 id="settings-title" className="text-lg font-semibold text-slate-900">
+        Configurações da família
+      </h2>
+      {banner ? (
+        <p
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+        >
+          {banner}
+        </p>
+      ) : null}
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3">
+        <div className="min-w-0">
+          <p id="settlement-switch-label" className="font-medium text-slate-900">
+            Acerto de contas entre membros
+          </p>
+          {!isAdmin ? (
+            <p className="text-xs text-slate-500">Só o Administrador pode alterar</p>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          aria-labelledby="settlement-switch-label"
+          disabled={!isAdmin || update.isPending}
+          onClick={() => send(!enabled)}
+          className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-60 ${enabled ? "bg-brand-700" : "bg-slate-300"}`}
+        >
+          <span
+            className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${enabled ? "left-[22px]" : "left-0.5"}`}
+          />
+        </button>
+      </div>
+      <Drawer
+        open={pending !== null}
+        onOpenChange={(o) => !o && setPending(null)}
+        title="Desligar o acerto de contas?"
+      >
+        <div className="flex flex-col gap-3">
+          <p data-testid="settlement-pending-warning" className="text-sm text-slate-800">
+            Há {pending ? <Money cents={pending.pendingInCents} /> : null} a acertar entre os
+            membros. Ao desligar, o valor fica guardado e volta se você religar.
+          </p>
+          <Button variant="danger" disabled={update.isPending} onClick={() => send(false, true)}>
+            Desligar mesmo assim
+          </Button>
+          <Button variant="ghost" onClick={() => setPending(null)}>
+            Cancelar
+          </Button>
+        </div>
+      </Drawer>
+    </section>
+  );
 }
 
 export function FamiliaScreen() {
@@ -95,6 +198,12 @@ export function FamiliaScreen() {
               ))}
             </ul>
           </section>
+
+          <SettlementSetting
+            enabled={data.family.settlementEnabled}
+            version={data.family.version}
+            isAdmin={isAdmin}
+          />
 
           {isAdmin ? (
             <section aria-labelledby="pending-title" className="flex flex-col gap-3">

@@ -7,6 +7,7 @@ import type { MemberRef } from "@/lib/schemas";
 import type { TransferDTO } from "@/modules/contas/schemas";
 import { createTransferGroup } from "@/modules/contas/transfers";
 import { explainByRules } from "@/modules/split/explain";
+import { assertSettlementEnabled } from "@/modules/split/guard";
 import { settlementLabel } from "@/modules/split/labels";
 import { splitRepo } from "@/modules/split/repo";
 import { equalShares, isRuleStale, type RuleInput, ruleAt } from "@/modules/split/rules";
@@ -103,11 +104,13 @@ function buildRuleDto(
 
 /** GET /api/v1/split-rule (SDD-002 §3). */
 export async function getSplitRule(tx: Tx, ctx: RequestContext): Promise<SplitRuleDTO> {
+  await assertSettlementEnabled(tx, ctx);
   return buildRuleDto(await loadRuleContext(tx, ctx), ctx);
 }
 
 /** GET /api/v1/split-rule/history (SDD-011 §4.1): todas as versões, da mais recente para a mais antiga. */
 export async function getSplitHistory(tx: Tx, ctx: RequestContext): Promise<SplitHistoryResponse> {
+  await assertSettlementEnabled(tx, ctx);
   const c = await loadRuleContext(tx, ctx);
   const refs = refsOf(c.members);
   const canonical = c.members.map((m, i) => ({ id: m.id, ordinal: i }));
@@ -127,6 +130,7 @@ export async function putSplitRule(
   ctx: RequestContext,
   input: SplitRuleParsed,
 ): Promise<{ rule: SplitRuleDTO }> {
+  await assertSettlementEnabled(tx, ctx);
   const c = await loadRuleContext(tx, ctx);
   const ids = new Set(c.members.map((m) => m.id));
   if (input.kind === "PROPORTIONAL") {
@@ -293,6 +297,7 @@ export async function getSettlement(
   ctx: RequestContext,
   periodKey?: string,
 ): Promise<SettlementDTO> {
+  await assertSettlementEnabled(tx, ctx);
   return toSettlementDto(await loadSettlement(tx, ctx, periodKey), ctx);
 }
 
@@ -302,6 +307,7 @@ export async function listSharedExpenses(
   ctx: RequestContext,
   periodKey?: string,
 ): Promise<SharedExpensesResponse> {
+  await assertSettlementEnabled(tx, ctx);
   const c = await loadRuleContext(tx, ctx);
   const period = periodKey ? periodFromKey(periodKey, c.cutDay) : periodOf(c.today, c.cutDay);
   const rows = await c.repo.sharedExpenses(period.start, period.end);
@@ -331,6 +337,7 @@ export async function registerSettlement(
   ctx: RequestContext,
   input: CreateSettlementParsed,
 ): Promise<{ transfer: TransferDTO; settlement: SettlementDTO }> {
+  await assertSettlementEnabled(tx, ctx);
   const repo = splitRepo(tx, ctx.familyId);
   const members = await repo.listMembers();
   const ids = new Set(members.map((m) => m.id));

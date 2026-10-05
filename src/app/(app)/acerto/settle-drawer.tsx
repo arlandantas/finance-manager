@@ -159,7 +159,7 @@ export function SettleDrawer({
             }}
           >
             <p className="text-sm text-slate-700">
-              {first(suggestion.from.name)} deve <Money cents={due} /> para{" "}
+              {first(suggestion.from.name)} transfere <Money cents={due} /> para{" "}
               {first(suggestion.to.name)}.
             </p>
             <Field

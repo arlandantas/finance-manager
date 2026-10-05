@@ -51,3 +51,39 @@ export function useCancelInvitation() {
     onSuccess: invalidate,
   });
 }
+
+export type SettlementPending = {
+  pendingInCents: number;
+  months: Array<{ period: string; toSettleInCents: number }>;
+};
+
+/** PATCH /family/settings (US-028): desliga/liga o acerto; invalida tudo que depende dele. */
+export function useUpdateFamilySettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (a: {
+      version: number;
+      settlementEnabled: boolean;
+      confirmPending?: boolean;
+      idempotencyKey: string;
+    }) =>
+      apiFetch<{ family: { settlementEnabled: boolean; version: number } }>(
+        "/api/v1/family/settings",
+        {
+          method: "PATCH",
+          body: {
+            version: a.version,
+            settlementEnabled: a.settlementEnabled,
+            ...(a.confirmPending ? { confirmPending: true } : {}),
+          },
+          idempotencyKey: a.idempotencyKey,
+        },
+      ),
+    onSuccess: () =>
+      Promise.all(
+        ["family", "me", "home", "settlement", "split-rule", "transactions"].map((k) =>
+          qc.invalidateQueries({ queryKey: [k] }),
+        ),
+      ),
+  });
+}

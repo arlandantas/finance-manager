@@ -75,7 +75,12 @@ export async function createFamily(
     throw conflict("ALREADY_IN_FAMILY", ALREADY_IN_FAMILY);
   }
   try {
-    const family = await familiaRepo.insertFamily(tx, { name: input.name });
+    const family = await familiaRepo.insertFamily(tx, {
+      name: input.name,
+      ...(input.settlementEnabled !== undefined
+        ? { settlementEnabled: input.settlementEnabled }
+        : {}),
+    });
     const member = await familiaRepo.insertMember(tx, {
       familyId: family.id,
       userId: ctx.userId,
@@ -106,7 +111,12 @@ export async function getFamily(tx: Tx, ctx: RequestContext): Promise<FamilyDTO>
     repos.familia.listMembers(),
   ]);
   return {
-    family: { id: ctx.familyId, name: family?.name ?? "" },
+    family: {
+      id: ctx.familyId,
+      name: family?.name ?? "",
+      settlementEnabled: family?.settlementEnabled ?? true,
+      version: family?.version ?? 1,
+    },
     currentMemberId: ctx.memberId,
     currentRole: ctx.role,
     members: members.map((m) => ({

@@ -18,6 +18,7 @@ import type {
   PlannedListResponse,
   UpdatePlannedExpenseParsed,
 } from "@/modules/previstas/schemas";
+import { assertCanShare } from "@/modules/split/guard";
 import { createExpenseCore } from "@/modules/transacoes/service";
 
 type Repo = ReturnType<typeof previstasRepo>;
@@ -110,6 +111,7 @@ export async function createPlannedExpense(
   const repo = previstasRepo(tx, ctx.familyId);
   const today = todayInFamilyTz(ctx.clock);
   const responsibleMemberId = input.responsibleMemberId ?? ctx.memberId;
+  if (input.isSharedExpense) await assertCanShare(tx, ctx);
   await checkCategory(repo, input.categoryId);
   if (!(await repo.findMember(responsibleMemberId))) {
     throw invalidRef("responsibleMemberId", "Responsável inválido");
@@ -216,6 +218,7 @@ export async function updatePlannedExpense(
   ) {
     throw invalidRef("responsibleMemberId", "Responsável inválido");
   }
+  if (input.isSharedExpense === true && !row.isSharedExpense) await assertCanShare(tx, ctx);
   const dueOn = fromDbDate(row.dueOn);
   const wanted = {
     ...(input.description !== undefined && input.description !== row.description

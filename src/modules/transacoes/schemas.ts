@@ -111,6 +111,8 @@ export type TransactionDefaults = {
   cardId: string | null;
   payerMemberId: string;
   today: string;
+  // `available` = acerto ligado e 2+ membros ativos (esconde o interruptor "Dividir", US-028/030)
+  split: { available: boolean };
 };
 
 // ── Extrato (SDD-005 §2) ──

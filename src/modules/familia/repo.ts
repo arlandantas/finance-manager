@@ -3,7 +3,13 @@ import { getDb } from "@/lib/db";
 import { DEFAULT_CATEGORIES } from "@/modules/familia/default-categories";
 import { type Role, toRole } from "@/modules/familia/roles";
 
-export type Membership = { memberId: string; familyId: string; familyName: string; role: Role };
+export type Membership = {
+  memberId: string;
+  familyId: string;
+  familyName: string;
+  role: Role;
+  settlementEnabled: boolean;
+};
 
 /** Consulta fora do contexto de família (gate de entrada, /api/v1/me): vínculo do usuário. */
 export async function findMembershipByUserId(
@@ -12,18 +18,30 @@ export async function findMembershipByUserId(
 ): Promise<Membership | null> {
   const m = await db.member.findUnique({
     where: { userId },
-    include: { family: { select: { name: true } } },
+    include: { family: { select: { name: true, settlementEnabled: true } } },
   });
   return m
-    ? { memberId: m.id, familyId: m.familyId, familyName: m.family.name, role: toRole(m.role) }
+    ? {
+        memberId: m.id,
+        familyId: m.familyId,
+        familyName: m.family.name,
+        role: toRole(m.role),
+        settlementEnabled: m.family.settlementEnabled,
+      }
     : null;
 }
 
 /** Escritas da criação da família (ainda sem `familyId`): agrupadas para permitir falha injetada em teste. */
 export const familiaRepo = {
-  insertFamily(tx: Tx, data: { name: string }) {
+  insertFamily(tx: Tx, data: { name: string; settlementEnabled?: boolean }) {
     return tx.family.create({
-      data: { name: data.name, timezone: "America/Sao_Paulo", currency: "BRL", cutDay: 1 },
+      data: {
+        name: data.name,
+        settlementEnabled: data.settlementEnabled ?? true,
+        timezone: "America/Sao_Paulo",
+        currency: "BRL",
+        cutDay: 1,
+      },
     });
   },
   insertMember(tx: Tx, data: { familyId: string; userId: string; role: Role; joinedAt: Date }) {

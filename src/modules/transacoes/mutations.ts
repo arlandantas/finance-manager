@@ -8,6 +8,7 @@ import { getOrCreateInvoice, lockInvoices } from "@/modules/cartoes/invoices";
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { type Change, recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
+import { assertCanShare } from "@/modules/split/guard";
 import { splitRepo } from "@/modules/split/repo";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
@@ -152,6 +153,9 @@ export async function updateTransaction(
       "TRANSACTION_DELETED",
       "Este lançamento foi excluído. Restaure para editar.",
     );
+  }
+  if (input.isSharedExpense === true && row.kind === "EXPENSE" && !row.isSharedExpense) {
+    await assertCanShare(tx, ctx);
   }
   if (row.kind === "INCOME" && input.isSharedExpense !== undefined) {
     throw badRequest("VALIDATION_ERROR", "Receita não pode ser dividida com a família", [

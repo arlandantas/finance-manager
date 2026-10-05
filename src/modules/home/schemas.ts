@@ -37,7 +37,7 @@ export type HomeDTO = {
   monthSummary: MonthSummaryDTO;
   balances: { totalInCents: number; accounts: AccountDTO[] }; // card recolhível (US-026)
   // Indicador neutro (SDD-011 §3, US-029) ainda não construído: a Home segue com o card de acerto atual.
-  settlement: Pick<SettlementDTO, "period" | "status" | "suggestions" | "rule">;
+  settlement: Pick<SettlementDTO, "period" | "status" | "suggestions" | "rule"> | null; // null com o acerto desligado
   recent: TransactionDTO[];
   onboarding: {
     hasAccount: boolean;

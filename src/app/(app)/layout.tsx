@@ -21,6 +21,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             image: user.image,
           }}
           familyName={membership.familyName}
+          settlementEnabled={membership.settlementEnabled}
         >
           {children}
         </AppShell>

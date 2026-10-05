@@ -13,6 +13,7 @@ import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { usePutSplitRule, useSplitRule } from "@/modules/split/hooks";
 import { equalShares, formatBps, formatBpsList, parsePercentToBps } from "@/modules/split/rules";
 import type { SplitRuleDTO } from "@/modules/split/schemas";
+import { DisabledNotice, isDisabled } from "../acerto-screen";
 
 const RANGE_MSG = "Informe um percentual entre 0% e 100%";
 const SUM_MSG = "Os percentuais precisam somar 100%";
@@ -273,7 +274,8 @@ export function RegraScreen() {
           <Skeleton className="h-12" />
         </div>
       ) : null}
-      {rule.isError ? (
+      {rule.isError && isDisabled(rule.error) ? <DisabledNotice /> : null}
+      {rule.isError && !isDisabled(rule.error) ? (
         <div
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"

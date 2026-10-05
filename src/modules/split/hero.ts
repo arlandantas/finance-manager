@@ -1,9 +1,10 @@
 import { formatBRL } from "@/lib/money";
+import { SPLIT_COPY } from "@/modules/split/copy";
 import type { SettlementDTO } from "@/modules/split/schemas";
 
 const firstName = (name: string) => name.split(" ")[0] ?? name;
 
-/** Frase-herói do acerto (SDD-002 §6.1); a Home usa os mesmos textos (SDD-005 §4.2). */
+/** Frase-herói do acerto (SDD-011 §4.3, texto neutro); a Home usa os mesmos textos. */
 export function heroText(s: Pick<SettlementDTO, "status" | "suggestions">): {
   title: string;
   detail?: string;
@@ -13,18 +14,19 @@ export function heroText(s: Pick<SettlementDTO, "status" | "suggestions">): {
     case "PENDING":
       return first
         ? {
-            title: `${firstName(first.from.name)} deve ${formatBRL(first.amountInCents)} para ${firstName(first.to.name)}`,
+            title: SPLIT_COPY.heroPending(
+              firstName(first.from.name),
+              firstName(first.to.name),
+              formatBRL(first.amountInCents),
+            ),
           }
-        : { title: "Tudo certo neste mês" };
+        : { title: SPLIT_COPY.allOk };
     case "BALANCED":
     case "SETTLED":
-      return { title: "Tudo certo neste mês" };
+      return { title: SPLIT_COPY.allOk };
     case "EMPTY":
-      return {
-        title: "Nenhuma despesa comum neste mês.",
-        detail: "Marque despesas como Dividir com a família para vê-las aqui.",
-      };
+      return { title: SPLIT_COPY.empty, detail: SPLIT_COPY.emptyHint };
     case "NEEDS_MORE_MEMBERS":
-      return { title: "O acerto exige pelo menos dois membros" };
+      return { title: SPLIT_COPY.needsMembers };
   }
 }
