@@ -27,6 +27,7 @@ const DB_ALLOWED: RegExp[] = [
 const PURE: RegExp[] = [
   /^src\/lib\/(period|money|apportion|dates)\.ts$/,
   /^src\/modules\/.+\/(rules|settlement|period|money|apportion|cycle|installments)[^/]*\.ts$/,
+  /^src\/modules\/split\/(backfill|split-amount)\.ts$/,
 ];
 
 const FORBIDDEN_IN_PURE =

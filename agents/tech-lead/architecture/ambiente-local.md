@@ -77,6 +77,21 @@ Família fictícia determinística (definida em [SDD-006 §5](../sdd/SDD-006-esq
 | `test` | Unidade (Vitest) |
 | `test:int` | Integração (Vitest contra `db-test`:5443) |
 | `test:e2e` | Playwright + playwright-bdd (usa `db-test`; ver SDD-006 §4) |
+| `migrate:split` | Migração do acerto para o rateio gravado por lançamento (EN-002b; ver "Migração do acerto" abaixo) |
+
+## Migração do acerto (EN-002b, SDD-015 §4.6 e ADR-021)
+Script operacional (nunca rota HTTP; usa `DATABASE_URL`). Uma transação por família, em ordem de `id`; continua depois da falha de uma família e **sai com código 1 se houver qualquer falha** (etapa obrigatória do deploy).
+
+| Comando | Efeito |
+| :--- | :--- |
+| `pnpm migrate:split --dry-run` | Ensaio: fotografa o acerto LEGACY, preenche o rateio, confere o *gate* de 1 centavo e **desfaz** (relatório com contagens) |
+| `pnpm migrate:split` | Migra as famílias `LEGACY` (idempotente: família `DONE` é `SKIPPED`) |
+| `pnpm migrate:split --family <uuid> --today YYYY-MM-DD` | Uma família; "hoje" fixo (rótulo do *snapshot*) |
+| `pnpm migrate:split --verify` | Integridade (não compara números); código 1 se falhar |
+| `pnpm migrate:split --engine LEGACY --family <uuid>` | Reversão nível 1: volta o motor sem tocar nos dados |
+| `pnpm migrate:split --rollback --purge [--family <uuid>]` | Reversão nível 2: apaga o rateio; **recusa** (código 2, nada alterado) com `CUSTOM`, parcela dividida ou migração de contrato |
+
+Ordem de *deploy*: (1) cópia do banco (`pg_dump`); (2) `pnpm db:deploy`; (3) subir o código novo; (4) `pnpm migrate:split --dry-run`; (5) `pnpm migrate:split`; (6) `pnpm migrate:split --verify`; (7) monitorar; (8) só depois da janela de reversão, a migração de contrato `us043_modo_custom`. Famílias novas já nascem `STORED`. Regressão: `TEST_SPLIT_ENGINE=STORED pnpm test:int` roda a suíte com famílias `STORED`.
 
 ## Qualidade local (hooks)
 Husky: `lint` + `typecheck` no pre-commit; commitlint no commit-msg (Conventional Commits e presença do trailer `Co-authored-by`).

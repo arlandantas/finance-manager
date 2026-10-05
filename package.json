@@ -25,7 +25,8 @@
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate",
     "prepare": "husky",
-    "check:imports": "tsx scripts/check-imports.ts"
+    "check:imports": "tsx scripts/check-imports.ts",
+    "migrate:split": "tsx scripts/migrate-split.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",
