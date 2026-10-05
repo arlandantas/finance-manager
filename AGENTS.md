@@ -107,6 +107,12 @@ A responsabilidade de QA fica concentrada no **Desenvolvedor & QA**:
    Nenhuma etapa é considerada concluída sem que os entregáveis estejam documentados, testados e validados pelo Gestor.
 5. **Comunicação com o Gestor**:
    Se houver ambiguidade, conflito técnico ou necessidade de revisão de escopo, sinalize imediatamente ao Gestor do Projeto.
+6. **Escolha do Modelo por Complexidade (Economia)**:
+   Ao invocar ou atuar como agente, avalie a complexidade da tarefa e use o **menor modelo capaz de entregá-la com qualidade**. Não use modelos mais complexos (e caros) para tarefas simples.
+   - **Modelo leve** (ex.: Haiku): buscas e leituras no repositório, ajustes de documentação/status, edições mecânicas, formatação, rodar comandos e relatar resultado.
+   - **Modelo intermediário** (ex.: Sonnet): implementação seguindo um SDD já pronto, testes, refatorações localizadas, correção de bugs conhecidos.
+   - **Modelo avançado** (ex.: Opus): decisões de arquitetura/ADR, SDD de domínio crítico (rateio, centavos, concorrência, migração de dados), depuração difícil e revisões de risco.
+   - Na dúvida, comece pelo modelo menor e escale apenas se o resultado for insuficiente. Registre a escolha e o motivo na tarefa quando não for óbvia.
 
 ---
 
