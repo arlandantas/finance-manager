@@ -3,18 +3,21 @@
 import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { InstallmentPlanDialog } from "@/components/installment-plan-dialog";
 import { Money } from "@/components/money";
 import { useQuickAdd } from "@/components/quick-add";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ApiClientError } from "@/lib/http";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { useLedger } from "@/modules/transacoes/hooks";
 import type { LedgerUiFilters } from "@/modules/transacoes/optimistic";
 import {
   activeFilterCount,
   filtersToSearch,
+  intervalLabel,
   monthLabel,
   parseFilters,
   shiftMonthKey,
@@ -79,6 +82,7 @@ export function ExtratoScreen() {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [planId, setPlanId] = useState<string | null>(null);
   const [hoverGroup, setHoverGroup] = useState<string | null>(null);
   // `highlight=<id>`: parâmetro só de interface (SDD-010 §4.6); id que não existe é ignorado
   const highlightId = searchParams.get("highlight");
@@ -145,8 +149,28 @@ export function ExtratoScreen() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-slate-900">Extrato</h1>
         <div className="flex items-center gap-1" role="group" aria-label="Período">
+          {filters.from && filters.to ? (
+            <>
+              <span
+                data-testid="period-label"
+                className="px-2 text-sm font-semibold text-slate-900"
+              >
+                {intervalLabel(filters.from, filters.to)}
+              </span>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  const { from: _f, to: _t, ...rest } = filters;
+                  replaceFilters(rest);
+                }}
+              >
+                Voltar ao mês
+              </Button>
+            </>
+          ) : null}
           <button
             type="button"
+            hidden={Boolean(filters.from && filters.to)}
             aria-label="Mês anterior"
             disabled={!periodKey}
             onClick={() => periodKey && patchFilters({ period: shiftMonthKey(periodKey, -1) })}
@@ -154,14 +178,17 @@ export function ExtratoScreen() {
           >
             <ChevronLeft size={20} aria-hidden="true" />
           </button>
-          <span
-            data-testid="period-label"
-            className="min-w-36 text-center text-sm font-semibold text-slate-900"
-          >
-            {periodKey ? monthLabel(periodKey) : "…"}
-          </span>
+          {filters.from && filters.to ? null : (
+            <span
+              data-testid="period-label"
+              className="min-w-36 text-center text-sm font-semibold text-slate-900"
+            >
+              {periodKey ? monthLabel(periodKey) : "…"}
+            </span>
+          )}
           <button
             type="button"
+            hidden={Boolean(filters.from && filters.to)}
             aria-label="Próximo mês"
             disabled={!periodKey}
             onClick={() => periodKey && patchFilters({ period: shiftMonthKey(periodKey, 1) })}
@@ -216,7 +243,11 @@ export function ExtratoScreen() {
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"
         >
-          <p className="text-sm text-red-800 dark:text-red-300">Não foi possível carregar</p>
+          <p className="text-sm text-red-800 dark:text-red-300">
+            {ledger.error instanceof ApiClientError && ledger.error.status === 400
+              ? ledger.error.message
+              : "Não foi possível carregar"}
+          </p>
           <Button variant="secondary" onClick={() => ledger.refetch()}>
             Tentar de novo
           </Button>
@@ -259,6 +290,7 @@ export function ExtratoScreen() {
               }
               onOpen={() => setDetailId(item.id)}
               onHover={setHoverGroup}
+              onViewPlan={setPlanId}
             />
           ))}
         </ul>
@@ -277,6 +309,7 @@ export function ExtratoScreen() {
       ) : null}
 
       <TransactionDetailDrawer id={detailId} onClose={() => setDetailId(null)} />
+      <InstallmentPlanDialog planId={planId} onClose={() => setPlanId(null)} />
     </main>
   );
 }

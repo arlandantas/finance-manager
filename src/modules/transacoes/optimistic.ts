@@ -9,6 +9,8 @@ import type {
 /** Filtros da tela (mesmos nomes da API; compõem a chave de cache `["transactions", filtros]`). */
 export type LedgerUiFilters = {
   period?: string;
+  from?: string; // intervalo (até 24 meses, US-040b); só vale com `to`
+  to?: string;
   accountId?: string;
   cardId?: string;
   memberId?: string;

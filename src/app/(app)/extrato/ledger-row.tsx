@@ -34,8 +34,11 @@ export function LedgerRow({
   onOpen,
   onHover,
   installmentInTitle = false,
+  onViewPlan,
 }: {
   installmentInTitle?: boolean;
+  /** US-040b: "Ver compra" nas linhas de parcela (abre o diálogo do plano). */
+  onViewPlan?: (planId: string) => void;
   item: PendingTransaction;
   highlighted: boolean;
   onOpen: () => void;
@@ -164,6 +167,18 @@ export function LedgerRow({
           </span>
         </span>
       </button>
+      {item.installment && onViewPlan ? (
+        <button
+          type="button"
+          data-testid="view-plan"
+          onClick={() =>
+            onViewPlan((item.installment as NonNullable<typeof item.installment>).planId)
+          }
+          className="mt-1 flex min-h-11 items-center px-3 text-sm font-medium text-brand-800 dark:text-emerald-300 underline"
+        >
+          Ver compra
+        </button>
+      ) : null}
     </li>
   );
 }

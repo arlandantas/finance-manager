@@ -1,9 +1,10 @@
 "use client";
 
-import { History, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { History, ListOrdered, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { InstallmentPlanDialog } from "@/components/installment-plan-dialog";
 import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
@@ -12,7 +13,12 @@ import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import { useUndoInvoicePayment } from "@/modules/cartoes/hooks";
-import { useDefaults, useTransactionDetail, useTransactionState } from "@/modules/transacoes/hooks";
+import {
+  useDefaults,
+  useInstallmentPlan,
+  useTransactionDetail,
+  useTransactionState,
+} from "@/modules/transacoes/hooks";
 import type { TransactionDetailDTO } from "@/modules/transacoes/schemas";
 import { EditTransactionForm } from "./edit-transaction-form";
 import { HistoryList } from "./history-list";
@@ -56,6 +62,8 @@ export function TransactionDetailDrawer({
   const [banner, setBanner] = useState<string | null>(null);
   const [undoing, setUndoing] = useState(false);
   const [undoingPayment, setUndoingPayment] = useState(false);
+  // US-040b: parcela é somente leitura (até a US-041); a compra inteira se vê/exclui pelo diálogo do plano
+  const [planDialog, setPlanDialog] = useState<{ confirm: boolean } | null>(null);
   const undoPayment = useUndoInvoicePayment();
   const del = useTransactionState("delete");
   const restore = useTransactionState("restore");
@@ -71,7 +79,10 @@ export function TransactionDetailDrawer({
     }
   }, [id]);
 
-  const editable = t && (t.type === "EXPENSE" || t.type === "INCOME");
+  const installment = t?.installment ?? null;
+  const planQuery = useInstallmentPlan(installment?.planId ?? null);
+  const parcel = planQuery.data?.plan.installments.find((p) => p.no === installment?.no);
+  const editable = t && (t.type === "EXPENSE" || t.type === "INCOME") && !installment;
   const isLeg = t && (t.type === "TRANSFER_OUT" || t.type === "TRANSFER_IN");
   const isPayment = t?.type === "INVOICE_PAYMENT";
 
@@ -249,7 +260,28 @@ export function TransactionDetailDrawer({
                   Excluir
                 </Button>
               ) : null}
-              {editable ? (
+              {installment && !t.deletedAt ? (
+                <>
+                  <Button variant="secondary" onClick={() => setPlanDialog({ confirm: false })}>
+                    <ListOrdered size={16} aria-hidden="true" />
+                    Ver compra
+                  </Button>
+                  {parcel?.lockedReason === "INVOICE_PAID" ? (
+                    <span
+                      data-testid="installment-paid"
+                      className="text-sm font-medium text-slate-600"
+                    >
+                      Fatura paga
+                    </span>
+                  ) : (
+                    <Button variant="secondary" onClick={() => setPlanDialog({ confirm: true })}>
+                      <Trash2 size={16} aria-hidden="true" />
+                      Excluir compra parcelada
+                    </Button>
+                  )}
+                </>
+              ) : null}
+              {editable || installment ? (
                 <Button variant="secondary" onClick={() => setMode("history")}>
                   <History size={16} aria-hidden="true" />
                   Histórico
@@ -263,6 +295,11 @@ export function TransactionDetailDrawer({
               </Row>
               <Row label="Descrição">{t.description}</Row>
               <Row label="Data">{brDate(t.occurredOn)}</Row>
+              {installment ? (
+                <Row label="Parcela">
+                  {installment.no}/{installment.count}
+                </Row>
+              ) : null}
               {t.category ? (
                 <Row label="Categoria">
                   {t.category.archived ? `${t.category.name} (arquivada)` : t.category.name}
@@ -327,6 +364,13 @@ export function TransactionDetailDrawer({
           </>
         ) : null}
       </Drawer>
+
+      <InstallmentPlanDialog
+        planId={planDialog && installment ? installment.planId : null}
+        startConfirming={planDialog?.confirm ?? false}
+        onClose={() => setPlanDialog(null)}
+        onDeleted={onClose}
+      />
 
       <UndoTransferDialog
         groupId={undoing && t?.transferGroupId ? t.transferGroupId : null}

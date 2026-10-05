@@ -7,6 +7,13 @@ export function parseFilters(sp: { get(name: string): string | null }): LedgerUi
   const f: LedgerUiFilters = {};
   const period = sp.get("period");
   if (period && /^\d{4}-(0[1-9]|1[0-2])$/.test(period)) f.period = period;
+  const from = sp.get("from");
+  const to = sp.get("to");
+  if (from && to && /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    f.from = from;
+    f.to = to;
+    delete f.period; // `period` e `from/to` não convivem
+  }
   for (const key of ["accountId", "cardId", "memberId", "categoryId"] as const) {
     const v = sp.get(key);
     if (v) f[key] = v;
@@ -30,7 +37,7 @@ export function filtersToSearch(f: LedgerUiFilters): string {
 
 /** Quantos filtros além do período estão ativos. */
 export function activeFilterCount(f: LedgerUiFilters): number {
-  const { period: _period, ...rest } = f;
+  const { period: _period, from: _from, to: _to, ...rest } = f;
   return Object.values(rest).filter((v) => v !== undefined && v !== false).length;
 }
 
@@ -48,4 +55,24 @@ export function shiftMonthKey(key: string, delta: number): string {
   const [y, m] = key.split("-").map(Number) as [number, number];
   const idx = y * 12 + (m - 1) + delta;
   return `${Math.floor(idx / 12)}-${String((idx % 12) + 1).padStart(2, "0")}`;
+}
+
+/** "nov/2026 a ago/2027" para o cabeçalho do Extrato por intervalo. */
+export function intervalLabel(from: string, to: string): string {
+  const MONTHS = [
+    "jan",
+    "fev",
+    "mar",
+    "abr",
+    "mai",
+    "jun",
+    "jul",
+    "ago",
+    "set",
+    "out",
+    "nov",
+    "dez",
+  ];
+  const fmt = (d: string) => `${MONTHS[Number(d.slice(5, 7)) - 1]}/${d.slice(0, 4)}`;
+  return `${fmt(from)} a ${fmt(to)}`;
 }

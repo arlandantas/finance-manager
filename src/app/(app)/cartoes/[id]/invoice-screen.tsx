@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { InstallmentPlanDialog } from "@/components/installment-plan-dialog";
 import { Money } from "@/components/money";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
   const effectiveRef = ref ?? openRef;
   const invoice = useInvoice(cardId, effectiveRef);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [planId, setPlanId] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
   const [undoing, setUndoing] = useState(false);
   const [undoError, setUndoError] = useState<string | null>(null);
@@ -286,6 +288,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
                   item={p}
                   highlighted={false}
                   installmentInTitle
+                  onViewPlan={setPlanId}
                   onOpen={() => setDetailId(p.id)}
                   onHover={() => undefined}
                 />
@@ -326,6 +329,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
       </Drawer>
 
       <TransactionDetailDrawer id={detailId} onClose={() => setDetailId(null)} />
+      <InstallmentPlanDialog planId={planId} onClose={() => setPlanId(null)} />
     </main>
   );
 }

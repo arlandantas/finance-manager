@@ -47,6 +47,7 @@ export function useInvalidateAfterTransactionChange() {
         ["home"],
         ["settlement"],
         ["payables"],
+        ["installment-plan"],
         [defaultsKey[0]],
       ].map((queryKey) => qc.invalidateQueries({ queryKey })),
     );
@@ -184,6 +185,39 @@ export function useTransactionState(action: "delete" | "restore") {
   return useMutation({
     mutationFn: (a: { id: string; input: TransactionStateInput; idempotencyKey: string }) =>
       apiFetch<{ transaction: TransactionDetailDTO }>(`/api/v1/transactions/${a.id}/${action}`, {
+        method: "POST",
+        body: a.input,
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+// ── Compra parcelada (US-040b) ──
+import type {
+  DeleteInstallmentPlanInput,
+  InstallmentPlanResponse,
+  RestoreInstallmentPlanInput,
+} from "@/modules/transacoes/schemas";
+
+export function useInstallmentPlan(id: string | null) {
+  return useQuery({
+    queryKey: ["installment-plan", id],
+    queryFn: () =>
+      apiFetch<{ plan: InstallmentPlanResponse["plan"] }>(`/api/v1/installment-plans/${id}`),
+    enabled: id !== null,
+  });
+}
+
+export function useInstallmentPlanState(action: "delete" | "restore") {
+  const invalidate = useInvalidateTransaction();
+  return useMutation({
+    mutationFn: (a: {
+      id: string;
+      input: DeleteInstallmentPlanInput | RestoreInstallmentPlanInput;
+      idempotencyKey: string;
+    }) =>
+      apiFetch<InstallmentPlanResponse>(`/api/v1/installment-plans/${a.id}/${action}`, {
         method: "POST",
         body: a.input,
         idempotencyKey: a.idempotencyKey,
