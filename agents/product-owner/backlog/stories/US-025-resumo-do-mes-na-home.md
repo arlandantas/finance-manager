@@ -19,7 +19,8 @@ Como **membro da família**, quero **abrir a Home e ver como está o mês (recei
 - **Resultado do mês** = receitas − despesas (RN-015.3).
 - **A pagar** (RN-015.2, caixa) = previstas **pendentes** com vencimento no mês + **faturas** de cartão com vencimento no mês e ainda não pagas, em **linha própria "Faturas"** (Q-F03b), sem entrar em "Despesas". Itens **atrasados** (vencimento anterior a hoje) destacados e somados em "A pagar" do mês corrente.
 - **Saldo previsto** (RN-015.4) = saldo atual das contas − **A pagar do mês**. Rótulo fixo: "Saldo atual menos o que ainda vai pagar neste mês". Sem receitas previstas na R2.1 (Q-F03); por isso o valor é conservador.
-- Meses passados: "A pagar" e "Saldo previsto" mostram só o que **permanece pendente**; para meses futuros o cálculo usa os vencimentos do mês e o saldo atual.
+- Meses passados: "A pagar" e "Saldo previsto" mostram só o que **permanece pendente**; para meses futuros o cálculo usa os vencimentos **daquele mês** e o saldo **atual** (sem projetar os meses intermediários: D-PO-42, TL-09; a projeção acumulada fica para o AP1).
+- **Definições do TL** (SDD-010 §4.2): "A pagar" = previstas pendentes + faturas **não pagas**, abertas ou fechadas, por vencimento; atrasadas de meses anteriores só entram no mês corrente.
 - **Reconciliação** (RN-015.5): Receitas, Despesas e o total por membro batem com o **Extrato** do mesmo período e filtros.
 - Linhas "Acerto do mês" e "Acertos pendentes" pertencem à US-029; "Participação por membro" da US-012 é mantida abaixo do resumo.
 - Respeita "ocultar valores" (US-027).
@@ -132,3 +133,4 @@ Receitas previstas (US-051, R3); tetos e disponibilidade por categoria (AP1); gr
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 8). **Substitui** os itens 1 a 3 da Home da [US-012](US-012-home-dashboard.md) (saldo como destaque, card de acerto e resumo simples).
+- 2026-10-04 — **Revisão pós-TL (D-PO-42, D-PO-35):** tamanho 5 confirmado (limite superior; entregar API ➔ UI); depende também da US-027 (valores já em `Money`); saldo previsto em mês futuro documentado (TL-09).

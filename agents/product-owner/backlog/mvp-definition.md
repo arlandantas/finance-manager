@@ -91,19 +91,20 @@ timeline
 
 R1 e R2 foram **homologadas com ressalvas** e o usuário enviou 16 sugestões. O Stakeholder decidiu os pontos em aberto (Q-F01..Q-F14, aprovadas pelo Gestor). O PO fatiou assim (histórias e pontos em [`backlog.md`](backlog.md); decisões D-PO-12..32 em [`decisoes-po-r21-r3.md`](decisoes-po-r21-r3.md); perguntas ao TL em [`pedidos-ao-tech-lead-r21-r3.md`](pedidos-ao-tech-lead-r21-r3.md)):
 
-| Release | Incremento | O que entrega | Pontos (PO, **preliminares**) | Promessa |
+| Release | Incremento | O que entrega | Pontos (**TL**) | Promessa |
 | :-- | :-- | :-- | :-: | :-- |
-| **R2.1 — Ressalvas e ajustes de baixo risco** | Inc 4 (US-022..039) | Ressalvas 1 a 4; descrição visível; **Resumo do Mês** e saldos em card recolhível; **ocultar valores**; **acerto opcional** e indicador neutro; **"Dividir" Só meu** por padrão; arquivar conta/cartão; editar família, papéis, remover membro; detalhe da transação; tema; navegação desktop; polimento | **60** (Must 37 · Should 13 · Could 10) | *"A Início responde como está o mês; o acerto é discreto e opcional; nada expõe meu dinheiro sem eu querer."* |
-| **R3 — Cartão completo e análise** | Inc 5 (US-040..051, EN-002, EN-003) | **Parcelamento no cartão** (1ª entrega) e parcelado dividido por parcela; **percentual por lançamento** (3 modos, migração sem mudar números); **tags**; **visões sintéticas**; cor por conta/cartão; receitas previstas; spike de grupos | **56** (Must 8 · Should 40 · Could 8) | *"O cartão parcelado funciona e sei para onde foi o dinheiro."* |
+| **R2.1 — Ressalvas e ajustes de baixo risco** | Inc 4 (US-022..039) | Ressalvas 1 a 4; descrição visível; **Resumo do Mês** e saldos em card recolhível; **ocultar valores**; **acerto opcional** e indicador neutro; **"Dividir" Só meu** por padrão; arquivar conta/cartão; editar família, papéis, remover membro; detalhe da transação; tema; navegação desktop; polimento | **67** (Must 40 · Should 17 · Could 10) | *"A Início responde como está o mês; o acerto é discreto e opcional; nada expõe meu dinheiro sem eu querer."* |
+| **R3 — Cartão completo e análise** | Inc 5 (US-040..051, EN-002; EN-003 concluída) | **Parcelamento no cartão** (1ª entrega) e, depois da **EN-002 (Must)**, parcelado dividido por parcela; **percentual por lançamento** (migração sem mudar números; depois, 3 modos); **tags**; **visões sintéticas**; cor por conta/cartão; receitas previstas; spike de grupos | **67** (Must 24 · Should 35 · Could 8; EN-003 já entregue: 65 pendentes) | *"O cartão parcelado funciona e sei para onde foi o dinheiro."* |
 | AP1 (restante) | a refinar | Ciclo, tetos, disponibilidade, recorrência (NEED-005, 006, 004 fase 2) — **logo após a R3** (Q-F12) | — | — |
 
 **Princípios do fatiamento**
-1. **A R2.1 não mexe no motor do acerto**: só corrige a explicação (rótulo), muda padrões e esconde/mostra camadas. A mudança de cálculo (percentual por lançamento) fica na **R3 com migração e regressão** (EN-002; valores 3.169,90 / cota 1.584,95 / diferença 1.149,95).
+1. **A R2.1 não mexe no motor do acerto**: só corrige a explicação (rótulo), muda padrões e esconde/mostra camadas. A mudança de cálculo (percentual por lançamento) fica na **R3 com migração e regressão** (EN-002, **Must** porque a US-042 depende dela; valores 3.169,90 / cota 1.584,95 / diferença 1.149,95).
 2. **Proteger os 10 segundos**: todo campo novo no lançamento é opcional e secundário (descrição visível, "Dividir" com padrão Só meu, parcelas só com cartão, tags recolhidas).
 3. **Discrição por padrão**: valores ocultos em dispositivo novo; acerto neutro; "Dividir" desligado.
 4. **Histórico é sagrado**: arquivar em vez de apagar, ex-membro preserva o nome, mudar a regra nunca reescreve o passado.
-5. **Corte pelo fim**: R2.1: 039 ➔ 037 (tema) ➔ 038 (desktop) ➔ 036 (detalhe) ➔ 033 ➔ 035 ➔ 031. R3: 051 ➔ 050 ➔ 049 ➔ 046 ➔ 044 ➔ 041 ➔ EN-002 + 043.
-6. **Parcelamento**: se o TL estimar a US-040 em ≤ 5 e a US-042 em ≤ 3 pontos, o Gestor pode puxá-las para o fim dos Must da R2.1 (Q-F14).
+5. **Corte pelo fim** (revisado pelo TL, D-PO-34/35): R2.1: 039 ➔ 037 (tema) ➔ 038 (desktop) ➔ 036 (detalhe) ➔ 033 ➔ 035 ➔ 031. R3: 051 ➔ 050 ➔ 049 ➔ 046 ➔ 044 ➔ 041 ➔ 043 (a EN-002 não sai: é Must, D-PO-34).
+6. **Parcelamento (decidido, D-PO-33)**: o TL estimou a US-040 em 8 e a US-042 depende da EN-002, então **não** entra na R2.1; é a 1ª entrega da R3, na ordem US-040 ➔ EN-002 ➔ US-042 ➔ US-043 ➔ US-041 (D-GES-17, Q-F14).
+7. **Ordem da R2.1 (D-PO-35)**: 027 ➔ 022 ➔ 023 ➔ 024 ➔ 025 ➔ 026 ➔ 028 ➔ 029 ➔ 030 ➔ 031 ➔ 032 ➔ 033 ➔ 034 ➔ 035 ➔ 036 ➔ 037 ➔ 038 ➔ 039.
 
 **Fora do MVP e do roadmap atual (Futuro):** IA generativa (NEED-023, depende de Q-U01 e ADR de privacidade), grupos não familiares e contas privadas (NEED-021; só o spike EN-003), exclusão da família (Q-U02), construtor de relatórios, hierarquia/cor de tags.
 

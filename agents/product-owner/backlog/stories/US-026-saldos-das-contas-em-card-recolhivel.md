@@ -6,7 +6,7 @@
 | MoSCoW · WSJF · Tamanho (TL) | Must · 3,5 · 2 |
 | Status | **Especificada** (SDD-010, pronta para o Dev) · tamanho confirmado pelo TL |
 | Depende de | US-025, US-004 |
-| Corte | **Não cortar** (acompanha a US-025) |
+| Corte | **Não cortar** (acompanha a US-025). O cenário de conta arquivada fora do total fica **pendente até a US-032** (D-PO-35) |
 | Rastreabilidade | Parecer item 8 · NEED-015 (§2.2) · NEED-009 (RN08 rebaixado) · FLUXO-006 · D-PO-13 |
 
 ## História
@@ -85,3 +85,4 @@ Cabeçalho do card com total, chevron e estado anunciado (`aria-expanded`). Skel
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 8).
+- 2026-10-04 — **Revisão pós-TL (D-PO-35):** 2 pts confirmados; mesma preferência local da US-027 (`usePref`, por usuário e dispositivo); o saldo "ignora arquivadas" se completa com a US-032.

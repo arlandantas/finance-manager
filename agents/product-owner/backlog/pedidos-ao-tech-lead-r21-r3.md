@@ -64,3 +64,4 @@
 
 ## 5. Histórico
 - 2026-10-04 — Criado com as perguntas pedidas pelo Gestor (parcelamento, spike de grupos, migração do acerto e modelo de gravação do percentual) e as perguntas por história.
+- 2026-10-04 — **Respondido** pelo Tech Lead em [`respostas-r21-r3.md`](../../tech-lead/respostas-r21-r3.md) (SDD-010..017, ADR-016..019). Efeitos no backlog: [`decisoes-po-r21-r3.md`](decisoes-po-r21-r3.md) §2b (D-PO-33..42).

@@ -1,8 +1,41 @@
 # Status do Product Owner
 
-*Atualizado: 2026-10-04 (pós-homologação: R2.1 e R3 refinadas)*
+*Atualizado: 2026-10-04 (pós-resposta do Tech Lead: R2.1 Especificada, R3 Esboçada)*
 
-## Atualização: R2.1 e R3 refinadas após a homologação (aguardam Tech Lead e ratificação do Gestor)
+## Atualização (pós-TL): backlog alinhado à resposta do Tech Lead — R2.1 Especificada, R3 Esboçada
+- **Origem:** [`respostas-r21-r3.md`](../tech-lead/respostas-r21-r3.md) (SDD-010..017, ADR-016..019), D-GES-14..20 e TL-02..TL-09. Decisões novas **D-PO-33..42** em [`backlog/decisoes-po-r21-r3.md`](backlog/decisoes-po-r21-r3.md) §2b, **aguardando ratificação do Gestor**.
+- **Pontos do TL:** **R2.1 = 67** (Must 40 · Should 17 · Could 10; PO: 60) e **R3 = 67** (Must 24 · Should 35 · Could 8; PO: 56; EN-003 já entregue, **65 pendentes**). Re-estimadas: US-024 (3), US-032 (5), US-033 (3), US-035 (8), US-040 (8), EN-002 (13).
+- **Status:** US-022..039 **Especificadas** (SDD-010..013, prontas para o Dev); US-040..051 e EN-002 **Esboçadas** (SDD-014..017); **EN-003 concluída** (ADR-018).
+
+### Ordem final de execução da R2.1 (D-PO-35) — pontos acumulados
+**US-027 (5) = 5 ➔ US-022 (3) = 8 ➔ US-023 (3) = 11 ➔ US-024 (3) = 14 ➔ US-025 (5) = 19 ➔ US-026 (2) = 21 ➔ US-028 (5) = 26 ➔ US-029 (3) = 29 ➔ US-030 (3) = 32 ➔ US-031 (3) = 35 ➔ US-032 (5) = 40 ➔ US-033 (3) = 43 ➔ US-034 (3) = 46 ➔ US-035 (8) = 54 ➔ US-036 (3) = 57 ➔ US-037 (3) = 60 ➔ US-038 (2) = 62 ➔ US-039 (5) = 67.** Antes de começar, o Dev roda a suíte E2E completa como linha de base (D-GES-19).
+- **Corte da R2.1 (primeiro a sair):** 039 (5) ➔ 037 (3) ➔ 038 (2) ➔ 036 (3) ➔ 033 (3) ➔ 035 (8) ➔ 031 (3); saem 27 pts e sobram os **40 de Must**. Os cenários "arquivada" da US-023 e US-026 só se completam com a US-032 (Must) e ficam pendentes até ela.
+
+### Ordem final da R3 (D-PO-33/34) e novo corte
+**EN-003 (concluída) · US-040 (8) = 8 ➔ EN-002 (13) = 21 ➔ US-042 (3) = 24 ➔ US-043 (5) = 29 ➔ US-041 (5) = 34 ➔ US-044 (3) = 37 ➔ US-045 (5) = 42 ➔ US-047 (2) = 44 ➔ US-046 (3) = 47 ➔ US-048 (5) = 52 ➔ US-049 (5) = 57 ➔ US-050 (3) = 60 ➔ US-051 (5) = 65.**
+- **Parcelamento fica na R3** (D-GES-17 não satisfeita: US-040 = 8 e a US-042 depende da EN-002). **EN-002 sobe a Must** (a US-042 depende dela).
+- **Corte da R3 (reescrito):** 051 ➔ 050 ➔ 049 ➔ 046 ➔ 044 ➔ 041 ➔ 043 (a EN-002 deixa a lista); saem 29 pts e sobram 36 (Must 24 + tags 045/047 + Análise 048).
+
+### Fatiamentos novos
+| História | Fatias |
+| :-- | :-- |
+| US-040 (8) | **040a** (5): modelo, criação atômica, faturas futuras, limite, 24x · **040b** (3): competência (Extrato/Resumo/Acerto/Análise), "Ver compra", **exclusão da compra inteira + Desfazer** (vindas da US-041) |
+| EN-002 (13) | **002a** (5): modelo e motor STORED · **002b** (8): migração, gate de 1 centavo, rollback, harness de regressão |
+| US-035 (8) | **035a** (5): remover membro · **035b** (3): sair, avisos e casos-limite |
+
+### Ajustes de conteúdo nas histórias (resposta do TL §8)
+US-024 (busca `q` e mensagem única) · US-028/029 (todos os meses ao desligar × janela de 12 meses na Home) · US-032/033 ("excluir" = exclusão lógica) · US-035 (mensagens neutras) · US-036 (`highlight` = parâmetro de UI) · US-039 (rotação do token do convite; nota na US-003) · US-041 (cenários de exclusão da compra inteira migraram para a US-040b).
+**Cenários R1/R2 atualizados** (D-PO-41, anotados em "Histórico"): US-005, US-016a, US-018 (padrão "Só meu"); US-009, US-011, US-013, US-013b, US-016a (texto neutro do acerto); US-009 (estado vazio); US-012 (Home reorganizada). O Dev atualiza os `.feature` e testes na mesma história que provoca cada mudança.
+
+### Pendências
+- **Gestor:** ratificar D-PO-33..42 (atenção a D-PO-33 e D-PO-34); registrar em `agents/manager/decisoes-do-gestor.md`.
+- **Tech Lead:** SDD completo das histórias da R3 antes de cada início (hoje esboços).
+- **Dev & QA:** linha de base E2E (D-GES-19); começar pela US-027 (SDD-010).
+- **Stakeholder:** validar na homologação da R3 a assimetria à vista × parcela (TL-03) e a limitação de acento da busca (D-PO-38).
+
+---
+
+## (Histórico, superado pela seção acima) R2.1 e R3 refinadas após a homologação, antes da resposta do Tech Lead
 - **Origem:** homologação de R1+R2 com ressalvas e feedback do usuário (16 sugestões), tratados pelo Stakeholder em [`parecer-feedback-usuario.md`](../stakeholder/parecer-feedback-usuario.md) (Q-F01..Q-F14, aprovadas pelo Gestor). O usuário delegou as decisões; nada novo foi perguntado a ele (só Q-U01/Q-U02 continuam com ele e não bloqueiam).
 - **Entregue pelo PO:** 30 histórias novas e 2 enablers, todas com rastreio NEED➔US, Gherkin (pt, sem os padrões que o parser recusa: DEV-06/11/15/25), MoSCoW, WSJF, dependências e marca de corte; 9 fluxos novos; MVP/roadmap revisados; decisões D-PO-12..32; pedidos ao TL.
 

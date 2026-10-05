@@ -1,6 +1,6 @@
 # 📑 Backlog do Produto (Product Owner)
 
-*Status: **R1 e R2 (Inc 3) Especificadas e homologadas com ressalvas** · **R2.1 (US-022..039) e R3 (US-040..051, EN-002, EN-003) Refinadas pelo PO, aguardando estimativa e SDD do Tech Lead** · Atualizado: 2026-10-04 (pós-homologação)*
+*Status: **R1 e R2 (Inc 3) Especificadas e homologadas com ressalvas** · **R2.1 (US-022..039): Especificada** (SDD-010..013, **67 pts** do TL) · **R3 (US-040..051, EN-002): Esboçada** (SDD-014..017, 65 pts pendentes) · **EN-003 concluída** (ADR-018) · Atualizado: 2026-10-04 (pós-resposta do TL, D-PO-33..42)*
 *Responsável: Agente Product Owner (PO)*
 *Método e portões (DoR/DoD): [`working-agreement.md`](working-agreement.md) · Escopo: [`mvp-definition.md`](mvp-definition.md)*
 
@@ -47,9 +47,9 @@ Os épicos adotam a numeração do cronograma do Stakeholder ([`cronograma-e-rel
 | **EPIC-17** | Visão do Mês e Privacidade de Exibição | NEED-014, NEED-015 | R2.1 |
 | **EPIC-18** | Manutenção de Cadastros (conta, cartão, família, membros) | NEED-020 | R2.1 |
 | **EPIC-19** | Ergonomia e Preferências (descrição, conta padrão, detalhe, tema, desktop, polimento) | NEED-022, NEED-003/004 (ajustes) | R2.1 |
-| **EPIC-20** | Cartão Completo: parcelamento | NEED-003 (fase 2 antecipada) | R3 (candidato à R2.1) |
+| **EPIC-20** | Cartão Completo: parcelamento | NEED-003 (fase 2 antecipada) | R3 (1ª entrega; não coube na R2.1, TL-02) |
 | **EPIC-21** | Classificação e Análise (tags, visões sintéticas, cor, receitas previstas) | NEED-013, NEED-016, NEED-017, NEED-015 | R3 |
-| **EPIC-22** | Modelo de Grupos (spike) | NEED-021 | R3 (spike) |
+| **EPIC-22** | Modelo de Grupos (spike) | NEED-021 | R3 (spike **concluído**, ADR-018) |
 
 ---
 
@@ -115,71 +115,75 @@ Escala 1–10 para V/U/R; Tamanho em Fibonacci relativo (1, 2, 3, 5, 8). **Desde
 
 ## 🔁 Backlog pós-homologação: R2.1 e R3 *(adicionado em 2026-10-04)*
 
-Origem: homologação com ressalvas de R1+R2 ([`homologacao-r1-r2.md`](../../stakeholder/homologacao-r1-r2.md)) e feedback do usuário ([`parecer-feedback-usuario.md`](../../stakeholder/parecer-feedback-usuario.md), Q-F01..Q-F14, todas **aprovadas pelo Gestor**). Decisões de solução do PO: [`decisoes-po-r21-r3.md`](decisoes-po-r21-r3.md) (D-PO-12..32, **aguardam ratificação do Gestor**). Perguntas ao Tech Lead: [`pedidos-ao-tech-lead-r21-r3.md`](pedidos-ao-tech-lead-r21-r3.md). Pontos são **preliminares do PO**; o Tech Lead confirma.
+Origem: homologação com ressalvas de R1+R2 ([`homologacao-r1-r2.md`](../../stakeholder/homologacao-r1-r2.md)) e feedback do usuário ([`parecer-feedback-usuario.md`](../../stakeholder/parecer-feedback-usuario.md), Q-F01..Q-F14, todas **aprovadas pelo Gestor**). Decisões de solução do PO: [`decisoes-po-r21-r3.md`](decisoes-po-r21-r3.md) (D-PO-12..32, **ratificadas** em D-GES-14; as pós-TL D-PO-33..42 **aguardam ratificação**). Perguntas ao Tech Lead: [`pedidos-ao-tech-lead-r21-r3.md`](pedidos-ao-tech-lead-r21-r3.md). O Tech Lead **respondeu** em [`respostas-r21-r3.md`](../../tech-lead/respostas-r21-r3.md) (2026-10-04): os pontos abaixo são **os do TL** e as decisões D-PO-33..42 aplicam os seus ajustes (§8).
 
-### R2.1 — "Ressalvas e ajustes de baixo risco" (sem mexer no motor do acerto) — **60 pts**
-**Ordem de execução** (dependência dura > WSJF; segue o handover do Stakeholder, com a US-027 antes da US-025 por ser o componente `Money` que a Home usa; entregues juntas).
+### R2.1 — "Ressalvas e ajustes de baixo risco" (sem mexer no motor do acerto) — **67 pts** (TL; PO prelim. 60)
+**Ordem final de execução (D-PO-35)** — dependência dura > WSJF; **US-027 primeiro** (recomendação do TL: ocultar valores antes de Resumo e Saldos, evitando retrabalho para `Money`), seguida das **ressalvas 1 e 3** (US-022 e US-023) e da US-024; **linha de base E2E completa antes de começar** (D-GES-19). Pontos acumulados na coluna final do resumo abaixo.
 
-| Ordem | ID | História | Épico | MoSCoW | V/U/R | Pts (PO, prelim.) | WSJF | Depende de | Rastreio (NEED) | Corte / nota |
+| Ordem | ID | História | Épico | MoSCoW | V/U/R | Pts (TL) | WSJF | Depende de | Rastreio (NEED) | Status · corte / nota |
 | :-: | :-- | :-- | :-- | :-: | :-: | :-: | :-: | :-- | :-- | :-- |
-| 1 | [US-022](stories/US-022-rotulo-honesto-da-regra-de-divisao.md) | Rótulo honesto da regra de divisão (ressalva 1) | EPIC-16 | Must | 5/4/3 | 3 | 4,0 | US-008, US-009a | NEED-007, NEED-018 · ressalva 1 |  |
-| 2 | [US-023](stories/US-023-conta-de-origem-padrao-inteligente.md) | Conta de origem padrão inteligente (ressalva 3) | EPIC-19 | Must | 4/3/3 | 3 | 3,3 | US-017b, US-019 | NEED-003, NEED-004 · ressalva 3 |  |
-| 3 | [US-024](stories/US-024-descricao-visivel-e-opcional.md) | Descrição visível e opcional (item 5) | EPIC-19 | Must | 6/3/2 | 2 | 5,5 | US-005, US-006, US-016a | NEED-022 · Q-F13 |  |
-| 4 | [US-027](stories/US-027-ocultar-valores.md) | Ocultar valores (item 3) | EPIC-17 | Must | 8/5/4 | 5 | 3,4 | — | NEED-014 · Q-F04 |  |
-| 5 | [US-025](stories/US-025-resumo-do-mes-na-home.md) | Resumo do Mês na Home (item 8) | EPIC-17 | Must | 9/5/4 | 5 | 3,6 | US-012, US-017a, US-018, US-007 | NEED-015 · Q-F03/F03b |  |
-| 6 | [US-026](stories/US-026-saldos-das-contas-em-card-recolhivel.md) | Saldos das contas em card recolhível | EPIC-17 | Must | 4/2/1 | 2 | 3,5 | US-025, US-004 | NEED-015, NEED-009 (RN08) |  |
-| 7 | [US-028](stories/US-028-acerto-de-contas-opcional.md) | Acerto de contas opcional por família (item 2) | EPIC-16 | Must | 8/4/4 | 5 | 3,2 | US-009a, US-011, US-012 | NEED-019 · Q-F01 |  |
-| 8 | [US-029](stories/US-029-indicador-neutro-de-acerto-e-divida-antiga.md) | Indicador neutro de acerto e dívida de mês anterior (ressalva 2) | EPIC-16 | Must | 5/2/3 | 3 | 3,3 | US-028, US-025 | NEED-019, NEED-007 · ressalva 2 |  |
-| 9 | [US-030](stories/US-030-dividir-desligado-por-padrao.md) | "Dividir" desligado por padrão (item 9a) | EPIC-16 | Must | 6/3/3 | 3 | 4,0 | US-028, US-005, US-018 | NEED-018 · Q-F02 |  |
-| 10 | [US-031](stories/US-031-previa-de-impacto-da-regra-e-sugestao-pela-renda.md) | Prévia de impacto da regra e sugestão pela renda (ressalva 4) | EPIC-16 | Should | 3/1/2 | 3 | 2,0 | US-008, US-022 | NEED-007 · ressalva 4 | cortável (7º) |
-| 11 | [US-032](stories/US-032-arquivar-reativar-e-excluir-conta.md) | Arquivar, reativar e excluir conta (item 13) | EPIC-18 | Must | 5/3/2 | 3 | 3,3 | US-004, US-010 | NEED-020 · Q-F11 |  |
-| 12 | [US-033](stories/US-033-arquivar-e-reativar-cartao.md) | Arquivar e reativar cartão (item 13) | EPIC-18 | Should | 3/1/1 | 2 | 2,5 | US-015, US-017a, US-032 | NEED-020 | cortável (5º) |
-| 13 | [US-034](stories/US-034-editar-familia-e-papeis.md) | Editar a família e papéis (item 15) | EPIC-18 | Must (nome) / Should (papel) | 5/2/2 | 3 | 3,0 | US-002, US-003 | NEED-020 | papel cortável |
-| 14 | [US-035](stories/US-035-remover-membro-e-sair-da-familia.md) | Remover membro e sair da família (item 15) | EPIC-18 | Should | 5/1/3 | 5 | 1,8 | US-034, US-032 | NEED-020 · Q-F07 | cortável (6º) |
-| 15 | [US-036](stories/US-036-detalhe-da-transacao-na-home.md) | Detalhe da transação na Home (item 12) | EPIC-19 | Should | 4/1/2 | 3 | 2,3 | US-012, US-013a, US-007 | NEED-022 | cortável (4º) |
-| 16 | [US-037](stories/US-037-tema-claro-escuro.md) | Tema claro e escuro (item 14) | EPIC-19 | Could | 3/1/1 | 3 | 1,7 | — | NEED-022 | **cortável (2º)** |
-| 17 | [US-038](stories/US-038-navegacao-desktop-conteudo-contido.md) | Navegação desktop com conteúdo contido (item 4) | EPIC-19 | Could | 2/1/1 | 2 | 2,0 | — | NEED-022 · Q-F06 | **cortável (3º)** |
-| 18 | [US-039](stories/US-039-polimento-da-homologacao.md) | Polimento da homologação (achados 5, 8, 11, 12, 13) | EPIC-19 | Could | 4/1/2 | 5 | 1,4 | US-003, US-007, US-014 | achados da homologação | **primeiro a cortar** |
+| 1 | [US-027](stories/US-027-ocultar-valores.md) | Ocultar valores (item 3) | EPIC-17 | Must | 8/5/4 | 5 | 3,4 | — | NEED-014 · Q-F04 | Especificada (SDD-010) · **1ª da R2.1** (D-PO-35): todo valor das telas seguintes já nasce em `Money`; auditoria de todas as telas |
+| 2 | [US-022](stories/US-022-rotulo-honesto-da-regra-de-divisao.md) | Rótulo honesto da regra de divisão (ressalva 1) | EPIC-16 | Must | 5/4/3 | 3 | 4,0 | US-008, US-009a | NEED-007, NEED-018 · ressalva 1 | Especificada (SDD-011) · **Ressalva 1**, logo após a US-027; regressão S1..S13 e homologados antes e depois |
+| 3 | [US-023](stories/US-023-conta-de-origem-padrao-inteligente.md) | Conta de origem padrão inteligente (ressalva 3) | EPIC-19 | Must | 4/3/3 | 3 | 3,3 | US-017b, US-019 | NEED-003, NEED-004 · ressalva 3 | Especificada (SDD-013) · **Ressalva 3**; o cenário "arquivada nunca é sugerida" só se completa com a US-032 |
+| 4 | [US-024](stories/US-024-descricao-visivel-e-opcional.md) | Descrição visível e opcional (item 5) | EPIC-19 | Must | 6/3/2 | 3 (PO: 2) | 3,7 | US-005, US-006, US-016a | NEED-022 · Q-F13 | Especificada (SDD-013) · **+ busca `q` e mensagem única** (TL-08) |
+| 5 | [US-025](stories/US-025-resumo-do-mes-na-home.md) | Resumo do Mês na Home (item 8) | EPIC-17 | Must | 9/5/4 | 5 | 3,6 | US-012, US-017a, US-018, US-007, **US-027** | NEED-015 · Q-F03/F03b | Especificada (SDD-010) · limite superior (5); `HomeDTO` muda (contrato interno) |
+| 6 | [US-026](stories/US-026-saldos-das-contas-em-card-recolhivel.md) | Saldos das contas em card recolhível | EPIC-17 | Must | 4/2/1 | 2 | 3,5 | US-025, US-004 | NEED-015, NEED-009 (RN08) | Especificada (SDD-010) · o saldo "ignora arquivadas" só se completa com a US-032 |
+| 7 | [US-028](stories/US-028-acerto-de-contas-opcional.md) | Acerto de contas opcional por família (item 2) | EPIC-16 | Must | 8/4/4 | 5 | 3,2 | US-009a, US-011, US-012 | NEED-019 · Q-F01 | Especificada (SDD-011) · migração `r21_familia_configuracoes`; guarda `409 SETTLEMENT_DISABLED` |
+| 8 | [US-029](stories/US-029-indicador-neutro-de-acerto-e-divida-antiga.md) | Indicador neutro de acerto e dívida de mês anterior (ressalva 2) | EPIC-16 | Must | 5/2/3 | 3 | 3,3 | US-028, US-025 | NEED-019, NEED-007 · ressalva 2 | Especificada (SDD-011) · Home: janela de 12 meses; desligar: todos os meses (D-PO-37) |
+| 9 | [US-030](stories/US-030-dividir-desligado-por-padrao.md) | "Dividir" desligado por padrão (item 9a) | EPIC-16 | Must | 6/3/3 | 3 | 4,0 | US-028, US-005, US-018 | NEED-018 · Q-F02 | Especificada (SDD-011) · **muda contrato** (default `isSharedExpense = false`): varrer testes R1/R2 (SDD-011 §9) |
+| 10 | [US-031](stories/US-031-previa-de-impacto-da-regra-e-sugestao-pela-renda.md) | Prévia de impacto da regra e sugestão pela renda (ressalva 4) | EPIC-16 | Should | 3/1/2 | 3 | 2,0 | US-008, US-022 | NEED-007 · ressalva 4 | Especificada (SDD-011) · cortável (7º) |
+| 11 | [US-032](stories/US-032-arquivar-reativar-e-excluir-conta.md) | Arquivar, reativar e excluir conta (item 13) | EPIC-18 | Must | 5/3/2 | 5 (PO: 3) | 2,0 | US-004, US-010 | NEED-020 · Q-F11 | Especificada (SDD-012) · **exclusão lógica**; `lockAccountsForPosting` em todo caminho de postagem (maior risco técnico) |
+| 12 | [US-033](stories/US-033-arquivar-e-reativar-cartao.md) | Arquivar e reativar cartão (item 13) | EPIC-18 | Should | 3/1/1 | 3 (PO: 2) | 1,7 | US-015, US-017a, US-032 | NEED-020 | Especificada (SDD-012) · cortável (5º); exclusão lógica; "parcelas futuras" só fecha na R3 |
+| 13 | [US-034](stories/US-034-editar-familia-e-papeis.md) | Editar a família e papéis (item 15) | EPIC-18 | Must (nome) / Should (papel) | 5/2/2 | 3 | 3,0 | US-002, US-003 | NEED-020 | Especificada (SDD-012) · último Administrador atômico; papel cortável |
+| 14 | [US-035](stories/US-035-remover-membro-e-sair-da-familia.md) | Remover membro e sair da família (item 15) | EPIC-18 | Should | 5/1/3 | 8 (PO: 5) | 1,1 | US-034, US-032 | NEED-020 · Q-F07 | Especificada (SDD-012) · **035a (5) + 035b (3)**; maior risco da R2.1; mensagens neutras; cortável (6º) |
+| 15 | [US-036](stories/US-036-detalhe-da-transacao-na-home.md) | Detalhe da transação na Home (item 12) | EPIC-19 | Should | 4/1/2 | 3 | 2,3 | US-012, US-013a, US-007 | NEED-022 | Especificada (SDD-010) · cortável (4º); `highlight` é parâmetro de UI |
+| 16 | [US-037](stories/US-037-tema-claro-escuro.md) | Tema claro e escuro (item 14) | EPIC-19 | Could | 3/1/1 | 3 | 1,7 | — | NEED-022 | Especificada (SDD-010) · **cortável (2º)**; auditoria de cores |
+| 17 | [US-038](stories/US-038-navegacao-desktop-conteudo-contido.md) | Navegação desktop com conteúdo contido (item 4) | EPIC-19 | Could | 2/1/1 | 2 | 2,0 | — | NEED-022 · Q-F06 | Especificada (SDD-010) · **cortável (3º)** |
+| 18 | [US-039](stories/US-039-polimento-da-homologacao.md) | Polimento da homologação (achados 5, 8, 11, 12, 13) | EPIC-19 | Could | 4/1/2 | 5 | 1,4 | US-003, US-007, US-014 | achados da homologação | Especificada (SDD-013) · **primeiro a cortar**; rotação do token do convite |
 
 | Subtotal | Pts |
 | :-- | :-: |
-| Must (022, 023, 024, 025, 026, 027, 028, 029, 030, 032, 034) | **37** |
-| Should (031, 033, 035, 036) | **13** |
+| Must (027, 022, 023, 024, 025, 026, 028, 029, 030, 032, 034) | **40** |
+| Should (031, 033, 035, 036) | **17** |
 | Could (037, 038, 039) | **10** |
-| **Total R2.1** | **60** |
+| **Total R2.1** | **67** |
 
-**Ordem de corte da R2.1 (primeiro a sair):** US-039 ➔ **US-037 (tema)** ➔ **US-038 (navegação desktop)** ➔ **US-036 (detalhe da transação, por último dos itens de ergonomia)** ➔ US-033 ➔ US-035 ➔ US-031. Cortando tudo isso sobram os **37 pts de Must**. Nada dos Must depende de uma história cortável. (Dentro da US-034, a parte "alterar papel" é Should.)
+**Pontos acumulados na ordem de execução:** 027 (5) = 5 ➔ 022 (3) = 8 ➔ 023 (3) = 11 ➔ 024 (3) = 14 ➔ 025 (5) = 19 ➔ 026 (2) = 21 ➔ 028 (5) = 26 ➔ 029 (3) = 29 ➔ 030 (3) = 32 ➔ 031 (3) = 35 ➔ 032 (5) = 40 ➔ 033 (3) = 43 ➔ 034 (3) = 46 ➔ 035 (8) = 54 ➔ 036 (3) = 57 ➔ 037 (3) = 60 ➔ 038 (2) = 62 ➔ 039 (5) = 67.
 
-> **Parcelamento na R2.1?** Regra do PO (a decidir pelo Gestor com a estimativa do TL, Q-F14): **US-040 ≤ 5 e US-042 ≤ 3** ⇒ puxar ambas após a US-030 (R2.1 = 68 pts; Must = 45); **US-040 ≤ 5 e US-042 > 3** ⇒ só a US-040, "Dividir" indisponível em parcelado; senão R3 (1ª entrega).
+**Ordem de corte da R2.1 (primeiro a sair):** US-039 (5) ➔ **US-037 (tema, 3)** ➔ **US-038 (navegação desktop, 2)** ➔ **US-036 (detalhe, 3)** ➔ US-033 (3) ➔ US-035 (8) ➔ US-031 (3). Cortando tudo isso saem 27 pts e sobram os **40 pts de Must**. Nada dos Must depende de uma história cortável (confirmado pelo TL), **exceto** que o cenário "Conta arquivada nunca é sugerida" (US-023) e o saldo "ignora arquivadas" (US-026) só se completam com a US-032 (Must, não cortável): ficam **pendentes até a US-032** e entram no aceite dela. A parte "alterar papel" da US-034 é Should dentro de uma história Must.
 
-### R3 — "Cartão completo e análise" (1ª fatia do AP1) — **56 pts**
-**Ordem de execução** (parecer §6: parcelamento ➔ 9b ➔ tags ➔ visões ➔ cor/receitas previstas; o spike do TL corre em paralelo desde o início).
+> **Parcelamento na R2.1? Não (D-PO-33).** A regra de D-GES-17 não foi satisfeita: o TL estimou a US-040 em **8** (> 5) e a US-042 depende da EN-002 (percentual gravado). Fica como **1ª entrega da R3**, na ordem US-040 ➔ EN-002 ➔ US-042 ➔ US-043 ➔ US-041. Enquanto isso, "Dividir" mostra "Disponível em breve" na compra parcelada.
 
-| Ordem | ID | História | Épico | MoSCoW | V/U/R | Pts (PO, prelim.) | WSJF | Depende de | Rastreio (NEED) | Corte / nota |
+### R3 — "Cartão completo e análise" (1ª fatia do AP1) — **67 pts** (TL; PO prelim. 56; EN-003 já entregue: **65 pendentes**)
+**Ordem final de execução (D-PO-33/34)**: EN-003 (concluída) · **US-040 ➔ EN-002 ➔ US-042 ➔ US-043 ➔ US-041** ➔ US-044 ➔ tags (US-045 ➔ 047 ➔ 046) ➔ Análise (US-048 ➔ 049) ➔ cor (US-050) ➔ receitas previstas (US-051). A EN-002 precede a US-042 (dependência dura) e a US-041 vem depois da US-043 (ordem de risco, TL §5).
+
+| Ordem | ID | História | Épico | MoSCoW | V/U/R | Pts (TL) | WSJF | Depende de | Rastreio (NEED) | Status · corte / nota |
 | :-: | :-- | :-- | :-- | :-: | :-: | :-: | :-: | :-- | :-- | :-- |
-| 1 | [EN-003](stories/EN-003-spike-modelo-multiplos-grupos.md) | Spike de modelo: múltiplos grupos (enabler, dono TL) | EPIC-22 | Should | 2/2/0 | 2 | 2,0 | — | NEED-021 · Q-F08 | paralelo; entrega ADR |
-| 2 | [US-040](stories/US-040-compra-parcelada-no-cartao.md) | Compra parcelada no cartão (básico, item 6) | EPIC-20 | Must | 9/3/5 | 5 | 3,4 | US-016a, US-017a, US-024 | NEED-003 · Q-F14 | candidata à R2.1 (P1) |
-| 3 | [US-042](stories/US-042-parcelado-dividido-no-acerto-por-parcela.md) | Parcelado dividido: acerto por parcela | EPIC-20 | Must | 5/1/2 | 3 | 2,7 | US-040, US-030 | NEED-003, NEED-007 · Q-F05 | candidata à R2.1 (P1) |
-| 4 | [US-041](stories/US-041-gerenciar-compra-parcelada.md) | Gerenciar compra parcelada (editar, excluir) | EPIC-20 | Should | 5/2/3 | 5 | 2,0 | US-040, US-016b | NEED-003 | cortável (6º) |
-| 5 | [EN-002](stories/EN-002-percentual-gravado-por-lancamento.md) | Percentual gravado por lançamento + migração (enabler) | EPIC-16 | Should | 4/2/8 | 5 | 2,8 | US-009a, US-013a/b, US-022 | NEED-018 | cortável com a US-043 |
-| 6 | [US-043](stories/US-043-dividir-no-lancamento-tres-modos.md) | Dividir no lançamento: três modos (item 9b) | EPIC-16 | Should | 7/2/4 | 5 | 2,6 | EN-002, US-030 | NEED-018 · Q-F02b | cortável (7º) |
-| 7 | [US-044](stories/US-044-lembrar-dividir-por-categoria-e-revisao-do-mes.md) | Lembrar "dividir" por categoria e revisar no fechamento | EPIC-16 | Should | 4/1/2 | 3 | 2,3 | US-043, US-014 | NEED-018 (risco C7) | cortável (5º) |
-| 8 | [US-045](stories/US-045-tags-livres-no-lancamento.md) | Tags livres no lançamento (item 1) | EPIC-21 | Should | 6/2/4 | 5 | 2,4 | US-005, US-006, US-016a, US-024 | NEED-013 · Q-F09 |  |
-| 9 | [US-047](stories/US-047-filtrar-extrato-por-tag.md) | Filtrar o Extrato por tag | EPIC-21 | Should | 4/2/1 | 2 | 3,5 | US-045, US-007 | NEED-013, NEED-006 |  |
-| 10 | [US-046](stories/US-046-gerenciar-tags.md) | Gerenciar tags (renomear, mesclar, remover) | EPIC-21 | Should | 3/1/1 | 3 | 1,7 | US-045 | NEED-013 | cortável (4º) |
-| 11 | [US-048](stories/US-048-visao-sintetica-periodo-totais-e-categoria.md) | Visão sintética: período, totais e categoria (item 7) | EPIC-21 | Should | 7/3/3 | 5 | 2,6 | US-007, US-025 | NEED-016 · Q-F10 |  |
-| 12 | [US-049](stories/US-049-visao-sintetica-quebras-e-filtros.md) | Visão sintética: quebras e filtros combináveis | EPIC-21 | Should | 5/2/3 | 5 | 2,0 | US-048, US-045, US-047 | NEED-016 · Q-F10 | cortável (3º) |
-| 13 | [US-050](stories/US-050-cor-por-conta-e-cartao.md) | Cor por conta e cartão (item 11) | EPIC-21 | Could | 2/1/1 | 3 | 1,3 | US-004, US-015, US-037 | NEED-017 | **cortável (2º)** |
-| 14 | [US-051](stories/US-051-receitas-previstas-e-saldo-previsto.md) | Receitas previstas e saldo previsto completo | EPIC-21 | Could | 4/1/2 | 5 | 1,4 | US-018, US-019, US-025 | NEED-015, NEED-004 · Q-F03 | **primeiro Could a cortar** |
+| 0 | [EN-003](stories/EN-003-spike-modelo-multiplos-grupos.md) | Spike de modelo: múltiplos grupos (enabler, dono TL) | EPIC-22 | Should | 2/2/0 | 2 (**concluída**) | 2,0 | — | NEED-021 · Q-F08 | **Concluída** (ADR-018: N:N já existe estruturalmente; 1 pessoa em 2 grupos = 13 pts; conta privada = 13 a 21; não construir agora) |
+| 1 | [US-040](stories/US-040-compra-parcelada-no-cartao.md) | Compra parcelada no cartão (básico, item 6) | EPIC-20 | Must | 9/3/5 | 8 (040a 5 + 040b 3; PO: 5) | 2,1 | US-016a, US-017a, US-024 | NEED-003 · Q-F14 | Esboçada (SDD-014, ADR-017) · **1ª entrega**; migração com `competenceOn`; recebe a exclusão da compra inteira; **não cortar** |
+| 2 | [EN-002](stories/EN-002-percentual-gravado-por-lancamento.md) | Percentual gravado por lançamento + migração (enabler) | EPIC-16 | **Must** | 4/2/8 | 13 (002a 5 + 002b 8; PO: 5) | 1,1 | US-009a, US-013a/b, US-022; após a US-040 na ordem | NEED-018 | Esboçada (SDD-015) · **Must (D-PO-34)**; release em duas etapas (motor STORED com interface inalterada; gate de 1 centavo); **não cortar** |
+| 3 | [US-042](stories/US-042-parcelado-dividido-no-acerto-por-parcela.md) | Parcelado dividido: acerto por parcela | EPIC-20 | Must | 5/1/2 | 3 | 2,7 | US-040, **EN-002**, US-030 | NEED-003, NEED-007 · Q-F05 | Esboçada (SDD-014) · **depende da EN-002**; **não cortar** |
+| 4 | [US-043](stories/US-043-dividir-no-lancamento-tres-modos.md) | Dividir no lançamento: três modos (item 9b) | EPIC-16 | Should | 7/2/4 | 5 | 2,6 | EN-002, US-030 | NEED-018 · Q-F02b | Esboçada (SDD-015) · libera o modo CUSTOM após a janela de reversão; **cortável (7º, o último)** |
+| 5 | [US-041](stories/US-041-gerenciar-compra-parcelada.md) | Gerenciar compra parcelada (editar parcelas, excluir uma parcela) | EPIC-20 | Should | 5/2/3 | 5 | 2,0 | US-040 (com exclusão da compra inteira), US-016b; após a US-043 | NEED-003 | Esboçada (SDD-014) · depois da US-043 (ordem de risco); cortável (6º) |
+| 6 | [US-044](stories/US-044-lembrar-dividir-por-categoria-e-revisao-do-mes.md) | Lembrar "dividir" por categoria e revisar no fechamento | EPIC-16 | Should | 4/1/2 | 3 | 2,3 | US-043, US-014 | NEED-018 (risco C7) | Esboçada (SDD-015) · cortável (5º) |
+| 7 | [US-045](stories/US-045-tags-livres-no-lancamento.md) | Tags livres no lançamento (item 1) | EPIC-21 | Should | 6/2/4 | 5 | 2,4 | US-005, US-006, US-016a, US-024 | NEED-013 · Q-F09 | Esboçada (SDD-016) |
+| 8 | [US-047](stories/US-047-filtrar-extrato-por-tag.md) | Filtrar o Extrato por tag | EPIC-21 | Should | 4/2/1 | 2 | 3,5 | US-045, US-007 | NEED-013, NEED-006 | Esboçada (SDD-016) · drill-down das visões |
+| 9 | [US-046](stories/US-046-gerenciar-tags.md) | Gerenciar tags (renomear, mesclar, remover) | EPIC-21 | Should | 3/1/1 | 3 | 1,7 | US-045 | NEED-013 | Esboçada (SDD-016) · cortável (4º) |
+| 10 | [US-048](stories/US-048-visao-sintetica-periodo-totais-e-categoria.md) | Visão sintética: período, totais e categoria (item 7) | EPIC-21 | Should | 7/3/3 | 5 | 2,6 | US-007, US-025 | NEED-016 · Q-F10 | Esboçada (SDD-016) · depende da competência da US-040 |
+| 11 | [US-049](stories/US-049-visao-sintetica-quebras-e-filtros.md) | Visão sintética: quebras e filtros combináveis | EPIC-21 | Should | 5/2/3 | 5 | 2,0 | US-048, US-045, US-047 | NEED-016 · Q-F10 | Esboçada (SDD-016) · cortável (3º) |
+| 12 | [US-050](stories/US-050-cor-por-conta-e-cartao.md) | Cor por conta e cartão (item 11) | EPIC-21 | Could | 2/1/1 | 3 | 1,3 | US-004, US-015, US-037 | NEED-017 | Esboçada (SDD-017) · **cortável (2º)** |
+| 13 | [US-051](stories/US-051-receitas-previstas-e-saldo-previsto.md) | Receitas previstas e saldo previsto completo | EPIC-21 | Could | 4/1/2 | 5 | 1,4 | US-018, US-019, US-025 | NEED-015, NEED-004 · Q-F03 | Esboçada (SDD-017) · **primeiro a cortar** |
 
 | Subtotal | Pts |
 | :-- | :-: |
-| Must (040, 042) | **8** |
-| Should (EN-002, 041, 043, 044, 045, 046, 047, 048, 049, EN-003) | **40** |
+| Must (040, **EN-002**, 042) | **24** |
+| Should (043, 041, 044, 045, 047, 046, 048, 049, EN-003) | **35** (33 pendentes) |
 | Could (050, 051) | **8** |
-| **Total R3** | **56** |
+| **Total R3** | **67** (65 pendentes) |
 
-**Ordem de corte da R3 (primeiro a sair):** US-051 ➔ US-050 ➔ US-049 ➔ US-046 ➔ US-044 ➔ US-041 ➔ EN-002 + US-043 (juntas). Os Must (parcelamento e acerto por parcela) não saem. As tags (045, 047) e a visão básica (048) só saem por decisão do Gestor, depois das anteriores. **AP1 (tetos, ciclo, recorrência) vem logo após a R3** (Q-F12).
+**Pontos acumulados (pendentes):** US-040 = 8 ➔ EN-002 = 21 ➔ US-042 = 24 ➔ US-043 = 29 ➔ US-041 = 34 ➔ US-044 = 37 ➔ US-045 = 42 ➔ US-047 = 44 ➔ US-046 = 47 ➔ US-048 = 52 ➔ US-049 = 57 ➔ US-050 = 60 ➔ US-051 = 65.
+
+**Ordem de corte da R3 (reescrita, D-PO-34; primeiro a sair):** US-051 (5) ➔ US-050 (3) ➔ US-049 (5) ➔ US-046 (3) ➔ US-044 (3) ➔ US-041 (5) ➔ **US-043 (5, a última)**. A **EN-002 saiu da lista**: é Must porque a US-042 depende dela; só a US-043 (modo "De outro jeito"), que vem depois, é cortável. Cortando tudo isso saem 29 pts e sobram **36 pts**: os 24 de Must (US-040, EN-002, US-042) mais tags (US-045 e 047) e a visão básica (US-048), que só saem por decisão do Gestor. **AP1 (tetos, ciclo, recorrência) vem logo após a R3** (Q-F12).
 
 ### Critério central das histórias novas
 | ID | Critério central |
@@ -194,16 +198,16 @@ Origem: homologação com ressalvas de R1+R2 ([`homologacao-r1-r2.md`](../../sta
 | US-029 | Linha neutra de acerto no Resumo; aviso discreto de meses anteriores pendentes. |
 | US-030 | "Dividir" = **Só meu** por padrão (lançamento, cartão e previsão); linha "N despesas Só meu" no Acerto. |
 | US-031 | Prévia de impacto e sugestão pela renda (não grava); FAB não cobre "Salvar regra". |
-| US-032/033 | Arquivar conta (saldo zero) e cartão (sem fatura/parcela em aberto); reativar; excluir só sem movimentação. |
-| US-034/035 | Editar nome e papéis (último Administrador protegido); remover membro = ex-membro com revisão de pendências; sair. |
+| US-032/033 | Arquivar conta (saldo zero) e cartão (sem fatura/parcela em aberto); reativar; **"excluir" = exclusão lógica terminal**, só sem movimentação (libera o nome). |
+| US-034/035 | Editar nome e papéis (último Administrador protegido); remover membro = ex-membro com revisão de pendências (035a); sair e avisos, com mensagens **neutras de gênero** (035b). |
 | US-036 | Detalhe da transação na Home com ações rotuladas. |
 | US-037/038/039 | Tema; menu superior contido no desktop; polimento (achados 5, 8, 11, 12, 13). |
-| US-040/041/042 | Parcelamento 1x–24x, uma parcela por fatura, limite pelo total; editar/excluir parcelas; parcelado dividido **por parcela no mês da fatura**. |
-| EN-002 / US-043 / US-044 | Percentual gravado por lançamento (migração **sem mudar número**), três modos, lembrar por categoria e revisão do mês. |
+| US-040/041/042 | Parcelamento 1x–24x, uma parcela por fatura, limite pelo total (040a); competência, Ver compra e **exclusão da compra inteira com Desfazer** (040b); editar/excluir **uma** parcela (041); parcelado dividido **por parcela no mês da fatura** (042, depois da EN-002). |
+| EN-002 / US-043 / US-044 | **EN-002 (Must)**: percentual gravado por lançamento (centavos por membro; migração **sem mudar número**, gate de 1 centavo; 002a + 002b); depois três modos (US-043), lembrar por categoria e revisão do mês. |
 | US-045..047 | Tags livres (sem diferenciar caixa e acento), gestão e filtro no Extrato. |
 | US-048/049 | Análise: período, totais, quebra por categoria/membro/conta/tag, drill-down, **mesma fonte do Extrato**. |
 | US-050/051 | Cor por conta/cartão; receitas previstas e saldo previsto completo. |
-| EN-003 | ADR do spike de múltiplos grupos (sem funcionalidade). |
+| EN-003 | **Concluída:** ADR-018 do spike de múltiplos grupos (sem funcionalidade). |
 
 ### Fora do escopo desta rodada (Futuro, sem refinamento)
 Assistente de IA generativa (NEED-023; depende de **Q-U01** com o usuário e de ADR de privacidade), grupos não familiares e contas privadas (NEED-021; só o spike), exclusão da família (**Q-U02**), construtor de relatórios, hierarquia/cor de tags, barra inferior no desktop (Opção A), corrigir forma de pagamento (achado 6), unificar linhas de transferência (achado 9), faturas em Contas a pagar (achado 10).
@@ -231,8 +235,8 @@ Assistente de IA generativa (NEED-023; depende de **Q-U01** com o usuário e de 
 | **Inc 1** — Walking skeleton | EN-001, US-001..007 | ✅ Sim | Nenhum: SDDs 001, 003, 004, 006 entregues |
 | **Inc 2** — Fechar o mês | US-008, 009a/b, 010..012, 013a/b | ✅ Sim | Nenhum: SDD-002 entregue |
 | **Inc 3** — AP0 completo (R2) | US-014, 015, 016a/b, 017a/b, 018, 019 | ✅ Sim (SDD-007, 008, 009) | Nenhum SDD pendente; a R2 começa depois da R1 (US-012 e US-013a são pré-requisitos de cenários) |
-| **Inc 4** — R2.1 | US-022..039 | ✅ Refinadas (DoR do PO); **aguardam estimativa e SDD** | Estimativas do TL; ratificação D-PO-12..32 pelo Gestor |
-| **Inc 5** — R3 | US-040..051, EN-002, EN-003 | ✅ Refinadas (DoR do PO) | Estimativas, ADR do spike e SDD de migração do acerto (EN-002); depende da R2.1 |
+| **Inc 4** — R2.1 | US-022..039 | ✅ **Especificadas** (SDD-010..013; 67 pts) | Nenhum SDD pendente; ratificação de D-PO-33..42 pelo Gestor; linha de base E2E (D-GES-19) |
+| **Inc 5** — R3 | US-040..051, EN-002 (EN-003 concluída) | ✅ Refinadas e **Esboçadas** (SDD-014..017; ADR-016..018) | SDD completo antes de cada história; depende da R2.1 (predicado único, `findActiveMembership`, `FamilyEvent`) |
 
 ---
 
@@ -261,6 +265,16 @@ Assistente de IA generativa (NEED-023; depende de **Q-U01** com o usuário e de 
 | Q-20 | Pergunta | No acerto, o crédito de compra no cartão vai para **quem comprou**, não para quem paga a fatura. Aceitável? Hipótese: sim (RN-003.3). | Stakeholder/Gestor | Não |
 | Q-21 | Pergunta | Pagamento de fatura com valor diferente do total (juros/desconto/parcial): AP1/AP2? | Stakeholder | Não |
 | Q-22 | Pergunta | "Dividir com a família" da previsão é decidido no cadastro (padrão ligado). Confirmar. **Revisada por D-PO-16 (R2.1): padrão "Só meu".** | Stakeholder | Não |
-| **D-PO-12..32** | Decisão | Decisões do PO para R2.1/R3 (fatiamento, ordem e corte, Home, acerto opcional, ocultar valores, "Dividir" Só meu, arquivar, família/membros, conta padrão, descrição, detalhe, tema, desktop, polimento, parcelamento, competência da parcela, percentual por lançamento, tags, visões, cor, receitas previstas, spike de grupos). Ver [`decisoes-po-r21-r3.md`](decisoes-po-r21-r3.md). | Gestor ratifica | Não |
+| **D-PO-12..32** | Decisão (✅ ratificadas, D-GES-14) | Decisões do PO para R2.1/R3 (fatiamento, ordem e corte, Home, acerto opcional, ocultar valores, "Dividir" Só meu, arquivar, família/membros, conta padrão, descrição, detalhe, tema, desktop, polimento, parcelamento, competência da parcela, percentual por lançamento, tags, visões, cor, receitas previstas, spike de grupos). Ver [`decisoes-po-r21-r3.md`](decisoes-po-r21-r3.md). | Gestor ratifica | Não |
 | **D-PO-16** | Decisão (revisa Q-22) | Previstas passam a nascer **Só meu**, como os demais lançamentos. | Gestor ratifica | Não |
 | **D-PO-26** | Decisão (assimetria) | Parcela conta no mês da **fatura**; compra à vista pela **data da compra**. | Gestor/Stakeholder; TL viabiliza | Não |
+| **D-PO-33** | Decisão | **Parcelamento fica na R3** (D-GES-17 não satisfeita): ordem US-040 ➔ EN-002 ➔ US-042 ➔ US-043 ➔ US-041; US-040 fatiada em 040a (5) e 040b (3), que recebe a exclusão da compra inteira e o Desfazer da US-041. Assimetria D-PO-26 mantida (viável com predicado único). | Gestor ratifica | Não |
+| **D-PO-34** | Decisão | **EN-002 é Must** (a US-042 depende dela); 002a 5 + 002b 8; corte da R3 reescrito (051, 050, 049, 046, 044, 041, 043). | Gestor ratifica | Não |
+| **D-PO-35** | Decisão | **Ordem final da R2.1:** 027, 022, 023, 024, 025, 026, 028, 029, 030, 031, 032, 033, 034, 035, 036, 037, 038, 039 (67 pts; Must 40). | Gestor ratifica | Não |
+| **D-PO-36** | Decisão | US-035 fatiada 035a/035b; mensagens neutras de gênero; "excluir" conta/cartão = exclusão lógica terminal. | Gestor ratifica | Não |
+| **D-PO-37** | Decisão | Home: aviso de acerto em janela de 12 meses; confirmação de desligar: todos os meses. | Gestor ratifica | Não |
+| **D-PO-38** | Decisão | Contrato de busca por descrição (`q`, 2..50) e mensagem única de descrição. | Gestor ratifica | Não |
+| **D-PO-39** | Decisão | "Copiar link"/"Reenviar" rotacionam o token do convite; 3 reenvios. | Gestor ratifica | Não |
+| **D-PO-40** | Decisão | `highlight` é parâmetro de UI, sem contrato de API. | Gestor ratifica | Não |
+| **D-PO-41** | Decisão | Cenários R1/R2 atualizados nas histórias antigas (padrão "Só meu", texto neutro do acerto, Home reorganizada). | Gestor ratifica | Não |
+| **D-PO-42** | Decisão | Saldo previsto em mês **futuro** usa o saldo atual e só os vencimentos daquele mês (TL-09); projeção acumulada fica para o AP1. | Gestor ratifica | Não |

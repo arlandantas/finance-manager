@@ -6,7 +6,7 @@
 | MoSCoW · WSJF · Tamanho (TL) | Must · 3,3 · 3 |
 | Status | **Especificada** (SDD-013, pronta para o Dev) · tamanho confirmado pelo TL |
 | Depende de | US-017b (pagar fatura), US-019 (dar baixa) |
-| Corte | **Não cortar** (ressalva 3 da homologação) |
+| Corte | **Não cortar** (ressalva 3 da homologação). O cenário "Conta arquivada nunca é sugerida" fica **pendente até a US-032** (D-PO-35) |
 | Rastreabilidade | Homologação achado 3 · Parecer ressalva 3 · NEED-004 (RN-004.x conta de origem padrão) · NEED-003 · FLUXO-012 · D-PO-19 |
 
 ## História
@@ -114,3 +114,4 @@ Conta de liquidação gravada na previsão (futuro, depende de NEED-004 fase 2);
 
 ## Histórico
 - 2026-10-04 — Criada a partir da ressalva 3 da homologação.
+- 2026-10-04 — **Revisão pós-TL (D-PO-35):** 3 pts confirmados; ressalva 3 logo depois da US-022; "mais usada" = contagem de 90 dias por conta do membro logado (SDD-013); o cenário da conta arquivada se completa com a US-032 e entra no aceite dela.

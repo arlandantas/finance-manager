@@ -5,7 +5,7 @@
 | Épico / Release | EPIC-17 Visão do Mês e Privacidade de Exibição · **R2.1** |
 | MoSCoW · WSJF · Tamanho (TL) | Must · 3,4 · 5 |
 | Status | **Especificada** (SDD-010, pronta para o Dev) · tamanho confirmado pelo TL |
-| Depende de | nenhuma (transversal); entregar junto da US-025 |
+| Depende de | nenhuma (transversal); **1ª da R2.1** (D-PO-35): todo valor das telas seguintes (US-022 em diante) já nasce em `Money` |
 | Corte | **Não cortar** |
 | Rastreabilidade | Parecer item 3, Q-F04 · NEED-014 (RN-014.1..4) · NEED-022 (RN-022.1) · FLUXO-007 · D-PO-15 |
 
@@ -127,3 +127,4 @@ Bloqueio por PIN/biometria; ocultar dados no servidor; ocultar nomes ou descriç
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 3, Q-F04) e da NEED-014.
+- 2026-10-04 — **Revisão pós-TL (D-PO-35):** passa a ser a **primeira** história da R2.1 (ocultar valores antes de Resumo e Saldos, para não retrabalhar telas); tamanho 5 confirmado; auditoria de todas as telas e regra de CI contra `formatBRL` fora do componente `Money`.
