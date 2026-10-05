@@ -41,3 +41,5 @@
 | D-GES-18 | **Ordem de corte** da R2.1 (US-039, 037, 038, 036, 033, 035, 031) e da R3 aprovadas como propostas pelo PO. |
 | D-GES-19 | **Dev:** antes de iniciar a R2.1, rodar a suíte E2E completa (desktop e mobile) como linha de base; a TASK-025 só rodou parte. |
 | D-GES-20 | **Acesso em dev:** `localhost`, IP privado da LAN (liberação automática, desligável por `APP_DEV_LAN_AUTO=false`) e túnel só sob pedido (TASK-025). |
+| D-GES-21 | **Ratificadas D-PO-33..42** (ajustes pós-TL). **D-PO-34 aceita:** o corte da R3 é reescrito (US-051 → 050 → 049 → 046 → 044 → 041 → 043), com EN-002 Must por ser pré-requisito da US-042; isso substitui o corte de D-GES-18 para a R3. Ordem final da R2.1 (67 pts) conforme D-PO-35. |
+| D-GES-22 | **Stakeholder valida na homologação da R3:** assimetria à vista × parcela (ADR-020) e a limitação de acento na busca do Extrato. |
