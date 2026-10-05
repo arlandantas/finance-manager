@@ -59,3 +59,6 @@ flowchart TD
 
 ### Revisão 3 (2026-10-04) — compra no cartão (R2, US-016)
 - O *chip* **Conta** vira **"Pagar com"** (contas e cartões; padrão = último meio usado). No modo **Receita** continua só com contas. Ao escolher um cartão, aparecem a dica "Entra na fatura de out/2026 · fecha 25/10" e o "Disponível" do cartão; compra acima do limite pede *Confirmar mesmo assim*. Detalhes em [FLUXO-004](FLUXO-004-cartao-e-fatura.md). O atalho "Gerenciar categorias" (US-014) fica no fim da grade de categorias.
+
+### Revisão 4 (2026-10-04) — R2.1/R3
+- Descrição visível e opcional, "Dividir" desligado por padrão ("Só meu") e, na R3, parcelas, três modos de divisão e tags: ver [FLUXO-008](FLUXO-008-lancar-despesa-r21-r3.md), que **estende** este fluxo (US-024, US-030, US-040, US-043, US-045). O padrão "Dividir com a família? Ligado" da especificação inicial e da revisão 2 **deixa de valer**.

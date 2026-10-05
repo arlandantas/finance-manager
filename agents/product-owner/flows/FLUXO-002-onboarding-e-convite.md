@@ -52,3 +52,8 @@ flowchart TD
 - **Erro**: mensagens em português, sem jargão técnico, sempre com saída (tentar de novo / voltar).
 - **Convite aberto com outro e-mail**: tela explicando que o convite é para outro endereço, com ação *Entrar com outra conta*.
 - **Acessibilidade**: botão do Google com rótulo textual; foco visível; contraste AA.
+
+## Revisão 2 (2026-10-04) — R2.1
+- Novo **passo opcional** após criar a família: "Como vocês dividem as despesas?" (padrão: acerto ligado; opção "Só controlar, sem dividir"). Ver [FLUXO-009](FLUXO-009-acerto-opcional.md) e [US-028](../backlog/stories/US-028-acerto-de-contas-opcional.md).
+- Convite pendente ganha "Copiar link" e "Reenviar e-mail" ([US-039](../backlog/stories/US-039-polimento-da-homologacao.md)) e o aviso da conta Google do mesmo e-mail antes de enviar.
+- Editar a família, papéis, remover membro e sair: [FLUXO-011](FLUXO-011-familia-e-membros.md).

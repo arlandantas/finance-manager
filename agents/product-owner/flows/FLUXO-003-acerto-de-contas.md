@@ -47,3 +47,7 @@ flowchart TD
 - **Mês já acertado**: faixa verde + histórico do acerto (quem transferiu, quanto, quando).
 - **Acerto parcial**: faixa mostra o saldo remanescente.
 - **Valores sempre em BRL** com duas casas, derivados de centavos inteiros.
+
+## Revisão 2 (2026-10-04) — R2.1
+- O acerto passa a ser **opcional por família** e a viver na **aba Acerto**; na Home vira uma **linha neutra** no Resumo do Mês ([FLUXO-006](FLUXO-006-home-resumo-do-mes.md), [FLUXO-009](FLUXO-009-acerto-opcional.md)). Linguagem neutra ("valor a acertar", "diferença do mês") em lugar de "deve" ([US-028](../backlog/stories/US-028-acerto-de-contas-opcional.md)).
+- O painel mostra o **rótulo honesto da regra** com vigência e percentual ponderado ([US-022](../backlog/stories/US-022-rotulo-honesto-da-regra-de-divisao.md)), a linha "N despesas Só meu neste mês" ([US-030](../backlog/stories/US-030-dividir-desligado-por-padrao.md)) e a tela da regra com prévia de impacto e sugestão pela renda ([US-031](../backlog/stories/US-031-previa-de-impacto-da-regra-e-sugestao-pela-renda.md)). Em meses encerrados, na R3, o aviso de revisão ([US-044](../backlog/stories/US-044-lembrar-dividir-por-categoria-e-revisao-do-mes.md)).
