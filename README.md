@@ -136,6 +136,14 @@ Hooks (Husky): `pre-commit` roda `lint` + `typecheck` + `check:imports`; `commit
 
 Estrutura de código: `src/app` (rotas Next), `src/modules/<dominio>` (regras puras), `src/lib` (env, db), `prisma/` (schema, migrações, seed), `tests/{unit,integration,e2e}`.
 
+**Acesso por localhost, IP da rede e túnel (dev):** `pnpm dev` escuta em `0.0.0.0:3100`.
+- `http://localhost:3100`: sempre.
+- IP da LAN (ex.: `http://192.168.1.81:3100`, descubra com `hostname -I`): funciona sem configurar, pois em dev IPs privados RFC1918 e `*.local` são aceitos automaticamente (o IP pode mudar). Para fixar/limitar, use `APP_DEV_ORIGINS` (lista por vírgula) e `APP_DEV_LAN_AUTO=false`. Como é `http` sem TLS, o navegador não expõe `crypto.randomUUID`; o app usa um fallback.
+- Túnel (só quando você iniciar, ex.: `npx localtunnel --port 3100`): ponha a URL em `APP_PUBLIC_ORIGIN`; o Service Worker de repetição (`public/tunnel-retry-sw.js`) só é registrado quando a página abre nesse host.
+- Mudou `.env.local` ou `next.config.ts`? Reinicie o `pnpm dev`. Nada disso vale em produção (`NODE_ENV=production` ignora as listas; o login de teste é bloqueado) e `/api/dev/clock` segue só em localhost direto.
+- Os links de convite usam a origem de onde o admin está logado (se for origem de dev permitida), senão `APP_PUBLIC_ORIGIN`, senão `APP_URL`.
+- **Google OAuth**: o redirect é sempre `AUTH_URL` + `/api/auth/callback/google`; cadastre `http://localhost:3100/api/auth/callback/google` no Google Cloud e use localhost para entrar com Google (o Google não aceita IP privado como redirect). Detalhes em EXT-01.
+
 **Login em dev:** com `AUTH_DEV_LOGIN=true` a tela `/login` oferece "Entrar como (teste)" (atalhos Mariana e Lucas, criados por `pnpm db:seed`); o endpoint é bloqueado em produção e a aplicação recusa subir com a flag ligada. Convites chegam ao Mailpit (http://localhost:8025). Depois de mudar o schema Prisma, reinicie o `pnpm dev` (o cliente fica em cache).
 
 Observações: dependências externas pendentes ficam em [`agents/manager/pendencias-externas.md`](agents/manager/pendencias-externas.md).

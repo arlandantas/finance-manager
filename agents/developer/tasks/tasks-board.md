@@ -38,6 +38,7 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-022 | US-019 | Dar baixa em despesa prevista (R2) | US-018, US-013a | SDD-009 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-023 | US-017b | Pagar a fatura (R2, Should) | US-017a, US-013a | SDD-008 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-024 | US-016b | Corrigir compra no cartão e filtrar por cartão (R2, Should) | US-016a, US-013a | SDD-008 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-025 | EN-001 | Ambiente dev multi-origem (localhost, IP da LAN, túnel) e diagnóstico do Google | EN-001 | SDD-000 | 2 | Concluído (aguardando validação do Gestor) |
 
 ---
 
@@ -338,3 +339,9 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 - **Arquivos**: `transacoes/mutations.ts` (`lockPurchaseInvoices`: locks em ordem crescente de `ref`, troca de fatura por data, `PAYMENT_SOURCE_NOT_EDITABLE`), filtro "Cartão"/"Pagamento de fatura" em `extrato/filters*.ts*`, edição com "Pagar com" desabilitado.
 - **QA**: I (11, incluindo PATCH cruzados sem deadlock); E2E 10 cenários x 2.
 - **Desvios** (DEV-25): ordem dos passos do cenário "Corrigir o valor" (detalhe antes do total) e `vejo` em vez de `vê … e …` por colisão de passos.
+
+## ✅ [TASK-025] Ambiente dev multi-origem (localhost, IP da LAN, túnel)
+- **Origem**: pedido do usuário via Gestor · EXT-01/EXT-10/EXT-11.
+- **Arquivos**: `src/lib/dev-origins.ts` (novo), `next.config.ts`, `package.json` (`next dev -H 0.0.0.0`), `src/lib/auth/dev-login-guard.ts`, `src/lib/api/with-api.ts` (CSRF), `src/lib/env.ts` (`publicBaseUrl`), `invitations/{service,route}.ts`, `src/app/layout.tsx` + `components/tunnel-retry.tsx`, `src/lib/http.ts` (fallback de UUID), `.env.example`, `README.md`.
+- **QA**: U (`dev-origins`, `auth-pure`, `env`, `http-idempotency-key`); I (CSRF multi-origem, link de convite por origem); validado no navegador embutido em `http://192.168.1.81:3102` (2ª instância): login de teste até a Home. A validação achou o bug do `crypto.randomUUID` em http (DEV-28).
+- **Desvios**: DEV-27 a DEV-31.
