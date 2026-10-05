@@ -23,6 +23,8 @@ import { getTransaction, memberRefOf } from "@/modules/transacoes/service";
 const NOT_EDITABLE = "Transferências e acertos não podem ser editados. Use Desfazer.";
 const INVOICE_PAID_LOCKED =
   "Esta compra está em uma fatura já paga. Desfaça o pagamento da fatura para alterá-la.";
+const INSTALLMENT_NOT_EDITABLE =
+  "Esta parcela não pode ser alterada. Exclua a compra parcelada e lance de novo.";
 const LINKED_TO_PLANNED = "Esta despesa veio de uma despesa prevista. Use Desfazer pagamento.";
 const PAYMENT_NOT_EDITABLE =
   "O pagamento de fatura não pode ser editado nem excluído. Use Desfazer pagamento.";
@@ -40,6 +42,10 @@ async function loadMutable(tx: Tx, familyId: string, repo: Repo, id: string): Pr
   if (row.kind === "INVOICE_PAYMENT") throw unprocessable("NOT_EDITABLE", PAYMENT_NOT_EDITABLE);
   if (row.kind !== "EXPENSE" && row.kind !== "INCOME") {
     throw unprocessable("NOT_EDITABLE", NOT_EDITABLE);
+  }
+  // SDD-014 §4.8: parcela é somente leitura até a US-041 (o contorno é excluir a compra inteira)
+  if (row.installmentPlanId) {
+    throw unprocessable("INSTALLMENT_NOT_EDITABLE", INSTALLMENT_NOT_EDITABLE);
   }
   return row;
 }

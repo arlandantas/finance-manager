@@ -1,6 +1,7 @@
 import type { Tx } from "@/lib/api/types";
 import { toDbDate } from "@/lib/dates";
 import { fromCents } from "@/lib/money";
+import { notFutureFilter } from "@/modules/transacoes/ledger-where";
 
 const loadInclude = {
   account: { select: { id: true, name: true, archivedAt: true } },
@@ -51,9 +52,16 @@ export function transacoesRepo(tx: Tx, familyId: string) {
       return last?.accountId ?? null;
     },
     /** Cartão da despesa mais recente do membro, se ela foi no cartão (SDD-008 §3.2). */
-    lastCardUsedBy: async (memberId: string): Promise<string | null> => {
+    lastCardUsedBy: async (memberId: string, today: string): Promise<string | null> => {
       const last = await tx.transaction.findFirst({
-        where: { familyId, authorMemberId: memberId, kind: "EXPENSE", deletedAt: null },
+        // ADR-020 §4: parcelas futuras não contam como "última compra"
+        where: {
+          familyId,
+          authorMemberId: memberId,
+          kind: "EXPENSE",
+          deletedAt: null,
+          ...notFutureFilter(today),
+        },
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         select: { cardId: true },
       });

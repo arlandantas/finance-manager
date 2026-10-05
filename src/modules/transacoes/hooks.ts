@@ -75,7 +75,9 @@ export function useCreateTransaction(idempotencyKey: string) {
         ...(qc.getQueryData<{ items: CategoryDTO[] }>(categoriesKey(input.type))?.items ?? []),
       ];
       const defaults = qc.getQueryData<TransactionDefaults>(defaultsKey);
-      if (family && me && accounts && defaults) {
+      // SDD-014 §1: compra parcelada não tem item provisório (N linhas, competência diferente da data)
+      const parcelada = input.type === "EXPENSE" && (input.installments ?? 1) > 1;
+      if (family && me && accounts && defaults && !parcelada) {
         const pending = buildPendingItem(input, {
           today: defaults.today,
           me: { id: me.memberId, name: me.name, image: me.image },

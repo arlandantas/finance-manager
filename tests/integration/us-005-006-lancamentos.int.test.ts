@@ -294,6 +294,7 @@ describe("US-005 (infra) Defaults e categorias", () => {
           { memberId: expect.any(String), bps: 5000 },
           { memberId: expect.any(String), bps: 5000 },
         ],
+        installmentsAvailable: false,
       },
     });
     await post(lucas(), await expense()); // lança no Nubank

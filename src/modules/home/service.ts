@@ -104,11 +104,13 @@ export async function getHome(tx: Tx, ctx: RequestContext, periodKey?: string): 
   const settlementIndicator = (await isSettlementEnabled(tx, ctx.familyId))
     ? await getSettlementIndicator(tx, ctx, monthSummary.period.key)
     : null;
-  const recent = await listTransactions(tx, ctx, {
-    from: "1970-01-01",
-    to: "2999-12-31",
-    limit: 5,
-  });
+  // ADR-020 §4: parcelas futuras não vazam para "recentes" (data de calendário <= hoje)
+  const recent = await listTransactions(
+    tx,
+    ctx,
+    { from: "1970-01-01", to: "2999-12-31", limit: 5 },
+    { occurredUntil: todayInFamilyTz(ctx.clock) },
+  );
   const memberCount = (await splitRepo(tx, ctx.familyId).listMembers()).filter(
     (m) => !m.removedAt,
   ).length;

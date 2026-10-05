@@ -82,6 +82,26 @@ export async function invoiceTotals(
   return map;
 }
 
+/**
+ * "Parcelas futuras" (SDD-014 §4.5): Σ parcelas ATIVAS do cartão em faturas com `ref > afterRef`.
+ * Cartão: `afterRef` = fatura aberta hoje; fatura: a própria fatura exibida (TL-16).
+ */
+export async function futureInstallmentsInCents(
+  tx: Tx,
+  familyId: string,
+  cardId: string,
+  afterRef: string,
+): Promise<number> {
+  const [row] = await tx.$queryRaw<Array<{ total: bigint }>>`
+    SELECT COALESCE(SUM(t."amountInCents"), 0)::bigint AS total
+    FROM transactions t
+    JOIN card_invoices i ON i.id = t."invoiceId" AND i."familyId" = t."familyId"
+    WHERE t."familyId" = ${familyId}::uuid AND t."cardId" = ${cardId}::uuid
+      AND t."installmentPlanId" IS NOT NULL AND t."deletedAt" IS NULL AND t.kind = 'EXPENSE'
+      AND i."referenceMonth" > ${afterRef}`;
+  return toCents(row?.total ?? 0n);
+}
+
 /** Subtotal por `payerMemberId` de uma fatura (§7.4). */
 export async function invoiceByMember(
   tx: Tx,
@@ -153,6 +173,7 @@ export function buildInvoiceSummary(
     dueDate: dates.dueDate,
     status,
     isOverdue,
+    isFuture: ref > openInvoiceRef(today, card.closingDay),
     totalInCents: totals.totalInCents,
     purchasesCount: totals.count,
     paidOn: payment?.paidOn ?? null,

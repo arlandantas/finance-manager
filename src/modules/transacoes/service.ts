@@ -6,6 +6,7 @@ import { toCents } from "@/lib/money";
 import { periodFromKey, periodOf } from "@/lib/period";
 import type { MemberRef } from "@/lib/schemas";
 import { formatInvoiceLabel, invoiceRefFor } from "@/modules/cartoes/cycle";
+import { INSTALLMENT_SPLIT_RELEASED } from "@/modules/cartoes/installments";
 import { getOrCreateInvoice } from "@/modules/cartoes/invoices";
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { recordRevision } from "@/modules/contas/ledger";
@@ -51,6 +52,10 @@ type TxRow = {
   direction: "CREDIT" | "DEBIT";
   amountInCents: bigint;
   occurredOn: Date;
+  competenceOn: Date;
+  installmentPlanId: string | null;
+  installmentNo: number | null;
+  installmentCount: number | null;
   description: string;
   note: string | null;
   payerMemberId: string | null;
@@ -105,6 +110,11 @@ export function toTransactionDTO(
     direction: row.direction,
     amountInCents: toCents(row.amountInCents),
     occurredOn: fromDbDate(row.occurredOn),
+    competenceOn: fromDbDate(row.competenceOn),
+    installment:
+      row.installmentPlanId && row.installmentNo && row.installmentCount
+        ? { planId: row.installmentPlanId, no: row.installmentNo, count: row.installmentCount }
+        : null,
     description: row.description,
     note: row.note,
     account: ctx.account,
@@ -137,7 +147,7 @@ export async function getDefaults(tx: Tx, ctx: RequestContext): Promise<Transact
     (await repo.lastAccountUsedBy(ctx.memberId)) ??
     (await repo.ownedAccountId(ctx.memberId)) ??
     (await repo.firstAccountId());
-  const cardId = await repo.lastCardUsedBy(ctx.memberId);
+  const cardId = await repo.lastCardUsedBy(ctx.memberId, todayInFamilyTz(ctx.clock));
   const members = await repo.countMembers();
   const enabled = await isSettlementEnabled(tx, ctx.familyId);
   return {
@@ -148,6 +158,7 @@ export async function getDefaults(tx: Tx, ctx: RequestContext): Promise<Transact
     split: {
       available: enabled && members >= 2,
       ruleShares: enabled && members >= 2 ? await currentRuleShares(tx, ctx) : null,
+      installmentsAvailable: INSTALLMENT_SPLIT_RELEASED,
     },
   };
 }
@@ -424,6 +435,7 @@ export async function listTransactions(
   tx: Tx,
   ctx: RequestContext,
   q: ListTransactionsQuery,
+  opts: { occurredUntil?: string } = {},
 ): Promise<ListTransactionsResponse> {
   const repo = transacoesRepo(tx, ctx.familyId);
   const cursor = q.cursor ? decodeCursor(q.cursor) : null;
@@ -435,6 +447,7 @@ export async function listTransactions(
     start: range.start,
     end: range.end,
     includeDeleted: q.includeDeleted ?? false,
+    ...(opts.occurredUntil ? { occurredUntil: opts.occurredUntil } : {}),
     ...(q.accountId ? { accountId: q.accountId } : {}),
     ...(q.cardId ? { cardId: q.cardId } : {}),
     ...(q.memberId ? { memberId: q.memberId } : {}),

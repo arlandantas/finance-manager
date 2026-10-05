@@ -2,6 +2,8 @@ import { z } from "zod";
 import { dateISOSchema, daysBetween } from "@/lib/dates";
 import { amountInCentsSchema } from "@/lib/money";
 import { type MemberRef, periodKeySchema, uuidSchema, versionSchema } from "@/lib/schemas";
+import type { InvoiceStatus } from "@/modules/cartoes/cycle";
+import { MAX_INSTALLMENTS } from "@/modules/cartoes/installments";
 
 /** Mensagem única de descrição inválida em despesa/receita/cartão (SDD-013 §1; previstas mantêm as suas). */
 export const DESCRIPTION_MSG = "A descrição precisa ter entre 2 e 100 caracteres";
@@ -22,7 +24,15 @@ const common = {
   note: z.string().trim().max(500, "A observação deve ter no máximo 500 caracteres").optional(),
 };
 
-// SDD-008 §3.2: despesa em conta OU compra no cartão.
+const INSTALLMENTS_MSG = "Escolha de 1 a 24 parcelas";
+const installmentsSchema = z
+  .number({ error: INSTALLMENTS_MSG })
+  .int(INSTALLMENTS_MSG)
+  .min(1, INSTALLMENTS_MSG)
+  .max(MAX_INSTALLMENTS, INSTALLMENTS_MSG)
+  .default(1);
+
+// SDD-008 §3.2: despesa em conta OU compra no cartão. SDD-014 §2: `installments` (só no cartão).
 export const CreateExpenseSchema = z
   .object({
     type: z.literal("EXPENSE"),
@@ -30,6 +40,7 @@ export const CreateExpenseSchema = z
     accountId: common.accountId.optional(),
     cardId: z.uuid({ error: "Escolha um cartão" }).optional(),
     isSharedExpense: z.boolean().default(false), // "Só meu" por padrão (US-030, D-GES-15)
+    installments: installmentsSchema,
   })
   .strict()
   .superRefine((v, c) => {
@@ -45,6 +56,13 @@ export const CreateExpenseSchema = z
         code: "custom",
         path: ["cardId"],
         message: "Informe a conta ou o cartão, não os dois",
+      });
+    }
+    if (v.installments > 1 && !v.cardId) {
+      c.addIssue({
+        code: "custom",
+        path: ["installments"],
+        message: "Parcelas só valem para compra no cartão",
       });
     }
   });
@@ -65,12 +83,16 @@ export type TransactionType =
   | "OPENING"
   | "INVOICE_PAYMENT";
 
+export type InstallmentDTO = { planId: string; no: number; count: number };
+
 export type TransactionDTO = {
   id: string;
   type: TransactionType; // = coluna Prisma `kind`
   direction: "CREDIT" | "DEBIT";
   amountInCents: number;
   occurredOn: string; // YYYY-MM-DD
+  competenceOn: string; // YYYY-MM-DD: em que mês conta (ADR-020); = occurredOn salvo em parcela
+  installment: InstallmentDTO | null; // US-040: parcela de compra parcelada
   description: string;
   note: string | null;
   account: { id: string; name: string; archived?: boolean } | null; // null em compra no cartão; `archived` marca "(arquivada)"
@@ -100,8 +122,54 @@ export type TransactionDTO = {
 
 export type TransactionDetailDTO = TransactionDTO & { editedBy: MemberRef | null };
 
+export type InstallmentParcelDTO = {
+  transactionId: string;
+  no: number;
+  amountInCents: number;
+  occurredOn: string;
+  invoice: {
+    ref: string;
+    closingDate: string;
+    dueDate: string;
+    status: InvoiceStatus;
+    isFuture: boolean;
+  };
+  state: "ACTIVE" | "REMOVED";
+  locked: boolean;
+  lockedReason: "INVOICE_CLOSED" | "INVOICE_PAID" | null;
+  version: number;
+};
+
+export type InstallmentPlanDTO = {
+  id: string;
+  description: string;
+  note: string | null;
+  card: { id: string; name: string };
+  category: { id: string; name: string; icon: string };
+  payer: MemberRef;
+  author: MemberRef;
+  count: number;
+  purchaseOn: string;
+  totalInCents: number; // total ORIGINAL da compra
+  currentTotalInCents: number; // Σ parcelas ATIVAS
+  activeCount: number;
+  installments: InstallmentParcelDTO[];
+  isShared: boolean;
+  canDelete: boolean;
+  deleteBlockedReason: "INVOICE_CLOSED" | "INVOICE_PAID" | "CARD_ARCHIVED" | null;
+  version: number;
+  deleted: boolean;
+  deletedAt: string | null;
+};
+
+export const DeleteInstallmentPlanSchema = z
+  .object({ version: versionSchema, confirmSettledPeriod: z.boolean().optional() })
+  .strict();
+export const RestoreInstallmentPlanSchema = z.object({ version: versionSchema }).strict();
+
 export type CreateTransactionResponse = {
   transaction: TransactionDTO;
+  plan?: InstallmentPlanDTO; // só quando installments > 1
   account?: { id: string; balanceInCents: number }; // só quando há conta
   card?: { id: string; usedInCents: number; availableInCents: number }; // só em compra no cartão
 };
@@ -112,7 +180,11 @@ export type TransactionDefaults = {
   payerMemberId: string;
   today: string;
   // `available` = acerto ligado e 2+ membros ativos (esconde o interruptor "Dividir", US-028/030)
-  split: { available: boolean; ruleShares: Array<{ memberId: string; bps: number }> | null };
+  split: {
+    available: boolean;
+    ruleShares: Array<{ memberId: string; bps: number }> | null;
+    installmentsAvailable: boolean; // US-042 liga (compra parcelada dividida)
+  };
 };
 
 // ── Extrato (SDD-005 §2) ──
@@ -154,6 +226,7 @@ export type LedgerFilters = {
   shared?: boolean;
   q?: string; // busca por descrição (ILIKE; sem acento-insensibilidade)
   includeDeleted: boolean;
+  occurredUntil?: string; // interno (Home "recentes", ADR-020 §4): nada com data de calendário futura
 };
 
 export type LedgerTotalsDTO = {

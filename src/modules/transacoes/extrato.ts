@@ -19,6 +19,7 @@ export function buildLedgerWhere(f: LedgerFilters): Prisma.Sql {
     Prisma.sql`t.kind <> 'OPENING'`,
     periodPredicate("t", f.start, f.end),
   ];
+  if (f.occurredUntil) parts.push(Prisma.sql`t."occurredOn" <= ${f.occurredUntil}::date`);
   if (!f.includeDeleted) parts.push(Prisma.sql`t."deletedAt" IS NULL`);
   if (f.accountId) parts.push(Prisma.sql`t."accountId" = ${f.accountId}::uuid`);
   if (f.cardId) parts.push(Prisma.sql`t."cardId" = ${f.cardId}::uuid`);

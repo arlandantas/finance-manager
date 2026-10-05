@@ -21,3 +21,8 @@ export function visibilityPredicate(_alias: string, _memberId: string): Prisma.S
 export function periodFilter(start: string, end: string): { occurredOn: { gte: Date; lte: Date } } {
   return { occurredOn: { gte: toDbDate(start), lte: toDbDate(end) } };
 }
+
+/** "Já aconteceu" por data de calendário (ADR-020 §4): exclui parcelas com data futura. Não é período. */
+export function notFutureFilter(today: string): { occurredOn: { lte: Date } } {
+  return { occurredOn: { lte: toDbDate(today) } };
+}

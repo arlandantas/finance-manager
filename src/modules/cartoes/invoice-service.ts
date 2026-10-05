@@ -8,6 +8,7 @@ import {
   type ActivePayment,
   activePayments,
   buildInvoiceSummary,
+  futureInstallmentsInCents,
   invoiceByMember,
   invoiceTotals,
 } from "@/modules/cartoes/queries";
@@ -48,13 +49,14 @@ async function summaries(
   );
   const openRef = openInvoiceRef(today, card.closingDay);
   if (!list.some((s) => s.ref === openRef)) {
-    list.unshift(buildInvoiceSummary(card, openRef, null, zero, null, today));
+    list.push(buildInvoiceSummary(card, openRef, null, zero, null, today));
+    list.sort((a, b) => (a.ref < b.ref ? 1 : a.ref > b.ref ? -1 : 0)); // mais recentes primeiro
   }
-  // Faturas materializadas posteriores à aberta (compras antecipadas não existem na R2) ficam de fora.
-  return { list: list.filter((s) => s.ref <= openRef), ids: idByRef };
+  // Faturas futuras materializadas (parcelas, US-040a) entram: a navegação vai até a última delas.
+  return { list, ids: idByRef };
 }
 
-/** GET /cards/:id/invoices (SDD-008 §3.1): até 24, mais recentes primeiro. */
+/** GET /cards/:id/invoices (SDD-008 §3.1): até 24, mais recentes primeiro (futuras materializadas incluídas). */
 export async function listInvoices(
   tx: Tx,
   ctx: RequestContext,
@@ -79,7 +81,7 @@ function memberRefOf(m: {
   };
 }
 
-/** GET /cards/:id/invoices/:ref (SDD-008 §3.1). 404 se a ref é posterior à aberta ou não existe. */
+/** GET /cards/:id/invoices/:ref (SDD-008 §3.1). 404 se a fatura não existe (nem materializada, nem a aberta). */
 export async function getInvoice(
   tx: Tx,
   ctx: RequestContext,
@@ -157,6 +159,7 @@ export async function getInvoice(
       previousRef,
       nextRef,
       canPay: status === "CLOSED" && summary.totalInCents > 0,
+      futureInstallmentsInCents: await futureInstallmentsInCents(tx, ctx.familyId, card.id, ref),
     },
   };
 }

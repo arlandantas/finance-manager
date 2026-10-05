@@ -44,6 +44,8 @@ const existing = (id: string, occurredOn: string): TransactionDTO => ({
   direction: "DEBIT",
   amountInCents: 1000,
   occurredOn,
+  competenceOn: occurredOn,
+  installment: null,
   description: id,
   note: null,
   account: nubank,

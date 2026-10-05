@@ -133,6 +133,8 @@ export function buildPendingItem(
     direction: input.type === "EXPENSE" ? "DEBIT" : "CREDIT",
     amountInCents: input.amountInCents,
     occurredOn,
+    competenceOn: occurredOn,
+    installment: null,
     description:
       (typeof input.description === "string" && input.description.trim()) || category.name,
     note: input.note ?? null,

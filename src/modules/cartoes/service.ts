@@ -5,11 +5,13 @@ import { localPart } from "@/lib/auth/dev-login-guard";
 import { todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
 import type { MemberRef } from "@/lib/schemas";
+import { openInvoiceRef } from "@/modules/cartoes/cycle";
 import {
   cardInvoiceSummaries,
   cardsWithInvoices,
   cardsWithTransactions,
   cardUsage,
+  futureInstallmentsInCents,
 } from "@/modules/cartoes/queries";
 import { cartoesRepo } from "@/modules/cartoes/repo";
 import type {
@@ -45,6 +47,13 @@ async function toCardDTOs(tx: Tx, ctx: RequestContext, rows: CardRow[]): Promise
   const locked = await cardsWithInvoices(tx, ctx.familyId, ids);
   const usedIds = await cardsWithTransactions(tx, ctx.familyId, ids);
   const invoices = await cardInvoiceSummaries(tx, ctx.familyId, rows, today);
+  const futureInstallments = new Map<string, number>();
+  for (const c of rows) {
+    futureInstallments.set(
+      c.id,
+      await futureInstallmentsInCents(tx, ctx.familyId, c.id, openInvoiceRef(today, c.closingDay)),
+    );
+  }
   return rows.map((c) => {
     const used = usage.get(c.id) ?? 0;
     const limit = toCents(c.limitInCents);
@@ -57,6 +66,7 @@ async function toCardDTOs(tx: Tx, ctx: RequestContext, rows: CardRow[]): Promise
       limitInCents: limit,
       usedInCents: used,
       availableInCents: limit - used,
+      installmentsFutureInCents: futureInstallments.get(c.id) ?? 0,
       closingDay: c.closingDay,
       dueDay: c.dueDay,
       cycleLocked: locked.has(c.id),

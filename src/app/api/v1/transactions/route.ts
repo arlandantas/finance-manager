@@ -1,4 +1,5 @@
 import { withApi } from "@/lib/api/with-api";
+import { createInstallmentPurchase } from "@/modules/transacoes/installment-create";
 import { CreateTransactionSchema, ListTransactionsQuerySchema } from "@/modules/transacoes/schemas";
 import { createTransaction, listTransactions } from "@/modules/transacoes/service";
 
@@ -12,5 +13,9 @@ export const GET = withApi({ query: ListTransactionsQuerySchema }, async ({ ctx,
 
 export const POST = withApi({ body: CreateTransactionSchema }, async ({ ctx, tx, body }) => ({
   status: 201,
-  body: await createTransaction(tx, ctx, body),
+  // SDD-014: cartão + 2 ou mais parcelas = plano com N lançamentos; 1x e à vista seguem o fluxo de sempre
+  body:
+    body.type === "EXPENSE" && body.installments > 1
+      ? await createInstallmentPurchase(tx, ctx, body)
+      : await createTransaction(tx, ctx, body),
 }));

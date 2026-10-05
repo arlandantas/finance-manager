@@ -71,6 +71,7 @@ export type InvoiceSummaryDTO = {
   dueDate: string; // YYYY-MM-DD
   status: InvoiceStatus;
   isOverdue: boolean; // CLOSED && hoje > dueDate
+  isFuture: boolean; // ref > fatura aberta hoje (parcelas materializadas, US-040a)
   totalInCents: number;
   purchasesCount: number;
   paidOn: string | null;
@@ -90,6 +91,7 @@ export type InvoiceDTO = InvoiceSummaryDTO & {
   previousRef: string | null;
   nextRef: string | null; // navegação [mais antiga materializada .. fatura aberta]
   canPay: boolean; // CLOSED && total > 0
+  futureInstallmentsInCents: number; // Σ parcelas ativas em faturas do mesmo cartão POSTERIORES a esta
 };
 export type CardDTO = {
   id: string;
@@ -99,6 +101,7 @@ export type CardDTO = {
   limitInCents: number;
   usedInCents: number;
   availableInCents: number; // pode ser negativo
+  installmentsFutureInCents: number; // Σ parcelas ativas em faturas posteriores à aberta (US-040a)
   closingDay: number;
   dueDay: number;
   cycleLocked: boolean;

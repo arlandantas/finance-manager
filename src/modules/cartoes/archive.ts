@@ -1,8 +1,12 @@
 import { conflict, forbidden, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { todayInFamilyTz } from "@/lib/dates";
-import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
-import { cardInvoiceSummaries, cardsWithTransactions } from "@/modules/cartoes/queries";
+import { formatInvoiceLabel, openInvoiceRef } from "@/modules/cartoes/cycle";
+import {
+  cardInvoiceSummaries,
+  cardsWithTransactions,
+  futureInstallmentsInCents,
+} from "@/modules/cartoes/queries";
 import { cartoesRepo } from "@/modules/cartoes/repo";
 import { listCards } from "@/modules/cartoes/service";
 
@@ -66,6 +70,16 @@ export async function archiveCard(tx: Tx, ctx: RequestContext, id: string, versi
     throw unprocessable(
       "CARD_HAS_OPEN_PURCHASES",
       "Há compras na fatura aberta. Pague a fatura quando ela fechar para arquivar.",
+    );
+  }
+  // SDD-014 §4.9: parcelas ativas em faturas futuras (sem pagamento: futura não se paga) também bloqueiam
+  if (
+    (await futureInstallmentsInCents(tx, ctx.familyId, id, openInvoiceRef(today, row.closingDay))) >
+    0
+  ) {
+    throw unprocessable(
+      "CARD_HAS_FUTURE_INSTALLMENTS",
+      "Este cartão tem parcelas futuras. Exclua as compras parceladas antes de arquivar",
     );
   }
   await tx.creditCard.updateMany({
