@@ -80,7 +80,9 @@ describe("US-022 explainByRules / formatSplitLabel (SDD-011 §4.1)", () => {
   });
 
   it("X2: mês passado não herda a regra criada depois", () => {
-    const { e, label } = explain("2026-09", "2026-10-12", rules, [
+    // contexto do BDD: "regra igual vigente desde 01/01/2026" é uma versão explícita, não a padrão
+    const withExplicit = [{ ...equal, id: "r00", effectiveFrom: "2026-01-01" }, ...rules];
+    const { e, label } = explain("2026-09", "2026-10-12", withExplicit, [
       exp("a", M, 71700, "2026-09-10"),
     ]);
     expect(e?.segments).toHaveLength(1);

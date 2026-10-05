@@ -65,7 +65,7 @@ export function explainByRules(i: {
     return {
       ruleVersionId: rule.id,
       kind: rule.kind,
-      isDefault: rule.effectiveFrom === DEFAULT_EFFECTIVE_FROM && i.rules.length === 1,
+      isDefault: rule.effectiveFrom === DEFAULT_EFFECTIVE_FROM,
       from: idx === 0 ? null : date,
       to: next ? addDays(next, -1) : null,
       shares,

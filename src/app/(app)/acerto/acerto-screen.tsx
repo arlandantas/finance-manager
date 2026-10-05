@@ -11,9 +11,15 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
+import { formatSplitLabel } from "@/modules/split/explain";
 import { heroText } from "@/modules/split/hero";
-import { useSettlement, useSharedExpenses, useSplitRule } from "@/modules/split/hooks";
-import { formatBpsList } from "@/modules/split/rules";
+import {
+  useSettlement,
+  useSharedExpenses,
+  useSplitHistory,
+  useSplitRule,
+} from "@/modules/split/hooks";
+import { formatBps, formatBpsList } from "@/modules/split/rules";
 import type { SettlementDTO, SettlementSuggestion, SplitRuleDTO } from "@/modules/split/schemas";
 import { SettleDrawer } from "./settle-drawer";
 
@@ -160,16 +166,84 @@ function MemberCard({
   );
 }
 
-function RuleSummary({ rule }: { rule: SplitRuleDTO | undefined }) {
-  if (!rule) return null;
-  const text =
-    rule.current.kind === "EQUAL"
-      ? `Divisão igual (${formatBpsList(rule.current.shares)})`
-      : `Divisão proporcional (${formatBpsList(rule.current.shares)})`;
+function RuleHistory() {
+  const [open, setOpen] = useState(false);
+  const history = useSplitHistory(open);
+  const rule = useSplitRule();
+  const nameOf = (id: string) =>
+    rule.data?.members.find((m) => m.id === id)?.name.split(" ")[0] ?? "(ex-membro)";
   return (
-    <p data-testid="rule-summary" className="text-sm text-slate-600">
-      {text}
-    </p>
+    <details
+      data-testid="rule-history"
+      className="rounded-xl border border-slate-200 bg-white p-3"
+      onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}
+    >
+      <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-slate-800">
+        Ver histórico de regras
+      </summary>
+      {history.isPending && open ? <Skeleton className="h-16" /> : null}
+      {history.isError ? (
+        <div role="alert" className="flex flex-col items-start gap-2 text-sm text-red-800">
+          <p>Não foi possível carregar a regra de divisão</p>
+          <Button variant="secondary" onClick={() => history.refetch()}>
+            Tentar de novo
+          </Button>
+        </div>
+      ) : null}
+      {history.data ? (
+        <ul className="flex flex-col divide-y divide-slate-100">
+          {history.data.items.map((r) => (
+            <li key={r.id} data-testid="rule-history-item" className="py-2 text-sm text-slate-800">
+              <span className="font-medium">
+                {r.kind === "EQUAL" ? "Divisão igual" : "Divisão proporcional"}
+              </span>{" "}
+              ({r.shares.map((x) => `${nameOf(x.memberId)} ${formatBps(x.bps)}%`).join(" / ")}){" "}
+              <span className="text-slate-500">
+                {r.effectiveFrom === "1970-01-01"
+                  ? "· padrão"
+                  : `· desde ${r.effectiveFrom.split("-").reverse().join("/")}`}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </details>
+  );
+}
+
+function RuleSummary({ s, rule }: { s: SettlementDTO; rule: SplitRuleDTO | undefined }) {
+  const explained = s.splitExplanation
+    ? formatSplitLabel(
+        s.splitExplanation,
+        s.members.map((m) => m.member.id),
+      )
+    : null;
+  let text = explained?.label ?? null;
+  if (!text && rule) {
+    text =
+      rule.current.kind === "EQUAL"
+        ? `Divisão igual (${formatBpsList(rule.current.shares)})`
+        : `Divisão proporcional (${formatBpsList(rule.current.shares)})`;
+  }
+  return (
+    <div className="flex flex-col gap-1">
+      {text ? (
+        <p data-testid="rule-summary" className="text-sm text-slate-700">
+          {text}
+        </p>
+      ) : null}
+      {explained?.weightedLine ? (
+        <p data-testid="rule-weighted" className="text-sm text-slate-600">
+          {explained.weightedLine}
+        </p>
+      ) : null}
+      {s.splitExplanation === null ? (
+        <p data-testid="rule-empty" className="text-sm text-slate-600">
+          Nenhuma despesa dividida neste mês
+        </p>
+      ) : null}
+      <RuleHistory />
+    </div>
   );
 }
 
@@ -320,7 +394,7 @@ export function AcertoScreen() {
                 ))}
               </ul>
               {s.status !== "EMPTY" ? <SharedExpensesList period={s.period.key} /> : null}
-              <RuleSummary rule={rule.data} />
+              <RuleSummary s={s} rule={rule.data} />
               {s.settlements.length > 0 ? (
                 <section aria-label="Histórico de acertos" className="flex flex-col gap-2">
                   <h2 className="text-lg font-semibold text-slate-900">Acertos registrados</h2>

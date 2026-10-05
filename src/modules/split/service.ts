@@ -6,6 +6,7 @@ import { type Period, periodFromKey, periodOf } from "@/lib/period";
 import type { MemberRef } from "@/lib/schemas";
 import type { TransferDTO } from "@/modules/contas/schemas";
 import { createTransferGroup } from "@/modules/contas/transfers";
+import { explainByRules } from "@/modules/split/explain";
 import { settlementLabel } from "@/modules/split/labels";
 import { splitRepo } from "@/modules/split/repo";
 import { equalShares, isRuleStale, type RuleInput, ruleAt } from "@/modules/split/rules";
@@ -15,10 +16,16 @@ import type {
   SettlementDTO,
   SettlementEntryDTO,
   SharedExpensesResponse,
+  SplitHistoryResponse,
   SplitRuleDTO,
   SplitRuleParsed,
 } from "@/modules/split/schemas";
-import { computeSettlement, type SettlementResult } from "@/modules/split/settlement";
+import {
+  computeSettlement,
+  type ExpenseInput,
+  type MemberInput,
+  type SettlementResult,
+} from "@/modules/split/settlement";
 import { memberRefOf } from "@/modules/transacoes/service";
 
 type Repo = ReturnType<typeof splitRepo>;
@@ -99,6 +106,21 @@ export async function getSplitRule(tx: Tx, ctx: RequestContext): Promise<SplitRu
   return buildRuleDto(await loadRuleContext(tx, ctx), ctx);
 }
 
+/** GET /api/v1/split-rule/history (SDD-011 §4.1): todas as versões, da mais recente para a mais antiga. */
+export async function getSplitHistory(tx: Tx, ctx: RequestContext): Promise<SplitHistoryResponse> {
+  const c = await loadRuleContext(tx, ctx);
+  const refs = refsOf(c.members);
+  const canonical = c.members.map((m, i) => ({ id: m.id, ordinal: i }));
+  const createdBy = new Map(c.ruleRows.map((r) => [r.id, r.createdByMemberId] as const));
+  const items = [...c.rules]
+    .sort(
+      (a, b) =>
+        b.effectiveFrom.localeCompare(a.effectiveFrom) || b.createdAt.localeCompare(a.createdAt),
+    )
+    .map((r) => ruleDto(r, canonical, refs, createdBy.get(r.id) ?? null));
+  return { items };
+}
+
 /** PUT /api/v1/split-rule (SDD-002 §5.5): sempre uma nova versão; nunca altera as antigas. */
 export async function putSplitRule(
   tx: Tx,
@@ -140,6 +162,10 @@ export type LoadedSettlement = {
   stale: boolean;
   ruleKind: "EQUAL" | "PROPORTIONAL";
   groups: Awaited<ReturnType<Repo["activeSettlements"]>>;
+  // Entradas do motor, reaproveitadas pela explicação (mesma fonte das cotas, US-022).
+  memberInputs: MemberInput[];
+  expenseInputs: ExpenseInput[];
+  rules: RuleInput[];
 };
 
 /** Carrega as entradas e roda o motor puro para o período (SDD-002 §5). */
@@ -153,15 +179,21 @@ export async function loadSettlement(
   const period = periodKey ? periodFromKey(periodKey, c.cutDay) : currentPeriod;
   const expenses = await c.repo.sharedExpenses(period.start, period.end);
   const groups = await c.repo.activeSettlements(period.key);
+  const memberInputs = c.members.map((m, i) => ({
+    id: m.id,
+    ordinal: i,
+    joinedOn: memberJoinedOn(m),
+  }));
+  const expenseInputs = expenses.map((e) => ({
+    id: e.id,
+    amountInCents: toCents(e.amountInCents),
+    payerMemberId: e.payerMemberId as string,
+    occurredOn: fromDbDate(e.occurredOn),
+  }));
   const result = computeSettlement({
     period,
-    members: c.members.map((m, i) => ({ id: m.id, ordinal: i, joinedOn: memberJoinedOn(m) })),
-    expenses: expenses.map((e) => ({
-      id: e.id,
-      amountInCents: toCents(e.amountInCents),
-      payerMemberId: e.payerMemberId as string,
-      occurredOn: fromDbDate(e.occurredOn),
-    })),
+    members: memberInputs,
+    expenses: expenseInputs,
     rules: c.rules,
     settlements: groups.flatMap((g) => {
       const out = g.legs.find((l) => l.kind === "TRANSFER_OUT");
@@ -191,6 +223,9 @@ export async function loadSettlement(
     ),
     ruleKind: shown.kind,
     groups,
+    memberInputs,
+    expenseInputs,
+    rules: c.rules,
   };
 }
 
@@ -235,6 +270,14 @@ export function toSettlementDto(l: LoadedSettlement, ctx: RequestContext): Settl
       settledAdjustmentInCents: m.settledAdjustmentInCents,
       balanceInCents: m.balanceInCents,
     })),
+    splitExplanation: explainByRules({
+      period: l.period,
+      today: l.today,
+      rules: l.rules,
+      members: l.memberInputs,
+      expenses: l.expenseInputs,
+      result: l.result,
+    }),
     suggestions: l.result.suggestions.map((s) => ({
       from: ref(s.fromMemberId),
       to: ref(s.toMemberId),

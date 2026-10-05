@@ -2,6 +2,7 @@ import { z } from "zod";
 import { dateISOSchema } from "@/lib/dates";
 import { amountInCentsSchema } from "@/lib/money";
 import { type MemberRef, periodKeySchema, uuidSchema } from "@/lib/schemas";
+import type { SplitExplanationDTO } from "@/modules/split/explain";
 import type { SettlementStatus } from "@/modules/split/settlement";
 
 export type { SettlementStatus };
@@ -106,6 +107,7 @@ export type SettlementDTO = {
   totalSharedInCents: number;
   rule: { kind: "EQUAL" | "PROPORTIONAL"; stale: boolean; canEdit: boolean };
   members: SettlementMemberRow[];
+  splitExplanation: SplitExplanationDTO | null; // null com total comum = 0 (US-022)
   suggestions: SettlementSuggestion[];
   settlements: SettlementEntryDTO[];
 };
@@ -118,3 +120,6 @@ export type SharedExpenseItemDTO = {
   category: { id: string; name: string; icon: string };
 };
 export type SharedExpensesResponse = { items: SharedExpenseItemDTO[]; totalInCents: number };
+
+export type { SplitExplanationDTO, SplitSegmentDTO } from "@/modules/split/explain";
+export type SplitHistoryResponse = { items: RuleVersionDTO[] };

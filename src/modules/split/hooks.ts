@@ -6,6 +6,7 @@ import type {
   CreateSettlementInput,
   SettlementDTO,
   SharedExpensesResponse,
+  SplitHistoryResponse,
   SplitRuleDTO,
   SplitRuleInput,
 } from "@/modules/split/schemas";
@@ -81,5 +82,13 @@ export function useRegisterSettlement(idempotencyKey: string) {
           qc.invalidateQueries({ queryKey }),
         ),
       ),
+  });
+}
+
+export function useSplitHistory(enabled: boolean) {
+  return useQuery({
+    queryKey: [...splitRuleKey, "history"],
+    queryFn: () => apiFetch<SplitHistoryResponse>("/api/v1/split-rule/history"),
+    enabled,
   });
 }
