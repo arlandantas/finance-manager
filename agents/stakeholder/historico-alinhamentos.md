@@ -280,3 +280,14 @@ Nenhuma objeção bloqueante. As observações acima (D-PO-03, Q-13, Q-17) são 
   - Conflitos resolvidos: acerto opcional sem perder o valor do AP0; percentual gravado por lançamento preserva Q-08; NEED-009 ajustado ao Resumo do Mês; D-PO-02 não reaberta.
   - O usuário delegou as decisões ao time: **Q-F01..Q-F14 decididas** com hipótese conservadora; permanecem com o usuário apenas Q-U01 (IA/provedor externo) e Q-U02 (exclusão da família).
 - **Entrega:** [`parecer-feedback-usuario.md`](parecer-feedback-usuario.md) (tabela de prioridades, decisões e pacote de handover ao PO).
+
+
+---
+
+## [2026-10-05] - Homologação de valor R2.1 (+ parcelamento R3-A) pelo navegador
+
+- **Participantes:** Agente Stakeholder (teste como usuário real: Mariana e Lucas, painel embutido, mobile 375 px e desktop 1280 px).
+- **Resultado:** **Homologa com ressalvas**. As 4 ressalvas importantes da homologação R1+R2 foram **resolvidas** (rótulo da regra, dívida de mês anterior, conta de origem padrão, prévia de impacto/sugestão pela renda); Resumo do Mês, ocultar valores, acerto opcional, "Só meu" por padrão, arquivamento, gestão de família e tema funcionam como pedido, e os números conferem. Sem bloqueantes.
+- **Ressalva remanescente (I):** compra parcelada não pode ser dividida ("Disponível em breve") e fica "Pessoal", portanto fora do acerto até a US-042; pedido de aviso mais visível ao casal.
+- **Posição:** manter a US-042 (parcela dividida por parcela no mês da fatura, Q-F05) como a próxima prioridade após a janela de reversão, antes de tags e visões.
+- **Entrega:** [`homologacao-r21.md`](homologacao-r21.md) (dados de teste criados listados no relatório).
