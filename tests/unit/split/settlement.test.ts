@@ -1,13 +1,43 @@
 import { describe, expect, it } from "vitest";
 import { periodFromKey } from "@/lib/period";
+import { allocateBackfill } from "@/modules/split/backfill";
 import type { RuleInput } from "@/modules/split/rules";
 import {
-  computeSettlement,
+  computeSettlementFor,
   type ExpenseInput,
   type MemberInput,
   type SettledInput,
   type SettlementInput,
 } from "@/modules/split/settlement";
+
+/**
+ * EN-002a (SDD-015 §8.1): os vetores S1..S16 e as propriedades rodam nos DOIS motores. O motor STORED lê o
+ * rateio produzido por `allocateBackfill` (o mesmo que a migração grava) e o resultado tem de ser
+ * IDÊNTICO ao do LEGACY, campo a campo. O helper devolve o resultado do LEGACY para as asserções.
+ */
+function computeSettlement(i: SettlementInput) {
+  const legacy = computeSettlementFor("LEGACY", i);
+  const rows = allocateBackfill({
+    period: i.period,
+    members: i.members,
+    rules: i.rules,
+    expenses: i.expenses.map((e) => ({ ...e, createdAt: "2026-01-01T00:00:00Z" })),
+  });
+  const stored = computeSettlementFor("STORED", {
+    period: i.period,
+    members: i.members,
+    settlements: i.settlements,
+    expenses: i.expenses.map((e) => ({
+      ...e,
+      splits: (rows.find((r) => r.expenseId === e.id)?.shares ?? []).map((s) => ({
+        memberId: s.memberId,
+        amountInCents: s.amountInCents,
+      })),
+    })),
+  });
+  expect(stored).toEqual(legacy);
+  return legacy;
+}
 
 const period = periodFromKey("2026-10");
 const M: MemberInput = { id: "m", ordinal: 0, joinedOn: "2026-01-01" };
