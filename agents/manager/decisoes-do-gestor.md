@@ -30,3 +30,14 @@
 | :-- | :-- |
 | D-GES-12 | **Ratificado D-PO-10:** US-016 → 016a/016b e US-017 → 017a (ver fatura, Must) / 017b (pagar, Should). Ordem de corte na R2: US-014, depois 017b, depois 016b. |
 | D-GES-13 | **PO-01/Q-20 aceito:** compra no cartão é creditada no acerto a quem comprou (RN-003.3). Revisar na homologação da R2. |
+
+## Ratificações (R2.1 e R3)
+| ID | Decisão |
+| :-- | :-- |
+| D-GES-14 | **Ratificadas D-PO-12..32** (`product-owner/backlog/decisoes-po-r21-r3.md`) e o parecer do Stakeholder (Q-F01..Q-F14). O usuário delegou as decisões ao time. |
+| D-GES-15 | **D-PO-16 aceita:** despesas previstas também nascem "Só meu" (revisa Q-22). O fechamento do mês avisa as não divididas. |
+| D-GES-16 | **D-PO-26 aceita:** parcela conta no mês da fatura; à vista segue pela data da compra. O Tech Lead avalia no SDD e sinaliza se a assimetria gerar inconsistência no Extrato/Resumo. |
+| D-GES-17 | **Parcelamento (US-040/042):** puxado para o fim dos Must da R2.1 se o Tech Lead estimar US-040 ≤ 5 e US-042 ≤ 3 e não depender da EN-002; senão fica como 1º item da R3. |
+| D-GES-18 | **Ordem de corte** da R2.1 (US-039, 037, 038, 036, 033, 035, 031) e da R3 aprovadas como propostas pelo PO. |
+| D-GES-19 | **Dev:** antes de iniciar a R2.1, rodar a suíte E2E completa (desktop e mobile) como linha de base; a TASK-025 só rodou parte. |
+| D-GES-20 | **Acesso em dev:** `localhost`, IP privado da LAN (liberação automática, desligável por `APP_DEV_LAN_AUTO=false`) e túnel só sob pedido (TASK-025). |
