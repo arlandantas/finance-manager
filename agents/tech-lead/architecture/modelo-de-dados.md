@@ -647,9 +647,9 @@ SELECT id FROM members WHERE "familyId" = $1 AND role = 'ADMIN' AND "removedAt" 
 ```
 **Predicado único de período/visibilidade** (`ledger-where.ts`, SDD-010 §4.1): na R2.1 `occurredOn BETWEEN`; na R3 passa a `competenceOn` (§9) sem tocar nos consumidores.
 
-## 9. R3 — Parcelamento, percentual por lançamento, tags, cor e receitas previstas (previsão; detalhada nos SDD-014..017)
+## 9. R3 — Parcelamento, percentual por lançamento, tags, cor e receitas previstas (previsão; **substituída pelo §10**)
 
-*Acrescentado em 2026-10-04 como **previsão de modelo**, para que a R2.1 não gere retrabalho. O normativo de cada migração será fechado quando o SDD correspondente sair do esboço.*
+*Acrescentado em 2026-10-04 como **previsão de modelo**, para que a R2.1 não gere retrabalho. **Superado em 2026-10-05 pelo §10** (SDD-014..017 completos); mantido só como histórico.*
 
 ```mermaid
 erDiagram
@@ -691,3 +691,71 @@ erDiagram
 | `us051_previstas_receita` | US-051 | `PlannedKind`, `planned_expenses.kind DEFAULT 'EXPENSE'`, `CHECK` de não divisão para receita | médio (regressão das consultas de previstas) |
 
 **Restrições herdadas a respeitar em todas**: sem `DELETE` no ledger e nas revisões (`forbid_mutation`); `tx_kind_shape_chk` só é reescrita se necessário (a parcela é compra de cartão e **não** a altera); FKs compostas `(familyId, id)`; `prisma migrate reset` indisponível em sessão de IA (DEV-13) — testes usam `TRUNCATE` no `db-test`; nunca editar migração aplicada.
+
+---
+
+## 10. R3 — modelo final (SDD-014..017; **normativo**)
+
+*Acrescentado em 2026-10-05. O SQL cru e os trechos Prisma de cada migração estão **no SDD correspondente** (mesma regra do §8). Aqui ficam o ER final, a ordem das migrações, as proteções do banco e a ordem de travas. Referências: [ADR-020](../adrs/ADR-020-parcela-na-k-esima-fatura-e-competencia-no-banco.md), [ADR-021](../adrs/ADR-021-protocolo-de-migracao-e-corte-do-motor-do-acerto.md), [ADR-022](../adrs/ADR-022-tags-e-agregado-unico-da-analise.md), [ADR-023](../adrs/ADR-023-receita-prevista-por-kind-e-cor-por-enum-fixo.md).*
+
+### 10.1 Diagrama ER (acréscimos da R3)
+```mermaid
+erDiagram
+    Family ||--o{ InstallmentPlan : ""
+    CreditCard ||--o{ InstallmentPlan : "cardId"
+    InstallmentPlan ||--|{ Transaction : "N parcelas (installmentNo 1..N, uma por fatura)"
+    CardInvoice ||--o{ Transaction : "competenceOn = closingDate (parcela)"
+    Transaction ||--o{ TransactionSplit : "rateio por membro (splitMode RULE|CUSTOM)"
+    Member ||--o{ TransactionSplit : ""
+    SplitRuleVersion ||--o{ Transaction : "splitRuleVersionId (origem/sugestão)"
+    Family ||--o{ SplitMigrationSnapshot : "EN-002 (antes)"
+    Family ||--o{ DataMigration : "estado da migração por família"
+    Family ||--o{ Tag : ""
+    Transaction ||--o{ TransactionTag : "só EXPENSE/INCOME"
+    Tag ||--o{ TransactionTag : ""
+    Category ||--o{ SettlementReviewDismissal : "—"
+    Family ||--o{ SettlementReviewDismissal : "por (familyId, periodKey)"
+    BankAccount { enum color "AccountColor (10)" }
+    CreditCard  { enum color "AccountColor (10)" }
+    PlannedExpense { enum kind "EXPENSE|INCOME" }
+    Family { enum splitEngine "LEGACY|STORED" }
+    Category { bool defaultSplit "false" }
+    Transaction { date competenceOn "derivada por gatilho"
+      enum splitMode "NONE|RULE|CUSTOM" }
+```
+
+### 10.2 Ordem das migrações da R3 (uma por história; nunca editar migração aplicada)
+| Ordem | Migração | História | SDD | Conteúdo-chave | Regressão / cuidados |
+| :-: | :-- | :-- | :-- | :-- | :-- |
+| 1 | `us040_parcelamento` | US-040a | 014 | `installment_plans`; `transactions.installmentPlanId/No/Count`, **`competenceOn`** (retropreenchida = `occurredOn`, `NOT NULL`), `CHECK`s, **gatilho `transactions_sync_competence`**, índices por competência | **Alto**: S1..S13 + homologados + suíte completa antes e depois; o predicado muda na 040b |
+| 2 | `en002_percentual_por_lancamento` | EN-002a | 015 | `SplitMode`, `SplitEngine`, `transactions.splitMode/splitRuleVersionId`, `transaction_splits`, `families.splitEngine`, `split_migration_snapshots`, `data_migrations`, `CHECK tx_split_kind_chk`, *constraint triggers* deferrable | **O mais alto do produto**: só **expande**; os dados migram pelo *script* com *gate* de 1 centavo |
+| — | *script* `pnpm migrate:split` | EN-002b | 015 | backfill por pesos exatos, *snapshot*, *gate*, virada de motor | falha o *deploy* com código ≠ 0 |
+| 3 | `us043_modo_custom` | US-043 | 015 | **contrato**: `CHECK tx_shared_mode_chk`; `planned_expenses.splitMode/splitShares` + `CHECK`; libera `CUSTOM` | só depois da janela e de `--verify` limpo; falha se houver dado inconsistente |
+| 4 | `us044_dividir_por_categoria` | US-044 | 015 | `categories.defaultSplit`, `settlement_review_dismissals` | baixo |
+| 5 | `us045_enum_family_event_tags` ➜ `us045_tags` | US-045 | 016 | 3 valores em `FamilyEventType` (**migração isolada**); `tags`, `transaction_tags`, índices, gatilho de `kind` | baixo |
+| 6 | `us050_cores` | US-050 | 017 | `AccountColor`; `color` com *backfill* determinístico e `NOT NULL` | baixo |
+| 7 | `us051_previstas_receita` | US-051 | 017 | `PlannedKind`, `planned_expenses.kind DEFAULT 'EXPENSE'`, `CHECK`s de não divisão | médio: regressão **de todas** as consultas de previstas |
+US-041, US-042, US-046..049: **sem migração**.
+
+### 10.3 Proteções do banco acrescentadas
+| Objeto | Garante |
+| :-- | :-- |
+| `tx_installment_shape_chk`, `tx_installment_no_uq` | Parcela só em compra de cartão; `1 ≤ no ≤ count ≤ 24`; uma linha por `(plano, no)` |
+| `tx_competence_chk` + gatilho `tx_sync_competence` | `competenceOn = occurredOn` (comum) ou `= closingDate` da fatura (parcela), **em toda escrita** |
+| `tx_split_kind_chk` (+ `tx_shared_mode_chk` na migração de contrato) | Só despesa comum tem divisão; `isSharedExpense ⇔ splitMode <> NONE` |
+| *constraint triggers* `tx_split_integrity` (deferrable) | Por lançamento com divisão: Σ `bps` = 10000 e Σ valores = valor do lançamento; sem divisão ⇒ sem rateio |
+| `transaction_tags_kind` (gatilho) | Tag só em `EXPENSE`/`INCOME` |
+| `tags_family_nameKey` (único) | Nenhuma tag duplicada por caixa/acento na família |
+| `planned_income_*_chk` | Receita prevista nunca é dividida |
+O ledger continua **sem `DELETE`** (`transactions_no_delete`, `transaction_revisions` *append-only*). `installment_plans`, `transaction_splits`, `tags` e `transaction_tags` **não** são ledger: o plano usa exclusão **lógica** (carimbo, ADR-020 §3); rateio e ligações de tag são reescritos/removidos pelo serviço.
+
+### 10.4 Ordem de travas (acréscimos; evita *deadlock*)
+1. `lockFamilySplit` (`families` `FOR SHARE`; o *script* faz `FOR UPDATE`) — **primeira**, em toda escrita que muda despesa comum, rateio, regra ou acerto (ADR-021 §2).
+2. Operações de **plano** (`FOR UPDATE` em `installment_plans`) antes das faturas; a **criação** da compra parcelada trava cartão `FOR SHARE` ➜ faturas por `ref` crescente ➜ plano novo.
+3. Contas `FOR SHARE` por `id` crescente (SDD-012); faturas por `ref` crescente (SDD-008).
+4. Tags: `FOR SHARE` (criação de lançamento) e `FOR UPDATE` (mesclar/renomear/remover) **por `id` crescente**.
+
+### 10.5 Índices novos (consultas-chave)
+`(familyId, competenceOn DESC, createdAt DESC, id DESC)` e `(familyId, kind, competenceOn)` em `transactions` (período por competência; o índice por `occurredOn` permanece para ordenação/cursor); `transaction_splits (familyId, memberId)`; `transaction_tags (tagId, transactionId)`; `planned_expenses (familyId, kind, status, dueOn)`; `settlement_review_dismissals (familyId, periodKey)` único; `installment_plans (familyId, cardId, purchaseOn)`.
+
+**Restrições herdadas a respeitar em todas**: sem `DELETE` no ledger e nas revisões; `tx_kind_shape_chk` **não** é reescrita pela R3; FKs compostas `(familyId, id)`; `prisma migrate reset` indisponível em sessão de IA (DEV-13) — testes usam `TRUNCATE` no `db-test`; valor novo de enum **em migração isolada**; nunca editar migração aplicada.
