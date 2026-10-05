@@ -57,6 +57,10 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-041 | US-037 | Tema claro, escuro e do sistema (script anti-flash, menu Aparência, contraste AA) | US-027 | SDD-012 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-042 | US-038 | Menu superior no desktop, conteúdo contido a 960 px, barra inferior até 1023 px | US-037 | SDD-012 | 2 | Concluído (aguardando validação do Gestor) |
 | TASK-043 | US-039 | Copiar link / reenviar convite (rotação de token), polimento de filtros e validação reativa | US-033 | SDD-012 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-044 | US-040a | Compra parcelada atômica, faturas futuras, limite, parcelas somente leitura (migração `us040_parcelamento`, `competenceOn`) | US-016a | SDD-014 | 5 | Concluído (aguardando validação do Gestor) |
+| TASK-045 | US-040b | Excluir/desfazer a compra parcelada inteira, "Ver compra", Extrato por intervalo de até 24 meses | US-040a | SDD-014 | 3 | Concluído (aguardando validação do Gestor) |
+| TASK-046 | EN-002a | Motor STORED, despachante por motor, `splitAmount`, `lockFamilySplit`, `computeSettlementLegacy` extraído (S1..S16 nos dois motores) | US-040a | SDD-015 | 5 | Concluído (aguardando validação do Gestor) |
+| TASK-047 | EN-002b | `allocateBackfill` (pesos exatos, ADR-021), `migrateFamily` com snapshot e gate de 1 centavo, reversão e `--verify`, script `migrate:split` | EN-002a | SDD-015 | 8 | Concluído (aguardando validação do Gestor); **janela de reversão em curso** |
 
 ---
 
@@ -423,3 +427,18 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 - **US-034**: `familia/manage.ts` (`updateFamily`, `changeRole` sob advisory lock + conferência do ator dentro do lock), `GET /family` com `events` e `exMembers`. QA: I 7 (corrida de rebaixamento), E2E 5 x 2.
 - **US-035**: migração `r21_ex_membro` (índices parciais; `User.members`), `findActiveMembership`, `MemberRef.removed`, `computeSettlement` com `removedOn` (S14..S16), `removal.ts` (revisão + remoção atômica), `/members/:id/{removal-review,remove}`, `/family/{leave,leave-review}`, `/api/auth/membership-ended`. QA: U 4, I 17 (inclui corrida remover x rebaixar, atomicidade, reconvite, estrutural), E2E 7 x 2. **Bug achado e corrigido pela corrida**: `changeRole` contava Administradores removidos.
 - **US-036**: `TransactionDetailDrawer` com botões Editar/Excluir/Histórico, painel lateral >= 1024 px, toast de 8 s, "Despesa excluída"; Home abre por `?tx=`; Extrato lê `highlight`. QA: E2E 7 x 2; passos legados migrados do menu "…" para botões.
+
+
+---
+
+# R3-A — Parcelamento + percentual por lançamento (D-GES-23/25)
+
+> **Ponto de retomada**: R3-A implementada (TASK-044..047). **Pausa** até a janela de reversão (≥ 7 dias desde a migração em produção, `--verify` limpo e um fechamento de mês conferido). Bloqueados pela janela: US-042, US-043, US-044 (migração de contrato). Independentes do rateio: US-041, tags (045/047/046), Análise (048/049), cor (050), receitas previstas (051). Decisão do Gestor pendente sobre antecipá-los.
+
+**Baseline verificada em 2026-10-05 (máquina nova, Node 22.23, pnpm 11.1.2, Postgres 17):**
+- `typecheck`, `lint` e `check:imports`: verdes.
+- Unitários: 388 de 388. Integração: 586 de 586 (inclui o harness de 200+ famílias e a propriedade da EN-002).
+- `pnpm migrate:split --dry-run` no banco de dev: 1 família, 11 despesas, gate ok, nada gravado.
+- E2E completo (desktop + mobile): **790 de 794**. As 4 falhas são timeouts de 30 s, todas em filtros do Extrato no desktop (US-007 "Filtrar por membro" e "Estado vazio com filtro", US-016b "Filtrar o extrato por cartão", US-039 "Limpar filtros"). Reexecutadas isoladamente, as duas da US-007 passam; a causa provável é o servidor de dev compilando devagar em disco NTFS (aviso "Slow filesystem" do Next), não regressão. Recomenda-se repetir a suíte em disco local (ext4) antes da homologação.
+- **Desvio DEV-47**: `scripts/migrate-split.ts` não carregava `.env.local`/`.env` (ZodError em `DATABASE_URL` fora do Next). Corrigido (`fc89478`).
+- `INSTALLMENT_SPLIT_RELEASED` continua `false` (a parcela dividida é da US-042, após a janela).

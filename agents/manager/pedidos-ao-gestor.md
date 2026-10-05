@@ -74,3 +74,4 @@
 | DEV-44 | 2026-10-05 | US-037 | O tema usa sobrescrita de variáveis em `:root[data-theme="dark"]` + variantes `dark:` só nos textos que dividiam paleta com fundos | Contraste AA coberto por teste unitário | Ratificar |
 | DEV-45 | 2026-10-05 | US-039 | O campo de formulário reserva ~20 px para a mensagem de erro (sem salto de layout); formulários ficam um pouco mais altos | Mantido (critério "não saltar" do BDD); "Limpar filtros" passa a zerar todos os filtros | Ratificar |
 | DEV-46 | 2026-10-05 | US-039 | Os selects de filtro anunciam o valor aplicado ("Membro: Lucas"), quebrando `getByLabel(exact)` nos E2E legados | Passos legados (US-007, US-014, US-016b) passam a casar `^Rótulo(:|$)` | Ratificar |
+| DEV-47 | 2026-10-05 | EN-002b | `pnpm migrate:split` não carregava `.env.local`/`.env` e falhava com ZodError fora do Next | `dotenv` no script (mesma precedência do Next e do Prisma; o ambiente prevalece) | Nenhum |
