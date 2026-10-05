@@ -2,7 +2,7 @@ import { z } from "zod";
 import { type MemberRef, periodKeySchema } from "@/lib/schemas";
 import type { AccountDTO } from "@/modules/contas/schemas";
 import type { PayableItemDTO } from "@/modules/previstas/schemas";
-import type { SettlementDTO } from "@/modules/split/schemas";
+import type { SettlementIndicatorDTO } from "@/modules/split/schemas";
 import type { TransactionDTO } from "@/modules/transacoes/schemas";
 
 export const HomeQuerySchema = z.object({ period: periodKeySchema.optional() }).strict();
@@ -36,8 +36,7 @@ export type HomeDTO = {
   period: { key: string; start: string; end: string };
   monthSummary: MonthSummaryDTO;
   balances: { totalInCents: number; accounts: AccountDTO[] }; // card recolhível (US-026)
-  // Indicador neutro (SDD-011 §3, US-029) ainda não construído: a Home segue com o card de acerto atual.
-  settlement: Pick<SettlementDTO, "period" | "status" | "suggestions" | "rule"> | null; // null com o acerto desligado
+  settlementIndicator: SettlementIndicatorDTO | null; // null com o acerto desligado (US-029)
   recent: TransactionDTO[];
   onboarding: {
     hasAccount: boolean;

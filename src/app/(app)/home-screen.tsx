@@ -13,7 +13,7 @@ import { usePref } from "@/lib/prefs";
 import { SUMMARY_COPY } from "@/modules/home/copy";
 import { useHome, useMonthSummary } from "@/modules/home/hooks";
 import type { HomeDTO, MonthSummaryDTO } from "@/modules/home/schemas";
-import { heroText } from "@/modules/split/hero";
+import { SPLIT_COPY } from "@/modules/split/copy";
 import { LedgerRow } from "./extrato/ledger-row";
 import { PayPlannedDrawer } from "./previstas/pay-drawer";
 
@@ -82,31 +82,48 @@ function Checklist({ o }: { o: HomeDTO["onboarding"] }) {
   );
 }
 
-function SettlementCard({ settlement }: { settlement: NonNullable<HomeDTO["settlement"]> }) {
-  const maskText = useMoneyText();
-  const hero = heroText(settlement);
-  const needs = settlement.status === "NEEDS_MORE_MEMBERS";
-  const ok = settlement.status === "BALANCED" || settlement.status === "SETTLED";
+function SettlementLines({ ind }: { ind: NonNullable<HomeDTO["settlementIndicator"]> }) {
+  if (!ind.current && !ind.previous) return null;
+  const link =
+    "flex min-h-11 items-center justify-between gap-2 text-sm text-slate-700 hover:underline";
   return (
-    <Link
-      href={needs ? "/familia" : `/acerto?period=${settlement.period.key}`}
-      data-testid="home-settlement"
-      className={cn(
-        "flex items-center justify-between gap-3 rounded-2xl p-4 text-white",
-        ok ? "bg-emerald-700" : "bg-brand-800",
-      )}
+    <div
+      className="flex flex-col border-t border-slate-100 pt-1"
+      data-testid="home-settlement-lines"
     >
-      <span className="flex flex-col gap-1">
-        <span className="text-xs font-semibold uppercase tracking-wide opacity-80">
-          Acerto do mês
-        </span>
-        <span className="text-xl font-bold leading-tight">
-          {needs ? "Convide quem divide as contas" : maskText(hero.title)}
-        </span>
-        {hero.detail && !needs ? <span className="text-sm opacity-90">{hero.detail}</span> : null}
-      </span>
-      <ChevronRight aria-hidden="true" size={22} />
-    </Link>
+      {ind.current ? (
+        <Link
+          href={`/acerto?period=${ind.current.periodKey}`}
+          data-testid="home-settlement"
+          className={link}
+        >
+          <span>
+            {ind.current.state === "PENDING" ? (
+              <>
+                Acerto do mês: <Money cents={ind.current.toSettleInCents} /> a acertar
+              </>
+            ) : (
+              SPLIT_COPY.indicatorInOrder
+            )}
+          </span>
+          <ChevronRight aria-hidden="true" size={16} />
+        </Link>
+      ) : null}
+      {ind.previous ? (
+        <Link
+          href={`/acerto?period=${ind.previous.oldestPeriodKey}`}
+          data-testid="home-settlement-previous"
+          className={link}
+        >
+          <span>
+            Acertos pendentes de meses anteriores: {ind.previous.monthsCount}{" "}
+            {ind.previous.monthsCount === 1 ? "mês" : "meses"} (
+            <Money cents={ind.previous.totalInCents} />)
+          </span>
+          <ChevronRight aria-hidden="true" size={16} />
+        </Link>
+      ) : null}
+    </div>
   );
 }
 
@@ -146,8 +163,10 @@ function MonthSummaryCard({
   s,
   onShift,
   canNext,
+  indicator,
 }: {
   s: MonthSummaryDTO;
+  indicator: HomeDTO["settlementIndicator"];
   onShift: (delta: number) => void;
   canNext: boolean;
 }) {
@@ -258,6 +277,7 @@ function MonthSummaryCard({
           ) : null}
         </div>
       </dl>
+      {indicator && s.period.isCurrent ? <SettlementLines ind={indicator} /> : null}
       <Link
         href="/previstas"
         className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 underline"
@@ -412,11 +432,15 @@ export function HomeScreen({ firstName }: { firstName: string }) {
 
           <div className="flex flex-col gap-4">
             {summary ? (
-              <MonthSummaryCard s={summary} onShift={shift} canNext={canNext} />
+              <MonthSummaryCard
+                s={summary}
+                onShift={shift}
+                canNext={canNext}
+                indicator={h.settlementIndicator}
+              />
             ) : viewing && other.isPending ? (
               <Skeleton className="h-80" />
             ) : null}
-            {h.settlement ? <SettlementCard settlement={h.settlement} /> : null}
           </div>
 
           <div className="flex flex-col gap-4">

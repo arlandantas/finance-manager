@@ -8,8 +8,8 @@ import { homeRepo } from "@/modules/home/repo";
 import type { HomeDTO, MonthSummaryDTO } from "@/modules/home/schemas";
 import { listDueItems } from "@/modules/previstas/payables";
 import { isSettlementEnabled } from "@/modules/split/guard";
+import { getSettlementIndicator } from "@/modules/split/indicator";
 import { splitRepo } from "@/modules/split/repo";
-import { loadSettlement, toSettlementDto } from "@/modules/split/service";
 import { familyHasTransactions, ledgerTotals } from "@/modules/transacoes/extrato";
 import { listTransactions, memberRefOf } from "@/modules/transacoes/service";
 
@@ -98,14 +98,15 @@ export async function getMonthSummary(
 export async function getHome(tx: Tx, ctx: RequestContext, periodKey?: string): Promise<HomeDTO> {
   const monthSummary = await getMonthSummary(tx, ctx, periodKey);
   const accounts = await listAccounts(tx, ctx);
-  const enabled = await isSettlementEnabled(tx, ctx.familyId);
-  const loaded = await loadSettlement(tx, ctx, periodKey);
-  const settlement = enabled ? toSettlementDto(loaded, ctx) : null;
+  const settlementIndicator = (await isSettlementEnabled(tx, ctx.familyId))
+    ? await getSettlementIndicator(tx, ctx, monthSummary.period.key)
+    : null;
   const recent = await listTransactions(tx, ctx, {
     from: "1970-01-01",
     to: "2999-12-31",
     limit: 5,
   });
+  const memberCount = (await splitRepo(tx, ctx.familyId).listMembers()).length;
   const hasTransaction = await familyHasTransactions(tx, ctx.familyId);
   const hasAccount = accounts.items.length > 0;
   return {
@@ -116,21 +117,14 @@ export async function getHome(tx: Tx, ctx: RequestContext, periodKey?: string): 
     },
     monthSummary,
     balances: { totalInCents: accounts.totalBalanceInCents, accounts: accounts.items },
-    settlement: settlement
-      ? {
-          period: settlement.period,
-          status: settlement.status,
-          suggestions: settlement.suggestions,
-          rule: settlement.rule,
-        }
-      : null,
+    settlementIndicator,
     recent: recent.items,
     onboarding: {
       hasAccount,
-      hasOtherMember: loaded.members.length > 1,
+      hasOtherMember: memberCount > 1,
       hasTransaction,
       showChecklist: !hasAccount && !hasTransaction,
     },
-    memberCount: loaded.members.length,
+    memberCount,
   };
 }

@@ -123,3 +123,10 @@ export type SharedExpensesResponse = { items: SharedExpenseItemDTO[]; totalInCen
 
 export type { SplitExplanationDTO, SplitSegmentDTO } from "@/modules/split/explain";
 export type SplitHistoryResponse = { items: RuleVersionDTO[] };
+
+/** Indicador neutro do acerto na Home (US-029, SDD-011 §2). */
+export type SettlementIndicatorDTO = {
+  current: null | { periodKey: string; state: "PENDING" | "IN_ORDER"; toSettleInCents: number };
+  // janela de 12 meses antes do período corrente; null se nada pendente
+  previous: null | { monthsCount: number; totalInCents: number; oldestPeriodKey: string };
+};
