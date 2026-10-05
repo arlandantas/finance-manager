@@ -12,6 +12,7 @@ import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { useAccounts } from "@/modules/contas/hooks";
+import { useSourceAccount } from "@/modules/contas/use-source-account";
 import { useFamily } from "@/modules/familia/hooks";
 import { usePayPlanned, usePlanned } from "@/modules/previstas/hooks";
 import { differenceLabel } from "@/modules/previstas/rules";
@@ -37,7 +38,6 @@ export function PayPlannedDrawer({
   const defaults = useDefaults(open);
   const qc = useQueryClient();
   const [cents, setCents] = useState(0);
-  const [accountId, setAccountId] = useState("");
   const [payerId, setPayerId] = useState("");
   const [paidOn, setPaidOn] = useState("");
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -56,7 +56,6 @@ export function PayPlannedDrawer({
     setConflict(null);
     setPaidOn("");
     setDetailsOpen(false);
-    setAccountId("");
     setKey(newIdempotencyKey());
   }, [plannedId]);
 
@@ -67,11 +66,14 @@ export function PayPlannedDrawer({
     setCents(planned.amountInCents);
     setPayerId(planned.responsible.id);
   }, [loadedId, planned?.version]);
-  useEffect(() => {
-    if (open && defaults.data?.accountId)
-      setAccountId((cur) => cur || (defaults.data?.accountId ?? ""));
-  }, [open, defaults.data]);
 
+  const source = useSourceAccount({
+    open,
+    amountInCents: cents,
+    ownerMemberId: planned?.responsible.id,
+    accounts: accounts.data?.items ?? [],
+  });
+  const accountId = source.accountId;
   const account = (accounts.data?.items ?? []).find((a) => a.id === accountId);
   const negative = account !== undefined && account.balanceInCents - cents < 0;
   const diff = planned ? cents - planned.amountInCents : 0;
@@ -205,7 +207,7 @@ export function PayPlannedDrawer({
               id="pay-account"
               className={inputClass}
               value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
+              onChange={(e) => source.pick(e.target.value)}
               aria-invalid={errors.accountId ? true : undefined}
             >
               <option value="" disabled>
@@ -214,9 +216,15 @@ export function PayPlannedDrawer({
               {(accounts.data?.items ?? []).map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name} · Saldo {fmt(a.balanceInCents)}
+                  {source.optionSuffix(a)}
                 </option>
               ))}
             </select>
+            {source.reasonText ? (
+              <p data-testid="source-reason" className="mt-1 text-xs text-slate-600">
+                {source.reasonText}
+              </p>
+            ) : null}
           </Field>
 
           {negative ? (

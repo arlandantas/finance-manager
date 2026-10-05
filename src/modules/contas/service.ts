@@ -2,10 +2,10 @@ import { isUniqueViolation } from "@/lib/api/db-errors";
 import { conflict, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
-import { compareDate, todayInFamilyTz } from "@/lib/dates";
+import { addDays, compareDate, todayInFamilyTz } from "@/lib/dates";
 import type { MemberRef } from "@/lib/schemas";
 import { recordRevision } from "@/modules/contas/ledger";
-import { accountBalances } from "@/modules/contas/ledger-queries";
+import { accountBalances, usageCountByMember } from "@/modules/contas/ledger-queries";
 import { contasRepo } from "@/modules/contas/repo";
 import type {
   AccountDTO,
@@ -25,7 +25,7 @@ export function memberRef(m: {
   return { id: m.id, name: m.user.name ?? localPart(m.user.email), image: m.user.image };
 }
 
-function toDTO(a: AccountRow, balanceInCents: number): AccountDTO {
+function toDTO(a: AccountRow, balanceInCents: number, usageCountByMe = 0): AccountDTO {
   return {
     id: a.id,
     name: a.name,
@@ -33,6 +33,7 @@ function toDTO(a: AccountRow, balanceInCents: number): AccountDTO {
     type: a.type,
     owner: memberRef(a.owner),
     balanceInCents,
+    usageCountByMe,
     version: a.version,
     createdAt: a.createdAt.toISOString(),
   };
@@ -42,7 +43,13 @@ export async function listAccounts(tx: Tx, ctx: RequestContext): Promise<Account
   const repo = contasRepo(tx, ctx.familyId);
   const accounts = await repo.list();
   const balances = await accountBalances(tx, ctx.familyId);
-  const items = accounts.map((a) => toDTO(a, balances.get(a.id) ?? 0));
+  const usage = await usageCountByMember(
+    tx,
+    ctx.familyId,
+    ctx.memberId,
+    addDays(todayInFamilyTz(ctx.clock), -90),
+  );
+  const items = accounts.map((a) => toDTO(a, balances.get(a.id) ?? 0, usage.get(a.id) ?? 0));
   return { items, totalBalanceInCents: items.reduce((sum, a) => sum + a.balanceInCents, 0) };
 }
 

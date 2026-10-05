@@ -283,6 +283,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
         <PayInvoiceDrawer
           open={paying}
           cardName={c.name}
+          ownerMemberId={c.owner.id}
           invoice={inv}
           onClose={() => setPaying(false)}
         />

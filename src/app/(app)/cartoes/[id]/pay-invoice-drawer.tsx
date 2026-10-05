@@ -12,6 +12,7 @@ import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import { usePayInvoice } from "@/modules/cartoes/hooks";
 import { type InvoiceDTO, PayInvoiceSchema } from "@/modules/cartoes/schemas";
 import { useAccounts } from "@/modules/contas/hooks";
+import { useSourceAccount } from "@/modules/contas/use-source-account";
 import { useDefaults } from "@/modules/transacoes/hooks";
 
 type FieldKey = "accountId" | "paidOn" | "expectedTotalInCents";
@@ -20,11 +21,13 @@ type FieldKey = "accountId" | "paidOn" | "expectedTotalInCents";
 export function PayInvoiceDrawer({
   open,
   cardName,
+  ownerMemberId,
   invoice,
   onClose,
 }: {
   open: boolean;
   cardName: string;
+  ownerMemberId: string;
   invoice: InvoiceDTO;
   onClose: () => void;
 }) {
@@ -32,7 +35,6 @@ export function PayInvoiceDrawer({
   const accounts = useAccounts();
   const defaults = useDefaults(open);
   const qc = useQueryClient();
-  const [accountId, setAccountId] = useState("");
   const [paidOn, setPaidOn] = useState("");
   const [expected, setExpected] = useState(invoice.totalInCents);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -41,11 +43,17 @@ export function PayInvoiceDrawer({
   const [info, setInfo] = useState<string | null>(null);
   const [key, setKey] = useState(newIdempotencyKey);
   const submitting = useRef(false);
+  const source = useSourceAccount({
+    open,
+    amountInCents: expected,
+    ownerMemberId,
+    accounts: accounts.data?.items ?? [],
+  });
+  const accountId = source.accountId;
   const pay = usePayInvoice(invoice.cardId, invoice.ref, key);
 
   useEffect(() => {
     if (!open) return;
-    setAccountId("");
     setPaidOn("");
     setErrors({});
     setBanner(null);
@@ -54,11 +62,6 @@ export function PayInvoiceDrawer({
     setExpected(invoice.totalInCents);
     setKey(newIdempotencyKey());
   }, [open]);
-  useEffect(() => {
-    if (open && defaults.data?.accountId) {
-      setAccountId((cur) => cur || (defaults.data?.accountId ?? ""));
-    }
-  }, [open, defaults.data]);
 
   const account = (accounts.data?.items ?? []).find((a) => a.id === accountId);
   const negative = account !== undefined && account.balanceInCents - expected < 0;
@@ -173,7 +176,7 @@ export function PayInvoiceDrawer({
             id="pi-account"
             className={inputClass}
             value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
+            onChange={(e) => source.pick(e.target.value)}
             aria-invalid={errors.accountId ? true : undefined}
           >
             <option value="" disabled>
@@ -182,9 +185,15 @@ export function PayInvoiceDrawer({
             {(accounts.data?.items ?? []).map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name} · Saldo {fmt(a.balanceInCents)}
+                {source.optionSuffix(a)}
               </option>
             ))}
           </select>
+          {source.reasonText ? (
+            <p data-testid="source-reason" className="mt-1 text-xs text-slate-600">
+              {source.reasonText}
+            </p>
+          ) : null}
         </Field>
 
         {negative ? (

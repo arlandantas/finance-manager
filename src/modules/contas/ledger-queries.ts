@@ -26,3 +26,24 @@ export async function accountBalances(
   for (const r of rows) map.set(r.accountId, toCents(r.balance));
   return map;
 }
+
+/**
+ * Uso recente por conta (US-023, SDD-013 §1): lançamentos ativos do membro logado nos últimos 90 dias
+ * (despesa, pagamento de fatura e transferência de saída). Sem tabela nova; só alimenta o desempate.
+ */
+export async function usageCountByMember(
+  tx: Tx,
+  familyId: string,
+  memberId: string,
+  since: string,
+): Promise<Map<string, number>> {
+  const rows = await tx.$queryRaw<Array<{ accountId: string; n: number }>>`
+    SELECT "accountId", count(*)::int AS n
+    FROM transactions
+    WHERE "familyId" = ${familyId}::uuid AND "authorMemberId" = ${memberId}::uuid
+      AND "deletedAt" IS NULL AND "accountId" IS NOT NULL
+      AND kind IN ('EXPENSE', 'INVOICE_PAYMENT', 'TRANSFER_OUT')
+      AND "occurredOn" >= ${since}::date
+    GROUP BY "accountId"`;
+  return new Map(rows.map((r) => [r.accountId, r.n]));
+}

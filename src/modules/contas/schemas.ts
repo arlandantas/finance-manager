@@ -64,6 +64,7 @@ export type AccountDTO = {
   type: AccountType;
   owner: MemberRef;
   balanceInCents: number;
+  usageCountByMe: number; // lançamentos do membro logado nos últimos 90 dias (desempate da sugestão, US-023)
   version: number;
   createdAt: string;
 };
