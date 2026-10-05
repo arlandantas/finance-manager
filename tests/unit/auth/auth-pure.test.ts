@@ -110,6 +110,29 @@ describe("US-001 infra: dev-login seguro", () => {
     expect(isDevLoginHost(null, env)).toBe(false);
   });
 
+  it("isDevLoginHost: IP privado e *.local em dev; lista APP_DEV_ORIGINS; nunca IP público nem produção", () => {
+    expect(isDevLoginHost("192.168.1.81:3100", {})).toBe(true);
+    expect(isDevLoginHost("10.0.0.5:3100", {})).toBe(true);
+    expect(isDevLoginHost("172.20.1.2:3100", {})).toBe(true);
+    expect(isDevLoginHost("meu-pc.local:3100", {})).toBe(true);
+    expect(isDevLoginHost("172.32.0.1:3100", {})).toBe(false);
+    expect(isDevLoginHost("8.8.8.8:3100", {})).toBe(false);
+    expect(isDevLoginHost("192.168.1.81:3100", { APP_DEV_LAN_AUTO: "false" })).toBe(false);
+    const list = {
+      APP_DEV_LAN_AUTO: "false",
+      APP_DEV_ORIGINS: "http://192.168.1.81:3100, dev.exemplo.com",
+    };
+    expect(isDevLoginHost("192.168.1.81:3100", list)).toBe(true);
+    expect(isDevLoginHost("dev.exemplo.com", list)).toBe(true);
+    expect(isDevLoginHost("192.168.1.82:3100", list)).toBe(false);
+    expect(isDevLoginHost("192.168.1.81:3100", { NODE_ENV: "production", ...list })).toBe(false);
+  });
+
+  it("isDirectLocalRequest segue só localhost direto (nunca IP da LAN)", () => {
+    expect(isDirectLocalRequest(new Headers({ host: "localhost:3100" }))).toBe(true);
+    expect(isDirectLocalRequest(new Headers({ host: "192.168.1.81:3100" }))).toBe(false);
+  });
+
   it("isDirectLocalRequest (relógio de apoio): localhost direto, sem IP/host de proxy ou túnel", () => {
     const h = (o: Record<string, string>) => new Headers(o);
     expect(isDirectLocalRequest(h({ host: "localhost:3100" }))).toBe(true);

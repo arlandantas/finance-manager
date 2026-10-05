@@ -16,7 +16,7 @@ export async function handleDevLogin(req: Request): Promise<Response> {
         error: {
           code: "FORBIDDEN",
           message:
-            "Login de teste disponível apenas em localhost (ou no host de APP_PUBLIC_ORIGIN).",
+            "Login de teste disponível apenas em localhost, IP da rede local ou hosts de APP_PUBLIC_ORIGIN/APP_DEV_ORIGINS.",
         },
       },
       { status: 403 },

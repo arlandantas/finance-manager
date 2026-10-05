@@ -46,6 +46,7 @@ export default defineConfig({
       APP_URL: BASE_URL,
       AUTH_URL: BASE_URL,
       APP_PUBLIC_ORIGIN: "", // o túnel do .env.local de dev não vale no E2E
+      APP_DEV_ORIGINS: "",
       AUTH_TRUST_HOST: "true",
       AUTH_DEV_LOGIN: "true",
       AUTH_SECRET: "segredo-somente-para-testes-e2e",

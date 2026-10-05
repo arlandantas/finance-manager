@@ -56,6 +56,27 @@ describe("SDD-000 withApi: ordem das verificações", () => {
     expect(prod.body.error.code).toBe("BAD_ORIGIN");
   });
 
+  it("CSRF multi-origem de dev: IP privado/lista passam em dev; IP público e produção, não", async () => {
+    const as = await asUser("mariana@exemplo.com");
+    const body = { name: "Família Silva" };
+    vi.stubEnv("APP_PUBLIC_ORIGIN", "");
+    vi.stubEnv("APP_DEV_ORIGINS", "");
+    vi.stubEnv("APP_DEV_LAN_AUTO", "");
+    const lan = "http://192.168.1.81:3100";
+    expect((await call(as, "POST", "/api/v1/families", body, { origin: lan })).status).toBe(201);
+    const pub = await call(as, "POST", "/api/v1/families", body, { origin: "http://8.8.8.8:3100" });
+    expect(pub.body.error.code).toBe("BAD_ORIGIN");
+    vi.stubEnv("APP_DEV_LAN_AUTO", "false");
+    const off = await call(as, "POST", "/api/v1/families", body, { origin: lan });
+    expect(off.body.error.code).toBe("BAD_ORIGIN");
+    vi.stubEnv("APP_DEV_ORIGINS", "http://192.168.1.81:3100, meu-pc.exemplo");
+    const listed = await call(as, "POST", "/api/v1/families", body, { origin: lan });
+    expect(listed.body.error?.code).not.toBe("BAD_ORIGIN");
+    vi.stubEnv("NODE_ENV", "production");
+    const prod = await call(as, "POST", "/api/v1/families", body, { origin: lan });
+    expect(prod.body.error.code).toBe("BAD_ORIGIN");
+  });
+
   it("Content-Type diferente de JSON em mutação -> 403 BAD_ORIGIN", async () => {
     const as = await asUser("mariana@exemplo.com");
     const res = await call(as, "POST", "/api/v1/families", '{"name":"Família Silva"}', {

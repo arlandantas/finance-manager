@@ -19,6 +19,7 @@ import type { ApiResult, RequestContext, Role, Tx, UserContext } from "@/lib/api
 import { findSessionUser, parseCookieHeader, sessionTokenFromCookies } from "@/lib/auth/session";
 import { getClock } from "@/lib/clock";
 import { getDb } from "@/lib/db";
+import { isAllowedDevHost } from "@/lib/dev-origins";
 import { getEnv } from "@/lib/env";
 import { newId } from "@/lib/ids";
 import { logger } from "@/lib/logger";
@@ -63,18 +64,10 @@ function validationError(error: z.ZodError): ApiError {
   return badRequest("VALIDATION_ERROR", details[0]?.message ?? "Dados inválidos.", details);
 }
 
-/** CSRF (SDD-000 §2): `Content-Type: application/json` e `Origin` igual ao host de AUTH_URL. */
+/** CSRF (SDD-000 §2): `Content-Type: application/json` e `Origin` igual ao host de AUTH_URL ou, fora de produção, origem de dev (APP_PUBLIC_ORIGIN, APP_DEV_ORIGINS, IP privado/`*.local`). */
 function checkCsrf(req: Request) {
   const env = getEnv();
   const allowed = new Set([new URL(env.AUTH_URL).host]);
-  // Túnel de teste (APP_PUBLIC_ORIGIN): aceito só fora de produção, host exato.
-  if (env.NODE_ENV !== "production" && env.APP_PUBLIC_ORIGIN) {
-    try {
-      allowed.add(new URL(env.APP_PUBLIC_ORIGIN).host);
-    } catch {
-      // valor inválido: ignora
-    }
-  }
   const origin = req.headers.get("origin");
   let originHost: string | null = null;
   try {
@@ -85,7 +78,7 @@ function checkCsrf(req: Request) {
   const contentType = req.headers.get("content-type") ?? "";
   if (
     originHost === null ||
-    !allowed.has(originHost) ||
+    !(allowed.has(originHost) || isAllowedDevHost(origin, process.env)) ||
     !contentType.toLowerCase().startsWith("application/json")
   ) {
     throw forbidden("Requisição não autorizada.", "BAD_ORIGIN");

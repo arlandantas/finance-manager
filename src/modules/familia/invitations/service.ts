@@ -91,6 +91,7 @@ export async function createInvitation(
   tx: Tx,
   ctx: RequestContext,
   input: { email: string; role: "ADMIN" | "MEMBER" },
+  requestOrigin?: string | null,
 ): Promise<{
   body: CreateInvitationResponse;
   afterCommit: () => Promise<{ emailStatus: "SENT" | "FAILED" }>;
@@ -122,7 +123,7 @@ export async function createInvitation(
   }
 
   const [family, name] = await Promise.all([repo.family(), memberNames(tx, ctx.familyId)]);
-  const inviteUrl = `${publicBaseUrl()}/convite/${token}`;
+  const inviteUrl = `${publicBaseUrl(undefined, requestOrigin)}/convite/${token}`;
   const message = {
     to: email,
     ...invitationEmail({

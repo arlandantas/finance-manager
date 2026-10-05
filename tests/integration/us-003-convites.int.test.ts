@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getClock, withClock } from "@/lib/clock";
 import { InMemoryMailer, setMailer } from "@/lib/mail";
 import { acceptPendingInvitation, previewInvitation } from "@/modules/familia/invitations/service";
@@ -28,6 +28,24 @@ afterEach(() => setMailer(null));
 
 const invite = (body: Record<string, unknown>, as = mariana(), opts = {}) =>
   withClock(NOW, () => call(as, "POST", "/api/v1/invitations", body, opts));
+
+afterEach(() => vi.unstubAllEnvs());
+
+it("link do convite usa a origem de dev da requisição (IP da LAN) em dev e APP_URL em produção", async () => {
+  vi.stubEnv("APP_PUBLIC_ORIGIN", "");
+  const lan = "http://192.168.1.81:3100";
+  const res = await invite({ email: "lucas@exemplo.com", role: "MEMBER" }, mariana(), {
+    origin: lan,
+  });
+  expect(res.status).toBe(201);
+  expect(res.body.inviteUrl.startsWith(`${lan}/convite/`)).toBe(true);
+  vi.stubEnv("NODE_ENV", "production");
+  vi.stubEnv("AUTH_URL", lan); // em produção o Origin só passa por AUTH_URL; o link vem de APP_URL
+  const prod = await invite({ email: "ana@exemplo.com", role: "MEMBER" }, mariana(), {
+    origin: lan,
+  });
+  expect(prod.body.inviteUrl.startsWith("http://localhost:3100/convite/")).toBe(true);
+});
 
 const tokenOf = (inviteUrl: string) => inviteUrl.split("/convite/")[1] as string;
 

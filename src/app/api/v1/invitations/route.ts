@@ -12,8 +12,13 @@ export const GET = withApi({ role: "ADMIN" }, async ({ ctx, tx }) => ({
 
 export const POST = withApi(
   { role: "ADMIN", body: CreateInvitationSchema },
-  async ({ ctx, tx, body }) => {
-    const { body: response, afterCommit } = await createInvitation(tx, ctx, body);
+  async ({ ctx, tx, body, req }) => {
+    const { body: response, afterCommit } = await createInvitation(
+      tx,
+      ctx,
+      body,
+      req.headers.get("origin"),
+    );
     return { status: 201, body: response, afterCommit };
   },
 );

@@ -1,4 +1,6 @@
 // Funções puras e sem dependências de Node (usáveis em instrumentation/Edge).
+import { isAllowedDevHost } from "@/lib/dev-origins";
+
 type Env = Record<string, string | undefined>;
 
 /** ADR-008: só com AUTH_DEV_LOGIN=true e fora de produção. */
@@ -25,26 +27,13 @@ export function isLocalHost(hostHeader: string | null | undefined): boolean {
   );
 }
 
-/** Host (sem porta) de APP_PUBLIC_ORIGIN, ex.: o túnel de teste; undefined se ausente/inválido. */
-function publicOriginHost(env: Env): string | undefined {
-  const raw = env.APP_PUBLIC_ORIGIN?.trim();
-  if (!raw) return undefined;
-  try {
-    return new URL(raw).hostname.toLowerCase() || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 /**
- * Host aceito pelo login de teste: local OU exatamente o host de APP_PUBLIC_ORIGIN (túnel de teste).
- * A trava de produção (isDevLoginEnabled/assertSafeAuthConfig) continua valendo em qualquer host.
+ * Host aceito pelo login de teste: local OU um host de dev configurado (APP_PUBLIC_ORIGIN, APP_DEV_ORIGINS)
+ * OU, em dev, IP privado/`*.local`. A trava de produção vale em qualquer host.
  */
 export function isDevLoginHost(hostHeader: string | null | undefined, env: Env = process.env) {
   if (isLocalHost(hostHeader)) return true;
-  const allowed = publicOriginHost(env);
-  if (!hostHeader || !allowed) return false;
-  return hostHeader.trim().toLowerCase().replace(/:\d+$/, "") === allowed;
+  return isAllowedDevHost(hostHeader, env);
 }
 
 const LOOPBACK_IP = /^(127\.\d+\.\d+\.\d+|::1|::ffff:127\.\d+\.\d+\.\d+)$/;

@@ -61,4 +61,20 @@ describe("publicBaseUrl (links de e-mail)", () => {
       "https://app.exemplo.com",
     );
   });
+
+  it("usa a origem da requisição quando é origem de dev permitida (LAN, localhost, túnel)", () => {
+    const dev = getEnv({ ...base, NODE_ENV: "development", APP_PUBLIC_ORIGIN: tunnel });
+    expect(publicBaseUrl(dev, "http://192.168.1.81:3100")).toBe("http://192.168.1.81:3100");
+    expect(publicBaseUrl(dev, "http://localhost:3100")).toBe("http://localhost:3100");
+    expect(publicBaseUrl(dev, "https://fancy-queens-kick.loca.lt")).toBe(
+      "https://fancy-queens-kick.loca.lt",
+    );
+    // origem desconhecida/pública não é refletida: cai no túnel configurado
+    expect(publicBaseUrl(dev, "https://evil.com")).toBe(tunnel.slice(0, -1));
+    expect(publicBaseUrl(dev, "javascript:alert(1)")).toBe(tunnel.slice(0, -1));
+    const semTunel = getEnv({ ...base, NODE_ENV: "development" });
+    expect(publicBaseUrl(semTunel, "http://evil.com")).toBe("http://localhost:3100");
+    const prod = getEnv({ ...base, NODE_ENV: "production", APP_URL: "https://app.exemplo.com" });
+    expect(publicBaseUrl(prod, "http://192.168.1.81:3100")).toBe("https://app.exemplo.com");
+  });
 });
