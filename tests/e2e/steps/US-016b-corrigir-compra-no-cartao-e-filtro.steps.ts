@@ -175,7 +175,7 @@ async function applyFilter(page: Page, label: string, option: string) {
   const scope = mobile
     ? page.getByRole("dialog", { name: "Filtros" })
     : page.getByRole("region", { name: "Filtros" });
-  await scope.getByLabel(label, { exact: true }).selectOption({ label: option });
+  await scope.getByLabel(new RegExp(`^${label}(:|$)`)).selectOption({ label: option });
   if (mobile) await page.getByRole("button", { name: "Ver resultados" }).click();
 }
 

@@ -222,7 +222,7 @@ Then(
 Then("o filtro de categoria do extrato ainda lista {string}", async ({ page }, rotulo: string) => {
   const toggle = page.getByRole("button", { name: /^Filtros/ });
   if (await toggle.isVisible()) await toggle.click();
-  const select = page.getByLabel("Categoria", { exact: true }).first();
+  const select = page.getByLabel(/^Categoria(:|$)/).first();
   await expect(select.locator("option", { hasText: rotulo })).toHaveCount(1);
 });
 
