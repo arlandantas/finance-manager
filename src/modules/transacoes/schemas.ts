@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { dateISOSchema, daysBetween } from "@/lib/dates";
+import { addDays, dateISOSchema } from "@/lib/dates";
 import { amountInCentsSchema } from "@/lib/money";
 import { type MemberRef, periodKeySchema, uuidSchema, versionSchema } from "@/lib/schemas";
 import type { InvoiceStatus } from "@/modules/cartoes/cycle";
-import { MAX_INSTALLMENTS } from "@/modules/cartoes/installments";
+import { addMonthsClamped, MAX_INSTALLMENTS } from "@/modules/cartoes/installments";
 
 /** Mensagem única de descrição inválida em despesa/receita/cartão (SDD-013 §1; previstas mantêm as suas). */
 export const DESCRIPTION_MSG = "A descrição precisa ter entre 2 e 100 caracteres";
@@ -165,7 +165,16 @@ export type InstallmentPlanDTO = {
 export const DeleteInstallmentPlanSchema = z
   .object({ version: versionSchema, confirmSettledPeriod: z.boolean().optional() })
   .strict();
-export const RestoreInstallmentPlanSchema = z.object({ version: versionSchema }).strict();
+export const RestoreInstallmentPlanSchema = z
+  .object({ version: versionSchema, confirmSettledPeriod: z.boolean().optional() })
+  .strict();
+export type DeleteInstallmentPlanInput = z.input<typeof DeleteInstallmentPlanSchema>;
+export type RestoreInstallmentPlanInput = z.input<typeof RestoreInstallmentPlanSchema>;
+
+export type InstallmentPlanResponse = {
+  plan: InstallmentPlanDTO;
+  card: { id: string; usedInCents: number; availableInCents: number };
+};
 
 export type CreateTransactionResponse = {
   transaction: TransactionDTO;
@@ -188,6 +197,8 @@ export type TransactionDefaults = {
 };
 
 // ── Extrato (SDD-005 §2) ──
+/** Último dia de uma janela de 24 meses a partir de `from` (inclusive). */
+const lastDayOfWindow = (from: string) => addDays(addMonthsClamped(from, 24), -1);
 const boolParam = z.enum(["true", "false"]).transform((v) => v === "true");
 
 export const ListTransactionsQuerySchema = z
@@ -209,8 +220,10 @@ export const ListTransactionsQuerySchema = z
   .strict()
   .refine((v) => !(v.period && (v.from || v.to)), { message: "Use period ou from/to, não ambos" })
   .refine((v) => (v.from == null) === (v.to == null), { message: "Informe from e to juntos" })
-  .refine((v) => !v.from || !v.to || (v.from <= v.to && daysBetween(v.from, v.to) <= 366), {
-    message: "Intervalo inválido",
+  .refine((v) => !v.from || !v.to || v.from <= v.to, { message: "Intervalo inválido" })
+  // US-040b (SDD-016 §3.4, D-PO-44): as parcelas ocupam até 24 competências
+  .refine((v) => !v.from || !v.to || v.from > v.to || v.to <= lastDayOfWindow(v.from), {
+    message: "Escolha um intervalo de até 24 meses",
   });
 export type ListTransactionsQuery = z.output<typeof ListTransactionsQuerySchema>;
 

@@ -62,14 +62,14 @@ async function versionConflict(repo: Repo, id: string, memberById: Map<string, s
   );
 }
 
-async function memberNames(repo: Repo): Promise<Map<string, string>> {
+export async function memberNames(repo: Repo): Promise<Map<string, string>> {
   return new Map(
     (await repo.listMembers()).map((m) => [m.id, memberRefOf(m).name.split(" ")[0] ?? ""]),
   );
 }
 
 /** SDD-001 §4.2 passo 5 / §4.3: confirmação exigida quando o período de uma despesa comum já foi acertado. */
-async function requireSettledConfirmation(
+export async function requireSettledConfirmation(
   tx: Tx,
   ctx: RequestContext,
   periods: Array<string | null>,

@@ -500,7 +500,7 @@ describe("US-007 (infra) Parâmetros inválidos", () => {
     ["period=2026-10&from=2026-10-01&to=2026-10-02", "Use period ou from/to, não ambos"],
     ["from=2026-10-01", "Informe from e to juntos"],
     ["from=2026-10-10&to=2026-10-01", "Intervalo inválido"],
-    ["from=2025-01-01&to=2026-10-01", "Intervalo inválido"],
+    ["from=2024-01-01&to=2026-10-01", "Escolha um intervalo de até 24 meses"],
     ["period=2026-13", "Período inválido"],
     ["type=OUTRO", ""],
     ["foo=bar", ""],
