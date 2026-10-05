@@ -52,7 +52,7 @@ Funcionalidade: Compra à vista no cartão
     Dado a regra de divisão "igualitária"
     E que Mariana lançou "R$ 300,00" em "Supermercado" no cartão "Nubank Mariana" em 15/10/2026
     Quando abro o acerto de outubro
-    Então vejo "Lucas deve R$ 150,00 para Mariana"
+    Então vejo "Para equilibrar o mês: Lucas transfere R$ 150,00 para Mariana"
 
   Cenário: Compra no cartão entra nos totais do mês
     Quando Lucas lança "R$ 300,00" no cartão "Nubank Mariana"

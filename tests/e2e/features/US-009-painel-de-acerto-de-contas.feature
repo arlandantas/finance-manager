@@ -9,7 +9,7 @@ Funcionalidade: Painel de acerto de contas
       | Lucas      | R$ 1.200,00  |
       | Lucas      | R$ 400,00    |
     Quando abro o painel de acerto de outubro
-    Então vejo "Lucas deve R$ 400,00 para Mariana"
+    Então vejo "Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana"
     E Mariana: pagou "R$ 2.400,00", cota "R$ 2.000,00", diferença "+R$ 400,00"
     E Lucas: pagou "R$ 1.600,00", cota "R$ 2.000,00", diferença "-R$ 400,00"
 
@@ -22,7 +22,7 @@ Funcionalidade: Painel de acerto de contas
     Dado a regra 60% / 40% e total comum de "R$ 1.000,00" pago integralmente por Mariana
     Quando abro o painel de acerto
     Então a cota de Mariana é "R$ 600,00" e a de Lucas é "R$ 400,00"
-    E vejo "Lucas deve R$ 400,00 para Mariana"
+    E vejo "Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana"
 
   Cenário: Centavo ímpar não se perde
     Dado a regra 50/50 e uma única despesa comum de "R$ 100,01" paga por Mariana

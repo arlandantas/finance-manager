@@ -102,7 +102,7 @@ Then("vejo {string} e nenhuma sugestão de transferência", async ({ page }, tex
   await expect(page.getByTestId("settlement-hero")).toContainText(texto);
   await expect(page.getByTestId("settlement-hero")).toHaveAttribute("data-status", "BALANCED");
   await expect(page.getByTestId("settlement-suggestions")).toHaveCount(0);
-  await expect(page.getByText(/ deve R\$/)).toHaveCount(0);
+  await expect(page.getByText(/\bdeve R\$/)).toHaveCount(0);
 });
 
 Given("que não há despesas comuns no mês", async ({ world }) => {
@@ -111,9 +111,9 @@ Given("que não há despesas comuns no mês", async ({ world }) => {
 
 Then("vejo o estado vazio explicativo e nenhum valor devido", async ({ page }) => {
   const hero = page.getByTestId("settlement-hero");
-  await expect(hero).toContainText("Nenhuma despesa comum neste mês.");
+  await expect(hero).toContainText("Nenhuma despesa dividida neste mês");
   await expect(hero).toContainText("Marque despesas como Dividir com a família para vê-las aqui.");
-  await expect(page.getByText(/ deve R\$/)).toHaveCount(0);
+  await expect(page.getByText(/\bdeve R\$/)).toHaveCount(0);
 });
 
 Given("que a família tem apenas Mariana", async ({ world }) => {
@@ -146,6 +146,6 @@ Then("o painel recalcula apenas com as despesas daquele mês", async ({ page }) 
   await expect(page.getByTestId("settlement-total")).toContainText("R$ 300,00");
   await expect(page.getByTestId("settlement-total")).not.toContainText("R$ 900,00");
   await expect(page.getByTestId("settlement-hero")).toContainText(
-    "Lucas deve R$ 150,00 para Mariana",
+    "Para equilibrar o mês: Lucas transfere R$ 150,00 para Mariana",
   );
 });

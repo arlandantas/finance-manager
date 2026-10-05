@@ -2,7 +2,7 @@
 Funcionalidade: Registro do acerto de contas
 
   Contexto:
-    Dado o acerto de outubro: "Lucas deve R$ 400,00 para Mariana"
+    Dado o acerto de outubro: "Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana"
 
   Cenário: Quitar integralmente
     Quando Lucas toca em "Registrar acerto" e escolhe a conta origem "Itaú Lucas" e a conta destino "Nubank Mariana"
@@ -13,7 +13,7 @@ Funcionalidade: Registro do acerto de contas
 
   Cenário: Acerto parcial
     Quando Lucas registra "R$ 150,00" como acerto
-    Então o painel exibe "Lucas deve R$ 250,00 para Mariana"
+    Então o painel exibe "Para equilibrar o mês: Lucas transfere R$ 250,00 para Mariana"
 
   Cenário: Valor acima do devido
     Quando Lucas informa "R$ 500,00" no acerto
@@ -32,7 +32,7 @@ Funcionalidade: Registro do acerto de contas
   Cenário: Nova despesa comum após o acerto
     Dado que o mês foi quitado
     Quando Mariana lança nova despesa comum de "R$ 200,00"
-    Então o painel exibe "Lucas deve R$ 100,00 para Mariana"
+    Então o painel exibe "Para equilibrar o mês: Lucas transfere R$ 100,00 para Mariana"
 
   Cenário: Duplo clique não duplica
     Quando preencho o acerto e toco duas vezes em "Confirmar acerto"

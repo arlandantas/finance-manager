@@ -34,10 +34,12 @@ Then(
   "as sugestões são duas transferências de {string} para Mariana",
   async ({ page }, valor: string) => {
     const hero = page.getByTestId("settlement-hero");
-    await expect(hero).toContainText(`Lucas deve ${valor} para Mariana`);
+    await expect(hero).toContainText(
+      `Para equilibrar o mês: Lucas transfere ${valor} para Mariana`,
+    );
     const others = page.getByTestId("settlement-suggestions").getByRole("listitem");
     await expect(others).toHaveCount(1);
-    await expect(others.first()).toContainText(`Xavier deve ${valor} para Mariana`);
+    await expect(others.first()).toContainText(`Xavier transfere ${valor} para Mariana`);
   },
 );
 

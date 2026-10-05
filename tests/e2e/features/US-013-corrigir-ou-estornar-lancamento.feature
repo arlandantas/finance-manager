@@ -31,9 +31,9 @@ Funcionalidade: Correção e exclusão de lançamentos
     E sua alteração não é gravada
 
   Cenário: Acerto de contas recalculado
-    Dado "Lucas deve R$ 400,00 para Mariana" no painel
+    Dado "Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana" no painel
     Quando a despesa comum de Mariana de "R$ 400,00" é excluída
-    Então o painel exibe "Lucas deve R$ 200,00 para Mariana"
+    Então o painel exibe "Para equilibrar o mês: Lucas transfere R$ 200,00 para Mariana"
 
   Cenário: Validações da edição
     Dado a despesa de "R$ 150,50" em "Nubank Conjunta" (saldo "R$ 849,50")

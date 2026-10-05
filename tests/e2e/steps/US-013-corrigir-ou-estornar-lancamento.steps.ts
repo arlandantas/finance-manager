@@ -245,7 +245,7 @@ Given("{string} no painel", async ({ world, page }, _frase: string) => {
   await actAs(world, page, "Lucas");
   await gotoReady(page, "/acerto");
   await expect(page.getByTestId("settlement-hero")).toContainText(
-    "Lucas deve R$ 400,00 para Mariana",
+    "Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana",
   );
 });
 

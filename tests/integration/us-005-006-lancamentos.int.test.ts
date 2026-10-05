@@ -287,6 +287,7 @@ describe("US-005 (infra) Defaults e categorias", () => {
       cardId: null,
       payerMemberId: fx.byName.Lucas?.memberId,
       today: "2026-10-04",
+      split: { available: true },
     });
     await post(lucas(), await expense()); // lança no Nubank
     const d2 = await call(lucas(), "GET", "/api/v1/transactions/defaults");

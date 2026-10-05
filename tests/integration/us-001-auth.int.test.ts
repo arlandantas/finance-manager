@@ -180,6 +180,7 @@ describe("US-001 sessão: GET /api/v1/me", () => {
       familyId: fx.family.id,
       familyName: "Família Silva",
       role: "MEMBER",
+      settlementEnabled: true,
     });
   });
 
