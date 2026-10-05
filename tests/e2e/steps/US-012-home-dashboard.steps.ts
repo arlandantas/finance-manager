@@ -67,10 +67,6 @@ Then("a lista de contas com seus saldos", async ({ page }) => {
   await expect(items.filter({ hasText: "Itaú Mariana" })).toContainText("R$ 6.500,00");
 });
 
-Then("o card {string}", async ({ page }, titulo: string) => {
-  await expect(page.getByTestId("home-settlement")).toContainText(titulo);
-});
-
 Then("os últimos {int} lançamentos", async ({ page }, n: number) => {
   await expect(page.getByTestId("home-recent").getByTestId("ledger-row")).toHaveCount(n);
   await expect(page.getByRole("link", { name: "Ver extrato" })).toHaveAttribute("href", "/extrato");

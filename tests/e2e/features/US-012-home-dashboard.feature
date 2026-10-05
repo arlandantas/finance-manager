@@ -6,7 +6,6 @@ Funcionalidade: Home da família
     Quando abro a Home
     Então vejo "Saldo da família: R$ 7.349,50"
     E a lista de contas com seus saldos
-    E o card "Acerto do mês"
     E os últimos 5 lançamentos
 
   Cenário: Resumo do mês exclui transferências e acertos

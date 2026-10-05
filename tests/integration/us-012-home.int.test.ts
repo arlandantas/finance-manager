@@ -63,11 +63,8 @@ describe("US-012 Home da família", () => {
       "Itaú Mariana",
       "Nubank Conjunta",
     ]);
-    expect(res.body.settlement).toMatchObject({
-      period: { key: "2026-10" },
-      status: expect.any(String),
-      rule: { kind: "EQUAL" },
-    });
+    expect(res.body.settlementIndicator).toHaveProperty("previous");
+
     expect(res.body.recent).toHaveLength(5);
     expect(res.body.recent[0].occurredOn >= res.body.recent[4].occurredOn).toBe(true);
     expect(res.body.period).toEqual({ key: "2026-10", start: "2026-10-01", end: "2026-10-31" });

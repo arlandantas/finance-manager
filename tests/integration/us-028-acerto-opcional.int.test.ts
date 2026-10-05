@@ -95,7 +95,7 @@ describe("US-028 Acerto opcional", () => {
     const put = await at(() => call(mariana(), "PUT", "/api/v1/split-rule", { kind: "EQUAL" }));
     expect(put.status).toBe(409);
     const home = await at(() => call(lucas(), "GET", "/api/v1/home"));
-    expect(home.body.settlement).toBeNull();
+    expect(home.body.settlementIndicator).toBeNull();
     const defaults = await at(() => call(lucas(), "GET", "/api/v1/transactions/defaults"));
     expect(defaults.body.split.available).toBe(false);
   });
