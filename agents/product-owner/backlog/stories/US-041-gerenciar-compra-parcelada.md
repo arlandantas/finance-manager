@@ -3,8 +3,8 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-20 Cartão Completo (parcelamento) · **R3** |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Should · 2,0 · 5 |
-| Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
+| MoSCoW · WSJF · Tamanho (TL) | Should · 2,0 · 5 |
+| Status | **Esboçada** (SDD-014, esboço do Tech Lead) · tamanho confirmado pelo TL; detalhar o SDD antes do Dev |
 | Depende de | US-040, US-016b, US-013a |
 | Corte | **Cortável** (contorno: excluir a compra inteira e lançar de novo) |
 | Rastreabilidade | NEED-003 (RN-003.7) · Parecer item 6 · FLUXO-014 · D-PO-25 |

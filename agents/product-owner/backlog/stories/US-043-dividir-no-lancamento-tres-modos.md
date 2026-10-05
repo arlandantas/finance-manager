@@ -3,8 +3,8 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-16 Acerto e Divisão Opcionais e Transparentes · **R3** |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Should · 2,6 · 5 |
-| Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
+| MoSCoW · WSJF · Tamanho (TL) | Should · 2,6 · 5 |
+| Status | **Esboçada** (SDD-015, esboço do Tech Lead) · tamanho confirmado pelo TL; detalhar o SDD antes do Dev |
 | Depende de | EN-002, US-030, US-008, US-009b |
 | Corte | **Cortável** (com a EN-002; a R2.1 já entrega "Só meu" e regra da família) |
 | Rastreabilidade | Parecer item 9b · NEED-018 (RN-018.1..5) · NEED-007 · D-PO-27 · FLUXO-008 |

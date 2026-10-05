@@ -3,8 +3,8 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-18 Manutenção de Cadastros · **R2.1** |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Should · 1,8 · 5 |
-| Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
+| MoSCoW · WSJF · Tamanho (TL) | Should · 1,1 (recalc.) · 8 (035a 5 + 035b 3) (PO: 5) |
+| Status | **Especificada** (SDD-012, pronta para o Dev) · tamanho re-estimado pelo TL |
 | Depende de | US-034, US-032, US-003 |
 | Corte | **Cortável** (caso sensível; alto risco, risco de inchar a R2.1) |
 | Rastreabilidade | Parecer item 15, Q-F07 · NEED-020 (RN-020.1, RN-020.4, RN-020.5, RN-020.7) · NEED-001 · FLUXO-011 · D-PO-18 |

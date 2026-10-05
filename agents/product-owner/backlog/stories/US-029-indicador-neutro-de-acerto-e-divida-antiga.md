@@ -3,8 +3,8 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-16 Acerto e Divisão Opcionais e Transparentes · **R2.1** |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Must · 3,3 · 3 |
-| Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
+| MoSCoW · WSJF · Tamanho (TL) | Must · 3,3 · 3 |
+| Status | **Especificada** (SDD-011, pronta para o Dev) · tamanho confirmado pelo TL |
 | Depende de | US-028, US-025 (Resumo do Mês), US-009a, US-011 |
 | Corte | **Não cortar** (ressalva 2 da homologação) |
 | Rastreabilidade | Homologação achado 2 · Parecer item 2 e ressalva 2 · NEED-019 · NEED-007 (RN-007.5) · FLUXO-006, FLUXO-003 · D-PO-14 |

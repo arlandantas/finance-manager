@@ -3,8 +3,8 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-19 Ergonomia e Preferências · **R2.1** |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Could · 2,0 · 2 |
-| Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
+| MoSCoW · WSJF · Tamanho (TL) | Could · 2,0 · 2 |
+| Status | **Especificada** (SDD-010, pronta para o Dev) · tamanho confirmado pelo TL |
 | Depende de | nenhuma |
 | Corte | **Cortável (segundo na ordem, depois do tema)** |
 | Rastreabilidade | Parecer item 4, Q-F06 · NEED-022 (RN-022.2) · FLUXO-013 · D-PO-23 |

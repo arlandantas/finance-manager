@@ -3,8 +3,8 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-18 Manutenção de Cadastros · **R2.1** |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Must · 3,3 · 3 |
-| Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
+| MoSCoW · WSJF · Tamanho (TL) | Must · 2,0 (recalc.) · 5 (PO: 3) |
+| Status | **Especificada** (SDD-012, pronta para o Dev) · tamanho re-estimado pelo TL |
 | Depende de | US-004, US-010 (transferir para zerar o saldo), US-007 |
 | Corte | **Não cortar** (conta criada por engano não pode ficar para sempre) |
 | Rastreabilidade | Parecer item 13, Q-F11 · NEED-020 (RN-020.2, RN-020.1) · NEED-002 · FLUXO-010 · D-PO-17 |

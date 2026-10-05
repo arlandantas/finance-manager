@@ -3,8 +3,8 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-17 Visão do Mês e Privacidade de Exibição · **R2.1** |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Must · 3,5 · 2 |
-| Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
+| MoSCoW · WSJF · Tamanho (TL) | Must · 3,5 · 2 |
+| Status | **Especificada** (SDD-010, pronta para o Dev) · tamanho confirmado pelo TL |
 | Depende de | US-025, US-004 |
 | Corte | **Não cortar** (acompanha a US-025) |
 | Rastreabilidade | Parecer item 8 · NEED-015 (§2.2) · NEED-009 (RN08 rebaixado) · FLUXO-006 · D-PO-13 |

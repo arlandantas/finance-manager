@@ -4,8 +4,8 @@
 | :-- | :-- |
 | Épico / Release | EPIC-22 Modelo de Grupos (spike) · **R3** |
 | Tipo | **Enabler / spike do Tech Lead** (entrega: ADR; nenhuma funcionalidade) |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Should · 2,0 · 2 (a estimar pelo TL) |
-| Status | Rascunho do PO · **dono: Tech Lead** |
+| MoSCoW · WSJF · Tamanho (TL) | Should · 2,0 · 2 (PO: 2; TL: confirmado) |
+| Status | **Concluída** (ADR-018, Tech Lead, 2026-10-04) |
 | Depende de | nenhuma (pode rodar em paralelo à R2.1) |
 | Corte | Cortável sem impacto na R3; mas é a única forma de **não pagar caro depois** |
 | Rastreabilidade | Parecer item 16, Q-F08 · NEED-021 (RN-021.1..3) · D-PO-02 · US-020, US-021 · D-PO-32 |

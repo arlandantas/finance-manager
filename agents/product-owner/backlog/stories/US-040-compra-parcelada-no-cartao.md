@@ -3,8 +3,8 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-20 Cartão Completo (parcelamento) · **R3, 1ª entrega** (candidata a puxar para a R2.1 se o Tech Lead estimar ≤ 5, ver `pedidos-ao-tech-lead-r21-r3.md`) |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Must · 3,4 · 5 |
-| Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
+| MoSCoW · WSJF · Tamanho (TL) | Must · 2,1 (recalc.) · 8 (040a 5 + 040b 3) (PO: 5) |
+| Status | **Esboçada** (SDD-014, esboço do Tech Lead) · tamanho re-estimado pelo TL; detalhar o SDD antes do Dev |
 | Depende de | US-016a, US-017a, US-015 (já entregues); US-024 (descrição) |
 | Corte | **Não cortar** (item 6: "dia a dia do cartão no Brasil") |
 | Rastreabilidade | Parecer item 6, Q-F14 · NEED-003 (RN-003.4, 003.5, 003.6, 003.9) · NEED-008 (ortogonal) · FLUXO-014 · D-PO-25, D-PO-26 |

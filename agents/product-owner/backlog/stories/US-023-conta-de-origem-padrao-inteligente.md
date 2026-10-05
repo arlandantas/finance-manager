@@ -3,8 +3,8 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-19 Ergonomia e Preferências · **R2.1** |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Must · 3,3 · 3 |
-| Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
+| MoSCoW · WSJF · Tamanho (TL) | Must · 3,3 · 3 |
+| Status | **Especificada** (SDD-013, pronta para o Dev) · tamanho confirmado pelo TL |
 | Depende de | US-017b (pagar fatura), US-019 (dar baixa) |
 | Corte | **Não cortar** (ressalva 3 da homologação) |
 | Rastreabilidade | Homologação achado 3 · Parecer ressalva 3 · NEED-004 (RN-004.x conta de origem padrão) · NEED-003 · FLUXO-012 · D-PO-19 |

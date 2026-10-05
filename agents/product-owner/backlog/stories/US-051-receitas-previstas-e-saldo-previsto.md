@@ -3,8 +3,8 @@
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-21 Classificação e Análise (extensão do EPIC-17/EPIC-7) · **R3** |
-| MoSCoW · WSJF · Tamanho (PO, preliminar) | Could · 1,4 · 5 |
-| Status | Refinada (PO) · tamanho a confirmar pelo Tech Lead |
+| MoSCoW · WSJF · Tamanho (TL) | Could · 1,4 · 5 |
+| Status | **Esboçada** (SDD-017, esboço do Tech Lead) · tamanho confirmado pelo TL; detalhar o SDD antes do Dev |
 | Depende de | US-018, US-019, US-025 |
 | Corte | **Primeiro Could a cortar na R3** |
 | Rastreabilidade | Parecer Q-F03 · NEED-015 (RN-015.4) · NEED-004 · FLUXO-006, FLUXO-005 · D-PO-31 |
