@@ -31,6 +31,20 @@ export const UpdateFamilySettingsSchema = z
   .strict();
 export type UpdateFamilySettingsInput = z.infer<typeof UpdateFamilySettingsSchema>;
 
+const FAMILY_NAME_MSG = "Informe um nome com 2 a 60 caracteres";
+export const UpdateFamilySchema = z
+  .object({
+    version: z.number().int().min(1),
+    name: z
+      .string({ error: FAMILY_NAME_MSG })
+      .trim()
+      .min(2, FAMILY_NAME_MSG)
+      .max(60, FAMILY_NAME_MSG),
+  })
+  .strict();
+export type UpdateFamilyInput = z.infer<typeof UpdateFamilySchema>;
+export const ChangeRoleSchema = z.object({ role: RoleSchema }).strict();
+
 export const CreateInvitationSchema = z
   .object({
     email: emailSchema,
@@ -78,11 +92,26 @@ export type InvitationDTO = {
   invitedBy: { memberId: string; name: string };
 };
 
+export type FamilyEventDTO = {
+  type:
+    | "FAMILY_RENAMED"
+    | "ROLE_CHANGED"
+    | "SETTLEMENT_TOGGLED"
+    | "MEMBER_REMOVED"
+    | "MEMBER_LEFT"
+    | "INVITATION_RESENT";
+  actor: { id: string; name: string };
+  target: { id: string; name: string } | null;
+  changes: Record<string, unknown>;
+  at: string;
+};
+
 export type FamilyDTO = {
   family: { id: string; name: string; settlementEnabled: boolean; version: number };
   currentMemberId: string;
   currentRole: Role;
-  members: MemberDTO[];
+  members: Array<MemberDTO & { canChangeRole: boolean }>;
+  events: FamilyEventDTO[]; // últimos 20 (trilha simples: autor e data)
   pendingInvitations: InvitationDTO[]; // [] para quem não é ADMIN
 };
 

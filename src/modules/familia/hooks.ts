@@ -87,3 +87,36 @@ export function useUpdateFamilySettings() {
       ),
   });
 }
+
+function useInvalidateFamilyAll() {
+  const qc = useQueryClient();
+  return () => Promise.all(["family", "me"].map((k) => qc.invalidateQueries({ queryKey: [k] })));
+}
+
+/** PATCH /family (US-034): renomear. */
+export function useUpdateFamily() {
+  const invalidate = useInvalidateFamilyAll();
+  return useMutation({
+    mutationFn: (a: { version: number; name: string; idempotencyKey: string }) =>
+      apiFetch<{ family: { name: string; version: number } }>("/api/v1/family", {
+        method: "PATCH",
+        body: { version: a.version, name: a.name },
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+/** PATCH /members/:id (US-034): papel. */
+export function useChangeRole() {
+  const invalidate = useInvalidateFamilyAll();
+  return useMutation({
+    mutationFn: (a: { memberId: string; role: Role; idempotencyKey: string }) =>
+      apiFetch<unknown>(`/api/v1/members/${a.memberId}`, {
+        method: "PATCH",
+        body: { role: a.role },
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}

@@ -104,6 +104,32 @@ export async function createFamily(
 }
 
 /** GET /api/v1/family (SDD-003 §4.5). Convites pendentes só para ADMIN. */
+async function listFamilyEvents(tx: Tx, ctx: RequestContext): Promise<FamilyDTO["events"]> {
+  const rows = await tx.familyEvent.findMany({
+    where: { familyId: ctx.familyId },
+    orderBy: [{ at: "desc" }, { id: "desc" }],
+    take: 20,
+  });
+  const ids = [
+    ...new Set(rows.flatMap((r) => [r.actorMemberId, r.targetMemberId ?? ""]).filter(Boolean)),
+  ];
+  const members = await tx.member.findMany({
+    where: { familyId: ctx.familyId, id: { in: ids } },
+    include: { user: true },
+  });
+  const name = (id: string) => {
+    const m = members.find((x) => x.id === id);
+    return { id, name: m ? (m.user.name ?? localPart(m.user.email)) : "Membro" };
+  };
+  return rows.map((r) => ({
+    type: r.type,
+    actor: name(r.actorMemberId),
+    target: r.targetMemberId ? name(r.targetMemberId) : null,
+    changes: (r.changes ?? {}) as Record<string, unknown>,
+    at: r.at.toISOString(),
+  }));
+}
+
 export async function getFamily(tx: Tx, ctx: RequestContext): Promise<FamilyDTO> {
   const repos = makeRepos(tx, ctx);
   const [family, members] = await Promise.all([
@@ -126,7 +152,9 @@ export async function getFamily(tx: Tx, ctx: RequestContext): Promise<FamilyDTO>
       image: m.user.image,
       role: toRole(m.role),
       joinedAt: m.joinedAt.toISOString(),
+      canChangeRole: ctx.role === "ADMIN",
     })),
+    events: await listFamilyEvents(tx, ctx),
     pendingInvitations: ctx.role === "ADMIN" ? await listPendingInvitations(tx, ctx) : [],
   };
 }

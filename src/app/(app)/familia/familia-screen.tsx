@@ -1,6 +1,6 @@
 "use client";
 
-import { UserPlus, X } from "lucide-react";
+import { MoreHorizontal, Pencil, UserCog, UserPlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -9,15 +9,19 @@ import { Money } from "@/components/money";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
+import { Field, inputClass } from "@/components/ui/field";
+import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import {
   type SettlementPending,
   useCancelInvitation,
+  useChangeRole,
   useFamily,
+  useUpdateFamily,
   useUpdateFamilySettings,
 } from "@/modules/familia/hooks";
-import type { InvitationDTO } from "@/modules/familia/schemas";
+import type { FamilyDTO, InvitationDTO, Role } from "@/modules/familia/schemas";
 
 const ROLE_LABEL = { ADMIN: "Administrador", MEMBER: "Membro" } as const;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -124,11 +128,171 @@ function SettlementSetting({
   );
 }
 
+const EVENT_TEXT: Record<FamilyDTO["events"][number]["type"], string> = {
+  FAMILY_RENAMED: "renomeou a família",
+  ROLE_CHANGED: "alterou o papel de",
+  SETTLEMENT_TOGGLED: "alterou o acerto de contas",
+  MEMBER_REMOVED: "removeu",
+  MEMBER_LEFT: "saiu da família",
+  INVITATION_RESENT: "reenviou um convite",
+};
+
+function RenameDialog({
+  open,
+  name,
+  version,
+  onClose,
+}: {
+  open: boolean;
+  name: string;
+  version: number;
+  onClose: () => void;
+}) {
+  const update = useUpdateFamily();
+  const router = useRouter();
+  const [value, setValue] = useState(name);
+  const [error, setError] = useState<string | null>(null);
+  const keyRef = useRef(newIdempotencyKey());
+  const trimmed = value.trim();
+  const invalid = trimmed.length < 2 || trimmed.length > 60;
+
+  function save() {
+    if (update.isPending) return;
+    if (invalid) {
+      setError("Informe um nome com 2 a 60 caracteres");
+      return;
+    }
+    setError(null);
+    update.mutate(
+      { version, name: trimmed, idempotencyKey: keyRef.current },
+      {
+        onSuccess: () => {
+          keyRef.current = newIdempotencyKey();
+          toast.success("Família atualizada");
+          router.refresh(); // o nome vive no cabeçalho (server component)
+          onClose();
+        },
+        onError: (e) => {
+          if (e instanceof NetworkError) setError(e.message);
+          else setError(e instanceof Error ? e.message : "Erro inesperado. Tente novamente.");
+        },
+      },
+    );
+  }
+
+  return (
+    <Drawer
+      open={open}
+      onOpenChange={(o) => {
+        if (o) setValue(name);
+        else onClose();
+      }}
+      title="Editar nome da família"
+    >
+      <form
+        noValidate
+        className="flex flex-col gap-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          save();
+        }}
+      >
+        <Field id="family-rename" label="Nome da família" error={error ?? undefined}>
+          <input
+            id="family-rename"
+            className={inputClass}
+            value={value}
+            autoComplete="off"
+            onChange={(e) => {
+              setValue(e.target.value);
+              setError(null);
+            }}
+          />
+        </Field>
+        <Button type="submit" disabled={update.isPending}>
+          Salvar
+        </Button>
+      </form>
+    </Drawer>
+  );
+}
+
+function RoleDialog({
+  member,
+  onClose,
+}: {
+  member: { memberId: string; name: string; role: Role } | null;
+  onClose: () => void;
+}) {
+  const change = useChangeRole();
+  const [role, setRole] = useState<Role>("MEMBER");
+  const [error, setError] = useState<string | null>(null);
+  const keyRef = useRef(newIdempotencyKey());
+  const router = useRouter();
+
+  return (
+    <Drawer
+      open={member !== null}
+      onOpenChange={(o) => {
+        if (o && member) setRole(member.role);
+        if (!o) onClose();
+      }}
+      title={member ? `Alterar papel de ${member.name.split(" ")[0]}` : "Alterar papel"}
+    >
+      {member ? (
+        <form
+          noValidate
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (change.isPending) return;
+            setError(null);
+            change.mutate(
+              { memberId: member.memberId, role, idempotencyKey: keyRef.current },
+              {
+                onSuccess: () => {
+                  keyRef.current = newIdempotencyKey();
+                  toast.success("Papel atualizado");
+                  router.refresh();
+                  onClose();
+                },
+                onError: (e) => {
+                  keyRef.current = newIdempotencyKey();
+                  setError(e instanceof Error ? e.message : "Erro inesperado. Tente novamente.");
+                },
+              },
+            );
+          }}
+        >
+          <Field id="role-select" label="Papel" error={error ?? undefined}>
+            <select
+              id="role-select"
+              className={inputClass}
+              value={role}
+              onChange={(e) => setRole(e.target.value as Role)}
+            >
+              <option value="ADMIN">Administrador</option>
+              <option value="MEMBER">Membro</option>
+            </select>
+          </Field>
+          <Button type="submit" disabled={change.isPending}>
+            Salvar papel
+          </Button>
+        </form>
+      ) : null}
+    </Drawer>
+  );
+}
+
 export function FamiliaScreen() {
   const family = useFamily();
   const cancel = useCancelInvitation();
   const [inviting, setInviting] = useState(false);
   const [canceling, setCanceling] = useState<InvitationDTO | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [rolling, setRolling] = useState<{ memberId: string; name: string; role: Role } | null>(
+    null,
+  );
   const cancelKey = useRef(newIdempotencyKey());
   const data = family.data;
   const isAdmin = data?.currentRole === "ADMIN";
@@ -166,7 +330,17 @@ export function FamiliaScreen() {
 
       {data ? (
         <>
-          <p className="text-slate-600">{data.family.name}</p>
+          <div className="flex items-center gap-2">
+            <p data-testid="family-title" className="text-slate-600">
+              {data.family.name}
+            </p>
+            {isAdmin ? (
+              <Button variant="ghost" onClick={() => setRenaming(true)}>
+                <Pencil size={16} aria-hidden="true" />
+                Editar nome
+              </Button>
+            ) : null}
+          </div>
 
           {data.members.length === 1 && isAdmin ? (
             <div className="flex flex-col items-start gap-3 rounded-xl border border-brand-100 bg-brand-50 p-4">
@@ -191,9 +365,30 @@ export function FamiliaScreen() {
                     <p className="truncate font-medium text-slate-900">{m.name}</p>
                     <p className="truncate text-sm text-slate-500">{m.email}</p>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                  <span
+                    data-testid="member-role"
+                    className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+                  >
                     {ROLE_LABEL[m.role]}
                   </span>
+                  {m.canChangeRole ? (
+                    <Menu
+                      label={`Ações de ${m.name.split(" ")[0]}`}
+                      trigger={<MoreHorizontal size={20} aria-hidden="true" />}
+                    >
+                      {(close) => (
+                        <MenuItem
+                          onClick={() => {
+                            close();
+                            setRolling({ memberId: m.memberId, name: m.name, role: m.role });
+                          }}
+                        >
+                          <UserCog size={16} aria-hidden="true" />
+                          Alterar papel
+                        </MenuItem>
+                      )}
+                    </Menu>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -204,6 +399,23 @@ export function FamiliaScreen() {
             version={data.family.version}
             isAdmin={isAdmin}
           />
+
+          {data.events.length > 0 ? (
+            <section aria-labelledby="events-title" className="flex flex-col gap-2">
+              <h2 id="events-title" className="text-lg font-semibold text-slate-900">
+                Atividade recente
+              </h2>
+              <ul className="flex flex-col gap-1 text-sm text-slate-600">
+                {data.events.map((e, i) => (
+                  <li key={`${e.at}-${i}`} data-testid="family-event">
+                    {e.actor.name.split(" ")[0]} {EVENT_TEXT[e.type]}
+                    {e.target ? ` ${e.target.name.split(" ")[0]}` : ""} ·{" "}
+                    {new Date(e.at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           {isAdmin ? (
             <section aria-labelledby="pending-title" className="flex flex-col gap-3">
@@ -244,6 +456,16 @@ export function FamiliaScreen() {
           ) : null}
         </>
       ) : null}
+
+      {data ? (
+        <RenameDialog
+          open={renaming}
+          name={data.family.name}
+          version={data.family.version}
+          onClose={() => setRenaming(false)}
+        />
+      ) : null}
+      <RoleDialog member={rolling} onClose={() => setRolling(null)} />
 
       <Drawer open={inviting} onOpenChange={setInviting} title="Convidar membro">
         <InviteForm onDone={() => setInviting(false)} />
