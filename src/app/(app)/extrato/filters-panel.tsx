@@ -1,11 +1,50 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Field, inputClass } from "@/components/ui/field";
 import { useCards } from "@/modules/cartoes/hooks";
 import { useAllCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
 import type { LedgerUiFilters } from "@/modules/transacoes/optimistic";
+
+/** Busca por descrição (US-024): só aplica com 2+ caracteres; vazio limpa o filtro. */
+function SearchField({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  onChange: (q: string | undefined) => void;
+}) {
+  const [text, setText] = useState(value);
+  useEffect(() => setText(value), [value]);
+  const trimmed = text.trim();
+  return (
+    <Field
+      id={id}
+      label="Buscar"
+      hint="Procura na descrição (mínimo 2 letras)."
+      error={trimmed.length === 1 ? "Digite ao menos 2 letras" : undefined}
+    >
+      <input
+        id={id}
+        type="search"
+        className={inputClass}
+        maxLength={50}
+        value={text}
+        placeholder="Descrição"
+        onChange={(e) => {
+          setText(e.target.value);
+          const t = e.target.value.trim();
+          if (t === "") onChange(undefined);
+          else if (t.length >= 2) onChange(t);
+        }}
+      />
+    </Field>
+  );
+}
 
 export function FiltersPanel({
   filters,
@@ -25,6 +64,7 @@ export function FiltersPanel({
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <SearchField id={id("search")} value={filters.q ?? ""} onChange={(q) => onChange({ q })} />
       <Field id={id("account")} label="Conta">
         <select
           id={id("account")}

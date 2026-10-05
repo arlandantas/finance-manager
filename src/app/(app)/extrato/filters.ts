@@ -15,6 +15,8 @@ export function parseFilters(sp: { get(name: string): string | null }): LedgerUi
   if (type && (TYPES as readonly string[]).includes(type)) f.type = type as (typeof TYPES)[number];
   const shared = sp.get("shared");
   if (shared === "true" || shared === "false") f.shared = shared === "true";
+  const q = sp.get("q")?.trim();
+  if (q && q.length >= 2 && q.length <= 50) f.q = q;
   if (sp.get("includeDeleted") === "true") f.includeDeleted = true;
   return f;
 }

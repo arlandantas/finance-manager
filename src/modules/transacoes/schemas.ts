@@ -3,15 +3,13 @@ import { dateISOSchema, daysBetween } from "@/lib/dates";
 import { amountInCentsSchema } from "@/lib/money";
 import { type MemberRef, periodKeySchema, uuidSchema, versionSchema } from "@/lib/schemas";
 
+/** Mensagem única de descrição inválida em despesa/receita/cartão (SDD-013 §1; previstas mantêm as suas). */
+export const DESCRIPTION_MSG = "A descrição precisa ter entre 2 e 100 caracteres";
+
 // Descrição opcional (Q-05): vazia/ausente => o servidor usa o nome da categoria.
 const descriptionSchema = z.preprocess(
   (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
-  z
-    .string()
-    .trim()
-    .min(2, "A descrição deve ter no mínimo 2 caracteres")
-    .max(100, "A descrição deve ter no máximo 100 caracteres")
-    .optional(),
+  z.string().trim().min(2, DESCRIPTION_MSG).max(100, DESCRIPTION_MSG).optional(),
 );
 
 const common = {
@@ -130,6 +128,7 @@ export const ListTransactionsQuerySchema = z
     type: z.enum(["EXPENSE", "INCOME", "TRANSFER", "INVOICE_PAYMENT"]).optional(),
     shared: boolParam.optional(), // true = comum; false = pessoal (só despesas)
     includeDeleted: boolParam.optional(),
+    q: z.string().trim().min(2, "Digite ao menos 2 letras").max(50).optional(), // busca na descrição (US-024)
     cursor: z.string().max(300).optional(),
     limit: z.coerce.number().int().min(1).max(100).default(30),
   })
@@ -151,6 +150,7 @@ export type LedgerFilters = {
   categoryId?: string;
   type?: "EXPENSE" | "INCOME" | "TRANSFER" | "INVOICE_PAYMENT";
   shared?: boolean;
+  q?: string; // busca por descrição (ILIKE; sem acento-insensibilidade)
   includeDeleted: boolean;
 };
 
@@ -179,12 +179,7 @@ export const UpdateTransactionSchema = z
     amountInCents: amountInCentsSchema.optional(),
     occurredOn: dateISOSchema.optional(),
     payerMemberId: uuidSchema.optional(),
-    description: z
-      .string()
-      .trim()
-      .min(2, "A descrição deve ter no mínimo 2 caracteres")
-      .max(100, "A descrição deve ter no máximo 100 caracteres")
-      .optional(),
+    description: z.string().trim().min(2, DESCRIPTION_MSG).max(100, DESCRIPTION_MSG).optional(),
     note: z
       .string()
       .trim()

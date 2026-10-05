@@ -18,7 +18,11 @@ import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
 import { useCreateTransaction, useDefaults } from "@/modules/transacoes/hooks";
-import { type CreateTransactionInput, CreateTransactionSchema } from "@/modules/transacoes/schemas";
+import {
+  type CreateTransactionInput,
+  CreateTransactionSchema,
+  DESCRIPTION_MSG,
+} from "@/modules/transacoes/schemas";
 
 type Kind = "EXPENSE" | "INCOME";
 type FieldKey =
@@ -162,7 +166,7 @@ export function TransactionDrawer({
         parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
       );
       setErrors(next);
-      if (next.occurredOn || next.description || next.note) setDetailsOpen(true);
+      if (next.occurredOn || next.note) setDetailsOpen(true);
       if (next.amountInCents) document.getElementById("tx-amount")?.focus();
       else if (next.categoryId) categoryRef.current?.querySelector<HTMLElement>("button")?.focus();
       return;
@@ -190,6 +194,11 @@ export function TransactionDrawer({
     });
   }
 
+  const trimmedDescription = description.trim();
+  const liveDescriptionError =
+    trimmedDescription !== "" && (trimmedDescription.length < 2 || trimmedDescription.length > 100)
+      ? DESCRIPTION_MSG
+      : undefined;
   const text = TEXT[kind];
   const members = family.data?.members ?? [];
   const overLimit =
@@ -365,6 +374,24 @@ export function TransactionDrawer({
           </Link>
         </div>
 
+        <Field
+          id="tx-description"
+          label="Descrição (opcional)"
+          error={errors.description ?? liveDescriptionError}
+          hint="Se vazia, usamos o nome da categoria."
+        >
+          <input
+            id="tx-description"
+            className={inputClass}
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              setErrors((x) => ({ ...x, description: undefined }));
+            }}
+            aria-invalid={errors.description || liveDescriptionError ? true : undefined}
+          />
+        </Field>
+
         <div className="flex flex-col gap-1.5">
           <span id="tx-payer-label" className="text-sm font-medium text-slate-800">
             {text.payer}
@@ -438,21 +465,6 @@ export function TransactionDrawer({
                 aria-invalid={errors.occurredOn ? true : undefined}
               />
             </Field>
-            <Field
-              id="tx-description"
-              label="Descrição"
-              error={errors.description}
-              hint="Se vazia, usamos o nome da categoria."
-            >
-              <input
-                id="tx-description"
-                className={inputClass}
-                maxLength={100}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                aria-invalid={errors.description ? true : undefined}
-              />
-            </Field>
             <Field id="tx-note" label="Observação" error={errors.note}>
               <textarea
                 id="tx-note"
@@ -470,7 +482,7 @@ export function TransactionDrawer({
             type="submit"
             variant={overLimit ? "danger" : "primary"}
             className="w-full"
-            disabled={create.isPending}
+            disabled={create.isPending || liveDescriptionError !== undefined}
           >
             {create.isPending ? "Salvando…" : overLimit ? "Confirmar mesmo assim" : text.save}
           </Button>

@@ -415,6 +415,7 @@ export async function listTransactions(
     ...(q.categoryId ? { categoryId: q.categoryId } : {}),
     ...(q.type ? { type: q.type } : {}),
     ...(q.shared !== undefined ? { shared: q.shared } : {}),
+    ...(q.q ? { q: q.q } : {}),
   };
 
   const ids = await ledgerPageIds(tx, filters, cursor, q.limit);

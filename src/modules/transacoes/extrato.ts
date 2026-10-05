@@ -4,6 +4,11 @@ import { toCents } from "@/lib/money";
 import { periodPredicate } from "@/modules/transacoes/ledger-where";
 import type { LedgerFilters, LedgerTotalsDTO } from "@/modules/transacoes/schemas";
 
+/** Escapa `\`, `%` e `_` para o `ILIKE` (a busca é literal). */
+export function escapeLike(s: string): string {
+  return s.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
 /**
  * Fragmento WHERE único (SDD-005 §1): alimenta a lista E os totais, por isso Σ itens = totais.
  * O primeiro termo `familyId` é obrigatório (ADR-013). Aberturas nunca aparecem no extrato.
@@ -30,6 +35,7 @@ export function buildLedgerWhere(f: LedgerFilters): Prisma.Sql {
   if (f.shared !== undefined) {
     parts.push(Prisma.sql`t.kind = 'EXPENSE' AND t."isSharedExpense" = ${f.shared}`);
   }
+  if (f.q) parts.push(Prisma.sql`t."description" ILIKE ${`%${escapeLike(f.q)}%`} ESCAPE '\\'`);
   return Prisma.join(parts, " AND ");
 }
 

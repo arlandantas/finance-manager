@@ -16,6 +16,7 @@ export type LedgerUiFilters = {
   type?: "EXPENSE" | "INCOME" | "TRANSFER" | "INVOICE_PAYMENT";
   shared?: boolean;
   includeDeleted?: boolean;
+  q?: string;
 };
 
 export type PendingTransaction = TransactionDTO & { pending?: true };
@@ -33,6 +34,7 @@ export function admits(
   const period = data.pages[0]?.period;
   if (!period) return false;
   if (item.occurredOn < period.start || item.occurredOn > period.end) return false;
+  if (filters.q && !item.description.toLowerCase().includes(filters.q.toLowerCase())) return false;
   if (filters.accountId && filters.accountId !== item.account?.id) return false;
   if (filters.cardId && filters.cardId !== item.card?.id) return false;
   if (filters.categoryId && filters.categoryId !== item.category?.id) return false;

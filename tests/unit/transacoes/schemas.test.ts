@@ -70,11 +70,11 @@ describe("US-005 Descrição omitida", () => {
   it("2..100 caracteres quando informada", () => {
     expect(messages({ ...base, description: "a" })).toContainEqual({
       path: "description",
-      message: "A descrição deve ter no mínimo 2 caracteres",
+      message: "A descrição precisa ter entre 2 e 100 caracteres",
     });
     expect(messages({ ...base, description: "x".repeat(101) })).toContainEqual({
       path: "description",
-      message: "A descrição deve ter no máximo 100 caracteres",
+      message: "A descrição precisa ter entre 2 e 100 caracteres",
     });
     expect(CreateTransactionSchema.parse({ ...base, description: "  Feira  " })).toMatchObject({
       description: "Feira",
@@ -108,5 +108,32 @@ describe("US-005/US-006 padrões e campos proibidos", () => {
       path: "occurredOn",
       message: "Data inválida",
     });
+  });
+});
+
+describe("US-024 busca por descrição (q) e mensagem única", () => {
+  it("q: 2..50 caracteres, com trim", async () => {
+    const { ListTransactionsQuerySchema } = await import("@/modules/transacoes/schemas");
+    expect(ListTransactionsQuerySchema.parse({ q: "  bairro " }).q).toBe("bairro");
+    expect(ListTransactionsQuerySchema.safeParse({ q: "a" }).error?.issues[0]?.message).toBe(
+      "Digite ao menos 2 letras",
+    );
+    expect(ListTransactionsQuerySchema.safeParse({ q: "x".repeat(51) }).success).toBe(false);
+  });
+
+  it("escapeLike trata %, _ e \\ como literais", async () => {
+    const { escapeLike } = await import("@/modules/transacoes/extrato");
+    expect(escapeLike("100%_a\\b")).toBe("100\\%\\_a\\\\b");
+  });
+
+  it("a mesma mensagem vale para descrição curta e longa em despesa, receita e edição", async () => {
+    const { DESCRIPTION_MSG, UpdateTransactionSchema } = await import(
+      "@/modules/transacoes/schemas"
+    );
+    expect(DESCRIPTION_MSG).toBe("A descrição precisa ter entre 2 e 100 caracteres");
+    for (const description of ["a", "x".repeat(101)]) {
+      const r = UpdateTransactionSchema.safeParse({ version: 1, description });
+      expect(r.error?.issues[0]?.message).toBe(DESCRIPTION_MSG);
+    }
   });
 });
