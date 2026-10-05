@@ -150,3 +150,4 @@ Pagamento parcial, mínimo do cartão, parcelamento da fatura, juros/multa, desc
 
 ## Histórico
 - 2026-10-04 — Criada na fatia 017b da US-017 (Should, D-GES-04).
+- 2026-10-04 — **Revisão pós-homologação (R2.1):** a conta de origem sugerida passa a seguir a US-023 (conta do titular com saldo suficiente).

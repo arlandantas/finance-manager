@@ -70,3 +70,6 @@ Regra por lançamento (exceção pontual), regra por categoria, cálculo automá
 ## Perguntas em aberto / pontos para o Tech Lead
 - **Q-08 (respondida, D-GES-08)**: **sim**, a regra tem **vigência por data** para preservar meses passados. O TL define a modelagem no SDD-002.
 - Arredondamento do centavo: **maior resto**, desempate determinístico (ADR-006).
+
+## Histórico
+- 2026-10-04 — **Revisão pós-homologação:** a tela da regra ganha prévia de impacto e sugestão pela renda (US-031); na R3 a regra vira **sugestão inicial** e o percentual é gravado em cada lançamento (EN-002/US-043, D-PO-27). Vigência por data (Q-08) permanece até a EN-002.

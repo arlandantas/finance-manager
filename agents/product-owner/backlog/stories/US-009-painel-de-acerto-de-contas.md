@@ -96,3 +96,6 @@ Exibição para 3+ membros e lista expansível de despesas (US-009b), registrar 
 ## Perguntas em aberto / pontos para o Tech Lead
 - Bloqueante: **SDD-002** (ADR-006) deve existir antes do desenvolvimento.
 - Algoritmo de sugestão para N > 2 e desempate do centavo precisam ser determinísticos e testados com propriedade (soma das cotas = total).
+
+## Histórico
+- 2026-10-04 — **Revisão pós-homologação (R2.1):** o painel só existe com o acerto **ligado** (US-028), usa linguagem neutra, mostra o rótulo honesto da regra (US-022) e a linha de despesas "Só meu" (US-030). O cálculo não muda.

@@ -143,3 +143,4 @@ Baixa/pagamento (US-019); recorrência e projeção automática (AP1); parcelame
 
 ## Histórico
 - 2026-10-04 — Refinada a partir do esboço (Rascunho → Refinada). Home passa a ter o bloco "A pagar" (cenário próprio).
+- 2026-10-04 — **Revisão pós-homologação (R2.1):** Q-22 revisada: "Dividir com a família" da previsão passa a nascer **Só meu** (US-030, D-PO-16), aguardando ratificação do Gestor.

@@ -162,3 +162,4 @@ Pagamento parcial de uma previsão; pagar com cartão de crédito (a baixa é se
 ## Histórico
 - 2026-10-04 — Refinada a partir do esboço (Rascunho → Refinada).
 - 2026-10-04 — Cenário "Baixa única" esclarecido (tela atualizada, versão atual) para distingui-lo de "Conflito de baixa simultânea" (tela desatualizada ⇒ conflito de versão); a ordem de checagem é versão primeiro, depois situação (SDD-009 §1).
+- 2026-10-04 — **Revisão pós-homologação (R2.1):** a conta de origem sugerida passa a seguir a US-023 (conta do responsável com saldo suficiente; nunca a última usada se ficar negativa).

@@ -102,3 +102,6 @@ Receita (US-006), despesa prevista (US-018), compra no cartão (US-016), parcela
 - **GAP-2**: nomes divergem do ADR-006 (`isShared` e `paidByMemberId` contra `isSharedExpense` e `payerMemberId`) e falta o campo de autor. Unificar.
 - **Q-05 (não bloqueante)**: descrição opcional na UI é decisão do PO para cumprir os 10 segundos; o TL pode manter `min(2)` no contrato preenchendo o padrão no cliente.
 - **Q-D01 (Stakeholder)**: confirmar D-PO-01 (um único campo "Quem pagou?" no MVP).
+
+## Histórico
+- 2026-10-04 — **Revisão pós-homologação (R2.1):** o padrão de "Dividir com a família" passa de **ligado** para **Só meu** (US-030, D-PO-16) e a descrição passa a ser **campo visível e opcional** (US-024). Os cenários com "Dividir" ligado por padrão desta história refletem a R1 e serão atualizados pelo Dev junto com a US-030.

@@ -64,3 +64,6 @@ Moeda diferente de BRL, fuso configurável (fixo em `America/Sao_Paulo`), dia de
 
 ## Perguntas em aberto / pontos para o Tech Lead
 - O modelo de dados pode permitir N famílias por usuário (evolução), mas **a regra de produto do MVP é 1**.
+
+## Histórico
+- 2026-10-04 — **Revisão pós-homologação (R2.1):** novo passo opcional no onboarding "Como vocês dividem as despesas?" (US-028, FLUXO-009); nome da família editável depois (US-034).

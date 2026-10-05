@@ -76,3 +76,6 @@ Gráficos, orçamento/disponibilidade por categoria (AP1), termômetro de liquid
 
 ## Perguntas em aberto / pontos para o Tech Lead
 - Definir se os agregados são calculados em consulta ou materializados (medir antes, ADR-001).
+
+## Histórico
+- 2026-10-04 — **Revisão pós-homologação (R2.1):** o layout (saldo em destaque, card "Acerto do mês" e resumo simples) é **substituído** pelo Resumo do Mês (US-025), card de saldos recolhível (US-026), indicador neutro de acerto (US-029) e detalhe da transação (US-036). Ver FLUXO-006.
