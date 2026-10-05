@@ -70,10 +70,10 @@ export function splitRepo(tx: Tx, familyId: string) {
       (
         await tx.transaction.findFirst({
           where: { familyId, kind: "EXPENSE", isSharedExpense: true, deletedAt: null },
-          orderBy: { occurredOn: "asc" },
-          select: { occurredOn: true },
+          orderBy: { competenceOn: "asc" },
+          select: { competenceOn: true },
         })
-      )?.occurredOn ?? null,
+      )?.competenceOn ?? null,
     /** SDD-002 §5.2: acertos ativos do período com as pernas e contas. */
     activeSettlements: (periodKey: string) =>
       tx.transferGroup.findMany({

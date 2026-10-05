@@ -39,7 +39,7 @@ const MONEY_ALLOWED = [/^src\/components\/money\.tsx$/, /^src\/components\/money
 const MONEY_FORMAT = /\bformatBRL\b|Intl\.NumberFormat\([^)]*currency/;
 
 // SDD-010 §4.1: filtro por período do ledger só em `ledger-where.ts` (predicado único).
-const PERIOD_FILTER = /occurredOn"?\s*(?:BETWEEN\b|:\s*\{\s*(?:gte|lte|gt|lt)\b)/;
+const PERIOD_FILTER = /(?:occurredOn|competenceOn)"?\s*(?:BETWEEN\b|:\s*\{\s*(?:gte|lte|gt|lt)\b)/;
 const PERIOD_ALLOWED = [/^src\/modules\/transacoes\/ledger-where\.ts$/, /^tests\//, /^prisma\//];
 
 export function checkFile(file: string, content: string): Violation[] {
@@ -90,7 +90,8 @@ export function checkFile(file: string, content: string): Violation[] {
     out.push({
       file: rel,
       rule: "period-predicate",
-      message: "Filtro de período em occurredOn só em src/modules/transacoes/ledger-where.ts",
+      message:
+        "Filtro de período em occurredOn/competenceOn só em src/modules/transacoes/ledger-where.ts",
     });
   }
   return out;

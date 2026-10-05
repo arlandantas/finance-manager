@@ -173,7 +173,7 @@ describe("US-024 busca por descrição (q)", () => {
 describe("ledger-where: predicado único de período", () => {
   it("gera BETWEEN parametrizado e rejeita alias inválido", () => {
     const sql = periodPredicate("t", "2026-10-01", "2026-10-31");
-    expect(sql.sql).toContain('"occurredOn" BETWEEN');
+    expect(sql.sql).toContain('"competenceOn" BETWEEN');
     expect(sql.values).toEqual(["2026-10-01", "2026-10-31"]);
     expect(() => periodPredicate("t; DROP", "a", "b")).toThrow();
   });

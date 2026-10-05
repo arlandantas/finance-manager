@@ -75,6 +75,19 @@ describe("SDD-010 regras de CI: Money e predicado único de período", () => {
     expect(checkFile("tests/integration/x.int.test.ts", `occurredOn: { gte: a }`)).toEqual([]);
   });
 
+  it("competenceOn com BETWEEN/gte/lte fora de ledger-where.ts também falha (US-040b)", () => {
+    expect(checkFile("src/modules/x/repo.ts", `competenceOn: { gte: a, lte: b }`)[0]?.rule).toBe(
+      "period-predicate",
+    );
+    expect(
+      checkFile("src/modules/transacoes/extrato.ts", `t."competenceOn" BETWEEN a AND b`)[0]?.rule,
+    ).toBe("period-predicate");
+    expect(
+      checkFile("src/modules/transacoes/ledger-where.ts", `t."competenceOn" BETWEEN a AND b`),
+    ).toEqual([]);
+    expect(checkFile("src/modules/x/repo.ts", `orderBy: [{ competenceOn: "asc" }]`)).toEqual([]);
+  });
+
   it("ordenar ou comparar occurredOn de outra forma não é filtro de período", () => {
     expect(checkFile("src/modules/x/repo.ts", `orderBy: [{ occurredOn: "desc" }]`)).toEqual([]);
     expect(checkFile("src/modules/x/service.ts", `existing.occurredOn <= item.occurredOn`)).toEqual(
