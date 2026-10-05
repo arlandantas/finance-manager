@@ -42,3 +42,9 @@ O sistema deve gerenciar o ciclo de vida de **Despesas Previstas** e oferecer su
 > - No dia 01/Novembro, a conta já aparece em destaque no painel com estado `PREVISTO`.
 > - No dia 10/Novembro, João paga pelo app do banco e faz a baixa no sistema informando a conta Itaú.
 > - O estado muda para `PAGO`, a conta Itaú tem R$ 650,00 debitados e a previsão do mês seguinte (10/Dezembro) continua intacta como `PREVISTO`.
+
+---
+
+## Revisão do Stakeholder — 2026-10-04 (ressalva 3 da homologação R1+R2)
+- **RN-004.x (conta de origem padrão):** nos pagamentos (baixa de previstas e **pagar fatura**, NEED-003), a conta de origem sugerida deve ser, nesta ordem: (1) a **conta de liquidação definida na previsão**; (2) a **conta do titular/pagador** do compromisso; (3) a conta com **saldo suficiente**; **nunca** "a última conta usada" se isso a deixar negativa. Saldo insuficiente continua apenas avisando (RN04, não bloqueante), mas a escolha inicial não deve provocar o aviso. Prioridade **Must**, **R2.1**.
+- O resumo do mês (NEED-015) usa as previstas pendentes como base do "a pagar".

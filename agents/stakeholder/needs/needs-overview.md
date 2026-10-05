@@ -30,7 +30,7 @@ Uma família típica enfrenta dores crônicas na gestão do seu dinheiro:
 
 ---
 
-## 🗺️ Matriz Consolidada de Necessidades (NEED-001 a NEED-012)
+## 🗺️ Matriz Consolidada de Necessidades (NEED-001 a NEED-023)
 
 Todas as necessidades estão detalhadas em arquivos modulares nesta pasta:
 
@@ -49,8 +49,20 @@ Todas as necessidades estão detalhadas em arquivos modulares nesta pasta:
 | **[`NEED-010`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-010-conciliacao-e-auditoria-de-ajustes.md)** | **Conciliação Rápida & Auditoria** | **AP2** | Ajuste rápido digitando o saldo real do banco com indicador de auditoria de desvios acumulados. |
 | **[`NEED-011`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/NEED-011-termometro-de-liquidez-imediata.md)** | **Termômetro de Liquidez (7 Dias)** | **AP2** | Previsão de contas a vencer nos próximos 7 dias vs saldo livre para blindagem contra cheque especial. |
 
+| **[`NEED-013`](NEED-013-tags-livres.md)** | **Tags Livres nas Transações** | **R3** (Should) | Rótulos livres complementares às categorias para análises transversais (viagem, reforma). |
+| **[`NEED-014`](NEED-014-ocultar-valores-na-tela.md)** | **Ocultar Valores na Tela** | **R2.1** (Must) | Usar o app em público sem expor saldos. |
+| **[`NEED-015`](NEED-015-resumo-do-mes-na-home.md)** | **Resumo do Mês na Início** | **R2.1** (Must) | A Início responde "como está o mês?"; saldos viram card recolhível. |
+| **[`NEED-016`](NEED-016-visoes-sinteticas-filtraveis.md)** | **Visões Sintéticas com Filtros** | **R3** (Should) | Totais por categoria/tag/membro/conta em qualquer período. |
+| **[`NEED-017`](NEED-017-identificacao-visual-por-cor.md)** | **Cor por Conta/Cartão** | **R3** (Could) | Reconhecer a origem das movimentações de relance. |
+| **[`NEED-018`](NEED-018-divisao-opcional-e-por-lancamento.md)** | **Divisão Opcional e por Lançamento** | **R2.1** (Must) / **R3** (Should) | Dividir só o que é comum e decidir como no lançamento; resolve o rótulo enganoso do acerto. |
+| **[`NEED-019`](NEED-019-acerto-de-contas-opcional.md)** | **Acerto de Contas Opcional e Discreto** | **R2.1** (Must) | Família escolhe usar o acerto; nada de "fulano deve" em destaque. |
+| **[`NEED-020`](NEED-020-ciclo-de-vida-de-contas-familia-e-membros.md)** | **Gerenciar Contas, Família e Membros** | **R2.1** (Must/Should) | Editar nome, remover/arquivar conta, remover membro, sair. |
+| **[`NEED-021`](NEED-021-grupos-e-multiplos-grupos.md)** | **Grupos e Múltiplos Grupos** | **Futuro** | Grupos não familiares / pessoa em vários grupos / contas privadas. Só spike de modelo em R3. |
+| **[`NEED-022`](NEED-022-preferencias-de-uso-e-ergonomia.md)** | **Preferências e Ergonomia** | **R2.1** | Descrição visível, detalhe da transação, tema, navegação no desktop. |
+| **[`NEED-023`](NEED-023-assistente-de-ia-para-organizacao.md)** | **Assistente de IA** | **Futuro** | Análise do mês por IA, só após v0 em produção e decisão de privacidade. |
+
 ---
 
 ## 📌 Relação com Outros Agentes
-- **Product Owner (PO):** Utiliza este panorama e os arquivos `NEED-001` a `NEED-012` para construir os fluxos (`flows/`) e o backlog de histórias BDD (`backlog/`).
+- **Product Owner (PO):** Utiliza este panorama e os arquivos `NEED-001` a `NEED-023` para construir os fluxos (`flows/`) e o backlog de histórias BDD (`backlog/`).
 - **Tech Lead:** Avalia a viabilidade dos requisitos, modela as entidades e gera os contratos de engenharia (`sdd/`).

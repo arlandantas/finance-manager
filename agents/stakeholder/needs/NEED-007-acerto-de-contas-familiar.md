@@ -42,3 +42,17 @@ O sistema deve calcular de forma automatizada o **Balanço de Despesas Comuns e 
 > - Maria pagou R$ 1.200 (Supermercado) e R$ 400 (Feira). Total Maria = R$ 1.600.
 > - Total Comum da Família = R$ 4.000 (Cota de cada um: R$ 2.000).
 > - **Resultado do Balanço:** O sistema exibe: *"Maria deve transferir R$ 400 para João para quitar o ciclo de Outubro"*.
+
+---
+
+## Revisão do Stakeholder — 2026-10-04 (homologação R1+R2 e feedback do usuário)
+
+**Ressalvas da homologação (`../homologacao-r1-r2.md`) incorporadas como regras:**
+- **RN-007.4 (ressalva 1, rótulo):** a tela de Acerto **nunca** exibe uma regra que não corresponda ao cálculo. Deve mostrar o percentual **efetivamente aplicado** no mês (ex.: "50% até 03/10 e 58/42 a partir de 04/10", ou o percentual médio ponderado). Ver NEED-018, que torna isso estrutural gravando o percentual no lançamento.
+- **RN-007.5 (ressalva 2, dívida antiga):** com o acerto ligado, **meses anteriores com saldo em aberto** geram um aviso discreto e neutro (no Resumo do Mês e no Acerto), sem poluir a Início.
+- **RN-007.6 (ressalva 4, prévia):** ao salvar uma nova regra, mostrar a **prévia do impacto** (quanto muda no acerto do mês, a partir de que data) e, opcionalmente, **sugerir a proporção pelas rendas** informadas; todo membro vê a regra e o histórico (transparência). O Administrador continua sendo quem altera.
+
+**Mudanças vindas do feedback do usuário:**
+- O acerto passa a ser **opcional por família** (NEED-019) e **discreto** na Início (NEED-015).
+- A divisão deixa de ser "ligada por padrão" e passa a ser definida **no lançamento** (NEED-018); RN-007.1/007.2 continuam: só entra no acerto o que foi marcado como dividido.
+- Compras parceladas (NEED-003) entram no acerto **parcela a parcela** (Q-F05).

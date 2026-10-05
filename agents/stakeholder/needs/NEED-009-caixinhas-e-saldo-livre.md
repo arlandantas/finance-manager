@@ -41,3 +41,8 @@ O sistema deve suportar **Caixinhas / Subcontas Virtuais de Reserva** atreladas 
 > **Cenário:** A conta do Nubank possui R$ 6.000 de saldo bancário real. O usuário cria uma caixinha chamada "Reserva de Emergência" e transfere R$ 4.000 para ela.
 > - **Na Tela Inicial:** A conta Nubank exibe como saldo: **R$ 2.000,00 (Livre para Gastar)**. O usuário só enxerga os R$ 2.000 como disponíveis para despesas do mês.
 > - **No Detalhe da Conta Nubank:** É exibido o extrato, a caixinha "Reserva de Emergência" com R$ 4.000 e um botão de "Transferir para Caixinha" ou "Resgatar para a Conta".
+
+---
+
+## Revisão do Stakeholder — 2026-10-04 (NEED-015)
+O foco da Início passa a ser o **Resumo do Mês** (NEED-015), não o saldo. Ajuste à RN08/RF30: o **Saldo Livre** (descontadas as caixinhas) continua sendo o saldo exibido ao detalhar contas, no **card recolhível de saldos**, e entra como linha do resumo; deixa de ser o "destaque estrito" do topo. A intenção de proteger a reserva permanece.
