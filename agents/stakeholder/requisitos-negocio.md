@@ -212,3 +212,24 @@ erDiagram
 - **RN08 - Saldo Livre Restritivo na Home:** O saldo exibido na Home é sempre descontado das caixinhas protegidas.
 - **RN09 - Integridade de Rateio:** A soma dos subitens de uma compra desdobrada deve coincidir exatamente com o valor total da transação.
 - **RN10 - Isolamento de Conciliação:** Lançamentos de ajuste de conciliação não impactam tetos de categorias de consumo comuns.
+
+---
+
+## 6. Revisão pós-homologação R1+R2 (2026-10-04) — feedback do usuário
+
+Novos requisitos de negócio, detalhados em [`needs/`](needs/) e priorizados em [`parecer-feedback-usuario.md`](parecer-feedback-usuario.md):
+
+- **RF33 - Tags livres** em lançamentos, complementares às categorias (NEED-013).
+- **RF34 - Ocultar valores** na tela, por dispositivo (NEED-014).
+- **RF35 - Resumo do Mês** como foco da Início: receitas, despesas, resultado, a pagar e saldo previsto; saldos em card recolhível (NEED-015).
+- **RF36 - Visões sintéticas filtráveis** por período, conta/cartão, categoria, tag e membro (NEED-016; amplia RF22/RF23).
+- **RF37 - Cor por conta/cartão** (NEED-017).
+- **RF38 - Divisão opcional** (padrão "Só meu") e **definida no lançamento**, com percentual gravado (NEED-018; ajusta RF28).
+- **RF39 - Acerto de contas opcional** por família e discreto na Início (NEED-019; ajusta RF28).
+- **RF40 - Ciclo de vida de cadastros:** editar família, remover membro (ex-membro), sair, arquivar/excluir conta e cartão (NEED-020).
+- **RF41 - Compras parceladas no cartão** antecipadas para a R3 (RF10, NEED-003 revisado).
+- **RN11 - Percentual gravado por lançamento:** mudar a regra da família nunca recalcula lançamentos existentes.
+- **RN12 - Resumo do Mês:** despesas por competência; "a pagar" por caixa; pagamento de fatura, transferência e acerto não são despesa; números reconciliam com o Extrato.
+- **RN13 - Histórico é sagrado:** remover membro ou arquivar conta nunca apaga lançamentos, acertos ou faturas.
+- **RN14 - Privacidade por padrão:** valores começam ocultos em dispositivo novo.
+- **Futuro:** grupos não familiares e múltiplos grupos (NEED-021); assistente de IA (NEED-023).

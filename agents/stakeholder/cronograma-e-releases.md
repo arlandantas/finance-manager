@@ -86,6 +86,21 @@ Do ponto de vista de negócio, o AP0 só se considera concluído com a R2; a R1 
 
 ---
 
+## 🔁 Revisão pós-homologação R1+R2 — R2.1 e R3 (2026-10-04)
+
+Após a homologação com ressalvas e o feedback do usuário (detalhes em [`parecer-feedback-usuario.md`](parecer-feedback-usuario.md)), o fatiamento passa a ser:
+
+| Entrega | Conteúdo | Prioridade |
+| :--- | :--- | :--- |
+| **R2.1 — Ressalvas e ajustes de baixo risco** | Ressalvas 1 a 4 da homologação (rótulo da regra, dívida antiga, conta de origem padrão, prévia da regra); descrição visível (NEED-022); **Resumo do Mês** (NEED-015); **ocultar valores** (NEED-014); **acerto opcional** (NEED-019); **"dividir" desligado por padrão** (NEED-018, parte 1); arquivar conta/cartão e gerir família e membros (NEED-020); detalhe da transação na Início, tema e navegação desktop (NEED-022, Should/Could). | Must/Should/Could conforme o parecer |
+| **R3 — Cartão completo e análise** (1ª fatia do AP1) | **Parcelamento no cartão** (NEED-003, antecipado do AP1); **percentual por lançamento** (NEED-018, parte 2); **tags** (NEED-013); **visões sintéticas** (NEED-016); cor por conta (NEED-017); receitas previstas (Could); spike de modelo para múltiplos grupos (NEED-021). | Must (parcelado) / Should / Could |
+| **AP1 (restante)** | Ciclo, tetos, disponibilidade, recorrência (NEED-005, 006, 004 fase 2), logo após a R3. | Primordial |
+| **Futuro** | Assistente de IA (NEED-023, pós-v0, depende de decisão de privacidade); grupos não familiares e contas privadas (NEED-021). | Futuro |
+
+Observação: o **Épico 7 (parcelamento)** sai do AP1 e passa à R3. Se o Tech Lead estimar o básico como pequeno, o Gestor pode puxá-lo para a R2.1. Cronograma e estimativas continuam com o Gestor e o Tech Lead.
+
+---
+
 ## 📊 Matriz de Dependência e Entrega para o PO
 
 ```text

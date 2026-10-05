@@ -22,6 +22,10 @@ Este documento compila ideias, cenários de uso reais e oportunidades de expans�
 | **12. Importação de Extratos (OFX / CSV)** | 📌 To-Do Prioritário | Mapeado no Roadmap Fase 2 |
 | **13. Notificações / Alertas via WhatsApp/Telegram** | 💡 Backlog de Ideias | Detalhado na Seção 1 abaixo |
 | **14. Metas com Barra de Progresso e Prazo** | 💡 Backlog de Ideias | Detalhado na Seção 2 abaixo |
+| **15. Assistente de IA para analisar o mês** | 🔮 Futuro (pós-v0) | [`NEED-023`](needs/NEED-023-assistente-de-ia-para-organizacao.md), Seção 4 |
+| **16. Grupos não familiares / múltiplos grupos / contas privadas** | 🔮 Futuro | [`NEED-021`](needs/NEED-021-grupos-e-multiplos-grupos.md), Seção 5 |
+| **17. Sugestão de categoria por histórico (determinística)** | 💡 Ideia, pós-tags | Seção 4 |
+| **18. Construtor de relatórios configuráveis** | ❌ Não agora | Seção 6 |
 
 ---
 
@@ -40,3 +44,21 @@ Este documento compila ideias, cenários de uso reais e oportunidades de expans�
 ## 3. Importação de Extratos Bancários (OFX / CSV - Fase 2)
 - **Dor Identificada:** Para famílias com alto volume de compras no cartão, a alimentação manual pode gerar cansaço a longo prazo.
 - **Oportunidade Prioritária:** Upload de extratos `.ofx` e `.csv` conciliando automaticamente os lançamentos já existentes e sugerindo novos lançamentos para confirmação rápida pelo usuário.
+
+---
+
+## 4. Assistente de IA generativa para analisar o mês (Futuro, pós-v0)
+- **Dor:** ao fechar o mês, a família quer entender o que mudou e organizar categorias/tags sem esforço.
+- **Pré-condições:** v0 em produção com 2-3 fechamentos reais; categorias e tags estáveis; visões sintéticas como fonte dos números (a IA explica, não calcula); ADR de privacidade.
+- **Riscos:** vazamento de dados financeiros e de terceiros (LGPD), respostas plausíveis porém erradas, custo, sensação de vigilância no casal.
+- **Regras:** opt-in por família, desligado por padrão; enviar agregados, nunca descrições livres; só sugerir; sem aconselhamento financeiro; mostrar o que foi enviado.
+- **Passo intermediário:** **sugestão de categoria** por descrições já usadas (sem IA generativa, sem risco de privacidade).
+- **Decisão que fica com o usuário:** Q-U01 (envio de agregados a provedor externo).
+
+## 5. Grupos não familiares, múltiplos grupos e contas privadas (Futuro)
+- Três necessidades distintas (pessoa em vários grupos, visibilidade restrita, grupos de amigos/república). **Não construir agora.**
+- Candidata mais provável: **conta privada dentro da família** (reavalia D-PO-02/US-020). Só com pedido real.
+- Ação imediata barata: **spike do Tech Lead na R3** sobre o modelo usuário↔grupo (N:N).
+
+## 6. O que não vale fazer agora
+Construtor de relatórios, hierarquia/cor/orçamento de tags, menu inferior sofisticado no desktop, exclusão da família inteira.

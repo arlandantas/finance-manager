@@ -267,3 +267,16 @@ Nenhuma objeção bloqueante. As observações acima (D-PO-03, Q-13, Q-17) são 
 - **Posição Q-18..Q-22:** Q-18/Q-19/Q-21/Q-22 de acordo; Q-20 sensível (decisão do casal pelo Gestor).
 - **Entrega:** [`homologacao-r1-r2.md`](homologacao-r1-r2.md). Dados criados no banco de demonstração listados no relatório.
 
+
+---
+
+## [2026-10-04] - Parecer sobre o feedback do usuário (16 sugestões) e ressalvas da homologação
+
+- **Participantes:** Agente Stakeholder; Gestor do Projeto (decisões delegadas pelo usuário).
+- **Pauta:** definir valor, prioridade, regras e riscos das 16 sugestões do usuário e das 4 ressalvas da homologação R1+R2, antes de seguir ao PO.
+- **Decisões:**
+  - Novas necessidades **NEED-013..NEED-023**; revisão de NEED-003 (parcelamento antecipado do AP1 para a R3), NEED-004 (conta de origem padrão), NEED-007 (ressalvas 1, 2, 4), NEED-009 (Home).
+  - **R2.1:** ressalvas, descrição visível, Resumo do Mês, ocultar valores, acerto opcional, "dividir" desligado por padrão, arquivar conta, gestão de família e membros, detalhe da transação, tema. **R3:** parcelamento, percentual por lançamento, tags, visões sintéticas, cores, spike de grupos. **Futuro:** IA e grupos.
+  - Conflitos resolvidos: acerto opcional sem perder o valor do AP0; percentual gravado por lançamento preserva Q-08; NEED-009 ajustado ao Resumo do Mês; D-PO-02 não reaberta.
+  - O usuário delegou as decisões ao time: **Q-F01..Q-F14 decididas** com hipótese conservadora; permanecem com o usuário apenas Q-U01 (IA/provedor externo) e Q-U02 (exclusão da família).
+- **Entrega:** [`parecer-feedback-usuario.md`](parecer-feedback-usuario.md) (tabela de prioridades, decisões e pacote de handover ao PO).
