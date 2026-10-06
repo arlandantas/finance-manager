@@ -169,6 +169,7 @@ export type PayableInvoice = {
   cardName: string;
   ref: string;
   dueDate: string;
+  closingDate: string;
   totalInCents: number;
   isOverdue: boolean;
 };
@@ -204,6 +205,7 @@ export async function listPayableInvoices(
         cardName: r.card.name,
         ref: r.referenceMonth,
         dueDate,
+        closingDate: fromDbDate(r.closingDate),
         totalInCents: total,
         isOverdue: today > dueDate,
       },

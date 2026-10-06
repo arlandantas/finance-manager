@@ -28,6 +28,32 @@ export function isHomeEligible(dueOn: DateISO, today: DateISO, todayPlus7: DateI
   return dueOn < today || (dueOn >= today && dueOn <= todayPlus7);
 }
 
+/** Recorte por período (A pagar e Resumo): vencimento no período; no corrente, + atrasados anteriores (SDD-018 §2.2). */
+export function slicePeriod(
+  items: PayableItemDTO[],
+  q: { period: { start: DateISO; end: DateISO }; isCurrent: boolean },
+): PayableItemDTO[] {
+  return items
+    .filter(
+      (i) =>
+        (i.dueOn >= q.period.start && i.dueOn <= q.period.end) ||
+        (q.isCurrent && i.dueOn < q.period.start),
+    )
+    .sort(comparePayables);
+}
+
+function plusDays(iso: DateISO, days: number): DateISO {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Recorte por janela (Início, US-061): atrasados + vencimento em [hoje, hoje + days]. */
+export function sliceWindow(items: PayableItemDTO[], today: DateISO, days = 7): PayableItemDTO[] {
+  const until = plusDays(today, days);
+  return items.filter((i) => isHomeEligible(i.dueOn, today, until)).sort(comparePayables);
+}
+
 /** Frase do desvio: "+R$ 32,50 sobre o previsto" / "-R$ 10,00 abaixo do previsto". */
 export function differenceLabel(
   differenceInCents: number,

@@ -1,10 +1,10 @@
 import type { RequestContext, Tx } from "@/lib/api/types";
-import { addDays, fromDbDate, todayInFamilyTz } from "@/lib/dates";
+import { fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
 import { periodFromKey, periodOf } from "@/lib/period";
 import { listPayableInvoices, type PayableInvoice } from "@/modules/cartoes/invoice-service";
 import { previstasRepo } from "@/modules/previstas/repo";
-import { comparePayables, isHomeEligible } from "@/modules/previstas/rules";
+import { slicePeriod, sliceWindow } from "@/modules/previstas/rules";
 import type {
   HomePayablesDTO,
   PayableItemDTO,
@@ -27,13 +27,14 @@ const plannedItem = (
     isOverdue: dueOn < today,
     responsible: members.get(r.responsibleMemberId) ?? null,
     isSharedExpense: r.isSharedExpense,
+    invoiceStatus: null,
     isRecurring: r.seriesId !== null,
     paymentAccountName: r.paymentAccount?.name ?? null,
     href: `/previstas#${r.id}`,
   };
 };
 
-const invoiceItem = (i: PayableInvoice): PayableItemDTO => ({
+const invoiceItem = (i: PayableInvoice, today: string): PayableItemDTO => ({
   type: "INVOICE",
   id: `${i.cardId}:${i.ref}`,
   title: `Fatura ${i.cardName}`,
@@ -42,63 +43,64 @@ const invoiceItem = (i: PayableInvoice): PayableItemDTO => ({
   isOverdue: i.isOverdue,
   responsible: null,
   isSharedExpense: null,
+  invoiceStatus: i.closingDate < today ? "CLOSED" : "OPEN",
   isRecurring: false,
   paymentAccountName: null,
   href: `/cartoes/${i.cardId}?ref=${i.ref}`,
 });
 
-/** GET /payables (SDD-009 §4.6): previstas PREVISTO + faturas fechadas; no período corrente, também as atrasadas anteriores. */
+/**
+ * Única consulta de "A pagar" (SDD-018 §2.2): previstas PREVISTO não excluídas + faturas NÃO pagas
+ * (abertas ou fechadas) com total > 0. Todos os recortes (tela, Resumo, Início) partem daqui.
+ */
+async function collectOpenPayables(tx: Tx, ctx: RequestContext): Promise<PayableItemDTO[]> {
+  const repo = previstasRepo(tx, ctx.familyId);
+  const today = todayInFamilyTz(ctx.clock);
+  const members = await memberMap(repo);
+  const planned = (await repo.listOpen()).map((r) => plannedItem(r, members, today));
+  const invoices = (await listPayableInvoices(tx, ctx, { includeOpen: true })).map((i) =>
+    invoiceItem(i, today),
+  );
+  return [...planned, ...invoices];
+}
+
+/** GET /payables (SDD-018 §2.2): mesma definição do "A pagar" do Resumo; separa previstas e faturas. */
 export async function listPayables(
   tx: Tx,
   ctx: RequestContext,
   q: { period?: string | undefined },
 ): Promise<PayablesResponse> {
-  const repo = previstasRepo(tx, ctx.familyId);
   const today = todayInFamilyTz(ctx.clock);
-  const cutDay = await repo.cutDay();
+  const cutDay = await previstasRepo(tx, ctx.familyId).cutDay();
   const current = periodOf(today, cutDay);
   const period = q.period ? periodFromKey(q.period, cutDay) : current;
-  const isCurrent = period.key === current.key;
-  const members = await memberMap(repo);
-
-  const planned = (await repo.listInRange(period.start, period.end, "PREVISTO")).map((r) =>
-    plannedItem(r, members, today),
-  );
-  const earlierPlanned = isCurrent
-    ? (await repo.listOpenBefore(period.start)).map((r) => plannedItem(r, members, today))
-    : [];
-  const invoices = (await listPayableInvoices(tx, ctx)).filter(
-    (i) =>
-      (i.dueDate >= period.start && i.dueDate <= period.end) ||
-      (isCurrent && i.dueDate < period.start),
-  );
-  const items = [...planned, ...earlierPlanned, ...invoices.map(invoiceItem)].sort(comparePayables);
-  const overdue = items.filter((i) => i.isOverdue);
+  const due = await listDueItems(tx, ctx, {
+    period,
+    isCurrent: period.key === current.key,
+    today,
+  });
   return {
-    items,
+    items: due.items,
+    groups: {
+      planned: due.items.filter((i) => i.type === "PLANNED"),
+      invoices: due.items.filter((i) => i.type === "INVOICE"),
+    },
     period: { key: period.key, start: period.start, end: period.end },
     totals: {
-      dueInCents: items.reduce((s, i) => s + i.amountInCents, 0),
-      overdueInCents: overdue.reduce((s, i) => s + i.amountInCents, 0),
-      overdueCount: overdue.length,
+      dueInCents: due.plannedInCents + due.invoicesInCents,
+      overdueInCents: due.overdueInCents,
+      overdueCount: due.overdueCount,
     },
   };
 }
 
-/** Bloco "A pagar" da Home: atrasados + vencendo em [hoje, hoje + 7], máximo 5 (SDD-009 §4.6). */
+/** Janela da Início (US-061): atrasados + vencendo em [hoje, hoje + 7]. */
 export async function homePayables(tx: Tx, ctx: RequestContext): Promise<HomePayablesDTO> {
-  const repo = previstasRepo(tx, ctx.familyId);
   const today = todayInFamilyTz(ctx.clock);
-  const plus7 = addDays(today, 7);
-  const members = await memberMap(repo);
-  const planned = (await repo.listOpenUntil(plus7)).map((r) => plannedItem(r, members, today));
-  const invoices = (await listPayableInvoices(tx, ctx)).map(invoiceItem);
-  const eligible = [...planned, ...invoices]
-    .filter((i) => isHomeEligible(i.dueOn, today, plus7))
-    .sort(comparePayables);
+  const eligible = sliceWindow(await collectOpenPayables(tx, ctx), today, 7);
   const overdue = eligible.filter((i) => i.isOverdue);
   return {
-    items: eligible.slice(0, 5),
+    items: eligible.slice(0, 10),
     overdue: {
       count: overdue.length,
       totalInCents: overdue.reduce((s, i) => s + i.amountInCents, 0),
@@ -115,33 +117,13 @@ export type DueItems = {
   overdueCount: number;
 };
 
-/**
- * Itens "a pagar" de um período (SDD-010 §4.2): previstas PREVISTO com vencimento no período +
- * faturas NÃO pagas (abertas ou fechadas, total > 0) com vencimento no período; no período corrente
- * entra também todo atrasado de períodos anteriores. Alimenta o Resumo do Mês.
- */
+/** Itens "a pagar" de um período (SDD-010 §4.2): recorte por período do coletor único. */
 export async function listDueItems(
   tx: Tx,
   ctx: RequestContext,
   q: { period: { key: string; start: string; end: string }; isCurrent: boolean; today: string },
 ): Promise<DueItems> {
-  const repo = previstasRepo(tx, ctx.familyId);
-  const members = await memberMap(repo);
-  const { period, isCurrent, today } = q;
-  const planned = (await repo.listInRange(period.start, period.end, "PREVISTO")).map((r) =>
-    plannedItem(r, members, today),
-  );
-  const earlier = isCurrent
-    ? (await repo.listOpenBefore(period.start)).map((r) => plannedItem(r, members, today))
-    : [];
-  const invoices = (await listPayableInvoices(tx, ctx, { includeOpen: true }))
-    .filter(
-      (i) =>
-        (i.dueDate >= period.start && i.dueDate <= period.end) ||
-        (isCurrent && i.dueDate < period.start),
-    )
-    .map(invoiceItem);
-  const items = [...planned, ...earlier, ...invoices].sort(comparePayables);
+  const items = slicePeriod(await collectOpenPayables(tx, ctx), q);
   const overdue = items.filter((i) => i.isOverdue);
   const sum = (xs: PayableItemDTO[]) => xs.reduce((s, i) => s + i.amountInCents, 0);
   return {

@@ -6,6 +6,8 @@ import {
   isHomeEligible,
   isPlannedOverdue,
   plannedDifference,
+  slicePeriod,
+  sliceWindow,
 } from "@/modules/previstas/rules";
 import type { PayableItemDTO } from "@/modules/previstas/schemas";
 import {
@@ -63,6 +65,7 @@ describe("US-018 Bloco 'A pagar' da Home e ordenação", () => {
       isOverdue,
       responsible: null,
       isSharedExpense: true,
+      invoiceStatus: null,
       isRecurring: false,
       paymentAccountName: null,
       href: "",
@@ -133,5 +136,41 @@ describe("US-019 Schemas de baixa e edição", () => {
     expect(UpdatePlannedExpenseSchema.safeParse({ version: 1, status: "PAGO" }).success).toBe(
       false,
     );
+  });
+});
+
+describe("US-055 recortes do A pagar (SDD-018 §2.2)", () => {
+  const mk = (id: string, dueOn: string, overdue = false): PayableItemDTO => ({
+    type: "PLANNED",
+    id,
+    title: id,
+    dueOn,
+    amountInCents: 100,
+    isOverdue: overdue,
+    responsible: null,
+    isSharedExpense: true,
+    invoiceStatus: null,
+    isRecurring: false,
+    paymentAccountName: null,
+    href: "",
+  });
+  const items = [
+    mk("agosto", "2026-08-10", true),
+    mk("out", "2026-10-20"),
+    mk("nov", "2026-11-03"),
+  ];
+  const period = { start: "2026-10-01", end: "2026-10-31" };
+  it("slicePeriod: corrente inclui atrasados anteriores", () => {
+    expect(slicePeriod(items, { period, isCurrent: true }).map((i) => i.id)).toEqual([
+      "agosto",
+      "out",
+    ]);
+  });
+  it("slicePeriod: período futuro/passado não inclui atrasados", () => {
+    expect(slicePeriod(items, { period, isCurrent: false }).map((i) => i.id)).toEqual(["out"]);
+  });
+  it("sliceWindow: limites 7/8 dias e atrasado sempre entra", () => {
+    const w = [mk("atr", "2026-10-01", true), mk("d7", "2026-10-19"), mk("d8", "2026-10-20")];
+    expect(sliceWindow(w, "2026-10-12", 7).map((i) => i.id)).toEqual(["atr", "d7"]);
   });
 });

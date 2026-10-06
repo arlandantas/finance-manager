@@ -326,7 +326,13 @@ describe("US-018 Listas por mês e agregador", () => {
     expect(cur.body.items[0].title).toBe("Velha");
     expect(cur.body.totals.overdueCount).toBeGreaterThanOrEqual(1);
     const dec = await call(lucas(), "GET", "/api/v1/payables?period=2026-12");
-    expect(dec.body.items).toHaveLength(0);
+    // US-055: a fatura aberta de novembro (vence 05/12) também entra em A pagar
+    expect(dec.body.items).toHaveLength(1);
+    expect(dec.body.items[0]).toMatchObject({
+      type: "INVOICE",
+      amountInCents: 5000,
+      invoiceStatus: "OPEN",
+    });
   });
 });
 

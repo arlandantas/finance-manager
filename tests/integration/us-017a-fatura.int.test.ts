@@ -257,6 +257,7 @@ describe("US-017a Agregação, isolamento e derivação", () => {
         cardName: "Nubank Mariana",
         ref: "2026-10",
         dueDate: "2026-11-05",
+        closingDate: "2026-10-25",
         totalInCents: 40000,
         isOverdue: true,
       },

@@ -29,6 +29,12 @@ export function previstasRepo(tx: Tx, familyId: string) {
         include,
         orderBy: [{ dueOn: "asc" }, { createdAt: "asc" }, { id: "asc" }],
       }),
+    listOpen: () =>
+      tx.plannedExpense.findMany({
+        where: { familyId, deletedAt: null, status: "PREVISTO" },
+        include,
+        orderBy: [{ dueOn: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+      }),
     listOpenUntil: (until: string) =>
       tx.plannedExpense.findMany({
         where: { familyId, deletedAt: null, status: "PREVISTO", dueOn: { lte: toDbDate(until) } },

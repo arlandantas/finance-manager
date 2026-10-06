@@ -152,6 +152,14 @@ function PayableRow({
       </div>
       <div className="col-span-full flex flex-wrap items-center gap-2">
         {item.isOverdue ? <OverdueChip /> : null}
+        {item.invoiceStatus ? (
+          <span
+            data-testid="invoice-status"
+            className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
+          >
+            {item.invoiceStatus === "CLOSED" ? "Fechada" : "Aberta"}
+          </span>
+        ) : null}
         {item.isRecurring ? <RecurringChip /> : null}
         {planned ? (
           <>
@@ -428,16 +436,30 @@ export function PrevistasScreen() {
             <Button onClick={() => setCreating(true)}>Nova despesa prevista</Button>
           </div>
         ) : (
-          <ul className="flex flex-col gap-2" aria-label="Contas a pagar">
-            {payables.data.items.map((item) => (
-              <PayableRow
-                key={`${item.type}-${item.id}`}
-                item={item}
-                onAction={(kind) => openAction(kind, item.id)}
-                onPay={() => setPayingId(item.id)}
-              />
-            ))}
-          </ul>
+          <div className="flex flex-col gap-4">
+            {(
+              [
+                ["Faturas", payables.data.groups.invoices],
+                ["Previstas", payables.data.groups.planned],
+              ] as const
+            ).map(([label, group]) =>
+              group.length === 0 ? null : (
+                <section key={label} aria-label={label} className="flex flex-col gap-2">
+                  <h2 className="text-sm font-semibold text-slate-700">{label}</h2>
+                  <ul className="flex flex-col gap-2" aria-label={`Contas a pagar: ${label}`}>
+                    {group.map((item) => (
+                      <PayableRow
+                        key={`${item.type}-${item.id}`}
+                        item={item}
+                        onAction={(kind) => openAction(kind, item.id)}
+                        onPay={() => setPayingId(item.id)}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              ),
+            )}
+          </div>
         )
       ) : null}
 

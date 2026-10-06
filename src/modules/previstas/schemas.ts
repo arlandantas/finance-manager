@@ -125,6 +125,7 @@ export type PayableItemDTO = {
   isOverdue: boolean;
   responsible: MemberRef | null;
   isSharedExpense: boolean | null;
+  invoiceStatus: "OPEN" | "CLOSED" | null; // selo da fatura (US-055); null em PLANNED
   isRecurring: boolean; // ocorrência de série (US-058)
   paymentAccountName: string | null; // "Pagar com" (US-059)
   href: string; // /previstas#id | /cartoes/{cardId}?ref={ref}
@@ -132,6 +133,7 @@ export type PayableItemDTO = {
 
 export type PayablesResponse = {
   items: PayableItemDTO[]; // atrasadas primeiro, depois por dueOn, depois título
+  groups: { planned: PayableItemDTO[]; invoices: PayableItemDTO[] }; // US-055: previstas e faturas separadas
   period: { key: string; start: string; end: string };
   totals: { dueInCents: number; overdueInCents: number; overdueCount: number };
 };

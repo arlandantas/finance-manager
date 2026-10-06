@@ -11,7 +11,6 @@ import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError } from "@/lib/http";
-import { useMediaQuery } from "@/lib/use-media-query";
 import { useLedger } from "@/modules/transacoes/hooks";
 import type { LedgerUiFilters } from "@/modules/transacoes/optimistic";
 import {
@@ -79,7 +78,6 @@ export function ExtratoScreen() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const quickAdd = useQuickAdd();
-  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [planId, setPlanId] = useState<string | null>(null);
@@ -199,42 +197,31 @@ export function ExtratoScreen() {
         </div>
       </header>
 
-      {isDesktop ? (
-        <section
-          aria-label="Filtros"
-          className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
-        >
-          <FiltersPanel filters={filters} onChange={patchFilters} idPrefix="f" />
-          {filterCount > 0 ? (
-            <Button variant="ghost" className="mt-2" onClick={() => replaceFilters({})}>
-              Limpar filtros
-            </Button>
-          ) : null}
-        </section>
-      ) : (
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={() => setFiltersOpen(true)}>
-            <SlidersHorizontal size={18} aria-hidden="true" />
-            Filtros{filterCount > 0 ? ` (${filterCount})` : ""}
-          </Button>
-          {filterCount > 0 ? (
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="secondary" onClick={() => setFiltersOpen(true)}>
+          <SlidersHorizontal size={18} aria-hidden="true" />
+          Filtros{filterCount > 0 ? ` (${filterCount})` : ""}
+        </Button>
+        {filterCount > 0 ? (
+          <>
+            <span data-testid="active-filters" className="text-sm text-slate-700">
+              {filterCount === 1 ? "1 filtro ativo" : `${filterCount} filtros ativos`}
+            </span>
             <Button
               variant="ghost"
               onClick={() => replaceFilters(filters.period ? { period: filters.period } : {})}
             >
               Limpar filtros
             </Button>
-          ) : null}
-        </div>
-      )}
-      {!isDesktop ? (
-        <Drawer open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
-          <FiltersPanel filters={filters} onChange={patchFilters} idPrefix="m" />
-          <Button className="mt-4 w-full" onClick={() => setFiltersOpen(false)}>
-            Ver resultados
-          </Button>
-        </Drawer>
-      ) : null}
+          </>
+        ) : null}
+      </div>
+      <Drawer open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
+        <FiltersPanel filters={filters} onChange={patchFilters} idPrefix="m" />
+        <Button className="mt-4 w-full" onClick={() => setFiltersOpen(false)}>
+          Ver resultados
+        </Button>
+      </Drawer>
 
       {ledger.isPending ? <ListSkeleton /> : null}
 
