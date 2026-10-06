@@ -1,6 +1,6 @@
 # 📑 Backlog do Produto (Product Owner)
 
-*Status: **R1 e R2 (Inc 3) Especificadas e homologadas com ressalvas** · **R2.1 (US-022..039): Especificada** (SDD-010..013, **67 pts** do TL) · **R3 (US-040..051, EN-002): Esboçada** (SDD-014..017, 65 pts pendentes) · **EN-003 concluída** (ADR-018) · Atualizado: 2026-10-04 (pós-resposta do TL, D-PO-33..42)*
+*Status: **R1 e R2 (Inc 3) Especificadas e homologadas com ressalvas** · **R2.1 (US-022..039): Especificada** (SDD-010..013, **67 pts** do TL) · **R3 (US-040..051, EN-002): Esboçada** (SDD-014..017, 65 pts pendentes) · **EN-003 concluída** (ADR-018) · Atualizado: 2026-10-05 (R2.2 criada pós-homologação da R2.1: US-052..055, D-PO-48..52)*
 *Responsável: Agente Product Owner (PO)*
 *Método e portões (DoR/DoD): [`working-agreement.md`](working-agreement.md) · Escopo: [`mvp-definition.md`](mvp-definition.md)*
 
@@ -154,6 +154,18 @@ Origem: homologação com ressalvas de R1+R2 ([`homologacao-r1-r2.md`](../../sta
 
 > **Parcelamento na R2.1? Não (D-PO-33).** A regra de D-GES-17 não foi satisfeita: o TL estimou a US-040 em **8** (> 5) e a US-042 depende da EN-002 (percentual gravado). Fica como **1ª entrega da R3**, na ordem US-040 ➔ EN-002 ➔ US-042 ➔ US-043 ➔ US-041. Enquanto isso, "Dividir" mostra "Disponível em breve" na compra parcelada.
 
+### R2.2 — "Ajustes da homologação da R2.1" (pacote pequeno, 2026-10-05) — **11 pts (PO, prelim.; TL a estimar)**
+Origem: [`homologacao-r21.md`](../../stakeholder/homologacao-r21.md) (HOMOLOGA COM RESSALVAS: 1 Importante e Melhorias). **Execução imediata, fora da R3-A/R3-B**, sem tocar no motor do acerto (não interfere na EN-002 nem na janela de reversão). O achado 8 (lentidão do servidor de desenvolvimento) é do Tech Lead e **não** vira história. Pedido ao TL: [`pedidos-ao-tech-lead-r22.md`](pedidos-ao-tech-lead-r22.md).
+
+| Ordem | ID | História | Épico | MoSCoW | V/U/R | Pts (PO) | WSJF | Depende de | Rastreio (NEED) | Status · corte / nota |
+| :-: | :-- | :-- | :-- | :-: | :-: | :-: | :-: | :-- | :-- | :-- |
+| 1 | [US-052](stories/US-052-aviso-visivel-parcelado-fora-do-acerto.md) | Aviso visível: parcelado fora do acerto (achado 1, **Importante**) | EPIC-20 | **Must** | 7/5/3 | 2 | 7,5 | US-040a/b, US-030, US-029 | NEED-003, NEED-007 · Q-F05 | Refinada · **não cortar**; some quando a US-042 sair |
+| 2 | [US-054](stories/US-054-avisar-antes-de-arquivar-e-botao-flutuante-em-contas.md) | Avisar antes de arquivar + "+" não cobre ações em Contas (achados 2 e 5) | EPIC-18 | Should | 4/1/1 | 3 | 2,0 | US-032, US-033, US-039 | NEED-020 | Refinada · cortável (2º); o aviso do cartão é "recomendado" pelo Stakeholder |
+| 3 | [US-055](stories/US-055-faturas-na-tela-a-pagar.md) | Faturas na tela "A pagar" (achado 7) | EPIC-17 | Should | 3/1/1 | 3 | 1,7 | US-017a/b, US-018, US-019, US-025 | NEED-003, NEED-004, NEED-015 | Refinada · cortável (3º); total reconcilia com o Resumo |
+| 4 | [US-053](stories/US-053-clareza-de-textos-acerto-desligado-regra-e-olho.md) | Clareza de textos: acerto desligado, regra só leitura, dica do olho (achados 3, 4 e 6) | EPIC-19 | Could | 3/1/1 | 3 | 1,7 | US-028, US-031, US-027, US-036 | NEED-019, NEED-007, NEED-014 | Refinada · **cortável (1º)**; achado 6 = **mantido** (D-PO-50) |
+
+**Pontos acumulados:** US-052 (2) = 2 ➔ US-054 (3) = 5 ➔ US-055 (3) = 8 ➔ US-053 (3) = 11. **Ordem de corte:** 053 ➔ 055 ➔ 054; a US-052 não se corta. Nenhuma pergunta bloqueante; o Dev só começa com o SDD/estimativa do TL (pedido r22).
+
 ### R3 — "Cartão completo e análise" (1ª fatia do AP1) — **67 pts** (TL; PO prelim. 56; EN-003 já entregue: **65 pendentes**)
 **Duas entregas (D-PO-43, D-GES-23):** **R3-A (21 pts)** = US-040a/b (8) + EN-002a/b (13), com a **interface inalterada** e os números idênticos ao *snapshot*; **R3-B (44 pts)** = US-042 (3), US-043 (5), US-041 (5), US-044 (3), US-045 (5), US-047 (2), US-046 (3), US-048 (5), US-049 (5), US-050 (3), US-051 (5). **Entre as duas há uma pausa** para a homologação e a **janela de reversão** (≥ 7 dias, `--verify` limpo e um fechamento de mês conferido; TL-11, ADR-021). A **EN-002 só começa** com os vetores S1..S16 e os valores homologados verdes e o *gate* de 1 centavo; o `computeSettlementLegacy` é extraído em commit à parte. A ordem de execução e o corte abaixo **não mudam**; o corte só atinge itens da R3-B. A US-042 (Must) passa a ser a primeira da R3-B (depois da janela), porque a parcela dividida cria rateios que o motor `LEGACY` não representa.
 
@@ -212,7 +224,7 @@ Origem: homologação com ressalvas de R1+R2 ([`homologacao-r1-r2.md`](../../sta
 | EN-003 | **Concluída:** ADR-018 do spike de múltiplos grupos (sem funcionalidade). |
 
 ### Fora do escopo desta rodada (Futuro, sem refinamento)
-Assistente de IA generativa (NEED-023; depende de **Q-U01** com o usuário e de ADR de privacidade), grupos não familiares e contas privadas (NEED-021; só o spike), exclusão da família (**Q-U02**), construtor de relatórios, hierarquia/cor de tags, barra inferior no desktop (Opção A), corrigir forma de pagamento (achado 6), unificar linhas de transferência (achado 9), faturas em Contas a pagar (achado 10).
+Assistente de IA generativa (NEED-023; depende de **Q-U01** com o usuário e de ADR de privacidade), grupos não familiares e contas privadas (NEED-021; só o spike), exclusão da família (**Q-U02**), construtor de relatórios, hierarquia/cor de tags, barra inferior no desktop (Opção A), corrigir forma de pagamento (achado 6), unificar linhas de transferência (achado 9). *(Faturas em Contas a pagar, antigo achado 10, entrou na R2.2 como US-055; D-PO-51.)*
 
 ---
 
@@ -285,3 +297,8 @@ Assistente de IA generativa (NEED-023; depende de **Q-U01** com o usuário e de 
 | **D-PO-45** | Decisão | **US-041:** parcela em fatura **fechada ou paga** fica travada (a compra única da US-016b trava só a paga; TL-12). **US-043:** a baixa herda a divisão da previsão (TL-18). **US-044:** a revisão do mês **não lista parcelas** (TL-13). | Gestor ratifica | Não |
 | **D-PO-46** | Decisão | **Tags e Análise:** caracteres permitidos (letras, números, hífen, ponto, sublinhado) com a mensagem do TL (TL-15); filtro `untagged` só como chip "Sem tag" do drill-down (TL-14); filtro de membro rotulado **"Quem pagou"** no Extrato e na Análise (TL-19); **editar só tags é não financeira** (não é barrada por fatura paga, conta arquivada nem parcela; vale para todas as parcelas; TL-20). | Gestor ratifica | Não |
 | **D-PO-47** | Decisão | **US-051:** `kind` da previsão **imutável** (excluir e cadastrar de novo) e aba "Pagas e recebidas" mista (TL-21). | Gestor ratifica | Não |
+| **D-PO-48** | Decisão | **R2.2 = pacote pequeno de ajustes pós-homologação da R2.1** (US-052 Must, 054 e 055 Should, 053 Could; 11 pts PO prelim.), executado **antes da R3-B e sem tocar no motor do acerto**; ordem 052 ➔ 054 ➔ 055 ➔ 053; corte 053 ➔ 055 ➔ 054. O achado 8 (lentidão) é do TL. | Gestor ratifica | Não |
+| **D-PO-49** | Decisão (Gestor) | Achado Importante tratado com **aviso visível agora, sem antecipar a US-042**: faixa no formulário (2x ou mais), detalhe no Acerto, indicador no Resumo e linha "Fora do acerto" no detalhe da compra; texto único, removido quando a US-042 sair. Não altera cálculo. | Gestor (já decidiu); Stakeholder confere | Não |
+| **D-PO-50** | Decisão | **Valores começam ocultos ao entrar como outro usuário: MANTIDO.** É o padrão intencional da US-027/Q-F04 (preferência por usuário e dispositivo; sem preferência = oculto). Só se ajusta o **texto da dica do olho** (US-053). Lembrar entre dispositivos exigiria guardar no servidor e vai contra "não expor sem ação"; fora de escopo. | Gestor ratifica | Não |
+| **D-PO-51** | Decisão | **Faturas na tela "A pagar" entram no escopo** (US-055; antes "fora do escopo", achado 10): mesma definição e total do "A pagar" do Resumo; sem pagar dentro da lista. | Gestor ratifica | Não |
+| **D-PO-52** | Decisão | Achado 2 amplia a US-054: o diálogo de arquivar (cartão e conta) **lista todos os impedimentos antes de confirmar**; validação do servidor mantida. Achado 5 (botão flutuante) resolvido com espaço inferior reservado nas listas. | Gestor ratifica | Não |

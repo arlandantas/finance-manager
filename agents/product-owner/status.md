@@ -1,6 +1,22 @@
 # Status do Product Owner
 
-*Atualizado: 2026-10-04 (pós-resposta do Tech Lead: R2.1 Especificada, R3 Esboçada)*
+*Atualizado: 2026-10-05 (triagem da homologação da R2.1: R2.2, US-052..055)*
+
+## Atualização (2026-10-05): triagem da homologação da R2.1 — pacote R2.2 (US-052..055)
+- **Origem:** [`homologacao-r21.md`](../stakeholder/homologacao-r21.md) (HOMOLOGA COM RESSALVAS: 1 Importante + Melhorias). Decisão do Gestor: o Importante é tratado **com aviso visível agora**, sem antecipar a US-042. Lentidão do servidor (achado 8) é do TL.
+- **Histórias novas (refinadas, 11 pts PO prelim.)**, em [`backlog.md`](backlog/backlog.md) (seção R2.2) e [`backlog/stories/`](backlog/stories):
+
+| Ordem | História | Achados | MoSCoW | Pts |
+| :-: | :-- | :-- | :-: | :-: |
+| 1 | [US-052](backlog/stories/US-052-aviso-visivel-parcelado-fora-do-acerto.md) Aviso do parcelado fora do acerto | 1 (Importante) | **Must** | 2 |
+| 2 | [US-054](backlog/stories/US-054-avisar-antes-de-arquivar-e-botao-flutuante-em-contas.md) Avisar antes de arquivar + "+" em Contas | 2, 5 | Should | 3 |
+| 3 | [US-055](backlog/stories/US-055-faturas-na-tela-a-pagar.md) Faturas em "A pagar" | 7 | Should | 3 |
+| 4 | [US-053](backlog/stories/US-053-clareza-de-textos-acerto-desligado-regra-e-olho.md) Clareza de textos (selo, atividade, regra, olho) | 3, 4, 6 | Could | 3 |
+
+- **Ordem de corte:** 053 ➔ 055 ➔ 054; US-052 não se corta. Executa **antes da R3-B**, sem tocar no motor do acerto.
+- **Achado 6 (valores ocultos ao trocar de usuário): MANTIDO** (D-PO-50), padrão intencional da US-027/Q-F04; só o texto da dica do olho muda (US-053).
+- **Decisões novas D-PO-48..52** (aguardam ratificação do Gestor). Pedido ao TL: [`backlog/pedidos-ao-tech-lead-r22.md`](backlog/pedidos-ao-tech-lead-r22.md) (SDD-018 e estimativas).
+- **Pendências:** TL (SDD-018/estimativa); Gestor (ratificar D-PO-48..52 e confirmar a inclusão da US-055, antes "fora do escopo"); Stakeholder (conferir o texto do aviso da US-052).
 
 ## Atualização (pós-TL): backlog alinhado à resposta do Tech Lead — R2.1 Especificada, R3 Esboçada
 - **Origem:** [`respostas-r21-r3.md`](../tech-lead/respostas-r21-r3.md) (SDD-010..017, ADR-016..019), D-GES-14..20 e TL-02..TL-09. Decisões novas **D-PO-33..42** em [`backlog/decisoes-po-r21-r3.md`](backlog/decisoes-po-r21-r3.md) §2b, **aguardando ratificação do Gestor**.
