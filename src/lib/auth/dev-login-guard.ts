@@ -1,68 +1,43 @@
 // Funções puras e sem dependências de Node (usáveis em instrumentation/Edge).
-import { hostnameOf, isAllowedDevHost, isPrivateIPv4 } from "@/lib/dev-origins";
+import { hostnameOf, isAllowedDevHost } from "@/lib/dev-origins";
 
 type Env = Record<string, string | undefined>;
 
-const LOOPBACK_NAMES = new Set(["localhost", "127.0.0.1", "::1"]);
-const isLoopbackName = (h: string | undefined) => !!h && LOOPBACK_NAMES.has(h);
-const isLoopbackOrPrivate = (h: string | undefined) =>
-  !!h && (isLoopbackName(h) || isPrivateIPv4(h));
 const isOn = (v: string | undefined) => v?.trim().toLowerCase() === "true";
 
 /**
- * ADR-024: condições do modo de homologação rápida (build de produção + login de teste). Devolve a lista
- * de violações; vazia = modo válido. Só faz sentido com NODE_ENV=production e APP_HOMOLOG_MODE=true.
+ * ADR-024 (rev. 2): homologação ativa = produção + APP_HOMOLOG_MODE=true + AUTH_DEV_LOGIN=true. Nenhuma outra
+ * condição (bind, banco, URL, Google): o usuário aceitou o risco (ver ADR-024, revisão 2).
  */
-export function homologModeViolations(env: Env = process.env): string[] {
-  const v: string[] = [];
-  if (env.NODE_ENV !== "production") v.push("NODE_ENV precisa ser production");
-  if (!isOn(env.APP_HOMOLOG_MODE)) v.push("APP_HOMOLOG_MODE precisa ser true");
-  const bind = hostnameOf(env.HOSTNAME);
-  if (!isLoopbackOrPrivate(bind)) {
-    v.push(`HOSTNAME (bind) precisa ser loopback ou IP privado, recebido "${env.HOSTNAME ?? ""}"`);
-  }
-  const dbHost = env.DATABASE_URL?.includes("://") ? hostnameOf(env.DATABASE_URL) : undefined;
-  if (!isLoopbackName(dbHost)) v.push("DATABASE_URL precisa apontar para localhost/127.0.0.1/::1");
-  for (const key of ["APP_URL", "AUTH_URL"] as const) {
-    const value = env[key]?.trim() ?? "";
-    if (!value.toLowerCase().startsWith("http://") || !isLoopbackOrPrivate(hostnameOf(value))) {
-      v.push(`${key} precisa ser http:// em localhost ou IP privado`);
-    }
-  }
-  if (env.AUTH_GOOGLE_ID?.trim() || env.AUTH_GOOGLE_SECRET?.trim()) {
-    v.push("AUTH_GOOGLE_ID/AUTH_GOOGLE_SECRET precisam estar vazios (credencial real = produção)");
-  }
-  return v;
-}
-
-/** ADR-024: homologação rápida ativa (produção + flag + login de teste + todas as condições locais). */
 export function isHomologModeActive(env: Env = process.env): boolean {
-  return env.AUTH_DEV_LOGIN === "true" && homologModeViolations(env).length === 0;
+  return (
+    env.NODE_ENV === "production" && isOn(env.APP_HOMOLOG_MODE) && env.AUTH_DEV_LOGIN === "true"
+  );
 }
 
-/** ADR-008: só com AUTH_DEV_LOGIN=true e fora de produção, ou no modo de homologação válido (ADR-024). */
+/** ADR-008: só com AUTH_DEV_LOGIN=true e fora de produção, ou no modo de homologação (ADR-024). */
 export function isDevLoginEnabled(env: Env = process.env): boolean {
   if (env.AUTH_DEV_LOGIN !== "true") return false;
   return env.NODE_ENV !== "production" || isHomologModeActive(env);
 }
 
-/** Ferramentas só de dev/E2E (ex.: /api/dev/clock): nunca em build de produção, nem na homologação. */
+/** Ferramentas só de dev/E2E (ex.: /api/dev/clock): fora de produção ou no modo de homologação. */
 export function isDevToolingEnabled(env: Env = process.env): boolean {
-  return env.AUTH_DEV_LOGIN === "true" && env.NODE_ENV !== "production";
+  return (
+    env.AUTH_DEV_LOGIN === "true" && (env.NODE_ENV !== "production" || isHomologModeActive(env))
+  );
 }
+
+export const HOMOLOG_WARNING = "MODO DE HOMOLOGAÇÃO ATIVO: login de teste habilitado";
 
 /**
  * Camada (b): a aplicação recusa subir em produção com o login de teste ligado, salvo no modo de
- * homologação (ADR-024) com TODAS as condições atendidas. APP_HOMOLOG_MODE=true em produção é sempre
- * validado (recusa subir com bind/banco/URL não locais), mesmo sem o login de teste.
+ * homologação (ADR-024), que apenas registra um aviso no log.
  */
 export function assertSafeAuthConfig(env: Env = process.env): void {
   if (env.NODE_ENV !== "production") return;
   if (isOn(env.APP_HOMOLOG_MODE)) {
-    const v = homologModeViolations(env);
-    if (v.length > 0) {
-      throw new Error(`APP_HOMOLOG_MODE recusado (ADR-024): ${v.join("; ")}`);
-    }
+    if (env.AUTH_DEV_LOGIN === "true") console.warn(HOMOLOG_WARNING);
     return;
   }
   if (env.AUTH_DEV_LOGIN === "true") {
@@ -70,13 +45,12 @@ export function assertSafeAuthConfig(env: Env = process.env): void {
   }
 }
 
-/**
- * Host aceito pelo login de teste na homologação: localhost ou o próprio IP privado do bind (HOSTNAME).
- */
+/** Host aceito na homologação: local ou o host de APP_URL/AUTH_URL (sem exigir localhost/IP privado). */
 export function isHomologLoginHost(hostHeader: string | null | undefined, env: Env = process.env) {
   if (isLocalHost(hostHeader)) return true;
   const name = hostnameOf(hostHeader);
-  return !!name && isPrivateIPv4(name) && name === hostnameOf(env.HOSTNAME);
+  if (!name) return false;
+  return [env.APP_URL, env.AUTH_URL].some((u) => !!u && hostnameOf(u) === name);
 }
 
 /** Aceita somente localhost, 127.0.0.1, [::1] e *.localhost (porta livre). */
@@ -107,12 +81,16 @@ const LOOPBACK_IP = /^(127\.\d+\.\d+\.\d+|::1|::ffff:127\.\d+\.\d+\.\d+)$/;
  * Endpoint de apoio ao E2E: só localhost direto, nunca via túnel/proxy. O Next acrescenta `x-forwarded-*`
  * com valores locais; um proxy/túnel real traz Host ou IP de cliente não locais, e isso é recusado.
  */
-export function isDirectLocalRequest(headers: Headers): boolean {
-  if (!isLocalHost(headers.get("host"))) return false;
+export function isDirectLocalRequest(headers: Headers, env: Env = process.env): boolean {
+  const homolog = isHomologModeActive(env);
+  const ok = (h: string | null) => (homolog ? isHomologLoginHost(h, env) : isLocalHost(h));
+  if (!ok(headers.get("host"))) return false;
   const fwdHost = headers.get("x-forwarded-host");
-  if (fwdHost && !isLocalHost(fwdHost)) return false;
+  if (fwdHost && !ok(fwdHost)) return false;
   const fwdFor = headers.get("x-forwarded-for");
-  if (fwdFor && !fwdFor.split(",").every((ip) => LOOPBACK_IP.test(ip.trim()))) return false;
+  if (!homolog && fwdFor && !fwdFor.split(",").every((ip) => LOOPBACK_IP.test(ip.trim()))) {
+    return false;
+  }
   if (headers.has("forwarded")) return false;
   return true;
 }

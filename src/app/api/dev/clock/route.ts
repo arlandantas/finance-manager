@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Apoio a E2E (mesma proteção do login de teste, ADR-008): fixa o "hoje" do servidor por cenário.
- * 404 quando AUTH_DEV_LOGIN não está ligado ou em produção (inclusive na homologação, ADR-024); 403 fora de localhost ou via túnel/proxy.
+ * 404 sem AUTH_DEV_LOGIN, ou em produção sem APP_HOMOLOG_MODE (ADR-024); 403 fora de localhost (na homologação, também aceita o host de APP_URL/AUTH_URL). Em produção o relógio ignora o override.
  * Corpo: `{ "now": "2026-10-15T15:00:00Z" }` ou `{ "now": null }` para restaurar.
  */
 export async function POST(req: Request): Promise<Response> {

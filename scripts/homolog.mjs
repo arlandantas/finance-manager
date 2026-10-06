@@ -1,8 +1,8 @@
 // ADR-024: modo de homologação rápida. Build de produção (standalone) + login de teste, só local.
 // Uso: node scripts/homolog.mjs build
 //      node scripts/homolog.mjs start [--port 3100] [--lan 192.168.x.y]
-// Plain JS (sem tsx) para não pesar na máquina de teste. Não roda em produção real: a aplicação recusa
-// subir se bind, banco ou URLs não forem locais (src/lib/auth/dev-login-guard.ts).
+// Plain JS (sem tsx) para não pesar na máquina de teste. Só liga o login de teste com a flag explícita
+// APP_HOMOLOG_MODE (ADR-024 rev. 2); AUTH_GOOGLE_* do .env.local passam (Google real coexiste).
 import { spawn } from "node:child_process";
 import { cpSync, existsSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
@@ -45,9 +45,6 @@ function homologEnv() {
     PORT: port,
     APP_URL: origin,
     AUTH_URL: origin,
-    // Credencial Google real é sinal de produção: a homologação roda sem ela (ADR-024).
-    AUTH_GOOGLE_ID: "",
-    AUTH_GOOGLE_SECRET: "",
   };
 }
 
@@ -84,9 +81,7 @@ async function start() {
     process.exit(1);
   }
   const env = homologEnv();
-  console.log(
-    `Homologação (ADR-024): ${env.APP_URL}  [build de produção + login de teste, só local]`,
-  );
+  console.log(`Homologação (ADR-024): ${env.APP_URL}  [build de produção + login de teste]`);
   process.exit(await run(process.execPath, [server], env));
 }
 
