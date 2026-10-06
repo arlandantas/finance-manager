@@ -32,8 +32,9 @@ function homologEnv() {
   const port = arg("--port", process.env.HOMOLOG_PORT ?? "3100");
   const lanIp = arg("--lan", undefined);
   const bind = lanIp ?? "127.0.0.1";
-  // 127.0.0.1 (não "localhost"): no Windows, "localhost" tenta ::1 antes e perde ~200 ms por conexão.
-  const origin = `http://${bind}:${port}`;
+  // A origem pública usa "localhost" porque o redirect do Google (EXT-01) é cadastrado com ele; no Windows
+  // isso custa ~200 ms por conexão (tenta ::1 antes), aceitável na homologação.
+  const origin = `http://${lanIp ?? "localhost"}:${port}`;
   return {
     ...fileEnv(),
     NODE_ENV: "production",
