@@ -123,7 +123,11 @@ export async function getHome(tx: Tx, ctx: RequestContext, periodKey?: string): 
       end: monthSummary.period.end,
     },
     monthSummary,
-    balances: { totalInCents: accounts.totalBalanceInCents, accounts: accounts.items },
+    balances: {
+      totalInCents: accounts.totalBalanceInCents,
+      reservesInCents: accounts.reservesInCents,
+      accounts: accounts.items,
+    },
     settlementIndicator,
     recent: recent.items,
     onboarding: {

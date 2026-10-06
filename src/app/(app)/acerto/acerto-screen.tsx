@@ -12,6 +12,7 @@ import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
 import { ApiClientError } from "@/lib/http";
+import { INSTALLMENT_SPLIT_NOTICE, parcelasLabel } from "@/modules/cartoes/installment-copy";
 import { SPLIT_COPY } from "@/modules/split/copy";
 import { formatSplitLabel } from "@/modules/split/explain";
 import { heroText } from "@/modules/split/hero";
@@ -465,6 +466,17 @@ export function AcertoScreen() {
                     Ver no Extrato
                   </Link>
                 </p>
+              ) : null}
+              {s.installmentsOutside ? (
+                <div data-testid="installments-outside" className="flex flex-col gap-1">
+                  <p className="text-sm text-slate-600">
+                    inclui {parcelasLabel(s.installmentsOutside.count)} de compras parceladas (
+                    <Money cents={s.installmentsOutside.totalInCents} />)
+                  </p>
+                  <p role="note" className="text-sm text-slate-600">
+                    {INSTALLMENT_SPLIT_NOTICE}
+                  </p>
+                </div>
               ) : null}
               <p className="text-sm text-slate-500">Despesas pessoais não entram na divisão.</p>
             </>

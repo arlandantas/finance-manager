@@ -18,6 +18,7 @@ import {
   INSTITUTION_SUGGESTIONS,
 } from "@/modules/contas/schemas";
 import { useFamily } from "@/modules/familia/hooks";
+import { ReserveSwitch } from "./reserve-switch";
 
 type FormInput = z.input<typeof CreateAccountSchema>;
 type FormOutput = z.output<typeof CreateAccountSchema>;
@@ -206,6 +207,14 @@ export function NewAccountDrawer({
             )}
           />
         </Field>
+
+        <Controller
+          control={form.control}
+          name="excludeFromAvailable"
+          render={({ field }) => (
+            <ReserveSwitch checked={field.value === true} onChange={field.onChange} />
+          )}
+        />
 
         <details className="rounded-lg border border-slate-200 p-3">
           <summary className="min-h-6 cursor-pointer text-sm font-medium text-slate-700">

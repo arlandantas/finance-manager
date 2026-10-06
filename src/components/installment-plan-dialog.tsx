@@ -10,7 +10,15 @@ import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
-import { useInstallmentPlan, useInstallmentPlanState } from "@/modules/transacoes/hooks";
+import {
+  INSTALLMENT_SPLIT_NOTICE,
+  showInstallmentNotice,
+} from "@/modules/cartoes/installment-copy";
+import {
+  useDefaults,
+  useInstallmentPlan,
+  useInstallmentPlanState,
+} from "@/modules/transacoes/hooks";
 import type { InstallmentParcelDTO, InstallmentPlanDTO } from "@/modules/transacoes/schemas";
 
 const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
@@ -44,6 +52,7 @@ export function InstallmentPlanDialog({
   startConfirming?: boolean;
 }) {
   const query = useInstallmentPlan(planId);
+  const defaults = useDefaults(planId !== null);
   const plan = query.data?.plan;
   const del = useInstallmentPlanState("delete");
   const restore = useInstallmentPlanState("restore");
@@ -160,6 +169,11 @@ export function InstallmentPlanDialog({
               {plan.currentTotalInCents !== plan.totalInCents ? (
                 <p className="text-sm text-slate-600">
                   Total atual <Money cents={plan.currentTotalInCents} />
+                </p>
+              ) : null}
+              {showInstallmentNotice(defaults.data?.split.available ?? false) ? (
+                <p data-testid="plan-outside" className="text-sm text-slate-600">
+                  <span className="font-semibold">Fora do acerto.</span> {INSTALLMENT_SPLIT_NOTICE}
                 </p>
               ) : null}
               <p className="text-sm text-slate-600">

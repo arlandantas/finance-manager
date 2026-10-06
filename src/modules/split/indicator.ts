@@ -43,5 +43,5 @@ export async function getSettlementIndicator(
           oldestPeriodKey: months[0]?.periodKey as string,
         }
       : null;
-  return { current, previous };
+  return { current, previous, installmentsOutside: cur.installmentsOutside };
 }

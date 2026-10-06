@@ -101,6 +101,7 @@ export type SettlementEntryDTO = {
   version: number;
   label: string; // "Acerto de contas - Outubro"
 };
+export type InstallmentsOutside = { count: number; totalInCents: number };
 export type SettlementDTO = {
   period: { key: string; start: string; end: string; isCurrent: boolean };
   status: SettlementStatus;
@@ -109,6 +110,7 @@ export type SettlementDTO = {
   members: SettlementMemberRow[];
   splitExplanation: SplitExplanationDTO | null; // null com total comum = 0 (US-022)
   personal: { count: number; totalInCents: number }; // despesas "Só meu" do período (US-030)
+  installmentsOutside: InstallmentsOutside | null; // US-052: parcelas fora do acerto (null sem parcelas)
   suggestions: SettlementSuggestion[];
   settlements: SettlementEntryDTO[];
 };
@@ -130,4 +132,5 @@ export type SettlementIndicatorDTO = {
   current: null | { periodKey: string; state: "PENDING" | "IN_ORDER"; toSettleInCents: number };
   // janela de 12 meses antes do período corrente; null se nada pendente
   previous: null | { monthsCount: number; totalInCents: number; oldestPeriodKey: string };
+  installmentsOutside: InstallmentsOutside | null; // US-052
 };

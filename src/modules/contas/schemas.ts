@@ -44,16 +44,22 @@ export const CreateAccountSchema = z
       .max(MAX_AMOUNT_IN_CENTS)
       .default(0), // pode ser negativo
     openingDate: dateISOSchema.optional(), // padrão: hoje (servidor)
+    excludeFromAvailable: z.boolean().optional(), // US-057: reserva
   })
   .strict();
 export type CreateAccountInput = z.input<typeof CreateAccountSchema>;
 
 export const RenameAccountSchema = z
   .object({
-    name: accountName,
+    name: accountName.optional(),
+    excludeFromAvailable: z.boolean().optional(), // US-057
     version: versionSchema,
   })
-  .strict();
+  .strict()
+  .refine((v) => v.name !== undefined || v.excludeFromAvailable !== undefined, {
+    message: "Informe o que alterar",
+  });
+export const UpdateAccountSchema = RenameAccountSchema;
 export type RenameAccountInput = z.infer<typeof RenameAccountSchema>;
 
 export const ArchiveAccountSchema = z.object({ version: versionSchema }).strict(); // archive / unarchive / delete
@@ -73,11 +79,17 @@ export type AccountDTO = {
   version: number;
   archived: boolean; // US-032
   archivedAt: string | null;
+  excludeFromAvailable: boolean; // US-057: reserva
   neverUsed: boolean; // base de "Excluir" (a UI só mostra a ação a ADMIN)
   createdAt: string;
 };
 
-export type AccountsResponse = { items: AccountDTO[]; totalBalanceInCents: number };
+/** `totalBalanceInCents` = saldo DISPONÍVEL (ativas e fora das reservas); `reservesInCents` = ativas marcadas como reserva. */
+export type AccountsResponse = {
+  items: AccountDTO[];
+  totalBalanceInCents: number;
+  reservesInCents: number;
+};
 
 // ── Transferência (SDD-004 §2) ──
 export const CreateTransferSchema = z

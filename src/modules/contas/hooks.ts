@@ -69,10 +69,16 @@ export function useCreateAccount(idempotencyKey: string) {
 export function useRenameAccount() {
   const invalidate = useInvalidateAfterAccountChange();
   return useMutation({
-    mutationFn: (a: { id: string; name: string; version: number; idempotencyKey: string }) =>
+    mutationFn: (a: {
+      id: string;
+      name?: string;
+      excludeFromAvailable?: boolean;
+      version: number;
+      idempotencyKey: string;
+    }) =>
       apiFetch<AccountDTO>(`/api/v1/accounts/${a.id}`, {
         method: "PATCH",
-        body: { name: a.name, version: a.version },
+        body: { name: a.name, excludeFromAvailable: a.excludeFromAvailable, version: a.version },
         idempotencyKey: a.idempotencyKey,
       }),
     onSuccess: invalidate,

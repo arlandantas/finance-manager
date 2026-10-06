@@ -35,7 +35,7 @@ export type MonthSummaryDTO = {
 export type HomeDTO = {
   period: { key: string; start: string; end: string };
   monthSummary: MonthSummaryDTO;
-  balances: { totalInCents: number; accounts: AccountDTO[] }; // card recolhível (US-026)
+  balances: { totalInCents: number; reservesInCents: number; accounts: AccountDTO[] }; // card recolhível (US-026)
   settlementIndicator: SettlementIndicatorDTO | null; // null com o acerto desligado (US-029)
   recent: TransactionDTO[];
   onboarding: {

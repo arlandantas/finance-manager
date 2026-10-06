@@ -31,12 +31,17 @@ export function contasRepo(tx: Tx, familyId: string) {
       institution: string;
       type: "CHECKING" | "SAVINGS" | "CASH";
       ownerMemberId: string;
+      excludeFromAvailable?: boolean;
     }) => tx.bankAccount.create({ data: { ...data, familyId }, include: withOwner }),
     /** Atualização com controle otimista: 0 linhas => versão antiga ou inexistente. */
-    rename: (id: string, name: string, version: number) =>
+    rename: (
+      id: string,
+      patch: { name?: string; excludeFromAvailable?: boolean },
+      version: number,
+    ) =>
       tx.bankAccount.updateMany({
         where: { id, familyId, version },
-        data: { name, version: { increment: 1 } },
+        data: { ...patch, version: { increment: 1 } },
       }),
     insertOpening: (data: {
       accountId: string;

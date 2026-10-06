@@ -4,6 +4,7 @@ import { compareDate, fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { formatBRL, toCents } from "@/lib/money";
 import { type Period, periodFromKey, periodOf } from "@/lib/period";
 import type { MemberRef } from "@/lib/schemas";
+import { INSTALLMENT_SPLIT_RELEASED } from "@/modules/cartoes/installments";
 import type { TransferDTO } from "@/modules/contas/schemas";
 import { createTransferGroup } from "@/modules/contas/transfers";
 import { explainByRules } from "@/modules/split/explain";
@@ -236,6 +237,7 @@ export type LoadedSettlement = {
   expenseInputs: ExpenseInput[];
   rules: RuleInput[];
   personal: { count: number; totalInCents: number };
+  installmentsOutside: { count: number; totalInCents: number } | null;
 };
 
 /** Carrega as entradas e roda o motor puro para o período (SDD-002 §5). */
@@ -250,6 +252,7 @@ export async function loadSettlement(
   const expenses = await c.repo.sharedExpenses(period.start, period.end);
   const groups = await c.repo.activeSettlements(period.key);
   const personal = await c.repo.personalExpenses(period.start, period.end);
+  const outside = await c.repo.countInstallmentsOutside(period.start, period.end);
   const memberInputs = memberInputsOf(c.allMembers);
   const expenseInputs = expenses.map((e) => ({
     id: e.id,
@@ -311,6 +314,10 @@ export async function loadSettlement(
     expenseInputs,
     rules: c.rules,
     personal: { count: personal.count, totalInCents: toCents(personal.total) },
+    installmentsOutside:
+      outside.count > 0 && !INSTALLMENT_SPLIT_RELEASED
+        ? { count: outside.count, totalInCents: toCents(outside.total) }
+        : null,
   };
 }
 
@@ -356,6 +363,7 @@ export function toSettlementDto(l: LoadedSettlement, ctx: RequestContext): Settl
       balanceInCents: m.balanceInCents,
     })),
     personal: l.personal,
+    installmentsOutside: l.installmentsOutside,
     splitExplanation: explainByRules({
       period: l.period,
       today: l.today,

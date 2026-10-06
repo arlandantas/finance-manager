@@ -60,7 +60,17 @@ function AccountCard({
     >
       <Avatar name={account.owner.name} image={account.owner.image} size={40} />
       <div className="min-w-0">
-        <p className="truncate font-semibold text-slate-900">{account.name}</p>
+        <p className="flex items-center gap-2 font-semibold text-slate-900">
+          <span className="truncate">{account.name}</span>
+          {account.excludeFromAvailable ? (
+            <span
+              data-testid="reserve-badge"
+              className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900 dark:text-amber-200"
+            >
+              Reserva
+            </span>
+          ) : null}
+        </p>
         <p className="truncate text-sm text-slate-500">
           {account.institution} · {ACCOUNT_TYPE_LABELS[account.type]} ·{" "}
           {account.owner.name.split(" ")[0]}
@@ -83,7 +93,7 @@ function AccountCard({
               }}
             >
               <Pencil size={16} aria-hidden="true" />
-              Renomear
+              Editar
             </MenuItem>
             <MenuItem
               onClick={() => {
@@ -270,6 +280,11 @@ export function ContasScreen() {
             <p className="text-3xl font-bold tabular-nums">
               <Money cents={data.totalBalanceInCents} />
             </p>
+            {data.reservesInCents !== 0 ? (
+              <p className="mt-1 text-sm text-brand-100" data-testid="reserves-total">
+                Reservas (fora do saldo disponível): <Money cents={data.reservesInCents} />
+              </p>
+            ) : null}
           </section>
           <ul className="flex flex-col gap-3">
             {data.items.map((a) => (

@@ -15,6 +15,10 @@ import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { invoiceHint } from "@/modules/cartoes/cycle";
 import { useCards } from "@/modules/cartoes/hooks";
+import {
+  INSTALLMENT_SPLIT_NOTICE,
+  showInstallmentNotice,
+} from "@/modules/cartoes/installment-copy";
 import { MAX_INSTALLMENTS } from "@/modules/cartoes/installments";
 import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
@@ -489,6 +493,7 @@ export function TransactionDrawer({
               role="switch"
               aria-checked={shared && !splitBlocked}
               aria-disabled={splitBlocked || undefined}
+              aria-describedby={splitBlocked ? "tx-installment-notice" : undefined}
               aria-labelledby="tx-shared-label"
               onClick={() => {
                 if (!splitBlocked) setShared((v) => !v);
@@ -507,6 +512,16 @@ export function TransactionDrawer({
               />
             </button>
           </div>
+        ) : null}
+        {splitBlocked && showInstallmentNotice(splitAvailable) ? (
+          <p
+            id="tx-installment-notice"
+            role="note"
+            data-testid="installment-notice"
+            className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200"
+          >
+            {INSTALLMENT_SPLIT_NOTICE}
+          </p>
         ) : null}
 
         <details

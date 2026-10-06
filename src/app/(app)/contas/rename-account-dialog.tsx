@@ -9,6 +9,7 @@ import { Field, TextInput } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { useRenameAccount } from "@/modules/contas/hooks";
 import { type AccountDTO, RenameAccountSchema } from "@/modules/contas/schemas";
+import { ReserveSwitch } from "./reserve-switch";
 
 export function RenameAccountDialog({
   account,
@@ -18,6 +19,7 @@ export function RenameAccountDialog({
   onClose: () => void;
 }) {
   const [name, setName] = useState("");
+  const [reserve, setReserve] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [conflict, setConflict] = useState<string | null>(null);
   const key = useRef(newIdempotencyKey());
@@ -27,6 +29,7 @@ export function RenameAccountDialog({
   useEffect(() => {
     if (account) {
       setName(account.name);
+      setReserve(account.excludeFromAvailable);
       setError(undefined);
       setConflict(null);
       key.current = newIdempotencyKey();
@@ -35,7 +38,11 @@ export function RenameAccountDialog({
 
   function submit() {
     if (!account) return;
-    const parsed = RenameAccountSchema.safeParse({ name, version: account.version });
+    const parsed = RenameAccountSchema.safeParse({
+      name,
+      excludeFromAvailable: reserve,
+      version: account.version,
+    });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message);
       return;
@@ -44,13 +51,14 @@ export function RenameAccountDialog({
     rename.mutate(
       {
         id: account.id,
-        name: parsed.data.name,
+        ...(parsed.data.name !== undefined ? { name: parsed.data.name } : {}),
+        excludeFromAvailable: reserve,
         version: account.version,
         idempotencyKey: key.current,
       },
       {
         onSuccess: () => {
-          toast.success("Conta renomeada");
+          toast.success("Conta atualizada");
           onClose();
         },
         onError: (e) => {
@@ -65,7 +73,7 @@ export function RenameAccountDialog({
   }
 
   return (
-    <Drawer open={account !== null} onOpenChange={(o) => !o && onClose()} title="Renomear conta">
+    <Drawer open={account !== null} onOpenChange={(o) => !o && onClose()} title="Editar conta">
       {conflict ? (
         <div className="flex flex-col gap-4">
           <p role="alert" className="text-sm text-slate-800">
@@ -89,7 +97,7 @@ export function RenameAccountDialog({
             submit();
           }}
         >
-          <Field id="rename-name" label="Novo nome" error={error}>
+          <Field id="rename-name" label="Nome" error={error}>
             <TextInput
               id="rename-name"
               autoFocus
@@ -98,6 +106,7 @@ export function RenameAccountDialog({
               aria-invalid={error ? true : undefined}
             />
           </Field>
+          <ReserveSwitch checked={reserve} onChange={setReserve} />
           <Button type="submit" disabled={rename.isPending}>
             {rename.isPending ? "Salvando…" : "Salvar"}
           </Button>

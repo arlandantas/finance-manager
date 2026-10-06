@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePref } from "@/lib/prefs";
+import { INSTALLMENT_SPLIT_NOTICE } from "@/modules/cartoes/installment-copy";
 import { SUMMARY_COPY } from "@/modules/home/copy";
 import { useHome, useMonthSummary } from "@/modules/home/hooks";
 import type { HomeDTO, MonthSummaryDTO } from "@/modules/home/schemas";
@@ -85,6 +86,17 @@ function Checklist({ o }: { o: HomeDTO["onboarding"] }) {
 
 function SettlementLines({ ind }: { ind: NonNullable<HomeDTO["settlementIndicator"]> }) {
   if (!ind.current && !ind.previous) return null;
+  const info = ind.installmentsOutside ? (
+    <span
+      role="img"
+      data-testid="installments-outside-info"
+      aria-label={INSTALLMENT_SPLIT_NOTICE}
+      title={INSTALLMENT_SPLIT_NOTICE}
+      className="inline-flex min-h-6 min-w-6 items-center justify-center text-slate-600"
+    >
+      <Info size={16} aria-hidden="true" />
+    </span>
+  ) : null;
   const link =
     "flex min-h-11 items-center justify-between gap-2 text-sm text-slate-700 hover:underline";
   return (
@@ -109,6 +121,12 @@ function SettlementLines({ ind }: { ind: NonNullable<HomeDTO["settlementIndicato
           </span>
           <ChevronRight aria-hidden="true" size={16} />
         </Link>
+      ) : null}
+      {info ? (
+        <p className="flex items-center gap-2 text-sm text-slate-600">
+          {info}
+          <span>{INSTALLMENT_SPLIT_NOTICE}</span>
+        </p>
       ) : null}
       {ind.previous ? (
         <Link
@@ -328,6 +346,11 @@ function BalancesCard({ b }: { b: HomeDTO["balances"] }) {
           className={cn("shrink-0 transition-transform", expanded && "rotate-180")}
         />
       </button>
+      {b.reservesInCents !== 0 ? (
+        <p data-testid="home-reserves" className="text-sm text-slate-600">
+          Reservas: <Money cents={b.reservesInCents} />
+        </p>
+      ) : null}
       <div id="home-balances-list" hidden={!expanded}>
         {expanded ? (
           b.accounts.length > 0 ? (

@@ -51,6 +51,7 @@ function toDTO(
     usageCountByMe,
     archived: a.archivedAt !== null,
     archivedAt: a.archivedAt?.toISOString() ?? null,
+    excludeFromAvailable: a.excludeFromAvailable,
     neverUsed,
     version: a.version,
     createdAt: a.createdAt.toISOString(),
@@ -77,12 +78,13 @@ export async function listAccounts(
   const items = accounts.map((a) =>
     toDTO(a, balances.get(a.id) ?? 0, usage.get(a.id) ?? 0, unused.has(a.id)),
   );
-  // o saldo da família soma só contas ATIVAS (SDD-012 §4.1)
+  // Fonte única (SDD-019 §2): saldo disponível = ativas ∧ ¬reserva; reservas = ativas ∧ reserva.
+  const active = items.filter((a) => !a.archived);
+  const sum = (xs: AccountDTO[]) => xs.reduce((s, a) => s + a.balanceInCents, 0);
   return {
     items,
-    totalBalanceInCents: items
-      .filter((a) => !a.archived)
-      .reduce((sum, a) => sum + a.balanceInCents, 0),
+    totalBalanceInCents: sum(active.filter((a) => !a.excludeFromAvailable)),
+    reservesInCents: sum(active.filter((a) => a.excludeFromAvailable)),
   };
 }
 
@@ -115,6 +117,7 @@ export async function createAccount(
       institution: (input.institution ?? "Outro").trim() || "Outro",
       type: input.type,
       ownerMemberId,
+      excludeFromAvailable: input.excludeFromAvailable ?? false,
     });
   } catch (e) {
     if (isUniqueViolation(e)) throw conflict("DUPLICATE_ACCOUNT_NAME", DUPLICATE_NAME);
@@ -165,7 +168,16 @@ export async function renameAccount(
   }
   let updated: { count: number };
   try {
-    updated = await repo.rename(id, input.name.trim(), input.version);
+    updated = await repo.rename(
+      id,
+      {
+        ...(input.name !== undefined ? { name: input.name.trim() } : {}),
+        ...(input.excludeFromAvailable !== undefined
+          ? { excludeFromAvailable: input.excludeFromAvailable }
+          : {}),
+      },
+      input.version,
+    );
   } catch (e) {
     if (isUniqueViolation(e)) throw conflict("DUPLICATE_ACCOUNT_NAME", DUPLICATE_NAME);
     throw e;
