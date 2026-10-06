@@ -6,6 +6,8 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  Repeat,
+  Square,
   Trash2,
   Undo2,
 } from "lucide-react";
@@ -29,6 +31,7 @@ import {
   usePlannedList,
   useUndoPlannedPayment,
 } from "@/modules/previstas/hooks";
+import { useEndSeries, useSeries, useSeriesImpact } from "@/modules/previstas/recurring-hooks";
 import { differenceLabel } from "@/modules/previstas/rules";
 import type { PayableItemDTO, PlannedExpenseDTO } from "@/modules/previstas/schemas";
 import { monthLabel, shiftMonthKey } from "../extrato/filters";
@@ -36,10 +39,23 @@ import { PayPlannedDrawer } from "./pay-drawer";
 import { PlannedDrawer } from "./planned-drawer";
 
 type Tab = "pay" | "paid";
-type Action = { kind: "edit" | "delete" | "undo"; id: string } | null;
+type ActionKind = "edit" | "edit-series" | "end-series" | "delete" | "undo";
+type Action = { kind: ActionKind; id: string } | null;
 
 const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 const first = (n: string) => n.split(" ")[0] ?? n;
+
+function RecurringChip() {
+  return (
+    <span
+      data-testid="recurring-chip"
+      className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
+    >
+      <Repeat size={12} aria-hidden="true" />
+      Recorrente
+    </span>
+  );
+}
 
 function OverdueChip() {
   return (
@@ -55,7 +71,7 @@ function PayableRow({
   onPay,
 }: {
   item: PayableItemDTO;
-  onAction: (kind: "edit" | "delete") => void;
+  onAction: (kind: ActionKind) => void;
   onPay: () => void;
 }) {
   const planned = item.type === "PLANNED";
@@ -68,7 +84,10 @@ function PayableRow({
     >
       <div className="min-w-0">
         <p className="truncate font-semibold text-slate-900">{item.title}</p>
-        <p className="text-sm text-slate-600">Vence {brDate(item.dueOn)}</p>
+        <p className="text-sm text-slate-600">
+          Vence {brDate(item.dueOn)}
+          {item.paymentAccountName ? ` · Pagar com ${item.paymentAccountName}` : ""}
+        </p>
       </div>
       <div className="flex items-center gap-1">
         <span className="font-semibold tabular-nums text-slate-900">
@@ -93,8 +112,19 @@ function PayableRow({
                   }}
                 >
                   <Pencil size={16} aria-hidden="true" />
-                  Editar
+                  {item.isRecurring ? "Editar só esta" : "Editar"}
                 </MenuItem>
+                {item.isRecurring ? (
+                  <MenuItem
+                    onClick={() => {
+                      close();
+                      onAction("edit-series");
+                    }}
+                  >
+                    <Repeat size={16} aria-hidden="true" />
+                    Editar esta e as próximas
+                  </MenuItem>
+                ) : null}
                 <MenuItem
                   onClick={() => {
                     close();
@@ -102,8 +132,19 @@ function PayableRow({
                   }}
                 >
                   <Trash2 size={16} aria-hidden="true" />
-                  Excluir
+                  {item.isRecurring ? "Excluir só esta" : "Excluir"}
                 </MenuItem>
+                {item.isRecurring ? (
+                  <MenuItem
+                    onClick={() => {
+                      close();
+                      onAction("end-series");
+                    }}
+                  >
+                    <Square size={16} aria-hidden="true" />
+                    Encerrar recorrência
+                  </MenuItem>
+                ) : null}
               </>
             )}
           </Menu>
@@ -111,6 +152,7 @@ function PayableRow({
       </div>
       <div className="col-span-full flex flex-wrap items-center gap-2">
         {item.isOverdue ? <OverdueChip /> : null}
+        {item.isRecurring ? <RecurringChip /> : null}
         {planned ? (
           <>
             {item.responsible ? (
@@ -149,6 +191,7 @@ function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void
         <span className="flex min-w-0 items-center gap-2 font-semibold text-slate-900">
           <CategoryIcon icon={item.category.icon} size={18} />
           <span className="truncate">{item.description}</span>
+          {item.series ? <RecurringChip /> : null}
         </span>
         {paid ? (
           <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
@@ -205,8 +248,12 @@ export function PrevistasScreen() {
 
   const active = tab === "pay" ? payables : paidList;
   const planned = detail.data?.plannedExpense ?? null;
+  const endSeries = useEndSeries();
+  const endingSeriesId = action?.kind === "end-series" ? (planned?.series?.id ?? null) : null;
+  const endingSeries = useSeries(endingSeriesId);
+  const endingImpact = useSeriesImpact(endingSeriesId, undefined);
 
-  function openAction(kind: "edit" | "delete" | "undo", id: string) {
+  function openAction(kind: ActionKind, id: string) {
     deleteKey.current = newIdempotencyKey();
     setDeleteError(null);
     setAction({ kind, id });
@@ -219,6 +266,28 @@ export function PrevistasScreen() {
       {
         onSuccess: () => {
           toast.success("Despesa prevista excluída");
+          setAction(null);
+        },
+        onError: (e) => {
+          if (e instanceof ApiClientError || e instanceof NetworkError) setDeleteError(e.message);
+          else setDeleteError("Erro inesperado. Tente novamente.");
+        },
+      },
+    );
+  }
+
+  function confirmEndSeries() {
+    const s = endingSeries.data?.series;
+    if (!s) return;
+    endSeries.mutate(
+      { id: s.id, version: s.version, idempotencyKey: deleteKey.current },
+      {
+        onSuccess: (r) => {
+          toast.success(
+            r.removedCount === 1
+              ? "Recorrência encerrada: 1 prevista removida"
+              : `Recorrência encerrada: ${r.removedCount} previstas removidas`,
+          );
           setAction(null);
         },
         onError: (e) => {
@@ -393,7 +462,49 @@ export function PrevistasScreen() {
         onClose={() => setAction(null)}
       />
 
+      <PlannedDrawer
+        open={action?.kind === "edit-series" && planned !== null}
+        planned={planned}
+        mode="series"
+        onClose={() => setAction(null)}
+      />
+
       <PayPlannedDrawer plannedId={payingId} onClose={() => setPayingId(null)} />
+
+      <Drawer
+        open={action?.kind === "end-series"}
+        onOpenChange={(o) => !o && setAction(null)}
+        title="Encerrar recorrência?"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-slate-700" data-testid="end-series-impact">
+            {endingImpact.isPending || endingSeries.isPending
+              ? "Calculando…"
+              : endingImpact.data
+                ? `${endingImpact.data.endCount} ${
+                    endingImpact.data.endCount === 1
+                      ? "prevista pendente será removida"
+                      : "previstas pendentes serão removidas"
+                  }. As já pagas e as atrasadas continuam no histórico. Não dá para reabrir a recorrência depois.`
+                : "Não foi possível calcular o impacto."}
+          </p>
+          {deleteError ? (
+            <p role="alert" className="text-sm text-red-700 dark:text-red-300">
+              {deleteError}
+            </p>
+          ) : null}
+          <Button
+            variant="danger"
+            disabled={endSeries.isPending || !endingSeries.data}
+            onClick={confirmEndSeries}
+          >
+            {endSeries.isPending ? "Encerrando…" : "Encerrar recorrência"}
+          </Button>
+          <Button variant="ghost" onClick={() => setAction(null)}>
+            Cancelar
+          </Button>
+        </div>
+      </Drawer>
 
       <Drawer
         open={action?.kind === "undo"}

@@ -72,6 +72,7 @@ export function PayPlannedDrawer({
     amountInCents: cents,
     ownerMemberId: planned?.responsible.id,
     accounts: accounts.data?.items ?? [],
+    preferredAccountId: planned?.paymentAccount?.archived ? null : planned?.paymentAccount?.id,
   });
   const accountId = source.accountId;
   const account = (accounts.data?.items ?? []).find((a) => a.id === accountId);
@@ -220,6 +221,11 @@ export function PayPlannedDrawer({
                 </option>
               ))}
             </select>
+            {planned?.paymentAccount?.archived ? (
+              <p data-testid="archived-account-note" className="mt-1 text-xs text-slate-700">
+                A conta prevista ({planned.paymentAccount.name}) foi arquivada. Escolha outra.
+              </p>
+            ) : null}
             {source.reasonText ? (
               <p data-testid="source-reason" className="mt-1 text-xs text-slate-600">
                 {source.reasonText}

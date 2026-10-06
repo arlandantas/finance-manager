@@ -27,6 +27,8 @@ export function useSourceAccount(o: {
   amountInCents: number;
   ownerMemberId: string | undefined;
   accounts: AccountDTO[];
+  /** Conta já prevista (US-059): vale enquanto ativa e enquanto o usuário não escolher outra. */
+  preferredAccountId?: string | null | undefined;
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   useEffect(() => {
@@ -43,13 +45,17 @@ export function useSourceAccount(o: {
       usageCountByMe: a.usageCountByMe,
     })),
   });
-  const accountId = picked ?? suggestion.accountId ?? "";
+  const preferred = o.accounts.some((a) => a.id === o.preferredAccountId)
+    ? (o.preferredAccountId ?? null)
+    : null;
+  const accountId = picked ?? preferred ?? suggestion.accountId ?? "";
   return {
     accountId,
     pick: (id: string) => setPicked(id),
     userPicked: picked !== null,
     suggestion,
-    reasonText: picked === null ? SOURCE_REASON_TEXT[suggestion.reason] : "",
+    reasonText:
+      picked !== null ? "" : preferred ? "Conta prevista" : SOURCE_REASON_TEXT[suggestion.reason],
     optionSuffix: (a: AccountDTO) =>
       insufficient(a, o.amountInCents) ? ` · ${INSUFFICIENT_TEXT}` : "",
   };

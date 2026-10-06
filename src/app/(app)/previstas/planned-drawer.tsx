@@ -12,8 +12,21 @@ import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { useCategories } from "@/modules/categorias/hooks";
+import { useAccounts } from "@/modules/contas/hooks";
+import { useSourceAccount } from "@/modules/contas/use-source-account";
 import { useFamily } from "@/modules/familia/hooks";
 import { useCreatePlanned, useUpdatePlanned } from "@/modules/previstas/hooks";
+import { addMonths, type MonthISO, monthOf, monthSpan } from "@/modules/previstas/recurrence";
+import {
+  useCreateSeries,
+  useSeries,
+  useSeriesImpact,
+  useUpdateSeries,
+} from "@/modules/previstas/recurring-hooks";
+import {
+  CreateRecurringExpenseSchema,
+  UpdateRecurringExpenseSchema,
+} from "@/modules/previstas/recurring-schemas";
 import {
   CreatePlannedExpenseSchema,
   type PlannedExpenseDTO,
@@ -21,6 +34,7 @@ import {
 } from "@/modules/previstas/schemas";
 import { splitSwitchLabel } from "@/modules/split/shares-label";
 import { useDefaults } from "@/modules/transacoes/hooks";
+import { monthLabel } from "../extrato/filters";
 
 type FieldKey =
   | "description"
@@ -28,16 +42,25 @@ type FieldKey =
   | "dueOn"
   | "categoryId"
   | "responsibleMemberId"
-  | "note";
+  | "note"
+  | "paymentAccountId"
+  | "dayOfMonth"
+  | "startMonth"
+  | "end";
 
-/** Drawer de nova/edição de despesa prevista (SDD-009 §5). `planned` nulo = criar. */
+/**
+ * Drawer de nova/edição de despesa prevista (SDD-009 §5, SDD-019 §3.6). `planned` nulo = criar.
+ * `mode="series"` edita a recorrência ("esta e as próximas") a partir de uma ocorrência.
+ */
 export function PlannedDrawer({
   open,
   planned,
+  mode = "one",
   onClose,
 }: {
   open: boolean;
   planned: PlannedExpenseDTO | null;
+  mode?: "one" | "series";
   onClose: () => void;
 }) {
   const family = useFamily();
@@ -60,7 +83,35 @@ export function PlannedDrawer({
   const submitting = useRef(false);
   const create = useCreatePlanned(key);
   const update = useUpdatePlanned(key);
+  const createSeries = useCreateSeries(key);
+  const updateSeries = useUpdateSeries(key);
   const editing = planned !== null;
+  const seriesMode = mode === "series" && planned?.series != null;
+  const seriesId = seriesMode ? (planned?.series?.id ?? null) : null;
+  const seriesQ = useSeries(seriesId);
+  const series = seriesQ.data?.series ?? null;
+  const accounts = useAccounts();
+  const [repeat, setRepeat] = useState(false);
+  const [day, setDay] = useState("");
+  const [startMonth, setStartMonth] = useState("");
+  const [endKind, setEndKind] = useState<"NONE" | "COUNT">("NONE");
+  const [endMonths, setEndMonths] = useState("");
+  const source = useSourceAccount({
+    open,
+    amountInCents: cents,
+    ownerMemberId: responsibleId || undefined,
+    accounts: accounts.data?.items ?? [],
+    preferredAccountId: (seriesMode ? series?.paymentAccount : planned?.paymentAccount)?.id,
+  });
+  const today = defaultsQ.data?.today;
+  const currentMonth = today ? monthOf(today) : null;
+  const effectiveFrom =
+    seriesMode && planned?.occurrenceMonth
+      ? currentMonth && planned.occurrenceMonth < currentMonth
+        ? currentMonth
+        : planned.occurrenceMonth
+      : undefined;
+  const impact = useSeriesImpact(seriesMode ? seriesId : null, effectiveFrom);
 
   useEffect(() => {
     if (!open) return;
@@ -77,6 +128,7 @@ export function PlannedDrawer({
       setDueOn(planned.dueOn);
       setNote(planned.note ?? "");
       setDetailsOpen(false);
+      setRepeat(false);
     } else {
       setDescription("");
       setCents(0);
@@ -86,8 +138,35 @@ export function PlannedDrawer({
       setDueOn("");
       setNote("");
       setDetailsOpen(false);
+      setRepeat(false);
+      setDay("");
+      setEndKind("NONE");
+      setEndMonths("");
     }
   }, [open, planned]);
+
+  // Edição "esta e as próximas": os campos vêm da série (não da ocorrência).
+  useEffect(() => {
+    if (!open || !seriesMode || !series) return;
+    setDescription(series.description);
+    setCents(series.amountInCents);
+    setCategoryId(series.category.id);
+    setResponsibleId(series.responsible.id);
+    setShared(series.isSharedExpense);
+    setDay(String(series.dayOfMonth));
+    setEndKind(series.endMonth ? "COUNT" : "NONE");
+    setEndMonths(
+      series.endMonth
+        ? String(monthSpan(series.startMonth as MonthISO, series.endMonth as MonthISO))
+        : "",
+    );
+  }, [open, seriesMode, series?.id, series?.version]);
+
+  useEffect(() => {
+    if (!open || planned || !today) return;
+    setStartMonth((cur) => cur || monthOf(today));
+    setDay((cur) => cur || String(Number(today.slice(8, 10))));
+  }, [open, planned, today]);
 
   const me = family.data?.currentMemberId;
   useEffect(() => {
@@ -116,7 +195,94 @@ export function PlannedDrawer({
 
   function submit() {
     if (submitting.current) return;
+    const accountId = source.accountId;
+    const legacyWithoutAccount = editing && !seriesMode && !planned?.paymentAccount && !accountId;
+    if (!accountId && !legacyWithoutAccount) {
+      setErrors({ paymentAccountId: "Escolha de qual conta vai sair" });
+      return;
+    }
+    const endInput =
+      endKind === "COUNT" ? { kind: "COUNT", months: Number(endMonths) } : { kind: "NONE" };
+    if (repeat && !editing) {
+      const parsedSeries = CreateRecurringExpenseSchema.safeParse({
+        description,
+        amountInCents: cents,
+        categoryId,
+        ...(responsibleId ? { responsibleMemberId: responsibleId } : {}),
+        isSharedExpense: splitAvailable ? shared : false,
+        paymentAccountId: accountId,
+        dayOfMonth: Number(day),
+        startMonth,
+        end: endInput,
+      });
+      if (!parsedSeries.success) {
+        setErrors(
+          fieldsFrom(
+            parsedSeries.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+          ),
+        );
+        return;
+      }
+      setErrors({});
+      setBanner(null);
+      submitting.current = true;
+      createSeries.mutate(parsedSeries.data as never, {
+        onSuccess: (r) => {
+          toast.success(`Despesa recorrente cadastrada: ${r.generatedCount} previstas criadas`);
+          onClose();
+        },
+        onError,
+        onSettled: () => {
+          submitting.current = false;
+        },
+      });
+      return;
+    }
+    if (seriesMode && series) {
+      const parsedUpdate = UpdateRecurringExpenseSchema.safeParse({
+        version: series.version,
+        ...(effectiveFrom ? { effectiveFrom } : {}),
+        description,
+        amountInCents: cents,
+        categoryId,
+        ...(responsibleId ? { responsibleMemberId: responsibleId } : {}),
+        isSharedExpense: splitAvailable ? shared : series.isSharedExpense,
+        ...(accountId ? { paymentAccountId: accountId } : {}),
+        dayOfMonth: Number(day),
+        end: endInput,
+      });
+      if (!parsedUpdate.success) {
+        setErrors(
+          fieldsFrom(
+            parsedUpdate.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
+          ),
+        );
+        return;
+      }
+      setErrors({});
+      setBanner(null);
+      submitting.current = true;
+      updateSeries.mutate(
+        { id: series.id, input: parsedUpdate.data as never },
+        {
+          onSuccess: (r) => {
+            toast.success(
+              r.affectedCount === 1
+                ? "Recorrência atualizada: 1 prevista alterada"
+                : `Recorrência atualizada: ${r.affectedCount} previstas alteradas`,
+            );
+            onClose();
+          },
+          onError,
+          onSettled: () => {
+            submitting.current = false;
+          },
+        },
+      );
+      return;
+    }
     const base = {
+      ...(accountId ? { paymentAccountId: accountId } : {}),
       description,
       amountInCents: cents,
       categoryId,
@@ -156,14 +322,25 @@ export function PlannedDrawer({
     else create.mutate(parsed.data as never, done);
   }
 
-  const pending = create.isPending || update.isPending;
+  const pending =
+    create.isPending || update.isPending || createSeries.isPending || updateSeries.isPending;
+  const showDayFields = seriesMode || (repeat && !editing);
+  const monthOptions = currentMonth
+    ? Array.from({ length: 12 }, (_, i) => addMonths(currentMonth as MonthISO, i))
+    : [];
   const members = family.data?.members ?? [];
 
   return (
     <Drawer
       open={open}
       onOpenChange={(o) => !o && onClose()}
-      title={editing ? "Editar despesa prevista" : "Nova despesa prevista"}
+      title={
+        seriesMode
+          ? "Editar esta e as próximas"
+          : editing
+            ? "Editar despesa prevista"
+            : "Nova despesa prevista"
+      }
     >
       {conflict ? (
         <div className="flex flex-col gap-4">
@@ -351,6 +528,175 @@ export function PlannedDrawer({
             </div>
           ) : null}
 
+          <Field
+            id="pl-account"
+            label="Pagar com"
+            error={errors.paymentAccountId}
+            hint={source.reasonText || undefined}
+          >
+            <select
+              id="pl-account"
+              className={inputClass}
+              value={source.accountId}
+              onChange={(e) => {
+                source.pick(e.target.value);
+                setErrors((er) => ({ ...er, paymentAccountId: undefined }));
+              }}
+              aria-invalid={errors.paymentAccountId ? true : undefined}
+            >
+              <option value="">Escolha a conta</option>
+              {(accounts.data?.items ?? []).map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          {!editing ? (
+            <div className="flex min-h-11 items-center justify-between gap-3">
+              <span id="pl-repeat-label" className="text-sm font-medium text-slate-800">
+                Repetir todo mês
+                <span className="block text-xs font-normal text-slate-500">
+                  Cadastre uma vez e as previstas dos próximos 12 meses são criadas.
+                </span>
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={repeat}
+                aria-labelledby="pl-repeat-label"
+                onClick={() => setRepeat((v) => !v)}
+                className={cn(
+                  "relative h-7 w-12 shrink-0 rounded-full transition-colors",
+                  repeat ? "bg-brand-700" : "bg-slate-300",
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute top-0.5 h-6 w-6 rounded-full bg-white dark:bg-slate-100 shadow transition-all",
+                    repeat ? "left-[22px]" : "left-0.5",
+                  )}
+                />
+              </button>
+            </div>
+          ) : null}
+
+          {seriesMode ? (
+            <p
+              data-testid="series-impact"
+              className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
+            >
+              {impact.isPending
+                ? "Calculando o que será alterado…"
+                : impact.data
+                  ? `Vale para ${impact.data.affectedCount} ${
+                      impact.data.affectedCount === 1 ? "prevista pendente" : "previstas pendentes"
+                    } a partir de ${effectiveFrom ? monthLabel(effectiveFrom) : "este mês"}.${
+                      impact.data.keptPaidCount > 0
+                        ? ` ${impact.data.keptPaidCount} já paga(s) não mudam.`
+                        : ""
+                    }${
+                      impact.data.keptExceptionCount > 0
+                        ? ` ${impact.data.keptExceptionCount} alterada(s) só naquela vez também não mudam.`
+                        : ""
+                    }`
+                  : "Não foi possível calcular o impacto."}
+            </p>
+          ) : null}
+
+          {showDayFields ? (
+            <div className="flex flex-col gap-4 rounded-lg border border-slate-200 p-3">
+              <Field
+                id="pl-day"
+                label="Dia do vencimento"
+                error={errors.dayOfMonth}
+                hint="Nos meses sem esse dia, vence no último dia do mês."
+              >
+                <input
+                  id="pl-day"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={31}
+                  className={inputClass}
+                  value={day}
+                  onChange={(e) => setDay(e.target.value)}
+                  aria-invalid={errors.dayOfMonth ? true : undefined}
+                />
+              </Field>
+              {!editing ? (
+                <Field id="pl-start" label="Começa em" error={errors.startMonth}>
+                  <select
+                    id="pl-start"
+                    className={inputClass}
+                    value={startMonth}
+                    onChange={(e) => setStartMonth(e.target.value)}
+                  >
+                    {monthOptions.map((m) => (
+                      <option key={m} value={m}>
+                        {monthLabel(m)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              ) : null}
+              <div className="flex flex-col gap-1.5">
+                <span id="pl-end-label" className="text-sm font-medium text-slate-800">
+                  Termina
+                </span>
+                <div
+                  role="radiogroup"
+                  aria-labelledby="pl-end-label"
+                  className="flex flex-wrap gap-2"
+                >
+                  {(
+                    [
+                      ["NONE", "Sem fim"],
+                      ["COUNT", "Depois de N meses"],
+                    ] as const
+                  ).map(([k, label]) => (
+                    <button
+                      key={k}
+                      type="button"
+                      role="radio"
+                      aria-checked={endKind === k}
+                      onClick={() => setEndKind(k)}
+                      className={cn(
+                        "min-h-11 rounded-full border px-4 text-sm font-medium",
+                        endKind === k
+                          ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
+                          : "border-slate-200 bg-white dark:bg-slate-100 text-slate-700",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {endKind === "COUNT" ? (
+                  <Field
+                    id="pl-end-months"
+                    label="Quantos meses no total"
+                    error={errors.end}
+                    hint="Contado desde o primeiro mês da recorrência."
+                  >
+                    <input
+                      id="pl-end-months"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      max={120}
+                      className={inputClass}
+                      value={endMonths}
+                      onChange={(e) => setEndMonths(e.target.value)}
+                      aria-invalid={errors.end ? true : undefined}
+                    />
+                  </Field>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           <details
             open={detailsOpen}
             onToggle={(e) => setDetailsOpen((e.currentTarget as HTMLDetailsElement).open)}
@@ -360,21 +706,23 @@ export function PlannedDrawer({
               Mais detalhes
             </summary>
             <div className="mt-3 flex flex-col gap-4">
-              <Field
-                id="pl-due"
-                label="Vencimento"
-                error={errors.dueOn}
-                hint="Se vazio, vence hoje."
-              >
-                <input
+              {showDayFields ? null : (
+                <Field
                   id="pl-due"
-                  type="date"
-                  className={inputClass}
-                  value={dueOn}
-                  onChange={(e) => setDueOn(e.target.value)}
-                  aria-invalid={errors.dueOn ? true : undefined}
-                />
-              </Field>
+                  label="Vencimento"
+                  error={errors.dueOn}
+                  hint="Se vazio, vence hoje."
+                >
+                  <input
+                    id="pl-due"
+                    type="date"
+                    className={inputClass}
+                    value={dueOn}
+                    onChange={(e) => setDueOn(e.target.value)}
+                    aria-invalid={errors.dueOn ? true : undefined}
+                  />
+                </Field>
+              )}
               <Field id="pl-note" label="Observação" error={errors.note}>
                 <textarea
                   id="pl-note"
