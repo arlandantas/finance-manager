@@ -291,3 +291,12 @@ Nenhuma objeção bloqueante. As observações acima (D-PO-03, Q-13, Q-17) são 
 - **Ressalva remanescente (I):** compra parcelada não pode ser dividida ("Disponível em breve") e fica "Pessoal", portanto fora do acerto até a US-042; pedido de aviso mais visível ao casal.
 - **Posição:** manter a US-042 (parcela dividida por parcela no mês da fatura, Q-F05) como a próxima prioridade após a janela de reversão, antes de tags e visões.
 - **Entrega:** [`homologacao-r21.md`](homologacao-r21.md) (dados de teste criados listados no relatório).
+
+---
+
+## [2026-10-05] - Escopo da v0 (primeiro alpha tester em producao)
+
+- **Participantes:** Agente Stakeholder, em parceria com o Gestor (decisoes delegadas pelo usuario).
+- **Resultado:** v0 definida; 6 itens Must (bugs de modal e contraste, aviso do parcelado, conta fora do saldo, despesa recorrente mensal com conta de pagamento, faturas no A pagar, Inicio enxuta com filtros colapsados); 5 Should; pos-v0: transferencia agendada, US-053. Recorrente confirmado como inexistente no codigo.
+- **Producao:** bloqueantes = hospedagem, Postgres com backup, Google OAuth de producao, segredos e login de teste desligado; SMTP e Sentry fora da v0.
+- **Entrega:** [`escopo-v0-alpha.md`](escopo-v0-alpha.md).
