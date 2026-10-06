@@ -194,8 +194,31 @@ export function AppShell({
   const navItems = settlementEnabled ? NAV_ITEMS : NAV_ITEMS.filter((i) => i.href !== "/acerto");
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 pb-20 lg:pb-0">
+    <div className="flex min-h-screen flex-col bg-slate-50 pb-20 lg:pb-0 lg:pl-56">
       <OfflineBanner />
+      <aside className="fixed inset-y-0 left-0 z-10 hidden w-56 border-r border-slate-200 bg-white pt-16 dark:bg-slate-100 lg:block">
+        <nav aria-label="Principal" className="flex flex-col gap-1 px-3">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive(item.href) ? "page" : undefined}
+                className={cn(
+                  "flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium",
+                  isActive(item.href)
+                    ? "bg-brand-50 text-brand-800 dark:text-emerald-300"
+                    : "text-slate-700 hover:bg-slate-100",
+                )}
+              >
+                <Icon size={18} aria-hidden="true" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </aside>
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white dark:bg-slate-100">
         <div className="mx-auto flex h-14 w-full max-w-[960px] items-center justify-between gap-3 px-4">
           <div className="flex min-w-0 items-center gap-6">
@@ -206,23 +229,6 @@ export function AppShell({
             >
               {familyName}
             </Link>
-            <nav aria-label="Principal" className="hidden items-center gap-1 lg:flex">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={isActive(item.href) ? "page" : undefined}
-                  className={cn(
-                    "flex min-h-11 items-center rounded-lg px-3 text-sm font-medium",
-                    isActive(item.href)
-                      ? "bg-brand-50 text-brand-800 dark:text-emerald-300"
-                      : "text-slate-700 hover:bg-slate-100",
-                  )}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
           </div>
           <div className="flex items-center gap-1">
             <EyeToggle />

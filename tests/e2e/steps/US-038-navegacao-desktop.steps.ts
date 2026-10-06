@@ -13,27 +13,28 @@ Given("um viewport do layout de {int} px de largura", async ({ page }, w: number
   await page.setViewportSize({ width: w, height: 900 });
   await gotoReady(page, "/");
 });
-const topNav = (p: Page) => p.getByRole("navigation", { name: "Principal", exact: true });
+const sideNav = (p: Page) => p.getByRole("navigation", { name: "Principal", exact: true });
 const bottomNav = (p: Page) => p.getByRole("navigation", { name: "Principal (celular)" });
 
 Then(
-  "o menu está no topo e o conteúdo tem no máximo 960 px, centralizado e alinhado ao menu",
+  "o menu está à esquerda com o item ativo destacado e o conteúdo tem no máximo 960 px à direita dele",
   async ({ page }) => {
-    await expect(topNav(page)).toBeVisible();
+    await expect(sideNav(page)).toBeVisible();
     await expect(bottomNav(page)).toBeHidden();
+    await expect(sideNav(page).getByRole("link", { name: "Início" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    const nav = await sideNav(page).boundingBox();
     const main = await page.locator("main").first().boundingBox();
-    const nav = await topNav(page).boundingBox();
+    expect(nav?.x ?? 0).toBeLessThanOrEqual(1);
     expect(main?.width ?? 0).toBeLessThanOrEqual(960);
-    const left = main?.x ?? 0;
-    const right = 1440 - ((main?.x ?? 0) + (main?.width ?? 0));
-    expect(Math.abs(left - right)).toBeLessThanOrEqual(2);
-    expect(nav?.x ?? 0).toBeGreaterThanOrEqual(left - 20);
-    expect((nav?.x ?? 0) + (nav?.width ?? 0)).toBeLessThanOrEqual(1440 - right + 20);
+    expect(main?.x ?? 0).toBeGreaterThanOrEqual((nav?.x ?? 0) + (nav?.width ?? 0));
   },
 );
-Then("a navegação está na barra inferior e não há menu superior", async ({ page }) => {
+Then("a navegação está na barra inferior e não há menu lateral", async ({ page }) => {
   await expect(bottomNav(page)).toBeVisible();
-  await expect(topNav(page)).toBeHidden();
+  await expect(sideNav(page)).toBeHidden();
 });
 Then('o botão "+" está visível e dentro da área do conteúdo centralizado', async ({ page }) => {
   const fab = page.getByRole("button", { name: "Novo lançamento" });
