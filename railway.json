@@ -2,7 +2,9 @@
   "$schema": "https://railway.com/railway.schema.json",
   "build": { "builder": "DOCKERFILE", "dockerfilePath": "Dockerfile" },
   "deploy": {
-    "preDeployCommand": ["cd /opt/migrate && node node_modules/prisma/build/index.js migrate deploy"],
+    "preDeployCommand": [
+      "cd /opt/migrate && node node_modules/prisma/build/index.js migrate deploy"
+    ],
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 60,
     "restartPolicyType": "ON_FAILURE",
