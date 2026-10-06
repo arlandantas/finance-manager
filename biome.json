@@ -8,6 +8,7 @@
       "!src/generated",
       "!.next",
       "!.next-e2e",
+      "!.next-homolog",
       "!prisma/migrations",
       "!pnpm-lock.yaml"
     ]

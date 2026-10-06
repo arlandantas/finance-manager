@@ -10,6 +10,8 @@
     "dev": "next dev -H 0.0.0.0 -p 3100",
     "build": "next build",
     "start": "next start -p 3100",
+    "homolog:build": "node scripts/homolog.mjs build",
+    "homolog:start": "node scripts/homolog.mjs start",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "typecheck": "tsc --noEmit --incremental false",
