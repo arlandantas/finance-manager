@@ -442,3 +442,20 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 - E2E completo (desktop + mobile): **790 de 794**. As 4 falhas são timeouts de 30 s, todas em filtros do Extrato no desktop (US-007 "Filtrar por membro" e "Estado vazio com filtro", US-016b "Filtrar o extrato por cartão", US-039 "Limpar filtros"). Reexecutadas isoladamente, as duas da US-007 passam; a causa provável é o servidor de dev compilando devagar em disco NTFS (aviso "Slow filesystem" do Next), não regressão. Recomenda-se repetir a suíte em disco local (ext4) antes da homologação.
 - **Desvio DEV-47**: `scripts/migrate-split.ts` não carregava `.env.local`/`.env` (ZodError em `DATABASE_URL` fora do Next). Corrigido (`fc89478`).
 - `INSTALLMENT_SPLIT_RELEASED` continua `false` (a parcela dividida é da US-042, após a janela).
+
+---
+
+# v0 alpha — lotes de implementação (SDD-018, SDD-019, ADR-025, ADR-026)
+
+> Ordem do PO ([release-v0-alpha.md](../../product-owner/backlog/release-v0-alpha.md)); **uma migração por lote**; cada lote ≤ 1 sessão. Regressão obrigatória em todo lote: S1..S16 e valores homologados (3.169,90 / 1.584,95 / 1.149,95). Modelo sugerido: Sonnet; L3 com revisão Opus.
+
+| TASK | Lote | Escopo | Pts | Migração | Depende de |
+| :-- | :-: | :-- | :-: | :-- | :-- |
+| 📋 TASK-048 | L1 | US-056 camada de diálogos + tokens de contraste + axe (SDD-019 §1) | 3 | — | — |
+| 📋 TASK-049 | L2 | US-052 aviso do parcelado (SDD-018 §1) + US-057 conta reserva (SDD-019 §2) | 5 | `v0_conta_reserva` | — |
+| 📋 TASK-050 | L3 | US-058/059 backend: schema, `recurrence.ts`, `ensureRecurrenceHorizon`, rotas, testes G/E/F/B/C (SDD-019 §3) | 6 | `v0_recorrencia_e_conta_prevista` | TASK-049 |
+| 📋 TASK-051 | L4 | US-058/059 UI: "Repetir todo mês", gerenciar série, "Pagar com", baixa pré-preenchida, E2E | 4 | — | TASK-050 |
+| 📋 TASK-052 | L5 | US-055 fonte única do A pagar (SDD-018 §2) + US-062 filtros (SDD-019 §5) | 4 | — | — |
+| 📋 TASK-053 | L6 | US-061 Início enxuta + US-063 Previstas no Resumo (SDD-019 §4, §6; D-TL-v0-2 com o PO) | 8 | — | TASK-051, TASK-052 |
+| 📋 TASK-054 | L7 | Should: US-064 menu lateral, depois US-060 resumo por conta (SDD-019 §7) | 5 | — | TASK-048, TASK-051 |
+| 📋 TASK-055 | P | Produção (ADR-026): Dockerfile, trava `APP_DEPLOY_ENV`, health `unsafe_config`, **correção do `sessionToken` em `/api/auth/session`**, `smoke-prod.sh`, backup/restore e `architecture/producao.md` | 5 | — | paralelo; bloqueia o go-live |
