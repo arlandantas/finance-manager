@@ -50,6 +50,7 @@ Os testes de integração usam o `db-test` (5443) com `TEST_DATABASE_URL`; **Tes
 | `AUTH_SECRET` | `openssl rand -base64 32` | |
 | `AUTH_TRUST_HOST` | `true` | só dev/teste |
 | `AUTH_DEV_LOGIN` | `true` | login de teste (ADR-008). **Bloqueado em `NODE_ENV=production`** |
+| `APP_HOMOLOG_MODE` | (não definir) | só o `pnpm homolog:start` liga; build de produção + login de teste com bind/banco/URLs locais (ADR-024) |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | vazios | pendência EXT-01; Google só é registrado como provider quando ambos estão preenchidos |
 | `SMTP_HOST` / `SMTP_PORT` | `localhost` / `1025` | Mailpit |
 | `MAIL_FROM` | `Finance Manager <no-reply@finance-manager.local>` | |
@@ -77,7 +78,28 @@ Família fictícia determinística (definida em [SDD-006 §5](../sdd/SDD-006-esq
 | `test` | Unidade (Vitest) |
 | `test:int` | Integração (Vitest contra `db-test`:5443) |
 | `test:e2e` | Playwright + playwright-bdd (usa `db-test`; ver SDD-006 §4) |
+| `homolog:build` / `homolog:start` | Build de produção + login de teste para homologar (ADR-024; ver "Homologação rápida" abaixo) |
 | `migrate:split` | Migração do acerto para o rateio gravado por lançamento (EN-002b; ver "Migração do acerto" abaixo) |
+
+## Homologação rápida (ADR-024)
+Na máquina de teste o `pnpm dev` compila sob demanda (`/login` ~2,2 s, `/api/auth/session` ~5 s). Para o Stakeholder e o usuário homologarem, rode o **build de produção com o login de teste**:
+
+```bash
+pnpm db:up                       # banco local (5442) no ar
+pnpm homolog:build               # next build em .next-homolog/ (~1 min) + cópia de public/ e estáticos
+pnpm homolog:start               # http://127.0.0.1:3100  (bind 127.0.0.1)
+pnpm homolog:start --port 3102            # outra porta (ex.: com o pnpm dev ocupando a 3100)
+pnpm homolog:start --port 3102 --lan 192.168.1.81   # celular na LAN: bind no IP privado da máquina
+```
+
+Sem `pnpm`: `node scripts/homolog.mjs build` / `node scripts/homolog.mjs start --port 3102`.
+
+- Abra **exatamente** o endereço impresso (`http://127.0.0.1:<porta>`): o CSRF aceita só o host de `AUTH_URL`, e no Windows `localhost` perde ~200 ms por conexão tentando `::1`.
+- O script lê `.env.local`/`.env` e força: `NODE_ENV=production`, `APP_HOMOLOG_MODE=true`, `AUTH_DEV_LOGIN=true`, `HOSTNAME`, `PORT`, `APP_URL`/`AUTH_URL` e Google vazio. Não coloque `APP_HOMOLOG_MODE` no `.env.local`.
+- A aplicação **recusa servir** (500 em tudo, motivo no log `APP_HOMOLOG_MODE recusado (ADR-024)`) se o bind não for loopback/IP privado, se `DATABASE_URL` não for `localhost`/`127.0.0.1`/`::1`, se `APP_URL`/`AUTH_URL` não forem `http://` locais ou se houver credencial Google.
+- `/api/dev/clock` fica desligado (404) e `APP_NOW_OVERRIDE` é ignorada, como em produção.
+- Mudou o código? Rode `pnpm homolog:build` de novo. Para desenvolver, continue no `pnpm dev`.
+- Medição na máquina de teste (2026-10-05, porta 3102): `/login` 13 a 20 ms (primeira requisição ~0,5 s), `/api/auth/session` ~9 a 15 ms, `POST /api/dev/login` ~0,3 s.
 
 ## Migração do acerto (EN-002b, SDD-015 §4.6 e ADR-021)
 Script operacional (nunca rota HTTP; usa `DATABASE_URL`). Uma transação por família, em ordem de `id`; continua depois da falha de uma família e **sai com código 1 se houver qualquer falha** (etapa obrigatória do deploy).
