@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isLocalHost } from "@/lib/auth/dev-login-guard";
+import { homologModeViolations, isLocalHost } from "@/lib/auth/dev-login-guard";
 import { isAllowedDevHost } from "@/lib/dev-origins";
 
 // Valores vazios no .env (ex.: AUTH_GOOGLE_ID="") equivalem a "não definido".
@@ -24,6 +24,8 @@ const schema = z
     AUTH_URL: z.string().default("http://localhost:3100"),
     AUTH_TRUST_HOST: flag,
     AUTH_DEV_LOGIN: flag,
+    APP_HOMOLOG_MODE: flag,
+    HOSTNAME: optionalString,
     AUTH_GOOGLE_ID: optionalString,
     AUTH_GOOGLE_SECRET: optionalString,
     SMTP_HOST: z.string().default("localhost"),
@@ -31,7 +33,22 @@ const schema = z
     MAIL_FROM: z.string().default("Finance Manager <no-reply@finance-manager.local>"),
   })
   .superRefine((env, ctx) => {
-    if (env.NODE_ENV === "production" && env.AUTH_DEV_LOGIN) {
+    if (env.NODE_ENV === "production" && env.APP_HOMOLOG_MODE) {
+      // ADR-024: homologação rápida só com bind/banco/URLs locais e sem credencial Google.
+      const violations = homologModeViolations({
+        NODE_ENV: env.NODE_ENV,
+        APP_HOMOLOG_MODE: "true",
+        HOSTNAME: env.HOSTNAME,
+        DATABASE_URL: env.DATABASE_URL,
+        APP_URL: env.APP_URL,
+        AUTH_URL: env.AUTH_URL,
+        AUTH_GOOGLE_ID: env.AUTH_GOOGLE_ID,
+        AUTH_GOOGLE_SECRET: env.AUTH_GOOGLE_SECRET,
+      });
+      for (const message of violations) {
+        ctx.addIssue({ code: "custom", path: ["APP_HOMOLOG_MODE"], message });
+      }
+    } else if (env.NODE_ENV === "production" && env.AUTH_DEV_LOGIN) {
       ctx.addIssue({
         code: "custom",
         path: ["AUTH_DEV_LOGIN"],
