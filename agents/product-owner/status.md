@@ -2,6 +2,9 @@
 
 *Atualizado: 2026-10-05 (triagem da homologação da R2.1: R2.2, US-052..055)*
 
+
+## Atualização (2026-10-05): pacote v0 alpha (US-056..064)
+- Histórias novas refinadas a partir do [`escopo-v0-alpha.md`](../stakeholder/escopo-v0-alpha.md): US-056, 057, 058, 059, 060, 061, 062, 063, 064 (**41 pts PO prelim. com US-052/055/042/054 existentes; Must 30**). Plano, corte e pedido ao TL (SDD-019, recorrência): [`release-v0-alpha.md`](backlog/release-v0-alpha.md).
 ## Atualização (2026-10-05): triagem da homologação da R2.1 — pacote R2.2 (US-052..055)
 - **Origem:** [`homologacao-r21.md`](../stakeholder/homologacao-r21.md) (HOMOLOGA COM RESSALVAS: 1 Importante + Melhorias). Decisão do Gestor: o Importante é tratado **com aviso visível agora**, sem antecipar a US-042. Lentidão do servidor (achado 8) é do TL.
 - **Histórias novas (refinadas, 11 pts PO prelim.)**, em [`backlog.md`](backlog/backlog.md) (seção R2.2) e [`backlog/stories/`](backlog/stories):
