@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { loginErrorMessage } from "@/app/(public)/login/messages";
-import { authorizeSignIn, profileUpdates, sessionConfig } from "@/lib/auth/config";
+import {
+  authorizeSignIn,
+  buildSessionPayload,
+  profileUpdates,
+  sessionConfig,
+} from "@/lib/auth/config";
 import {
   assertSafeAuthConfig,
   isDevLoginEnabled,
@@ -178,5 +183,15 @@ describe("US-001 infra: dev-login seguro", () => {
       image: "y",
     });
     expect(profileUpdates({ name: null, image: null }, undefined)).toEqual({});
+  });
+});
+
+describe("buildSessionPayload (ADR-026 §6)", () => {
+  it("não vaza sessionToken nem userId da linha do adaptador", () => {
+    const row = { sessionToken: "segredo", userId: "u1", expires: "2027-01-01T00:00:00.000Z" };
+    const out = buildSessionPayload(row, { id: "u1", name: "Ana", email: "a@x.com", image: null });
+    expect(Object.keys(out).sort()).toEqual(["expires", "user"]);
+    expect(JSON.stringify(out)).not.toContain("segredo");
+    expect(out.user).toEqual({ id: "u1", name: "Ana", email: "a@x.com", image: null });
   });
 });

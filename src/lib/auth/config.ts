@@ -56,6 +56,25 @@ export function isGoogleConfigured(
   return Boolean(env.AUTH_GOOGLE_ID && env.AUTH_GOOGLE_SECRET);
 }
 
+/**
+ * Corpo devolvido por /api/auth/session (ADR-026 §6). Com strategy "database" o `session` recebido é a linha
+ * do adaptador (traz `sessionToken` e `userId`): devolvemos só o necessário, nunca o token.
+ */
+export function buildSessionPayload(
+  session: { expires: Date | string },
+  user: { id: string; name?: string | null; email?: string | null; image?: string | null },
+) {
+  return {
+    expires: session.expires as never,
+    user: {
+      id: user.id,
+      name: user.name ?? null,
+      email: user.email ?? "",
+      image: user.image ?? null,
+    },
+  };
+}
+
 export const sessionConfig = {
   strategy: "database",
   maxAge: SESSION_MAX_AGE_SECONDS,
@@ -82,7 +101,7 @@ export function buildAuthConfig(): NextAuthConfig {
     pages: { signIn: "/login", error: "/login" },
     callbacks: {
       signIn: ({ account, profile }) => authorizeSignIn({ provider: account?.provider, profile }),
-      session: ({ session, user }) => ({ ...session, user: { ...session.user, id: user.id } }),
+      session: ({ session, user }) => buildSessionPayload(session, user),
     },
     events: {
       async signIn({ user, profile }) {
