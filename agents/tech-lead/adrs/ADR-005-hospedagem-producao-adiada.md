@@ -18,3 +18,6 @@ Adiado. O Gestor decidiu focar primeiro no **ambiente local**; a produção ser�
 
 ## Pendências para decidir
 Orçamento mensal, região, necessidade de ambiente de staging dedicado.
+
+## Requisito de segurança para o deploy de produção (ADR-024 rev. 2)
+A pipeline/deploy de produção **deve falhar** se `APP_HOMOLOG_MODE` ou `AUTH_DEV_LOGIN` existirem na configuração (variáveis, secrets, `.env`). A homologação local só tem travas mínimas por decisão do usuário; em produção essas flags nunca podem existir. CI ainda não criado; registrar como etapa obrigatória quando a hospedagem for decidida.

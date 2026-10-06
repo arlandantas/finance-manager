@@ -50,7 +50,7 @@ Os testes de integração usam o `db-test` (5443) com `TEST_DATABASE_URL`; **Tes
 | `AUTH_SECRET` | `openssl rand -base64 32` | |
 | `AUTH_TRUST_HOST` | `true` | só dev/teste |
 | `AUTH_DEV_LOGIN` | `true` | login de teste (ADR-008). **Bloqueado em `NODE_ENV=production`** |
-| `APP_HOMOLOG_MODE` | (não definir) | só o `pnpm homolog:start` liga; build de produção + login de teste com bind/banco/URLs locais (ADR-024) |
+| `APP_HOMOLOG_MODE` | (não definir) | só o `homolog:start` liga; build de produção + login de teste, sem outras travas (ADR-024 rev. 2). **Nunca em configuração de produção; o deploy de produção deve falhar se existir** (ADR-005) |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | vazios | pendência EXT-01; Google só é registrado como provider quando ambos estão preenchidos |
 | `SMTP_HOST` / `SMTP_PORT` | `localhost` / `1025` | Mailpit |
 | `MAIL_FROM` | `Finance Manager <no-reply@finance-manager.local>` | |
@@ -95,9 +95,9 @@ pnpm homolog:start --port 3102 --lan 192.168.1.81   # celular na LAN: bind no IP
 Sem `pnpm`: `node scripts/homolog.mjs build` / `node scripts/homolog.mjs start --port 3102`.
 
 - Abra **exatamente** o endereço impresso (`http://127.0.0.1:<porta>`): o CSRF aceita só o host de `AUTH_URL`, e no Windows `localhost` perde ~200 ms por conexão tentando `::1`.
-- O script lê `.env.local`/`.env` e força: `NODE_ENV=production`, `APP_HOMOLOG_MODE=true`, `AUTH_DEV_LOGIN=true`, `HOSTNAME`, `PORT`, `APP_URL`/`AUTH_URL` e Google vazio. Não coloque `APP_HOMOLOG_MODE` no `.env.local`.
-- A aplicação **recusa servir** (500 em tudo, motivo no log `APP_HOMOLOG_MODE recusado (ADR-024)`) se o bind não for loopback/IP privado, se `DATABASE_URL` não for `localhost`/`127.0.0.1`/`::1`, se `APP_URL`/`AUTH_URL` não forem `http://` locais ou se houver credencial Google.
-- `/api/dev/clock` fica desligado (404) e `APP_NOW_OVERRIDE` é ignorada, como em produção.
+- O script lê `.env.local`/`.env` e força: `NODE_ENV=production`, `APP_HOMOLOG_MODE=true`, `AUTH_DEV_LOGIN=true`, `HOSTNAME`, `PORT` e `APP_URL`/`AUTH_URL`. `AUTH_GOOGLE_*` do `.env.local` valem: o botão "Entrar com o Google" e "Entrar como (teste)" aparecem juntos. Não coloque `APP_HOMOLOG_MODE` no `.env.local`.
+- Sem recusas: a subida só registra o aviso `MODO DE HOMOLOGAÇÃO ATIVO: login de teste habilitado`. Por decisão do usuário (risco aceito, ADR-024 rev. 2) não há mais checagem de bind, banco, URL nem Google. **Regra de ouro:** `APP_HOMOLOG_MODE`/`AUTH_DEV_LOGIN` nunca entram em configuração de produção; a pipeline de produção deve falhar se existirem (ADR-005).
+- `/api/dev/clock` responde na homologação, mas `APP_NOW_OVERRIDE` e o override ao vivo são ignorados em produção (relógio do sistema).
 - Mudou o código? Rode `pnpm homolog:build` de novo. Para desenvolver, continue no `pnpm dev`.
 - Medição na máquina de teste (2026-10-05, porta 3102): `/login` 13 a 20 ms (primeira requisição ~0,5 s), `/api/auth/session` ~9 a 15 ms, `POST /api/dev/login` ~0,3 s.
 

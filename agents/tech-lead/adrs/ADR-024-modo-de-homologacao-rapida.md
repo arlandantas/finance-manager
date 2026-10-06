@@ -1,6 +1,8 @@
 # ADR-024: Modo de homologação rápida (build de produção + login de teste, só local)
 
 ## Status
+**Revisão 2 (2026-10-06): travas reduzidas ao mínimo, a pedido e por conta e risco do usuário (ver "Revisão 2" no fim).** O texto abaixo é a revisão 1, mantida como histórico; onde divergir, vale a revisão 2.
+
 Aceito (Tech Lead), aguardando validação do Gestor. Emenda o [ADR-008](ADR-008-login-de-teste.md) (login de teste) sem revogar nenhuma das três camadas dele. Ambiente: [ambiente-local.md](../architecture/ambiente-local.md).
 
 ## Contexto
@@ -39,3 +41,18 @@ Opções avaliadas:
 - Homologação com o build otimizado: `/login` ~15 ms e `/api/auth/session` ~9 ms na máquina de teste (contra 2,2 s e 5 s no dev).
 - Cada mudança de código exige novo `pnpm homolog:build` (~1 min na máquina de teste); para desenvolvimento continua o `pnpm dev`.
 - Abrir pelo endereço que o script imprime (`http://127.0.0.1:<porta>`): o CSRF aceita só o host de `AUTH_URL`, e no Windows `localhost` perde ~200 ms por conexão tentando `::1`.
+
+## Revisão 2 (2026-10-06): ambiente de homologação com travas mínimas
+**Decisão do dono do projeto**, em mensagem direta no chat: "Pode enfraquecer a segurança do ambiente local, por minha conta e risco". O ambiente de homologação usa só banco local descartável, sem dados reais; as travas da revisão 1 eram burocracia desproporcional. O usuário **aceitou o risco**.
+
+**Passa a valer (substitui os itens 2, 3 e 4 da Decisão):**
+1. Login de teste em build de produção liga com `NODE_ENV=production` + `APP_HOMOLOG_MODE=true` + `AUTH_DEV_LOGIN=true`. **Nada mais é exigido**: removidas as condições de `HOSTNAME` local/privado, `DATABASE_URL` local, `APP_URL`/`AUTH_URL` http/privado e "Google vazio". O login Google real coexiste com o login de teste.
+2. **Sem recusa:** a subida com a flag registra um único aviso no log (`MODO DE HOMOLOGAÇÃO ATIVO: login de teste habilitado`, em `assertSafeAuthConfig`, via `instrumentation.ts`). `homologModeViolations` foi removida.
+3. **Guarda por Host** de `/api/dev/login` e `/api/dev/clock`: na homologação aceita localhost ou o host de `APP_URL`/`AUTH_URL` (sem exigir localhost/IP privado); o filtro de `x-forwarded-for` do relógio também é dispensado. `/api/dev/clock` volta a responder na homologação (sem efeito: `getClock` ignora o override em produção).
+4. `scripts/homolog.mjs` não zera mais `AUTH_GOOGLE_*`; usa os do `.env.local`.
+
+**Inalterado (proteção da produção real = ADR-008):** `NODE_ENV=production` **sem** `APP_HOMOLOG_MODE` recusa subir com `AUTH_DEV_LOGIN=true` (`assertSafeAuthConfig` e `getEnv`).
+
+**Risco residual aceito pelo usuário:** com as duas flags, qualquer servidor (inclusive um exposto na internet, com banco e Google reais) passa a aceitar login sem senha para qualquer e-mail. A única barreira é a flag explícita, que ninguém liga por acidente, mas que não se defende sozinha de erro de configuração.
+
+**Regra de ouro:** `APP_HOMOLOG_MODE` e `AUTH_DEV_LOGIN` **nunca** entram em configuração de produção (variáveis do provedor, secrets, `.env` de deploy, imagem). A pipeline/deploy de produção (ADR-005) deve **falhar** se qualquer uma existir. Sem CI criado agora; é requisito registrado para quando a hospedagem for decidida.

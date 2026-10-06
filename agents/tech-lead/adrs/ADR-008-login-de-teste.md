@@ -20,4 +20,4 @@ O login Google exige conta e credenciais externas (EXT-01). O time precisa de lo
 ## Consequências
 - Sem senhas, sem segredo externo; E2E rápido e estável.
 - Risco principal (login de teste vazar para produção) mitigado por três camadas e por teste automatizado (SDD-003 §6).
-- **Emenda (ADR-024):** o modo de homologação rápida (`APP_HOMOLOG_MODE`) liga o login de teste num build de produção **somente** com bind, banco e URLs locais e sem Google configurado; fora disso a camada (b) continua recusando subir.
+- **Emenda (ADR-024, revisão 2):** o modo de homologação rápida liga o login de teste num build de produção apenas com `APP_HOMOLOG_MODE=true` + `AUTH_DEV_LOGIN=true`, a pedido e por risco do usuário (ambiente local descartável); aviso no log em vez de recusa. Sem `APP_HOMOLOG_MODE`, a camada (b) continua recusando subir.
