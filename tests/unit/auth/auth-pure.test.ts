@@ -10,7 +10,9 @@ import {
   assertSafeAuthConfig,
   isDevLoginEnabled,
   isDevLoginHost,
+  isDevToolingEnabled,
   isDirectLocalRequest,
+  isHomologModeActive,
   isLocalHost,
 } from "@/lib/auth/dev-login-guard";
 import { normalizeEmail } from "@/lib/auth/email";
@@ -193,5 +195,27 @@ describe("buildSessionPayload (ADR-026 §6)", () => {
     expect(Object.keys(out).sort()).toEqual(["expires", "user"]);
     expect(JSON.stringify(out)).not.toContain("segredo");
     expect(out.user).toEqual({ id: "u1", name: "Ana", email: "a@x.com", image: null });
+  });
+});
+
+describe("ADR-026 §5: trava APP_DEPLOY_ENV=production", () => {
+  const base = { APP_DEPLOY_ENV: "production", NODE_ENV: "production" };
+  it.each(["AUTH_DEV_LOGIN", "APP_HOMOLOG_MODE", "APP_NOW_OVERRIDE"])(
+    "boot falha com %s presente (qualquer valor)",
+    (v) => {
+      expect(() => assertSafeAuthConfig({ ...base, [v]: "" })).toThrow(v);
+      expect(() => assertSafeAuthConfig({ ...base, [v]: "false" })).toThrow(v);
+    },
+  );
+  it("sem variáveis proibidas sobe; sem APP_DEPLOY_ENV a homologação segue valendo", () => {
+    expect(() => assertSafeAuthConfig(base)).not.toThrow();
+    const homolog = { NODE_ENV: "production", APP_HOMOLOG_MODE: "true", AUTH_DEV_LOGIN: "true" };
+    expect(isHomologModeActive(homolog)).toBe(true);
+    expect(isHomologModeActive({ ...homolog, APP_DEPLOY_ENV: "production" })).toBe(false);
+  });
+  it("login de teste e ferramentas de dev ficam desligados na imagem de produção", () => {
+    const env = { APP_DEPLOY_ENV: "production", AUTH_DEV_LOGIN: "true", NODE_ENV: "development" };
+    expect(isDevLoginEnabled(env)).toBe(false);
+    expect(isDevToolingEnabled(env)).toBe(false);
   });
 });

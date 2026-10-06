@@ -20,4 +20,16 @@ describe("checkHealth", () => {
     expect(r.status).toBe("degraded");
     expect(r.checks.database).toBe("down");
   });
+
+  it("responde unsafe_config em produção com variável de teste presente (ADR-026 §5)", async () => {
+    for (const v of ["AUTH_DEV_LOGIN", "APP_HOMOLOG_MODE", "APP_NOW_OVERRIDE"]) {
+      const r = await checkHealth(async () => 1, fixed, { APP_DEPLOY_ENV: "production", [v]: "" });
+      expect(r.status).toBe("unsafe_config");
+    }
+  });
+
+  it("fora de produção a presença dessas variáveis não afeta o health", async () => {
+    const r = await checkHealth(async () => 1, fixed, { AUTH_DEV_LOGIN: "true" });
+    expect(r.status).toBe("ok");
+  });
 });

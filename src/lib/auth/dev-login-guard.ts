@@ -3,6 +3,23 @@ import { hostnameOf, isAllowedDevHost } from "@/lib/dev-origins";
 
 type Env = Record<string, string | undefined>;
 
+/** ADR-026 §5: imagem de produção grava APP_DEPLOY_ENV=production; nela, nada de teste/homologação. */
+export const PROD_FORBIDDEN_VARS = [
+  "AUTH_DEV_LOGIN",
+  "APP_HOMOLOG_MODE",
+  "APP_NOW_OVERRIDE",
+] as const;
+
+export function isProdDeploy(env: Env = process.env): boolean {
+  return env.APP_DEPLOY_ENV === "production";
+}
+
+/** Variáveis proibidas presentes (a mera presença, com qualquer valor, conta). */
+export function unsafeProdVars(env: Env = process.env): string[] {
+  if (!isProdDeploy(env)) return [];
+  return PROD_FORBIDDEN_VARS.filter((k) => env[k] !== undefined);
+}
+
 const isOn = (v: string | undefined) => v?.trim().toLowerCase() === "true";
 
 /**
@@ -10,6 +27,7 @@ const isOn = (v: string | undefined) => v?.trim().toLowerCase() === "true";
  * condição (bind, banco, URL, Google): o usuário aceitou o risco (ver ADR-024, revisão 2).
  */
 export function isHomologModeActive(env: Env = process.env): boolean {
+  if (isProdDeploy(env)) return false;
   return (
     env.NODE_ENV === "production" && isOn(env.APP_HOMOLOG_MODE) && env.AUTH_DEV_LOGIN === "true"
   );
@@ -17,12 +35,13 @@ export function isHomologModeActive(env: Env = process.env): boolean {
 
 /** ADR-008: só com AUTH_DEV_LOGIN=true e fora de produção, ou no modo de homologação (ADR-024). */
 export function isDevLoginEnabled(env: Env = process.env): boolean {
-  if (env.AUTH_DEV_LOGIN !== "true") return false;
+  if (isProdDeploy(env) || env.AUTH_DEV_LOGIN !== "true") return false;
   return env.NODE_ENV !== "production" || isHomologModeActive(env);
 }
 
 /** Ferramentas só de dev/E2E (ex.: /api/dev/clock): fora de produção ou no modo de homologação. */
 export function isDevToolingEnabled(env: Env = process.env): boolean {
+  if (isProdDeploy(env)) return false;
   return (
     env.AUTH_DEV_LOGIN === "true" && (env.NODE_ENV !== "production" || isHomologModeActive(env))
   );
@@ -35,6 +54,12 @@ export const HOMOLOG_WARNING = "MODO DE HOMOLOGAÇÃO ATIVO: login de teste habi
  * homologação (ADR-024), que apenas registra um aviso no log.
  */
 export function assertSafeAuthConfig(env: Env = process.env): void {
+  const unsafe = unsafeProdVars(env);
+  if (unsafe.length > 0) {
+    throw new Error(
+      `Configuração insegura em produção (APP_DEPLOY_ENV=production): ${unsafe.join(", ")}`,
+    );
+  }
   if (env.NODE_ENV !== "production") return;
   if (isOn(env.APP_HOMOLOG_MODE)) {
     if (env.AUTH_DEV_LOGIN === "true") console.warn(HOMOLOG_WARNING);
