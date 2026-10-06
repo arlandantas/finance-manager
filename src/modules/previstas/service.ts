@@ -69,6 +69,16 @@ export function toPlannedDTO(
     updatedBy: row.updatedByMemberId ? ref(row.updatedByMemberId) : null,
     isSharedExpense: row.isSharedExpense,
     note: row.note,
+    series: row.series ? { id: row.series.id, dayOfMonth: row.series.dayOfMonth } : null,
+    isException: row.isException,
+    occurrenceMonth: row.occurrenceMonth ? fromDbDate(row.occurrenceMonth).slice(0, 7) : null,
+    paymentAccount: row.paymentAccount
+      ? {
+          id: row.paymentAccount.id,
+          name: row.paymentAccount.name,
+          archived: row.paymentAccount.archivedAt !== null,
+        }
+      : null,
     paid:
       row.status === "PAGO" && paidTx
         ? {
@@ -90,7 +100,13 @@ export function toPlannedDTO(
 const invalidRef = (path: string, message: string) =>
   unprocessable("INVALID_REFERENCE", message, [{ path, message }]);
 
-async function checkCategory(repo: Repo, categoryId: string) {
+export async function checkPaymentAccount(repo: Repo, accountId: string) {
+  if (!(await repo.findActiveAccount(accountId))) {
+    throw invalidRef("paymentAccountId", "Escolha uma conta ativa");
+  }
+}
+
+export async function checkCategory(repo: Repo, categoryId: string) {
   const category = await repo.findCategory(categoryId);
   if (!category || category.archivedAt !== null || category.kind !== "EXPENSE") {
     throw invalidRef("categoryId", "Escolha uma categoria");
@@ -118,7 +134,9 @@ export async function createPlannedExpense(
   if (!(await repo.findMember(responsibleMemberId))) {
     throw invalidRef("responsibleMemberId", "Responsável inválido");
   }
+  if (input.paymentAccountId) await checkPaymentAccount(repo, input.paymentAccountId);
   const row = await repo.insert({
+    paymentAccountId: input.paymentAccountId ?? null,
     description: input.description,
     amountInCents: input.amountInCents,
     dueOn: input.dueOn ?? today,
@@ -221,6 +239,13 @@ export async function updatePlannedExpense(
     throw invalidRef("responsibleMemberId", "Responsável inválido");
   }
   if (input.isSharedExpense === true && !row.isSharedExpense) await assertCanShare(tx, ctx);
+  if (
+    input.paymentAccountId &&
+    input.paymentAccountId !== row.paymentAccountId &&
+    !(await repo.findActiveAccount(input.paymentAccountId))
+  ) {
+    throw invalidRef("paymentAccountId", "Escolha uma conta ativa");
+  }
   const dueOn = fromDbDate(row.dueOn);
   const wanted = {
     ...(input.description !== undefined && input.description !== row.description
@@ -245,10 +270,17 @@ export async function updatePlannedExpense(
     !(input.note === null && row.note === null)
       ? { note: input.note }
       : {}),
+    ...(input.paymentAccountId !== undefined && input.paymentAccountId !== row.paymentAccountId
+      ? { paymentAccountId: input.paymentAccountId }
+      : {}),
   };
   if (Object.keys(wanted).length === 0) return { plannedExpense: await loadDTO(tx, ctx, id) };
+  // SDD-019 §3.3: mudar uma ocorrência de série (exceto a observação) a torna "alterada".
+  const makesException =
+    row.seriesId !== null && Object.keys(wanted).some((k) => k !== "note") && !row.isException;
   const res = await repo.updateVersioned(id, input.version, {
     ...wanted,
+    ...(makesException ? { isException: true } : {}),
     updatedByMemberId: ctx.memberId,
   });
   if (res.count === 0) throw await versionConflict(repo, tx, ctx.familyId, id);

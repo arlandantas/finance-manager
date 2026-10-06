@@ -161,19 +161,20 @@ model Family {
   updatedAt         DateTime    @default(now()) @updatedAt @db.Timestamptz(3)
   updatedByMemberId String?     @db.Uuid
 
-  members          Member[]
-  familyEvents     FamilyEvent[]
-  invitations      Invitation[]
-  categories       Category[]
-  splitRules       SplitRuleVersion[]
-  bankAccounts     BankAccount[]
-  creditCards      CreditCard[]
-  plannedExpenses  PlannedExpense[]
-  installmentPlans InstallmentPlan[]
-  transactions     Transaction[]
-  transferGroups   TransferGroup[]
-  splitSnapshots   SplitMigrationSnapshot[]
-  dataMigrations   DataMigration[]
+  members           Member[]
+  familyEvents      FamilyEvent[]
+  invitations       Invitation[]
+  categories        Category[]
+  splitRules        SplitRuleVersion[]
+  bankAccounts      BankAccount[]
+  creditCards       CreditCard[]
+  plannedExpenses   PlannedExpense[]
+  recurringExpenses RecurringExpense[]
+  installmentPlans  InstallmentPlan[]
+  transactions      Transaction[]
+  transferGroups    TransferGroup[]
+  splitSnapshots    SplitMigrationSnapshot[]
+  dataMigrations    DataMigration[]
 
   @@map("families")
 }
@@ -240,6 +241,8 @@ model Member {
   ownedCards           CreditCard[]
   plannedResponsible   PlannedExpense[]   @relation("PlannedResponsible")
   plannedAuthored      PlannedExpense[]   @relation("PlannedAuthor")
+  recurringResponsible RecurringExpense[] @relation("RecurringResponsible")
+  recurringAuthored    RecurringExpense[] @relation("RecurringAuthor")
   planPayer            InstallmentPlan[]  @relation("PlanPayer")
   planAuthor           InstallmentPlan[]  @relation("PlanAuthor")
   transactionSplits    TransactionSplit[]
@@ -290,10 +293,11 @@ model Category {
   updatedAt         DateTime     @default(now()) @updatedAt @db.Timestamptz(3)
   updatedByMemberId String?      @db.Uuid
 
-  family           Family            @relation(fields: [familyId], references: [id])
-  installmentPlans InstallmentPlan[]
-  transactions     Transaction[]
-  plannedExpenses  PlannedExpense[]
+  family            Family             @relation(fields: [familyId], references: [id])
+  installmentPlans  InstallmentPlan[]
+  transactions      Transaction[]
+  plannedExpenses   PlannedExpense[]
+  recurringExpenses RecurringExpense[]
 
   @@unique([familyId, kind, name])
   @@unique([familyId, id])
@@ -302,17 +306,17 @@ model Category {
 
 // ───────── Contas, movimentações (ledger) ─────────
 model BankAccount {
-  id            String          @id @default(uuid()) @db.Uuid
-  familyId      String          @db.Uuid
-  name          String // trim; único por família ignorando caixa (índice em SQL cru)
-  institution   String
-  type          BankAccountType
-  ownerMemberId String          @db.Uuid
-  version       Int             @default(1)
-  createdAt     DateTime        @default(now()) @db.Timestamptz(3)
-  updatedAt     DateTime        @updatedAt @db.Timestamptz(3)
+  id                   String          @id @default(uuid()) @db.Uuid
+  familyId             String          @db.Uuid
+  name                 String // trim; único por família ignorando caixa (índice em SQL cru)
+  institution          String
+  type                 BankAccountType
+  ownerMemberId        String          @db.Uuid
+  version              Int             @default(1)
+  createdAt            DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime        @updatedAt @db.Timestamptz(3)
   // US-057: reserva — movimentável, mas fora do saldo disponível (SDD-019 §2)
-  excludeFromAvailable Boolean @default(false)
+  excludeFromAvailable Boolean         @default(false)
 
   // US-032: arquivada some das listas; excluída (lógica, terminal) some de tudo e libera o nome
   archivedAt         DateTime? @db.Timestamptz(3)
@@ -320,9 +324,11 @@ model BankAccount {
   deletedAt          DateTime? @db.Timestamptz(3)
   deletedByMemberId  String?   @db.Uuid
 
-  family       Family        @relation(fields: [familyId], references: [id])
-  owner        Member        @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
-  transactions Transaction[]
+  family            Family             @relation(fields: [familyId], references: [id])
+  owner             Member             @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
+  transactions      Transaction[]
+  plannedExpenses   PlannedExpense[]
+  recurringExpenses RecurringExpense[]
 
   @@unique([familyId, id])
   @@map("bank_accounts")
@@ -512,17 +518,59 @@ model PlannedExpense {
   updatedAt           DateTime             @updatedAt @db.Timestamptz(3)
   deletedAt           DateTime?            @db.Timestamptz(3)
   deletedByMemberId   String?              @db.Uuid
+  // US-058/059: ocorrência de série e conta de pagamento (SDD-019 §3.1)
+  seriesId            String?              @db.Uuid
+  occurrenceMonth     DateTime?            @db.Date
+  isException         Boolean              @default(false)
+  paymentAccountId    String?              @db.Uuid
 
-  family      Family       @relation(fields: [familyId], references: [id])
-  category    Category     @relation(fields: [familyId, categoryId], references: [familyId, id])
-  responsible Member       @relation("PlannedResponsible", fields: [familyId, responsibleMemberId], references: [familyId, id])
-  author      Member       @relation("PlannedAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
-  paidTx      Transaction? @relation("PlannedPaidTx", fields: [familyId, paidTransactionId], references: [familyId, id])
+  family         Family            @relation(fields: [familyId], references: [id])
+  series         RecurringExpense? @relation(fields: [familyId, seriesId], references: [familyId, id])
+  paymentAccount BankAccount?      @relation(fields: [familyId, paymentAccountId], references: [familyId, id])
+  category       Category          @relation(fields: [familyId, categoryId], references: [familyId, id])
+  responsible    Member            @relation("PlannedResponsible", fields: [familyId, responsibleMemberId], references: [familyId, id])
+  author         Member            @relation("PlannedAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+  paidTx         Transaction?      @relation("PlannedPaidTx", fields: [familyId, paidTransactionId], references: [familyId, id])
 
   @@unique([familyId, id])
   @@unique([familyId, paidTransactionId])
+  @@unique([familyId, seriesId, occurrenceMonth]) // sem filtro de deletedAt: nunca recria (ADR-025)
   @@index([familyId, status, dueOn])
   @@map("planned_expenses")
+}
+
+// US-058 (ADR-025, SDD-019 §3.1): série mensal; as ocorrências são linhas de planned_expenses
+model RecurringExpense {
+  id                    String    @id @default(uuid()) @db.Uuid
+  familyId              String    @db.Uuid
+  description           String // 2..100
+  amountInCents         BigInt // > 0 (CHECK)
+  categoryId            String    @db.Uuid
+  responsibleMemberId   String    @db.Uuid
+  isSharedExpense       Boolean   @default(false)
+  paymentAccountId      String?   @db.Uuid
+  dayOfMonth            Int // 1..31 (CHECK)
+  startMonth            DateTime  @db.Date // dia 1
+  endMonth              DateTime? @db.Date // dia 1; null = sem fim
+  generatedThroughMonth DateTime? @db.Date // último mês já materializado
+  endedAt               DateTime? @db.Timestamptz(3)
+  endedByMemberId       String?   @db.Uuid
+  authorMemberId        String    @db.Uuid
+  updatedByMemberId     String?   @db.Uuid
+  version               Int       @default(1)
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
+
+  family         Family           @relation(fields: [familyId], references: [id])
+  category       Category         @relation(fields: [familyId, categoryId], references: [familyId, id])
+  responsible    Member           @relation("RecurringResponsible", fields: [familyId, responsibleMemberId], references: [familyId, id])
+  author         Member           @relation("RecurringAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+  paymentAccount BankAccount?     @relation(fields: [familyId, paymentAccountId], references: [familyId, id])
+  occurrences    PlannedExpense[]
+
+  @@unique([familyId, id])
+  @@index([familyId, endedAt, generatedThroughMonth])
+  @@map("recurring_expenses")
 }
 
 // Append-only (trigger no banco)

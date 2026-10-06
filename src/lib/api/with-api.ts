@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { PrismaClient } from "@/generated/prisma/client";
 import {
   ApiError,
   badRequest,
@@ -39,6 +40,8 @@ export type ApiOptions<A extends AuthMode, B, Q> = {
   body?: z.ZodType<B, unknown>;
   query?: z.ZodType<Q, unknown>;
   idempotent?: boolean; // padrão: true para métodos não-GET
+  /** Roda após autenticação/validação e ANTES da transação do handler (ex.: geração da recorrência). */
+  prepare?: (ctx: CtxFor<A>, db: PrismaClient) => Promise<void>;
   isolationLevel?: "ReadCommitted" | "RepeatableRead" | "Serializable";
 };
 
@@ -167,6 +170,8 @@ export function withApi<A extends AuthMode = "family", B = undefined, Q = undefi
         }
       }
       const hash = key ? requestHash(method, url.pathname, rawBody) : "";
+
+      if (opts.prepare) await opts.prepare(ctx as CtxFor<A>, db);
 
       // 7..8) transação, idempotência e handler
       const outcome = await db.$transaction(

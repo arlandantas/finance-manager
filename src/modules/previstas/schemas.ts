@@ -22,6 +22,7 @@ export const CreatePlannedExpenseSchema = z
     responsibleMemberId: uuidSchema.optional(), // padrão: membro logado (RN-001.2)
     isSharedExpense: z.boolean().default(false), // "Só meu" por padrão (US-030, D-GES-15)
     note: noteSchema.optional(),
+    paymentAccountId: z.uuid({ error: "Escolha uma conta ativa" }).nullable().optional(), // US-059
   })
   .strict();
 export type CreatePlannedExpenseInput = z.input<typeof CreatePlannedExpenseSchema>;
@@ -37,6 +38,7 @@ export const UpdatePlannedExpenseSchema = z
     responsibleMemberId: uuidSchema.optional(),
     isSharedExpense: z.boolean().optional(),
     note: noteSchema.nullable().optional(),
+    paymentAccountId: z.uuid({ error: "Escolha uma conta ativa" }).nullable().optional(),
   })
   .strict();
 export type UpdatePlannedExpenseInput = z.input<typeof UpdatePlannedExpenseSchema>;
@@ -82,6 +84,11 @@ export type PlannedExpenseDTO = {
   updatedBy: MemberRef | null;
   isSharedExpense: boolean;
   note: string | null;
+  // US-058/059 (SDD-019 §3.5)
+  series: { id: string; dayOfMonth: number } | null;
+  isException: boolean;
+  occurrenceMonth: string | null; // YYYY-MM (ocorrência de série)
+  paymentAccount: { id: string; name: string; archived: boolean } | null;
   paid: null | {
     // da Transaction gerada (fonte única do valor pago)
     transactionId: string;
@@ -118,6 +125,8 @@ export type PayableItemDTO = {
   isOverdue: boolean;
   responsible: MemberRef | null;
   isSharedExpense: boolean | null;
+  isRecurring: boolean; // ocorrência de série (US-058)
+  paymentAccountName: string | null; // "Pagar com" (US-059)
   href: string; // /previstas#id | /cartoes/{cardId}?ref={ref}
 };
 

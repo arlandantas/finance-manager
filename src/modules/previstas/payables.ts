@@ -27,6 +27,8 @@ const plannedItem = (
     isOverdue: dueOn < today,
     responsible: members.get(r.responsibleMemberId) ?? null,
     isSharedExpense: r.isSharedExpense,
+    isRecurring: r.seriesId !== null,
+    paymentAccountName: r.paymentAccount?.name ?? null,
     href: `/previstas#${r.id}`,
   };
 };
@@ -40,6 +42,8 @@ const invoiceItem = (i: PayableInvoice): PayableItemDTO => ({
   isOverdue: i.isOverdue,
   responsible: null,
   isSharedExpense: null,
+  isRecurring: false,
+  paymentAccountName: null,
   href: `/cartoes/${i.cardId}?ref=${i.ref}`,
 });
 

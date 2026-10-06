@@ -4,6 +4,8 @@ import { fromCents } from "@/lib/money";
 
 const include = {
   category: true,
+  series: { select: { id: true, dayOfMonth: true } },
+  paymentAccount: { select: { id: true, name: true, archivedAt: true } },
   paidTx: { include: { account: { select: { id: true, name: true } } } },
 } as const;
 
@@ -48,6 +50,7 @@ export function previstasRepo(tx: Tx, familyId: string) {
       isSharedExpense: boolean;
       note: string | null;
       authorMemberId: string;
+      paymentAccountId?: string | null;
     }) =>
       tx.plannedExpense.create({
         data: {
@@ -69,6 +72,8 @@ export function previstasRepo(tx: Tx, familyId: string) {
         responsibleMemberId?: string;
         isSharedExpense?: boolean;
         note?: string | null;
+        paymentAccountId?: string | null;
+        isException?: boolean;
         updatedByMemberId: string;
       },
     ) =>
@@ -84,6 +89,8 @@ export function previstasRepo(tx: Tx, familyId: string) {
             : {}),
           ...(d.isSharedExpense !== undefined ? { isSharedExpense: d.isSharedExpense } : {}),
           ...(d.note !== undefined ? { note: d.note } : {}),
+          ...(d.paymentAccountId !== undefined ? { paymentAccountId: d.paymentAccountId } : {}),
+          ...(d.isException !== undefined ? { isException: d.isException } : {}),
           updatedByMemberId: d.updatedByMemberId,
           version: { increment: 1 },
         },
@@ -118,6 +125,9 @@ export function previstasRepo(tx: Tx, familyId: string) {
           version: { increment: 1 },
         },
       }),
+    /** Conta bancária ativa (US-059): da família, não excluída, não arquivada. */
+    findActiveAccount: (id: string) =>
+      tx.bankAccount.findFirst({ where: { id, familyId, deletedAt: null, archivedAt: null } }),
     findCategory: (id: string) => tx.category.findFirst({ where: { id, familyId } }),
     /** Ativo (referência de responsável). */
     findMember: (id: string) =>

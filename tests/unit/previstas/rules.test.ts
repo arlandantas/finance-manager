@@ -63,6 +63,8 @@ describe("US-018 Bloco 'A pagar' da Home e ordenação", () => {
       isOverdue,
       responsible: null,
       isSharedExpense: true,
+      isRecurring: false,
+      paymentAccountName: null,
       href: "",
     });
     const list = [
