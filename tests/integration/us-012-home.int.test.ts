@@ -43,7 +43,7 @@ async function twoAccounts(): Promise<{ itau: AccountFixture; nubank: AccountFix
 }
 
 describe("US-012 Home da família", () => {
-  it("Home com dados: saldo da família, contas, acerto e 5 recentes", async () => {
+  it("Home com dados: saldo da família, contas, acerto e recentes (até 10)", async () => {
     const { itau, nubank } = await twoAccounts();
     for (let i = 0; i < 7; i++) {
       await makeTransaction(fx, {
@@ -65,7 +65,7 @@ describe("US-012 Home da família", () => {
     ]);
     expect(res.body.settlementIndicator).toHaveProperty("previous");
 
-    expect(res.body.recent).toHaveLength(5);
+    expect(res.body.recent).toHaveLength(7);
     expect(res.body.recent[0].occurredOn >= res.body.recent[4].occurredOn).toBe(true);
     expect(res.body.period).toEqual({ key: "2026-10", start: "2026-10-01", end: "2026-10-31" });
     expect(res.body.memberCount).toBe(2);
@@ -169,7 +169,7 @@ describe("US-012 Home da família", () => {
     });
   });
 
-  it("Últimos 5: 7 lançamentos => 5 mais recentes, sem OPENING nem excluídos, inclui transferências", async () => {
+  it("Recentes (até 10): 7 lançamentos => todos os 7, sem OPENING nem excluídos, inclui transferências", async () => {
     const { itau, nubank } = await twoAccounts();
     for (let i = 0; i < 5; i++) {
       await makeTransaction(fx, {
@@ -196,7 +196,7 @@ describe("US-012 Home da família", () => {
     });
     const res = await home();
     const types = res.body.recent.map((r: { type: string }) => r.type);
-    expect(types).toHaveLength(5);
+    expect(types).toHaveLength(7);
     expect(types).not.toContain("OPENING");
     expect(types.filter((x: string) => x.startsWith("TRANSFER"))).toHaveLength(2);
     expect(res.body.recent.every((r: { deletedAt: string | null }) => r.deletedAt === null)).toBe(

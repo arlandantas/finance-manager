@@ -3,14 +3,19 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 import { apportion } from "@/lib/apportion";
 import { todayInFamilyTz } from "@/lib/dates";
 import { type Period, periodFromKey, periodOf } from "@/lib/period";
+import { paidInvoicesDueIn } from "@/modules/cartoes/invoice-service";
 import { listAccounts } from "@/modules/contas/service";
 import { homeRepo } from "@/modules/home/repo";
 import type { HomeDTO, MonthSummaryDTO } from "@/modules/home/schemas";
-import { listDueItems } from "@/modules/previstas/payables";
+import { homePayables, listDueItems } from "@/modules/previstas/payables";
 import { isSettlementEnabled } from "@/modules/split/guard";
 import { getSettlementIndicator } from "@/modules/split/indicator";
 import { splitRepo } from "@/modules/split/repo";
-import { familyHasTransactions, ledgerTotals } from "@/modules/transacoes/extrato";
+import {
+  expenseComposition,
+  familyHasTransactions,
+  ledgerTotals,
+} from "@/modules/transacoes/extrato";
 import { listTransactions, memberRefOf } from "@/modules/transacoes/service";
 
 const MAX_FUTURE_MONTHS = 12;
@@ -72,6 +77,15 @@ export async function getMonthSummary(
   const due = await listDueItems(tx, ctx, { period, isCurrent, today });
   const accounts = await listAccounts(tx, ctx);
   const toPayTotal = due.plannedInCents + due.invoicesInCents;
+  // US-063 (D-TL-v0-2): "Despesas" = projeção do mês (Previstas + Não previstas); o resultado segue o realizado
+  const composition = await expenseComposition(tx, {
+    familyId: ctx.familyId,
+    start,
+    end,
+    includeDeleted: false,
+  });
+  const invoicesInPeriod = due.invoicesInCents + (await paidInvoicesDueIn(tx, ctx, { start, end }));
+  const plannedTotal = invoicesInPeriod + due.plannedInCents + composition.plannedPaidInCents;
   return {
     period: { key: period.key, start, end, isCurrent, isFuture },
     incomeInCents: totals.incomeInCents,
@@ -86,6 +100,15 @@ export async function getMonthSummary(
       items: due.items.slice(0, 5),
       totalCount: due.items.length,
     },
+    planned: {
+      invoicesInCents: invoicesInPeriod,
+      openInCents: due.plannedInCents,
+      paidInCents: composition.plannedPaidInCents,
+      totalInCents: plannedTotal,
+      openToPayInCents: toPayTotal,
+    },
+    unplannedInCents: composition.unplannedInCents,
+    projectedExpenseInCents: plannedTotal + composition.unplannedInCents,
     currentBalanceInCents: accounts.totalBalanceInCents,
     projectedBalanceInCents: accounts.totalBalanceInCents - toPayTotal,
     byMember: withPaid.map((m) => ({
@@ -108,9 +131,10 @@ export async function getHome(tx: Tx, ctx: RequestContext, periodKey?: string): 
   const recent = await listTransactions(
     tx,
     ctx,
-    { from: "1970-01-01", to: "2999-12-31", limit: 5 },
+    { from: "1970-01-01", to: "2999-12-31", limit: 10 },
     { occurredUntil: todayInFamilyTz(ctx.clock) },
   );
+  const dueSoon = await homePayables(tx, ctx);
   const memberCount = (await splitRepo(tx, ctx.familyId).listMembers()).filter(
     (m) => !m.removedAt,
   ).length;
@@ -129,6 +153,7 @@ export async function getHome(tx: Tx, ctx: RequestContext, periodKey?: string): 
       accounts: accounts.items,
     },
     settlementIndicator,
+    dueSoon,
     recent: recent.items,
     onboarding: {
       hasAccount,

@@ -5,4 +5,5 @@ export const SUMMARY_COPY = {
   empty: "Nada lançado neste mês ainda",
   loadError: "Não foi possível carregar o resumo do mês",
   overdue: "Atrasada",
+  resultHint: "Receitas menos despesas já realizadas",
 } as const;

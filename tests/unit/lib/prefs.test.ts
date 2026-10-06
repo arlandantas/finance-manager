@@ -24,7 +24,11 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("US-027 preferências por usuário e dispositivo", () => {
   it("padrões: valores ocultos, saldos recolhidos", () => {
-    expect(DEFAULT_USER_PREFS).toEqual({ hideValues: true, balancesExpanded: false });
+    expect(DEFAULT_USER_PREFS).toEqual({
+      hideValues: true,
+      balancesExpanded: false,
+      homeSummaryOpen: false,
+    });
     const { result } = renderHook(() => usePref("hideValues"), { wrapper: wrap("u1") });
     expect(result.current[0]).toBe(true);
   });

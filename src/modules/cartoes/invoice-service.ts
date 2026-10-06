@@ -212,3 +212,31 @@ export async function listPayableInvoices(
     ];
   });
 }
+
+/**
+ * Soma das faturas JÁ PAGAS com vencimento no período (total > 0). Compõe "Previstas" do Resumo do
+ * Mês (US-063); as não pagas vêm do coletor único de "A pagar".
+ */
+export async function paidInvoicesDueIn(
+  tx: Tx,
+  ctx: RequestContext,
+  range: { start: string; end: string },
+): Promise<number> {
+  const rows = await tx.cardInvoice.findMany({
+    where: {
+      familyId: ctx.familyId,
+      dueDate: {
+        gte: new Date(`${range.start}T00:00:00Z`),
+        lte: new Date(`${range.end}T00:00:00Z`),
+      },
+    },
+    select: { id: true },
+  });
+  const ids = rows.map((r) => r.id);
+  const totals = await invoiceTotals(tx, ctx.familyId, ids);
+  const payments = await activePayments(tx, ctx.familyId, ids);
+  return ids.reduce(
+    (s, id) => s + (payments.has(id) ? Math.max(totals.get(id)?.totalInCents ?? 0, 0) : 0),
+    0,
+  );
+}

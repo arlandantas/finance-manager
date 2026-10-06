@@ -1,11 +1,12 @@
 "use client";
 
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Info, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { monthLabel, shiftMonthKey } from "@/app/(app)/extrato/filters";
 import { Money, useMoneyText } from "@/components/money";
+import { useQuickAdd } from "@/components/quick-add";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -235,24 +236,55 @@ function MonthSummaryCard({
         <Line label="Receitas" testid="home-income" tone="text-emerald-700 dark:text-emerald-300">
           <Money cents={s.incomeInCents} />
         </Line>
-        <Line label="Despesas" testid="home-expense">
-          <Money cents={s.expenseInCents} />
-        </Line>
-        <Line
-          label="Resultado do mês"
-          testid="home-result"
-          strong
-          tone={s.resultInCents < 0 ? "text-red-700 dark:text-red-300" : "text-slate-900"}
-        >
-          <Money cents={s.resultInCents} />
-        </Line>
         <div className="py-1">
-          <Line label="A pagar" testid="home-topay">
+          <Line label="Despesas" testid="home-expense">
+            <Money cents={s.projectedExpenseInCents} />
+          </Line>
+          <ul className="mb-1 ml-3 flex flex-col text-sm text-slate-600">
+            <li className="flex justify-between gap-3 font-medium" data-testid="home-planned">
+              <span>Previstas</span>
+              <Money cents={s.planned.totalInCents} />
+            </li>
+            <li>
+              <ul className="ml-3 flex flex-col">
+                <li className="flex justify-between gap-3" data-testid="home-planned-invoices">
+                  <span>Faturas</span>
+                  <Money cents={s.planned.invoicesInCents} />
+                </li>
+                <li className="flex justify-between gap-3" data-testid="home-planned-open">
+                  <span>A pagar em aberto</span>
+                  <Money cents={s.planned.openInCents} />
+                </li>
+                <li className="flex justify-between gap-3" data-testid="home-planned-paid">
+                  <span>Pagas</span>
+                  <Money cents={s.planned.paidInCents} />
+                </li>
+              </ul>
+            </li>
+            <li className="flex justify-between gap-3 font-medium" data-testid="home-unplanned">
+              <span>Não previstas</span>
+              <Money cents={s.unplannedInCents} />
+            </li>
+          </ul>
+        </div>
+        <div className="py-1">
+          <Line
+            label="Resultado do mês"
+            testid="home-result"
+            strong
+            tone={s.resultInCents < 0 ? "text-red-700 dark:text-red-300" : "text-slate-900"}
+          >
+            <Money cents={s.resultInCents} />
+          </Line>
+          <p className="text-xs text-slate-500">{SUMMARY_COPY.resultHint}</p>
+        </div>
+        <div className="py-1">
+          <Line label="Total a pagar" testid="home-topay">
             <Money cents={s.toPay.totalInCents} />
           </Line>
           <ul className="mb-1 ml-3 flex flex-col text-sm text-slate-600">
             <li className="flex justify-between gap-3" data-testid="home-topay-planned">
-              <span>Previstas</span>
+              <span>Contas previstas</span>
               <Money cents={s.toPay.plannedInCents} />
             </li>
             <li className="flex justify-between gap-3" data-testid="home-topay-invoices">
@@ -403,6 +435,65 @@ function BalancesCard({ b }: { b: HomeDTO["balances"] }) {
   );
 }
 
+/** Card "Resumo do mês" fechado por padrão, com o resultado como síntese (US-061). */
+function SummaryFold({
+  summary,
+  totalInCents,
+  open,
+  onToggle,
+  children,
+}: {
+  summary: MonthSummaryDTO;
+  totalInCents: number;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section
+      aria-label="Resumo do mês e saldos"
+      data-testid="home-summary-fold"
+      className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white dark:bg-slate-100 p-4"
+    >
+      <button
+        type="button"
+        data-testid="home-summary-toggle"
+        aria-expanded={open}
+        aria-controls="home-summary-body"
+        onClick={onToggle}
+        className="flex min-h-11 w-full items-center justify-between gap-3 text-left"
+      >
+        <span className="flex flex-col">
+          <span className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Resumo do mês
+          </span>
+          <span className="text-sm text-slate-600">
+            Resultado:{" "}
+            <span
+              data-testid="home-summary-synthesis"
+              className={cn(
+                "text-xl font-bold tabular-nums",
+                summary.resultInCents < 0 ? "text-red-700 dark:text-red-300" : "text-slate-900",
+              )}
+            >
+              <Money cents={summary.resultInCents} />
+            </span>
+            <span className="ml-3">
+              Saldo: <Money cents={totalInCents} />
+            </span>
+          </span>
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          size={20}
+          className={cn("shrink-0 transition-transform", open && "rotate-180")}
+        />
+      </button>
+      {open ? <div id="home-summary-body">{children}</div> : null}
+    </section>
+  );
+}
+
 function HomeSkeleton() {
   return (
     <div aria-busy="true" aria-label="Carregando início" className="grid gap-4 md:grid-cols-2">
@@ -424,6 +515,8 @@ export function HomeScreen({ firstName }: { firstName: string }) {
   const openDetail = (id: string) => router.push(`${pathname}?tx=${id}`, { scroll: false });
   const closeDetail = () => router.replace(pathname, { scroll: false });
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [summaryOpen, setSummaryOpen] = usePref("homeSummaryOpen");
+  const quickAdd = useQuickAdd();
   const [period, setPeriod] = useState<string | undefined>(undefined);
   const h = home.data;
   const currentKey = h?.monthSummary.period.key;
@@ -458,49 +551,68 @@ export function HomeScreen({ firstName }: { firstName: string }) {
       ) : null}
 
       {h ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          {h.onboarding.showChecklist ? (
-            <div className="md:col-span-2">
-              <Checklist o={h.onboarding} />
+        <div className="flex flex-col gap-4">
+          {h.onboarding.showChecklist ? <Checklist o={h.onboarding} /> : null}
+
+          <SummaryFold
+            summary={h.monthSummary}
+            totalInCents={h.balances.totalInCents}
+            open={summaryOpen}
+            onToggle={() => setSummaryOpen(!summaryOpen)}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex flex-col gap-4">
+                {summary ? (
+                  <MonthSummaryCard
+                    s={summary}
+                    onShift={shift}
+                    canNext={canNext}
+                    indicator={h.settlementIndicator}
+                  />
+                ) : viewing && other.isPending ? (
+                  <Skeleton className="h-80" />
+                ) : null}
+              </div>
+              <div className="flex flex-col gap-4">
+                {summary && summary.byMember.length > 0 ? (
+                  <Card title="Participação por membro" testid="home-participation">
+                    <ul className="flex flex-col gap-1">
+                      {summary.byMember.map((m) => (
+                        <li
+                          key={m.member.id}
+                          data-testid="home-member-share"
+                          className="flex items-center gap-2 text-sm text-slate-800"
+                        >
+                          {first(m.member.name)} <Money cents={m.paidInCents} /> ({m.sharePercent}%)
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                ) : null}
+                <BalancesCard b={h.balances} />
+              </div>
             </div>
-          ) : null}
+          </SummaryFold>
 
-          <div className="flex flex-col gap-4">
-            {summary ? (
-              <MonthSummaryCard
-                s={summary}
-                onShift={shift}
-                canNext={canNext}
-                indicator={h.settlementIndicator}
-              />
-            ) : viewing && other.isPending ? (
-              <Skeleton className="h-80" />
-            ) : null}
+          <div className="grid grid-cols-2 gap-3" data-testid="home-quick-actions">
+            <Button onClick={() => quickAdd.open("EXPENSE")}>
+              <Minus size={18} aria-hidden="true" />
+              Nova despesa
+            </Button>
+            <Button variant="secondary" onClick={() => quickAdd.open("INCOME")}>
+              <Plus size={18} aria-hidden="true" />
+              Nova receita
+            </Button>
           </div>
 
-          <div className="flex flex-col gap-4">
-            {summary && summary.byMember.length > 0 ? (
-              <Card title="Participação por membro" testid="home-participation">
-                <ul className="flex flex-col gap-1">
-                  {summary.byMember.map((m) => (
-                    <li
-                      key={m.member.id}
-                      data-testid="home-member-share"
-                      className="flex items-center gap-2 text-sm text-slate-800"
-                    >
-                      {first(m.member.name)} <Money cents={m.paidInCents} /> ({m.sharePercent}%)
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            ) : null}
-            <BalancesCard b={h.balances} />
-          </div>
-
-          {summary && summary.toPay.items.length > 0 ? (
-            <Card title="A pagar" testid="home-payables" className="md:col-span-2">
+          <Card title="Vence nos próximos dias" testid="home-payables">
+            {h.dueSoon.items.length === 0 ? (
+              <p data-testid="home-payables-empty" className="text-sm text-slate-600">
+                Nada vence nos próximos dias
+              </p>
+            ) : (
               <ul className="flex flex-col divide-y divide-slate-100">
-                {summary.toPay.items.map((p) => (
+                {h.dueSoon.items.map((p) => (
                   <li
                     key={`${p.type}-${p.id}`}
                     data-testid="home-payable"
@@ -549,16 +661,16 @@ export function HomeScreen({ firstName }: { firstName: string }) {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/previstas"
-                className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 dark:text-emerald-300 underline"
-              >
-                Ver todas
-              </Link>
-            </Card>
-          ) : null}
+            )}
+            <Link
+              href="/previstas"
+              className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 dark:text-emerald-300 underline"
+            >
+              Ver tudo
+            </Link>
+          </Card>
 
-          <Card title="Últimos lançamentos" testid="home-recent" className="md:col-span-2">
+          <Card title="Extrato recente" testid="home-recent">
             {h.recent.length === 0 ? (
               <p className="text-sm text-slate-600">Nenhum lançamento ainda.</p>
             ) : (

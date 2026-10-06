@@ -115,3 +115,29 @@ export async function familyHasTransactions(tx: Tx, familyId: string): Promise<b
     ) AS ok`;
   return row?.ok ?? false;
 }
+
+/**
+ * Composição da despesa realizada do período para o Resumo do Mês (US-063): mesma base do
+ * `ledgerTotals` (EXPENSE ativas), repartida em "baixa de prevista" e "não previstas" (sem cartão
+ * e sem vínculo de baixa). Compras no cartão ficam de fora das duas: entram pela fatura.
+ */
+export async function expenseComposition(
+  tx: Tx,
+  f: LedgerFilters,
+): Promise<{ plannedPaidInCents: number; unplannedInCents: number }> {
+  const where = buildLedgerWhere(f);
+  const [row] = await tx.$queryRaw<Array<{ paid: bigint; unplanned: bigint }>>`
+    SELECT
+      COALESCE(SUM(t."amountInCents") FILTER (WHERE EXISTS (
+        SELECT 1 FROM planned_expenses p WHERE p."familyId" = t."familyId" AND p."paidTransactionId" = t.id
+      )), 0)::bigint AS paid,
+      COALESCE(SUM(t."amountInCents") FILTER (WHERE t."cardId" IS NULL AND NOT EXISTS (
+        SELECT 1 FROM planned_expenses p WHERE p."familyId" = t."familyId" AND p."paidTransactionId" = t.id
+      )), 0)::bigint AS unplanned
+    FROM transactions t
+    WHERE ${where} AND t."deletedAt" IS NULL AND t.kind = 'EXPENSE'`;
+  return {
+    plannedPaidInCents: toCents(row?.paid ?? 0n),
+    unplannedInCents: toCents(row?.unplanned ?? 0n),
+  };
+}
