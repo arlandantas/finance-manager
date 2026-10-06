@@ -2,9 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "finance-manager-homolog",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/homolog.mjs", "start"],
+      "port": 3100,
+      "url": "http://127.0.0.1:3100"
+    },
+    {
       "name": "finance-manager-dev",
-      "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev", "-H", "0.0.0.0", "-p", "3100"],
       "port": 3100
     }
   ]
