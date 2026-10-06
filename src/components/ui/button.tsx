@@ -4,11 +4,13 @@ import { cn } from "@/components/ui/cn";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-brand-700 text-white hover:bg-brand-800 disabled:bg-brand-700/60",
+  primary:
+    "bg-brand-700 text-white hover:bg-brand-800 disabled:bg-(--surface-disabled) disabled:text-(--text-disabled)",
   secondary:
     "border border-slate-300 bg-white dark:bg-slate-100 text-slate-900 hover:bg-slate-50 disabled:opacity-60",
   ghost: "text-slate-700 hover:bg-slate-100 disabled:opacity-60",
-  danger: "bg-red-700 text-white hover:bg-red-800 disabled:bg-red-700/60",
+  danger:
+    "bg-red-700 text-white hover:bg-red-800 disabled:bg-(--surface-disabled) disabled:text-(--text-disabled)",
 };
 
 export function Button({

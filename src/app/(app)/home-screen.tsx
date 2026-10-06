@@ -59,7 +59,7 @@ function Checklist({ o }: { o: HomeDTO["onboarding"] }) {
           <li key={s.label}>
             <Link
               href={s.href}
-              className="flex min-h-11 items-center gap-3 rounded-lg px-1 text-slate-900 hover:bg-white"
+              className="flex min-h-11 items-center gap-3 rounded-lg px-1 text-slate-900 hover:bg-(--surface-hover-brand) hover:text-(--text-on-hover)"
             >
               <span
                 aria-hidden="true"

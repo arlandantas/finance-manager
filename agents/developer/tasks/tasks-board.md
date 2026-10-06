@@ -451,7 +451,7 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 
 | TASK | Lote | Escopo | Pts | Migração | Depende de |
 | :-- | :-: | :-- | :-: | :-- | :-- |
-| 📋 TASK-048 | L1 | US-056 camada de diálogos + tokens de contraste + axe (SDD-019 §1) | 3 | — | — |
+| ✅ TASK-048 | L1 | US-056 camada de diálogos (`dialog-layer.tsx`, z por profundidade) + tokens de contraste (unidade; axe E2E pendente) (SDD-019 §1) — concluído, aguardando validação do Gestor | 3 | — | — |
 | 📋 TASK-049 | L2 | US-052 aviso do parcelado (SDD-018 §1) + US-057 conta reserva (SDD-019 §2) | 5 | `v0_conta_reserva` | — |
 | 📋 TASK-050 | L3 | US-058/059 backend: schema, `recurrence.ts`, `ensureRecurrenceHorizon`, rotas, testes G/E/F/B/C (SDD-019 §3) | 6 | `v0_recorrencia_e_conta_prevista` | TASK-049 |
 | 📋 TASK-051 | L4 | US-058/059 UI: "Repetir todo mês", gerenciar série, "Pagar com", baixa pré-preenchida, E2E | 4 | — | TASK-050 |

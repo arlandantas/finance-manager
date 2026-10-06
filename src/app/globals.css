@@ -27,6 +27,29 @@ body {
    O Tailwind 4 expõe a paleta como variáveis CSS; o tema escuro as redefine (sem tocar cada componente).
    Cores usadas como TEXTO sobre fundos de marca ou de perigo (brand/red 700-800) não são invertidas:
    os componentes trazem `dark:` próprio para o texto. `text-white` e `bg-brand-*` ficam intactos. */
+/* Tokens de estado (US-056): hover/ativo/desabilitado/foco com contraste >= 4,5:1 (texto) e 3:1 (anel). */
+:root {
+  --surface-hover: #f1f5f9;
+  --surface-hover-brand: #ffffff;
+  --surface-active: #047857;
+  --text-on-hover: #0f172a;
+  --text-on-active: #ffffff;
+  --text-disabled: #475569;
+  --surface-disabled: #e2e8f0;
+  --focus-ring: #047857;
+}
+:root[data-theme="dark"] {
+  --surface-hover: #1f2a3d;
+  --surface-hover-brand: #064e3b;
+  --text-on-hover: #f1f5f9;
+  --text-disabled: #94a3b8;
+  --surface-disabled: #1f2a3d;
+  --focus-ring: #34d399;
+}
+:focus-visible {
+  outline-color: var(--focus-ring);
+}
+
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root[data-theme="dark"] {
