@@ -1,33 +1,20 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
 import { testDb } from "../../support/db";
-import { loginAs } from "../../support/login";
 import { gotoReady } from "../../support/nav";
+
 import { family } from "../support/acerto";
+import { createAnalysisVia, loginAsMember } from "../support/analise";
 import { Given, Then, When, type World } from "../support/fixtures";
 
 const ORIGIN = "http://localhost:3101";
 const card = (page: Page, nome: string) =>
   page.getByTestId("avoidable-card").filter({ has: page.getByRole("heading", { name: nome }) });
 
-async function as(world: World, page: Page, who: "Mariana" | "Lucas") {
-  await loginAs(page, { email: `${who.toLowerCase()}@exemplo.com`, name: `${who} Silva` });
-  world.data.loggedAs = who;
-}
+const as = loginAsMember;
 
-/** Cria a análise pela API (mesma rota da tela) com a sessão de quem pediu. */
 async function createAnalysis(world: World, page: Page, who: "Mariana" | "Lucas") {
-  await as(world, page, who);
-  const pv = await page.request.get("/api/v1/ai/spending-analysis/preview?period=2026-09");
-  const { previewHash } = (await pv.json()) as { previewHash: string };
-  const r = await page.request.post("/api/v1/ai/spending-analyses", {
-    data: { period: "2026-09", previewHash },
-    headers: { origin: ORIGIN, "idempotency-key": randomUUID() },
-  });
-  expect(r.status()).toBe(201);
-  const body = (await r.json()) as { id: string };
-  world.data.analysisId = body.id;
-  return body.id;
+  return createAnalysisVia(world, page, who, "2026-09");
 }
 
 Given(

@@ -123,3 +123,40 @@ export function useRestoreDismissal() {
     onSuccess: invalidate,
   });
 }
+
+function useInvalidateHistory() {
+  const qc = useQueryClient();
+  return () =>
+    Promise.all(
+      [analysesKey, ["ai-analysis"], ["ai-analysis-sent"], ["ai-analysis-preview"]].map(
+        (queryKey) => qc.invalidateQueries({ queryKey }),
+      ),
+    );
+}
+
+/** US-073: sem atualização otimista; a lista muda com o 200. */
+export function useDeleteAnalysis() {
+  const invalidate = useInvalidateHistory();
+  return useMutation({
+    mutationFn: (a: { id: string; idempotencyKey: string }) =>
+      apiFetch<{ deleted: number }>(`/api/v1/ai/spending-analyses/${a.id}/delete`, {
+        method: "POST",
+        body: {},
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteAllAnalyses() {
+  const invalidate = useInvalidateHistory();
+  return useMutation({
+    mutationFn: (a: { idempotencyKey: string }) =>
+      apiFetch<{ deleted: number }>("/api/v1/ai/spending-analyses/delete-all", {
+        method: "POST",
+        body: {},
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}

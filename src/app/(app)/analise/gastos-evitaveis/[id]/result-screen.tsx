@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError } from "@/lib/http";
 import type { AnalysisClassDTO, SpendingAnalysisDTO } from "@/modules/analise-ia/dto";
-import { useAnalysis } from "@/modules/analise-ia/hooks";
+import { useAnalysis, useSentData } from "@/modules/analise-ia/hooks";
 import { DismissedList } from "../dismissed-list";
+import { SentPreview } from "../sent-preview";
 import { AvoidableCard } from "./avoidable-card";
 
 const CLASS_LABEL: Record<AnalysisClassDTO, string> = {
@@ -74,6 +76,35 @@ export function ResultScreen({ id }: { id: string }) {
 
       {a ? <ResultBody a={a} /> : null}
     </main>
+  );
+}
+
+function SentData({ id }: { id: string }) {
+  const [open, setOpen] = useState(false);
+  const q = useSentData(id, open);
+  return (
+    <section aria-labelledby="sent-title" className="flex flex-col gap-3">
+      <h2 id="sent-title" className="sr-only">
+        O que foi enviado
+      </h2>
+      <Button variant="secondary" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+        O que foi enviado
+      </Button>
+      {open && q.isPending ? <Skeleton className="h-20" /> : null}
+      {open && q.isError ? (
+        <p role="alert" className="text-sm text-red-800 dark:text-red-300">
+          Não foi possível carregar
+        </p>
+      ) : null}
+      {open && q.data ? (
+        <SentPreview
+          testId="sent-data"
+          summary={`O que foi enviado na análise de ${q.data.period.label}`}
+          readable={q.data.readable}
+          payload={q.data.payload}
+        />
+      ) : null}
+    </section>
   );
 }
 
@@ -148,6 +179,8 @@ function ResultBody({ a }: { a: SpendingAnalysisDTO }) {
           </div>
         ))}
       </section>
+
+      <SentData id={a.id} />
 
       <DismissedList />
 
