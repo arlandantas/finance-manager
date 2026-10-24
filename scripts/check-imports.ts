@@ -28,6 +28,7 @@ const PURE: RegExp[] = [
   /^src\/lib\/(period|money|apportion|dates)\.ts$/,
   /^src\/modules\/.+\/(rules|settlement|period|money|apportion|cycle|installments)[^/]*\.ts$/,
   /^src\/modules\/split\/(backfill|split-amount)\.ts$/,
+  /^src\/modules\/analise-ia\/payload\.ts$/, // ADR-029: payload puro e determinístico
 ];
 
 const FORBIDDEN_IN_PURE =
