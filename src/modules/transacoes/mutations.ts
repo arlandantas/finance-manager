@@ -449,7 +449,7 @@ export async function listHistory(
       action: r.action,
       at: r.at.toISOString(),
       actor: members.get(r.actorMemberId) ?? { id: r.actorMemberId, name: "Membro", image: null },
-      changes: (r.changes as Change[]).map((c) => {
+      changes: (r.changes as Array<Change & { source?: string }>).map((c) => {
         const fromLabel = label(c.field, c.from);
         const toLabel = label(c.field, c.to);
         return {
@@ -459,6 +459,7 @@ export async function listHistory(
           to: c.to,
           ...(fromLabel !== undefined ? { fromLabel } : {}),
           ...(toLabel !== undefined ? { toLabel } : {}),
+          ...(c.source ? { source: c.source } : {}),
         };
       }),
     })),

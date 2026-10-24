@@ -1,7 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import type { Tx } from "@/lib/api/types";
 
-export type Change = { field: string; from: unknown; to: unknown };
+export type Change = { field: string; from: unknown; to: unknown; source?: string };
 export type RevisionAction = "CREATE" | "UPDATE" | "DELETE" | "RESTORE" | "UNDO";
 
 /**

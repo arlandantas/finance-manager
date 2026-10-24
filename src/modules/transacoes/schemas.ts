@@ -321,6 +321,7 @@ export type RevisionDTO = {
     to: unknown;
     fromLabel?: string;
     toLabel?: string;
+    source?: string; // US-072: "CATEGORY_SUGGESTION" | "CATEGORY_SUGGESTION_UNDO"
   }>;
 };
 
