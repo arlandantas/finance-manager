@@ -1,3 +1,4 @@
+import "../support/no-llm-network";
 import { afterAll } from "vitest";
 import { closeTestDb, TEST_DATABASE_URL } from "../support/db";
 
