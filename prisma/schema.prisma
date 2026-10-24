@@ -163,24 +163,25 @@ model Family {
   // EN-004 (SDD-021 §5): sobrescrita do teto mensal de IA (centavos); nulo = padrão do ambiente
   aiMonthlyCapCents Int?
 
-  llmBudgetMonths   LlmBudgetMonth[]
-  llmUsageEvents    LlmUsageEvent[]
-  spendingAnalyses  SpendingAnalysis[]
-  aiConsentEvents   AiConsentEvent[]
-  members           Member[]
-  familyEvents      FamilyEvent[]
-  invitations       Invitation[]
-  categories        Category[]
-  splitRules        SplitRuleVersion[]
-  bankAccounts      BankAccount[]
-  creditCards       CreditCard[]
-  plannedExpenses   PlannedExpense[]
-  recurringExpenses RecurringExpense[]
-  installmentPlans  InstallmentPlan[]
-  transactions      Transaction[]
-  transferGroups    TransferGroup[]
-  splitSnapshots    SplitMigrationSnapshot[]
-  dataMigrations    DataMigration[]
+  llmBudgetMonths     LlmBudgetMonth[]
+  llmUsageEvents      LlmUsageEvent[]
+  spendingAnalyses    SpendingAnalysis[]
+  avoidableDismissals AvoidableDismissal[]
+  aiConsentEvents     AiConsentEvent[]
+  members             Member[]
+  familyEvents        FamilyEvent[]
+  invitations         Invitation[]
+  categories          Category[]
+  splitRules          SplitRuleVersion[]
+  bankAccounts        BankAccount[]
+  creditCards         CreditCard[]
+  plannedExpenses     PlannedExpense[]
+  recurringExpenses   RecurringExpense[]
+  installmentPlans    InstallmentPlan[]
+  transactions        Transaction[]
+  transferGroups      TransferGroup[]
+  splitSnapshots      SplitMigrationSnapshot[]
+  dataMigrations      DataMigration[]
 
   @@map("families")
 }
@@ -246,17 +247,19 @@ model Member {
 
   ownedAccounts        BankAccount[]
   ownedCards           CreditCard[]
-  plannedResponsible   PlannedExpense[]   @relation("PlannedResponsible")
-  plannedAuthored      PlannedExpense[]   @relation("PlannedAuthor")
-  recurringResponsible RecurringExpense[] @relation("RecurringResponsible")
-  recurringAuthored    RecurringExpense[] @relation("RecurringAuthor")
-  planPayer            InstallmentPlan[]  @relation("PlanPayer")
-  planAuthor           InstallmentPlan[]  @relation("PlanAuthor")
+  plannedResponsible   PlannedExpense[]     @relation("PlannedResponsible")
+  plannedAuthored      PlannedExpense[]     @relation("PlannedAuthor")
+  recurringResponsible RecurringExpense[]   @relation("RecurringResponsible")
+  recurringAuthored    RecurringExpense[]   @relation("RecurringAuthor")
+  planPayer            InstallmentPlan[]    @relation("PlanPayer")
+  planAuthor           InstallmentPlan[]    @relation("PlanAuthor")
   transactionSplits    TransactionSplit[]
-  paidTransactions     Transaction[]      @relation("TxPayer")
-  authoredTransactions Transaction[]      @relation("TxAuthor")
-  eventsAsActor        FamilyEvent[]      @relation("EventActor")
+  paidTransactions     Transaction[]        @relation("TxPayer")
+  authoredTransactions Transaction[]        @relation("TxAuthor")
+  eventsAsActor        FamilyEvent[]        @relation("EventActor")
   aiConsentEvents      AiConsentEvent[]
+  spendingAnalyses     SpendingAnalysis[]
+  avoidableDismissals  AvoidableDismissal[]
 
   @@unique([familyId, id])
   // Unicidade (userId) e (familyId, userId) só entre ATIVOS: índices parciais em SQL cru (r21_ex_membro)
@@ -301,11 +304,12 @@ model Category {
   updatedAt         DateTime     @default(now()) @updatedAt @db.Timestamptz(3)
   updatedByMemberId String?      @db.Uuid
 
-  family            Family             @relation(fields: [familyId], references: [id])
-  installmentPlans  InstallmentPlan[]
-  transactions      Transaction[]
-  plannedExpenses   PlannedExpense[]
-  recurringExpenses RecurringExpense[]
+  family              Family               @relation(fields: [familyId], references: [id])
+  installmentPlans    InstallmentPlan[]
+  transactions        Transaction[]
+  plannedExpenses     PlannedExpense[]
+  recurringExpenses   RecurringExpense[]
+  avoidableDismissals AvoidableDismissal[]
 
   @@unique([familyId, kind, name])
   @@unique([familyId, id])
@@ -570,12 +574,13 @@ model RecurringExpense {
   createdAt             DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
 
-  family         Family           @relation(fields: [familyId], references: [id])
-  category       Category         @relation(fields: [familyId, categoryId], references: [familyId, id])
-  responsible    Member           @relation("RecurringResponsible", fields: [familyId, responsibleMemberId], references: [familyId, id])
-  author         Member           @relation("RecurringAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
-  paymentAccount BankAccount?     @relation(fields: [familyId, paymentAccountId], references: [familyId, id])
-  occurrences    PlannedExpense[]
+  family              Family               @relation(fields: [familyId], references: [id])
+  category            Category             @relation(fields: [familyId, categoryId], references: [familyId, id])
+  responsible         Member               @relation("RecurringResponsible", fields: [familyId, responsibleMemberId], references: [familyId, id])
+  author              Member               @relation("RecurringAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+  paymentAccount      BankAccount?         @relation(fields: [familyId, paymentAccountId], references: [familyId, id])
+  occurrences         PlannedExpense[]
+  avoidableDismissals AvoidableDismissal[]
 
   @@unique([familyId, id])
   @@index([familyId, endedAt, generatedThroughMonth])
@@ -787,9 +792,32 @@ model SpendingAnalysis {
   createdAt           DateTime @default(now()) @db.Timestamptz(3)
 
   family      Family          @relation(fields: [familyId], references: [id])
+  requestedBy Member          @relation(fields: [familyId, requestedByMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Cascade)
   usageEvents LlmUsageEvent[]
 
   @@index([familyId, createdAt(sort: Desc)])
   @@index([familyId, periodKey])
   @@map("spending_analyses")
+}
+
+// US-071 (SDD-023 §5): "Importante para nós". O motivo opcional fica SÓ no banco (nunca é enviado à LLM).
+model AvoidableDismissal {
+  id                 String   @id @default(uuid()) @db.Uuid
+  familyId           String   @db.Uuid
+  kind               String // RECURRING | CATEGORY (CHECK)
+  categoryId         String   @db.Uuid
+  descriptionKey     String? // RECURRING detectado; SCHEDULED usa recurringExpenseId
+  recurringExpenseId String?  @db.Uuid
+  displayName        String
+  reason             String? // ≤ 140, NUNCA enviado
+  byMemberId         String   @db.Uuid
+  createdAt          DateTime @default(now()) @db.Timestamptz(3)
+
+  family           Family            @relation(fields: [familyId], references: [id])
+  category         Category          @relation(fields: [familyId, categoryId], references: [familyId, id], onDelete: Restrict, onUpdate: Cascade)
+  byMember         Member            @relation(fields: [familyId, byMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Cascade)
+  recurringExpense RecurringExpense? @relation(fields: [familyId, recurringExpenseId], references: [familyId, id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([familyId, createdAt(sort: Desc)])
+  @@map("avoidable_dismissals")
 }
