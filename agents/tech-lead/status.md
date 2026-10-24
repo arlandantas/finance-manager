@@ -1,8 +1,24 @@
 # Status do Tech Lead
 
-*Atualizado: 2026-10-24 · Ciclos: **R4** (parcelas já pagas, infra de LLM, privacidade, análise de gastos — abaixo), **R2.1 e R3**, liberação da **R1** e especificação da **R2***
+*Atualizado: 2026-10-24 · Ciclos: **R4-D** (MCP — abaixo), **R4** (parcelas já pagas, infra de LLM, privacidade, análise de gastos), **R2.1 e R3**, liberação da **R1** e especificação da **R2***
 
-## Ciclo R4 (D-GES-27..30): US-065, EN-004, EN-005 e US-070..073 **Especificadas**; importação (R5) com parecer; MCP pendente
+## Ciclo R4-D (D-GES-35): EN-006 e US-074..077 **Especificadas** (MCP por membro, OAuth próprio, leitura e lançamento em duas etapas)
+Respostas completas, verificação de cada cliente com fontes, ordem técnica, rastreabilidade e pendências: **[`respostas-r4d.md`](respostas-r4d.md)**. Resolve o TL-33.
+
+| Artefato | Cobre | Observação |
+| :--- | :--- | :--- |
+| [ADR-030 Servidor MCP, OAuth próprio e hospedagem](adrs/ADR-030-servidor-mcp-oauth-proprio-e-hospedagem.md) | EN-006, US-074..077 | `POST /api/mcp` *stateless* no Next; app como AS OAuth 2.1 (PKCE S256, CIMD + DCR, `resource`, `iss`, *tokens* opacos com *hash*, *refresh* rotativo); escopos `read`/`write`; bloqueio revoga; confirmação **no app**; ameaças; Railway × Vercel |
+| [SDD-024 Base OAuth, escopo, contexto, taxa e auditoria](sdd/SDD-024-mcp-base-oauth-escopo-auditoria-en-006.md) | EN-006 (a/b) | Modelos, metadados, `/authorize`/`/token`/`/register`/`/revoke`, `resolveMcpContext`, `runTool`, cliente MCP de teste sem LLM, checklist de segurança |
+| [SDD-025 Conexões e revogação](sdd/SDD-025-mcp-conexoes-e-revogacao-us-074.md) | US-074 | Consentimento, lista, revogar, bloqueio da família, gancho na remoção, instruções por cliente, roteiro com clientes reais |
+| [SDD-026 Ferramentas de leitura](sdd/SDD-026-mcp-ferramentas-de-leitura-us-075.md) | US-075 | 7 ferramentas sobre os serviços das telas, `Money` em centavos + texto, paginação do Extrato, reconciliação por categoria |
+| [SDD-027 Proposta, confirmação e atividade](sdd/SDD-027-mcp-proposta-confirmacao-e-auditoria-us-076-077.md) | US-076, US-077 | `propor_lancamento` (30 min, idempotente), confirmar/recusar no app, `origin = ASSISTANT`, tela de atividade |
+
+**Pontos R4-D:** **31** (PO 26) · EN-006 13 (a 8 + b 5) · US-074 5 · US-075 5 · US-077 3 · US-076 5 (+3 se a produção for para a Vercel). **Ordem:** *spike* ➜ EN-006a ➜ 006b ➜ US-074 ➜ US-075 ➜ US-077 ➜ US-076.
+**Exigem decisão do usuário:** TL-35 (Railway × Vercel; recomendo Railway), TL-36 (clientes de fora: Gemini app no Brasil), TL-37 (confirmar no app × no chat; recomendo no app), TL-38 (prazos). Gestor: TL-34 (aprovação), TL-40 (URL pública para homologar), TL-41 (revisão de segurança). PO: TL-39 (BDD).
+
+---
+
+## Ciclo R4 (D-GES-27..30): US-065, EN-004, EN-005 e US-070..073 **Especificadas**; importação (R5) com parecer; MCP especificado no ciclo R4-D
 Respostas completas, ordem técnica, rastreabilidade e pendências: **[`respostas-r4.md`](respostas-r4.md)**.
 
 | Artefato | Cobre | Observação |
@@ -17,7 +33,7 @@ Respostas completas, ordem técnica, rastreabilidade e pendências: **[`resposta
 | [Parecer R5](parecer-r5-importacao-local.md) | US-066..069 | Extração local viável (CSV/PDF texto) e dispensa a LLM; escaneado inviável |
 
 **Pontos R4 (revista):** 34 (= PO) · US-065 5 · EN-004 8 · EN-005 5 · US-070 8 (070a 5 + 070b 3) · US-071 3 · US-072 3 · US-073 2. **Ordem:** US-065 ➜ EN-004 ➜ EN-005 ➜ 070a ➜ 070b ➜ 071 ➜ 073 ➜ 072.
-**Exigem decisão do usuário:** TL-23 (rótulo de categoria saneado no payload), TL-24 (US-072 por regra local), TL-25 (retenção 24 meses), TL-26 (termos/ZDR da Anthropic), **TL-27 (valor do teto; sugestão R$ 5,00/mês)**, TL-29 (R5 sem IA). Gestor: TL-28, TL-33 (ADR do MCP), pendência externa da conta/chave Anthropic. PO: TL-30..32.
+**Exigem decisão do usuário:** TL-23 (rótulo de categoria saneado no payload), TL-24 (US-072 por regra local), TL-25 (retenção 24 meses), TL-26 (termos/ZDR da Anthropic), **TL-27 (valor do teto; sugestão R$ 5,00/mês)**, TL-29 (R5 sem IA). Gestor: TL-28, TL-33 (ADR do MCP — resolvido no R4-D), pendência externa da conta/chave Anthropic. PO: TL-30..32.
 
 ---
 

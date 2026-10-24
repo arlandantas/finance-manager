@@ -28,7 +28,7 @@
 | 2.4 | Termos do provedor / texto do opt-in | O texto **não** promete retenção zero nem "sem treino" até o Gestor confirmar os termos da conta (TL-26). Texto seguro proposto em ADR-029 §7. |
 | 2.5 | Payload mínimo da análise; "recorrente" sem texto livre; normalização para o descarte | Contrato exato `AnalysisPayloadSchema` (SDD-023 §2.1); recorrência detectada **localmente** (`descriptionKey` normalizada, ≥ 3 meses, variação ≤ 1,5×) + séries `RecurringExpense`; descarte por `(categoria, descriptionKey)` ou `recurringExpenseId`. |
 | 2.6 | LGPD | Consentimento registrado e revogável, apagar análises (`DELETE` físico), registro sem conteúdo, menção de transferência internacional no texto (ADR-029 §8). |
-| 3 | ADR do MCP | **Não feito neste ciclo** (D-GES-29: MCP depois). Pendente TL-33. |
+| 3 | ADR do MCP | Feito no ciclo R4-D: [ADR-030](adrs/ADR-030-servidor-mcp-oauth-proprio-e-hospedagem.md) e SDD-024..027; ver [`respostas-r4d.md`](respostas-r4d.md). |
 | 4 | Controle de custo | Micro-reais `BigInt`; **reserva antes / acerto depois** sob `FOR UPDATE` (dois pedidos simultâneos não estouram o teto); mês civil em São Paulo; teto por env + sobrescrita por família via *script*; sem teto configurado em produção ⇒ IA indisponível (SDD-021 §4.3). |
 | 5 | Testes sem API real | `FakeLlmAdapter` por cenário, fixtures, teste de contrato do *adapter* com HTTP simulado, trava que falha a suíte se o provedor real for configurado, teste de ouro manual `pnpm ai:golden` (ADR-028 §7, SDD-021 §8, SDD-023 §8). |
 
@@ -58,7 +58,7 @@
 | NEED-027 | US-072 | FLUXO-017 | SDD-023 §4.6 | ADR-029 §4 | Aprovado p/ Dev **se TL-24 aceita** |
 | NEED-027 | US-073 | FLUXO-017 | SDD-023 | ADR-029 §6 | Aprovado p/ Dev |
 | NEED-026 | US-066..069 | FLUXO-015 | — | — | **R5**; [parecer](parecer-r5-importacao-local.md) |
-| NEED-025 | EN-006, US-074..077 | FLUXO-016 §3 | — | — (pendente) | Depois (D-GES-29) |
+| NEED-025 | EN-006, US-074..077 | FLUXO-016 §3 | SDD-024..027 | ADR-030 | Especificado no ciclo R4-D ([`respostas-r4d.md`](respostas-r4d.md)) |
 
 ## 5. Pendências — ⚠ = **EXIGE decisão do usuário**
 | ID | Para | Tema | Hipótese adotada (nada bloqueia o desenvolvimento) | Bloqueia |
@@ -73,7 +73,7 @@
 | TL-30 | PO | US-065: com P ≥ 1 o campo de data vira o seletor "Próxima parcela na fatura de"; cenário novo "fatura fechada ainda não paga"; textos "Resta 1 parcela…" e "A diferença de centavos ficou na 1ª parcela, já paga" | Como no SDD-020 §6 | Não |
 | TL-31 | PO | EN-005: cenários usam "Análise de gastos" (importação é R5); texto v1 cita que o provedor fica fora do Brasil; remover a frase do arquivo da fatura | Como no SDD-022 §9 | Não |
 | TL-32 | PO | US-070: fatiar em 070a (5) / 070b (3); reescrever "Resposta da IA com número inconsistente" como "texto da IA com número é substituído" (a saída não tem campo de valor); "O que será enviado" fala em "valores recorrentes **sem o nome**" | Como no SDD-023 | Não |
-| TL-33 | Gestor | ADR de segurança/autenticação do MCP (EN-006) — não produzido neste ciclo | Fazer quando o MCP entrar na fila | R4-D/MCP |
+| TL-33 | Gestor | ADR de segurança/autenticação do MCP (EN-006) | **Resolvido** em 2026-10-24: ADR-030 + SDD-024..027 (respostas-r4d.md) | — |
 | EXT (novo) | Gestor | `pendencias-externas.md`: conta Anthropic do app, chave de produção, **limite de gasto configurado na console da Anthropic** (defesa em profundidade), variável `LLM_MONTHLY_CAP_CENTS` no Railway | — | Produção da IA |
 
 ## 6. Riscos técnicos
