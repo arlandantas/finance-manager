@@ -25,3 +25,11 @@ export async function checkHealth(
     timestamp: now().toISOString(),
   };
 }
+
+/**
+ * Visão pública (SEC-022): anônimos só distinguem ok de não-ok; `unsafe_config` (sinal de variável de teste
+ * em produção) vira `degraded`. O detalhe completo exige o segredo do cron (`Authorization: Bearer`).
+ */
+export function toPublicHealth(h: HealthStatus): HealthStatus {
+  return h.status === "unsafe_config" ? { ...h, status: "degraded" } : h;
+}
