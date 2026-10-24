@@ -88,3 +88,38 @@ export async function openAssistant(world: World, page: Page, who: Who) {
   await gotoReady(page, "/configuracoes/assistente");
   await expect(page.getByRole("heading", { name: "Assistente de IA", level: 1 })).toBeVisible();
 }
+
+/** Evento de auditoria gravado direto no banco (o registro real nasce das chamadas; aqui só a leitura importa). */
+export async function seedAuditEvent(
+  world: World,
+  who: Who,
+  o: {
+    grantId: string | null;
+    tool?: string | null;
+    kind?: "TOOL" | "CONNECTED" | "REVOKED" | "BLOCKED" | "LIMITS_CHANGED";
+    outcome?: "OK" | "LIMIT_EXCEEDED" | "ERROR";
+    params?: Record<string, unknown>;
+    transactionId?: string | null;
+    at: string;
+    clientName?: string;
+  },
+) {
+  const fx = family(world);
+  const m = fx.byName[who];
+  if (!m) throw new Error(`membro ${who} inexistente`);
+  return testDb().mcpAuditEvent.create({
+    data: {
+      familyId: fx.family.id,
+      memberId: m.memberId,
+      grantId: o.grantId,
+      clientName: o.clientName ?? "Claude (teste)",
+      kind: o.kind ?? "TOOL",
+      tool: o.tool ?? null,
+      params: (o.params ?? {}) as never,
+      outcome: o.outcome ?? "OK",
+      transactionId: o.transactionId ?? null,
+      durationMs: 5,
+      createdAt: new Date(o.at),
+    },
+  });
+}

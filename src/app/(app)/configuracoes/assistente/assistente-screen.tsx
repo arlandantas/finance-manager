@@ -8,13 +8,11 @@ import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import type { AssistantSettingsDTO, ConnectionDTO } from "@/modules/mcp/connections-schemas";
-import {
-  useAssistantSettings,
-  useRevokeConnection,
-  useSetAssistantAccess,
-} from "@/modules/mcp/hooks";
+import { useAssistantSettings, useSetAssistantAccess } from "@/modules/mcp/hooks";
+import { ActivityPanel } from "./activity-panel";
 import { ConnectDialog } from "./connect-dialog";
 import { brDate, brWhen } from "./format";
+import { RevokeDialog } from "./revoke-dialog";
 import { Tabs } from "./tabs";
 
 function errorText(e: unknown): string {
@@ -190,31 +188,9 @@ function FamilySwitch({ data }: { data: AssistantSettingsDTO }) {
 }
 
 function ConnectionsPanel({ data }: { data: AssistantSettingsDTO }) {
-  const revoke = useRevokeConnection();
   const [connecting, setConnecting] = useState(false);
   const [target, setTarget] = useState<ConnectionDTO | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const keyRef = useRef(newIdempotencyKey());
   const active = data.items.filter((c) => c.status === "ACTIVE");
-
-  function confirmRevoke() {
-    if (!target) return;
-    setError(null);
-    revoke.mutate(
-      { id: target.id, idempotencyKey: keyRef.current },
-      {
-        onSuccess: () => {
-          keyRef.current = newIdempotencyKey();
-          toast.success(`${target.label} revogado`);
-          setTarget(null);
-        },
-        onError: (e) => {
-          keyRef.current = newIdempotencyKey();
-          setError(errorText(e));
-        },
-      },
-    );
-  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -228,14 +204,7 @@ function ConnectionsPanel({ data }: { data: AssistantSettingsDTO }) {
       ) : (
         <ul className="flex flex-col gap-2">
           {data.items.map((c) => (
-            <ConnectionCard
-              key={c.id}
-              c={c}
-              onRevoke={(x) => {
-                setError(null);
-                setTarget(x);
-              }}
-            />
+            <ConnectionCard key={c.id} c={c} onRevoke={setTarget} />
           ))}
         </ul>
       )}
@@ -246,29 +215,7 @@ function ConnectionsPanel({ data }: { data: AssistantSettingsDTO }) {
       ) : null}
 
       <ConnectDialog open={connecting} onOpenChange={setConnecting} mcpUrl={data.mcpUrl} />
-
-      <Drawer
-        open={target !== null}
-        onOpenChange={(o) => !o && setTarget(null)}
-        title={`Revogar ${target?.label ?? ""}?`}
-      >
-        <div className="flex flex-col gap-3">
-          <p className="text-sm text-slate-800">
-            Revogar {target?.label}? O assistente deixa de acessar seus dados na hora.
-          </p>
-          {error ? (
-            <p role="alert" className="text-sm text-red-800 dark:text-red-300">
-              {error}
-            </p>
-          ) : null}
-          <Button variant="danger" disabled={revoke.isPending} onClick={confirmRevoke}>
-            Revogar
-          </Button>
-          <Button variant="ghost" onClick={() => setTarget(null)}>
-            Cancelar
-          </Button>
-        </div>
-      </Drawer>
+      <RevokeDialog target={target} onClose={() => setTarget(null)} />
     </div>
   );
 }
@@ -334,6 +281,7 @@ export function AssistenteScreen() {
           <Tabs
             tabs={[
               { id: "conexoes", label: "Conexões", content: <ConnectionsPanel data={data} /> },
+              { id: "atividade", label: "Atividade", content: <ActivityPanel /> },
             ]}
           />
         </>
