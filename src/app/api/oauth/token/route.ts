@@ -1,4 +1,5 @@
 import { getClock } from "@/lib/clock";
+import { clientIp } from "@/modules/mcp/client-ip";
 import { mcpEnabled } from "@/modules/mcp/config";
 import { oauthFormResponse, readForm } from "@/modules/mcp/http";
 import { mcpDb } from "@/modules/mcp/repo";
@@ -21,5 +22,7 @@ export async function POST(req: Request): Promise<Response> {
       },
     });
   }
-  return oauthFormResponse(await handleTokenRequest(mcpDb(), form, getClock().now()));
+  return oauthFormResponse(
+    await handleTokenRequest(mcpDb(), form, getClock().now(), process.env, clientIp(req.headers)),
+  );
 }

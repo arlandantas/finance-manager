@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getClock } from "@/lib/clock";
 import { validateAuthorize } from "@/modules/mcp/authorize";
+import { clientIp } from "@/modules/mcp/client-ip";
 import { mcpEnabled } from "@/modules/mcp/config";
 import { mcpDb } from "@/modules/mcp/repo";
 
@@ -15,7 +16,9 @@ const NO_STORE = { "Cache-Control": "no-store" };
 export async function GET(req: Request) {
   if (!mcpEnabled()) return new Response(null, { status: 404 });
   const url = new URL(req.url);
-  const out = await validateAuthorize(mcpDb(), url.searchParams, getClock());
+  const out = await validateAuthorize(mcpDb(), url.searchParams, getClock(), {
+    ip: clientIp(req.headers),
+  });
   const base = process.env.APP_URL?.replace(/\/+$/, "") || url.origin;
   if (out.kind === "ok") {
     return NextResponse.redirect(`${base}/oauth/consent?request=${out.requestId}`, {

@@ -15,7 +15,10 @@ export const SUPPORTED_SCOPES = ["read", "write", "offline_access"] as const;
 export const RATE = {
   grantPerMin: 60,
   grantPerDay: 1000,
+  /** /token: por IP + client_id (o client_id do Claude é público, não pode ser a única chave: SEC-005). */
   tokenPerMin: 30,
+  /** /token: por código/refresh apresentado (freia adivinhação sem afetar os demais usuários). */
+  tokenPerSecretPerMin: 10,
   registerPerHour: 10,
   authorizePerMin: 20,
 } as const;

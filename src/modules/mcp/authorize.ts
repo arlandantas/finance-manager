@@ -67,7 +67,7 @@ export async function resolveClient(
   db: Pick<PrismaClient, "mcpClient">,
   clientId: string,
   now: Date,
-  opts: { env?: Env; fetchImpl?: FetchImpl } = {},
+  opts: { env?: Env; fetchImpl?: FetchImpl; ip?: string } = {},
 ) {
   const env = opts.env ?? process.env;
   if (/^https?:\/\//i.test(clientId)) {
@@ -111,7 +111,7 @@ export async function validateAuthorize(
   db: PrismaClient,
   query: URLSearchParams,
   clock: Clock,
-  opts: { env?: Env; fetchImpl?: FetchImpl } = {},
+  opts: { env?: Env; fetchImpl?: FetchImpl; ip?: string } = {},
 ): Promise<AuthorizeOutcome> {
   const env = opts.env ?? process.env;
   const raw = Object.fromEntries(query);
@@ -122,7 +122,7 @@ export async function validateAuthorize(
 
   const limited = await hit(
     db,
-    `authorize:${sha256Hex(q.client_id).slice(0, 16)}:min`,
+    `authorize:${sha256Hex(`${opts.ip ?? "unknown"}|${q.client_id}`).slice(0, 16)}:min`,
     RATE.authorizePerMin,
     60,
     now,

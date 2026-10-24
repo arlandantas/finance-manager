@@ -37,21 +37,34 @@ export async function handleTokenRequest(
   form: Record<string, unknown>,
   now: Date,
   env: Env = process.env,
+  ip = "unknown",
 ): Promise<OAuthResult> {
   const clientId = str(form.client_id, 500);
   if (!clientId) return err(400, "invalid_request", "client_id é obrigatório.");
+  // SEC-005: o client_id é público; a chave inclui o IP para um anônimo não esgotar o limite dos demais.
   const limited = await hit(
     db,
-    `token:${sha256Hex(clientId).slice(0, 16)}:min`,
+    `token:${sha256Hex(`${ip}|${clientId}`).slice(0, 16)}:min`,
     RATE.tokenPerMin,
     60,
     now,
   );
-  if (!limited.ok) {
+  const secret = str(form.refresh_token) ?? str(form.code);
+  const limitedSecret =
+    limited.ok && secret
+      ? await hit(
+          db,
+          `tokensecret:${sha256Hex(secret).slice(0, 16)}:min`,
+          RATE.tokenPerSecretPerMin,
+          60,
+          now,
+        )
+      : limited;
+  if (!limitedSecret.ok) {
     return {
       status: 429,
       body: { error: "slow_down", error_description: "Muitas requisições." },
-      headers: { ...NO_STORE, "Retry-After": String(limited.retryAfterS) },
+      headers: { ...NO_STORE, "Retry-After": String(limitedSecret.retryAfterS) },
     };
   }
   const grantType = str(form.grant_type, 50);

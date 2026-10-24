@@ -267,6 +267,21 @@ describe("/oauth/authorize", () => {
     }
   });
 
+  it("SEC-005: um IP que estoura o limite do /authorize não bloqueia outro IP com o mesmo client_id", async () => {
+    const { challenge } = pkcePair();
+    const atk = { "x-real-ip": "203.0.113.9" };
+    const ok = { "x-real-ip": "198.51.100.7" };
+    await at(0, async () => {
+      for (let i = 0; i < 25; i++) {
+        await getAuthorize(authorizeUrl({ member: lucas() }, challenge), atk);
+      }
+      const blocked = await getAuthorize(authorizeUrl({ member: lucas() }, challenge), atk);
+      expect(blocked.location).toContain("error=rate_limited");
+      const legit = await getAuthorize(authorizeUrl({ member: lucas() }, challenge), ok);
+      expect(legit.location).toContain("/oauth/consent?request=");
+    });
+  });
+
   it("limite de pedidos por cliente: o 21º no minuto vira página de erro", async () => {
     const { challenge } = pkcePair();
     let last = "";
@@ -507,6 +522,41 @@ describe("/token: PKCE, replay e expiração", () => {
       postToken({ grant_type: "refresh_token", client_id: CIMD_URL, refresh_token: "x" }),
     );
     expect(next.status).toBe(400);
+  });
+});
+
+describe("SEC-005 limite do /token não depende só do client_id público", () => {
+  it("IP anônimo que estoura 30/min não impede outro IP de renovar com o mesmo client_id", async () => {
+    const t = await at(0, () => oauthDance({ member: lucas() }));
+    await at(0, async () => {
+      for (let i = 0; i < 40; i++)
+        await postToken(
+          { grant_type: "refresh_token", client_id: CIMD_URL, refresh_token: `lixo${i}` },
+          { "x-real-ip": "203.0.113.9" },
+        );
+      const blocked = await postToken(
+        { grant_type: "refresh_token", client_id: CIMD_URL, refresh_token: "lixo" },
+        { "x-real-ip": "203.0.113.9" },
+      );
+      expect(blocked.status).toBe(429);
+      const legit = await postToken(
+        { grant_type: "refresh_token", client_id: CIMD_URL, refresh_token: t.refreshToken },
+        { "x-real-ip": "198.51.100.7" },
+      );
+      expect(legit.status).toBe(200);
+    });
+  });
+
+  it("o mesmo refresh token inválido repetido (mesmo vindo de IPs distintos) é freado: 10/min", async () => {
+    let last: Awaited<ReturnType<typeof postToken>> | undefined;
+    await at(0, async () => {
+      for (let i = 0; i < 11; i++)
+        last = await postToken(
+          { grant_type: "refresh_token", client_id: CIMD_URL, refresh_token: "mesmo-token" },
+          { "x-real-ip": `192.0.2.${i + 1}` },
+        );
+    });
+    expect(last?.status).toBe(429);
   });
 });
 

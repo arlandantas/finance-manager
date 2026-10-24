@@ -84,16 +84,19 @@ export type Tokens = {
   code: string;
 };
 
-export function form(data: Record<string, string>): Request {
+export function form(data: Record<string, string>, extra: Record<string, string> = {}): Request {
   return new Request(`${ORIGIN}/api/oauth/token`, {
     method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
+    headers: { "content-type": "application/x-www-form-urlencoded", ...extra },
     body: new URLSearchParams(data).toString(),
   });
 }
 
-export async function postToken(data: Record<string, string>) {
-  const res = await tokenPOST(form(data));
+export async function postToken(
+  data: Record<string, string>,
+  headers: Record<string, string> = {},
+) {
+  const res = await tokenPOST(form(data, headers));
   const text = await res.text();
   return {
     status: res.status,
@@ -130,8 +133,8 @@ export function authorizeUrl(o: DanceOptions, challenge: string): string {
   return u.toString();
 }
 
-export async function getAuthorize(url: string) {
-  const res = await authorizeGET(new Request(url));
+export async function getAuthorize(url: string, headers: Record<string, string> = {}) {
+  const res = await authorizeGET(new Request(url, { headers }));
   return { status: res.status, location: res.headers.get("location") ?? "" };
 }
 
