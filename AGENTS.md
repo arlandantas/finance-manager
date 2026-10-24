@@ -11,6 +11,9 @@ Todas as instruções específicas de cada papel, histórico de decisões, docum
 ```text
 agents/
 ├── README.md                      # Panorama geral do diretório de agentes
+├── manager/                       # 0. Agente Gestor do Projeto (interface com o usuário, orquestração, decisões e escalonamentos)
+│   ├── README.md                  # Instruções de operação do Gestor
+│   └── *.md                       # Decisões do gestor, decisões para o usuário, pedidos, pendências externas, checklists
 ├── stakeholder/                   # 1. Agente Stakeholder (Dono do Problema, Dores & Regras de Negócio)
 │   ├── README.md                  # Instruções de operação do Stakeholder
 │   └── needs/                     # Levantamento de necessidades, personas e dores
@@ -55,6 +58,12 @@ sequenceDiagram
     Dev->>Gestor: Submete código e relatório de testes para validação
     Gestor->>Stk: Apresenta entrega para homologação de valor
 ```
+
+---
+
+## 🎯 Papel do Gestor do Projeto
+
+O **Gestor** é o único agente que conversa com o **usuário**. Ele recebe os comandos, classifica, quebra em tarefas por papel, delega a cada agente (com o modelo adequado), confere o resultado e reporta. Resolve sozinho conflitos e ambiguidades cobertos por regras/ADRs já aprovados e **escala ao usuário** apenas o que o time não pode decidir (escopo, prazo, regras financeiras sensíveis, contas e gastos externos, ações irreversíveis como `push`/deploy). Protocolo completo em [`agents/manager/README.md`](file:///home/arlan/ai-tests/finance-manager/agents/manager/README.md); registros em `agents/manager/`.
 
 ---
 
@@ -113,6 +122,7 @@ A responsabilidade de QA fica concentrada no **Desenvolvedor & QA**:
    - **Modelo intermediário** (ex.: Sonnet): implementação seguindo um SDD já pronto, testes, refatorações localizadas, correção de bugs conhecidos.
    - **Modelo avançado** (ex.: Opus): decisões de arquitetura/ADR, SDD de domínio crítico (rateio, centavos, concorrência, migração de dados), depuração difícil e revisões de risco.
    - Na dúvida, comece pelo modelo menor e escale apenas se o resultado for insuficiente. Registre a escolha e o motivo na tarefa quando não for óbvia.
+   - O **Gestor** é responsável por aplicar esta regra ao delegar: escolhe o modelo de cada subagente, briefs enxutos, delegando buscas amplas a modelos leves e reservando o avançado a decisões críticas.
 
 ---
 

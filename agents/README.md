@@ -12,6 +12,10 @@ Neste diretório, cada agente possui uma pasta exclusiva para documentar suas an
 agents/
 ├── README.md                      # Este arquivo guia
 │
+├── manager/                       # Gestor do Projeto (interface com o usuário, orquestração e decisões)
+│   ├── README.md                  # Manual do Gestor (protocolo de atendimento, escalonamento, modelos)
+│   └── *.md                       # Decisões, pedidos, pendências externas e checklists
+│
 ├── stakeholder/                   # Agente 1: Stakeholder (Dono do PROBLEMA e do VALOR)
 │   ├── README.md                  # Manual do Stakeholder (dores, personas, regras de negócio)
 │   └── needs/                     # Levantamento de necessidades e restrições
@@ -36,7 +40,10 @@ agents/
 
 ## 🧭 Como Usar Esta Pasta
 
+0. **O usuário fala apenas com o Gestor** ([`manager/README.md`](manager/README.md)), que distribui as tarefas e traz de volta só as decisões que o time não pode tomar.
 1. **Identifique o seu papel**: Vá diretamente para a pasta do seu agente.
 2. **Leia o `README.md` da sua pasta**: Ele contém o escopo exato do que você deve fazer e o formato dos arquivos que deve produzir.
 3. **Consulte o agente anterior**: Verifique os artefatos produzidos pelos agentes das etapas anteriores antes de iniciar sua produção.
 4. **Mantenha os artefatos atualizados**: Registre cada nova entrega ou atualização nas subpastas apropriadas.
+
+5. **Use o menor modelo capaz** (Haiku para tarefas mecânicas, Sonnet para implementação e histórias, Opus só para arquitetura e domínio crítico). Tabela completa em [`manager/README.md`](manager/README.md).

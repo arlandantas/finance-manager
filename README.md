@@ -52,11 +52,14 @@ flowchart TD
 ---
 
 ### 1. Gestor do Projeto (Project Manager)
-- **Responsabilidade**: Atuar como orquestrador geral do projeto.
+- **Responsabilidade**: Atuar como orquestrador geral do projeto e **interface única com o usuário**: recebe os comandos, distribui as tarefas aos demais agentes e traz de volta apenas as decisões que o time não consegue tomar sozinho.
+- **Local de trabalho**: [`agents/manager/`](file:///home/arlan/ai-tests/finance-manager/agents/manager) (manual em `README.md`)
 - **Atividades**:
   - Montar e gerenciar o cronograma alinhando prazos do negócio com as estimativas da engenharia.
   - Garantir a cadência e a passagem de bastão correta entre os agentes.
   - Validar critérios de conclusão (Definition of Done) e mitigar riscos.
+  - Resolver conflitos entre agentes e escalar ao usuário o que depender dele (escopo, prazo, regras financeiras, contas e gastos externos, ações irreversíveis).
+  - Escolher o **menor modelo capaz** para cada tarefa delegada (Haiku/Sonnet/Opus), evitando gasto excessivo de tokens.
 
 ### 2. Agente Stakeholder
 - **Foco**: O **PROBLEMA** sob a ótica de negócio e dos usuários finais (famílias).
@@ -86,8 +89,9 @@ flowchart TD
 finance-manager/
 ├── README.md                  # Visão geral e funcionamento
 ├── AGENTS.md                  # Guia mestre de governança, MVP, BDD, SDD e QA
-├── agents/                    # Diretório dedicado para a operação dos 4 agentes
+├── agents/                    # Diretório dedicado para a operação do Gestor e dos 4 agentes
 │   ├── README.md              # Visão geral do diretório de agentes
+│   ├── manager/               # Espaço do Gestor do Projeto (decisões, pedidos, pendências, escalonamentos)
 │   ├── stakeholder/           # Espaço do Agente Stakeholder (dores, personas, regras de valor)
 │   ├── product-owner/         # Espaço do Agente Product Owner (MVP, roadmap, fluxos UI/UX, BDD)
 │   ├── tech-lead/             # Espaço do Agente Tech Lead (gaps técnicos, SDD, ADRs, arquitetura)
