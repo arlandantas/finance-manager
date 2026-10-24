@@ -160,7 +160,11 @@ model Family {
   version           Int         @default(1)
   updatedAt         DateTime    @default(now()) @updatedAt @db.Timestamptz(3)
   updatedByMemberId String?     @db.Uuid
+  // EN-004 (SDD-021 §5): sobrescrita do teto mensal de IA (centavos); nulo = padrão do ambiente
+  aiMonthlyCapCents Int?
 
+  llmBudgetMonths   LlmBudgetMonth[]
+  llmUsageEvents    LlmUsageEvent[]
   members           Member[]
   familyEvents      FamilyEvent[]
   invitations       Invitation[]
@@ -683,4 +687,55 @@ model IdempotencyRecord {
   @@unique([userId, key])
   @@index([createdAt])
   @@map("idempotency_records")
+}
+
+// EN-004 (SDD-021 §5, ADR-028 §5): contador mensal de IA por família (micro-reais). Sem nenhuma coluna de conteúdo.
+enum LlmPurpose {
+  SPENDING_ANALYSIS
+  INVOICE_IMPORT
+}
+
+enum LlmUsageStatus {
+  RESERVED
+  SETTLED
+  FAILED
+  ABANDONED
+}
+
+model LlmBudgetMonth {
+  familyId         String   @db.Uuid
+  month            String // "YYYY-MM" em America/Sao_Paulo
+  spentMicroBrl    BigInt   @default(0)
+  reservedMicroBrl BigInt   @default(0)
+  updatedAt        DateTime @default(now()) @updatedAt @db.Timestamptz(3)
+
+  family Family @relation(fields: [familyId], references: [id])
+
+  @@id([familyId, month])
+  @@map("llm_budget_months")
+}
+
+model LlmUsageEvent {
+  id               String         @id @default(uuid()) @db.Uuid
+  familyId         String         @db.Uuid
+  month            String
+  purpose          LlmPurpose
+  memberId         String         @db.Uuid // quem pediu (não vai ao provedor)
+  model            String
+  status           LlmUsageStatus
+  outcome          String? // ok|budget|timeout|unavailable|invalid|refused|cancelled|auth
+  reservedMicroBrl BigInt
+  costMicroBrl     BigInt?
+  inputTokens      Int?
+  outputTokens     Int?
+  latencyMs        Int?
+  attempts         Int?
+  expiresAt        DateTime       @db.Timestamptz(3)
+  createdAt        DateTime       @default(now()) @db.Timestamptz(3)
+  settledAt        DateTime?      @db.Timestamptz(3)
+
+  family Family @relation(fields: [familyId], references: [id])
+
+  @@index([familyId, month, status])
+  @@map("llm_usage_events")
 }
