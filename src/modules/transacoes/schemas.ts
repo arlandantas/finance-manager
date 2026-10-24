@@ -130,6 +130,8 @@ export type TransactionDTO = {
   author: MemberRef; // autor do cadastro (RN-001.1)
   updatedBy: MemberRef | null;
   isSharedExpense: boolean; // "Dividir com a família"
+  /** US-076a: selo "via assistente" (rótulo da conexão; "assistente removido" se expurgada). */
+  viaAssistant: { label: string } | null;
   transferGroupId: string | null;
   plannedExpenseId: string | null; // previsão que originou esta despesa (baixa), SDD-009 §4.5
   isSettlement: boolean;
@@ -236,6 +238,7 @@ export const ListTransactionsQuerySchema = z
     cardId: uuidSchema.optional(),
     type: z.enum(["EXPENSE", "INCOME", "TRANSFER", "INVOICE_PAYMENT"]).optional(),
     shared: boolParam.optional(), // true = comum; false = pessoal (só despesas)
+    origin: z.enum(["APP", "ASSISTANT"]).optional(), // US-076a: "Pelo app" / "Via assistente"
     includeDeleted: boolParam.optional(),
     q: z.string().trim().min(2, "Digite ao menos 2 letras").max(50).optional(), // busca na descrição (US-024)
     cursor: z.string().max(300).optional(),
@@ -261,6 +264,7 @@ export type LedgerFilters = {
   categoryId?: string;
   type?: "EXPENSE" | "INCOME" | "TRANSFER" | "INVOICE_PAYMENT";
   shared?: boolean;
+  origin?: "APP" | "ASSISTANT"; // US-076a: predicado a mais, como `shared` (totais continuam reconciliados)
   q?: string; // busca por descrição (ILIKE; sem acento-insensibilidade)
   includeDeleted: boolean;
   occurredUntil?: string; // interno (Home "recentes", ADR-020 §4): nada com data de calendário futura

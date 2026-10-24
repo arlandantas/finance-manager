@@ -48,6 +48,7 @@ export function useInvalidateAfterTransactionChange() {
         ["settlement"],
         ["payables"],
         ["installment-plan"],
+        ["assistant-review"],
         [defaultsKey[0]],
       ].map((queryKey) => qc.invalidateQueries({ queryKey })),
     );

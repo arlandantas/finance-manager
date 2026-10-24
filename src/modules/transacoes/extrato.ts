@@ -36,6 +36,7 @@ export function buildLedgerWhere(f: LedgerFilters): Prisma.Sql {
   if (f.shared !== undefined) {
     parts.push(Prisma.sql`t.kind = 'EXPENSE' AND t."isSharedExpense" = ${f.shared}`);
   }
+  if (f.origin) parts.push(Prisma.sql`t.origin = ${f.origin}::"TransactionOrigin"`);
   if (f.q) parts.push(Prisma.sql`t."description" ILIKE ${`%${escapeLike(f.q)}%`} ESCAPE '\\'`);
   return Prisma.join(parts, " AND ");
 }

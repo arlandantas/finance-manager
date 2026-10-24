@@ -347,6 +347,11 @@ export function TransactionDetailDrawer({
               <p>
                 Registrado por <strong>{t.author.name}</strong>
               </p>
+              {t.viaAssistant ? (
+                <p data-testid="detail-via-assistant">
+                  Lançado via assistente: <strong>{t.viaAssistant.label}</strong>
+                </p>
+              ) : null}
               {source === "home" ? (
                 <Link
                   href={`/extrato?period=${t.occurredOn.slice(0, 7)}&highlight=${t.id}`}

@@ -17,6 +17,7 @@ export type LedgerUiFilters = {
   categoryId?: string;
   type?: "EXPENSE" | "INCOME" | "TRANSFER" | "INVOICE_PAYMENT";
   shared?: boolean;
+  origin?: "APP" | "ASSISTANT";
   includeDeleted?: boolean;
   q?: string;
 };
@@ -46,6 +47,7 @@ export function admits(
     filters.memberId !== item.author.id
   )
     return false;
+  if (filters.origin === "ASSISTANT") return false; // criado pelo app nunca é "via assistente"
   if (filters.type === "TRANSFER") return false;
   if (filters.type && filters.type !== item.type) return false;
   if (
@@ -154,6 +156,7 @@ export function buildPendingItem(
     author: l.me,
     updatedBy: null,
     isSharedExpense: input.type === "EXPENSE" ? (input.isSharedExpense ?? false) : false,
+    viaAssistant: null,
     transferGroupId: null,
     plannedExpenseId: null,
     isSettlement: false,

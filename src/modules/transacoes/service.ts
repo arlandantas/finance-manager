@@ -70,6 +70,8 @@ type TxRow = {
   updatedAt: Date;
   deletedAt: Date | null;
   deletionReason: "DELETED" | "UNDONE" | null;
+  origin?: "APP" | "ASSISTANT";
+  assistantGrantId?: string | null;
 };
 
 type CategoryRef = TransactionDTO["category"] & {};
@@ -98,6 +100,8 @@ export function toTransactionDTO(
     plannedExpenseId?: string | null;
     category: CategoryRef | null;
     members: Map<string, MemberRef>;
+    /** Rótulos das conexões (grantId ⇒ "Meu Claude") para o selo "via assistente". */
+    assistantLabels?: Map<string, string>;
   },
 ): TransactionDTO {
   const member = (id: string | null) => (id ? (ctx.members.get(id) ?? null) : null);
@@ -127,6 +131,14 @@ export function toTransactionDTO(
     author,
     updatedBy: member(row.updatedByMemberId),
     isSharedExpense: row.isSharedExpense,
+    viaAssistant:
+      row.origin === "ASSISTANT"
+        ? {
+            label:
+              (row.assistantGrantId ? ctx.assistantLabels?.get(row.assistantGrantId) : undefined) ??
+              "assistente removido",
+          }
+        : null,
     transferGroupId: row.transferGroupId,
     plannedExpenseId: ctx.plannedExpenseId ?? null,
     isSettlement: false,
@@ -188,7 +200,11 @@ export async function createExpenseCore(
   tx: Tx,
   ctx: RequestContext,
   input: ExpenseInput,
-  opts: { allowArchivedCategory?: boolean },
+  opts: {
+    allowArchivedCategory?: boolean;
+    /** US-076a: lançamento direto pelo assistente (só a ferramenta `lancar_despesa` informa). */
+    assistant?: { grantId: string; idemKey: string | null; label: string };
+  },
 ): Promise<CreateTransactionResponse> {
   // ADR-021 §2: a trava de família é a PRIMEIRA trava; o motor lido depois dela decide se grava rateio
   const engine = await lockFamilySplit(tx, ctx.familyId);
@@ -262,6 +278,14 @@ export async function createExpenseCore(
     authorMemberId: ctx.memberId,
     isSharedExpense: input.isSharedExpense,
     ...(rule ? { splitMode: "RULE" as const, splitRuleVersionId: rule.ruleVersionId } : {}),
+    ...(opts.assistant
+      ? {
+          origin: "ASSISTANT" as const,
+          assistantGrantId: opts.assistant.grantId,
+          assistantIdemKey: opts.assistant.idemKey,
+          createdAt: ctx.clock.now(), // o relógio do app (testes e janelas de limite usam o mesmo)
+        }
+      : {}),
   });
   if (rule) {
     await insertSplitRows(tx, ctx.familyId, {
@@ -280,6 +304,9 @@ export async function createExpenseCore(
       : null,
     category: categoryRefOf(category),
     members: new Map((await repo.listMembers()).map((m) => [m.id, memberRefOf(m)] as const)),
+    ...(opts.assistant
+      ? { assistantLabels: new Map([[opts.assistant.grantId, opts.assistant.label]]) }
+      : {}),
   });
   await recordRevision(tx, {
     familyId: ctx.familyId,
@@ -404,6 +431,7 @@ function dtoFromLoaded(
   r: NonNullable<LoadedRow>,
   members: Map<string, MemberRef>,
   counterpart: { id: string; name: string } | null,
+  assistantLabels?: Map<string, string>,
 ): TransactionDTO {
   const dto = toTransactionDTO(r, {
     account: r.account
@@ -422,12 +450,28 @@ function dtoFromLoaded(
     plannedExpenseId: r.paidPlanned?.id ?? null,
     category: r.category ? categoryRefOf(r.category) : null,
     members,
+    ...(assistantLabels ? { assistantLabels } : {}),
   });
   return {
     ...dto,
     isSettlement: r.group?.kind === "SETTLEMENT",
     counterpartAccount: counterpart,
   };
+}
+
+/** Rótulos das conexões dos lançamentos "via assistente" (a conexão pode ter sido expurgada ⇒ sem rótulo). */
+async function assistantLabelsOf(
+  tx: Tx,
+  familyId: string,
+  rows: Array<{ assistantGrantId?: string | null }>,
+): Promise<Map<string, string>> {
+  const ids = [...new Set(rows.flatMap((r) => (r.assistantGrantId ? [r.assistantGrantId] : [])))];
+  if (ids.length === 0) return new Map();
+  const grants = await tx.mcpGrant.findMany({
+    where: { familyId, id: { in: ids } },
+    select: { id: true, label: true },
+  });
+  return new Map(grants.map((g) => [g.id, g.label] as const));
 }
 
 async function memberMap(repo: ReturnType<typeof transacoesRepo>) {
@@ -472,6 +516,7 @@ export async function listTransactions(
     ...(q.categoryId ? { categoryId: q.categoryId } : {}),
     ...(q.type ? { type: q.type } : {}),
     ...(q.shared !== undefined ? { shared: q.shared } : {}),
+    ...(q.origin ? { origin: q.origin } : {}),
     ...(q.q ? { q: q.q } : {}),
   };
 
@@ -481,6 +526,7 @@ export async function listTransactions(
   const rows = await repo.findByIds(pageIds);
   const byId = new Map(rows.map((r) => [r.id, r] as const));
   const members = await memberMap(repo);
+  const labels = await assistantLabelsOf(tx, ctx.familyId, rows);
 
   const groupIds = [
     ...new Set(rows.map((r) => r.transferGroupId).filter((g): g is string => g !== null)),
@@ -494,7 +540,7 @@ export async function listTransactions(
   const items = pageIds
     .map((id) => byId.get(id))
     .filter((r): r is NonNullable<typeof r> => r !== undefined)
-    .map((r) => dtoFromLoaded(r, members, r.transferGroupId ? counterpartOf(r) : null));
+    .map((r) => dtoFromLoaded(r, members, r.transferGroupId ? counterpartOf(r) : null, labels));
 
   const last = items[items.length - 1];
   const nextCursor =
@@ -526,9 +572,10 @@ export async function getTransaction(
     counterpart = other?.account ? { id: other.account.id, name: other.account.name } : null;
   }
   const editorId = await repo.lastEditorId(row.id);
+  const labels = await assistantLabelsOf(tx, ctx.familyId, [row]);
   return {
     transaction: {
-      ...dtoFromLoaded(row, members, counterpart),
+      ...dtoFromLoaded(row, members, counterpart, labels),
       editedBy: editorId ? (members.get(editorId) ?? null) : null,
     },
   };
@@ -545,8 +592,9 @@ export async function loadTransactionDTOs(
   const rows = await repo.findByIds(ids);
   const byId = new Map(rows.map((r) => [r.id, r] as const));
   const members = await memberMap(repo);
+  const labels = await assistantLabelsOf(tx, ctx.familyId, rows);
   return ids
     .map((id) => byId.get(id))
     .filter((r): r is NonNullable<typeof r> => r !== undefined)
-    .map((r) => dtoFromLoaded(r, members, null));
+    .map((r) => dtoFromLoaded(r, members, null, labels));
 }

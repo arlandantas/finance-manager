@@ -159,6 +159,20 @@ export function FiltersPanel({
           <option value="false">Pessoal</option>
         </select>
       </Field>
+      <Field id={id("origin")} label="Origem">
+        <select
+          id={id("origin")}
+          className={inputClass}
+          value={filters.origin ?? ""}
+          onChange={(e) =>
+            onChange({ origin: (empty(e.target.value) as LedgerUiFilters["origin"]) ?? undefined })
+          }
+        >
+          <option value="">Todas</option>
+          <option value="APP">Pelo app</option>
+          <option value="ASSISTANT">Via assistente</option>
+        </select>
+      </Field>
       <label className="flex min-h-11 items-center gap-2 self-end text-sm font-medium text-slate-800">
         <input
           type="checkbox"

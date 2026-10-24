@@ -118,6 +118,15 @@ export function LedgerRow({
                 Cartão
               </span>
             ) : null}
+            {item.viaAssistant ? (
+              <span
+                data-testid="via-assistant"
+                aria-label={`Lançado via assistente: ${item.viaAssistant.label}`}
+                className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-900"
+              >
+                via assistente
+              </span>
+            ) : null}
             {item.invoice ? (
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
                 Fatura {formatInvoiceLabel(item.invoice.ref)}

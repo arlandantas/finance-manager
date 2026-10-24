@@ -127,6 +127,11 @@ export function transacoesRepo(tx: Tx, familyId: string) {
       /** EN-002a: só famílias STORED gravam o modo e a regra de origem do rateio. */
       splitMode?: "NONE" | "RULE" | "CUSTOM";
       splitRuleVersionId?: string | null;
+      /** US-076a: lançamento direto pelo assistente. */
+      origin?: "APP" | "ASSISTANT";
+      assistantGrantId?: string | null;
+      assistantIdemKey?: string | null;
+      createdAt?: Date;
     }) =>
       tx.transaction.create({
         data: {
@@ -148,6 +153,10 @@ export function transacoesRepo(tx: Tx, familyId: string) {
           ...(d.splitRuleVersionId !== undefined
             ? { splitRuleVersionId: d.splitRuleVersionId }
             : {}),
+          ...(d.origin ? { origin: d.origin } : {}),
+          ...(d.assistantGrantId !== undefined ? { assistantGrantId: d.assistantGrantId } : {}),
+          ...(d.assistantIdemKey !== undefined ? { assistantIdemKey: d.assistantIdemKey } : {}),
+          ...(d.createdAt ? { createdAt: d.createdAt } : {}),
         },
       }),
     /** Atualização com controle otimista: 0 linhas => versão antiga, excluído ou inexistente. */

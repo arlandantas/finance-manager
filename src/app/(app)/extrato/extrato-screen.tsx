@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApiClientError } from "@/lib/http";
+import { ApiClientError, newIdempotencyKey } from "@/lib/http";
+import { useMarkAssistantReviewed } from "@/modules/mcp/hooks";
 import { useLedger } from "@/modules/transacoes/hooks";
 import type { LedgerUiFilters } from "@/modules/transacoes/optimistic";
 import {
@@ -87,6 +88,16 @@ export function ExtratoScreen() {
 
   const filters = useMemo(() => parseFilters(searchParams), [searchParams]);
   const ledger = useLedger(filters);
+  // US-076a: abrir o Extrato filtrado por "Via assistente" também marca os lançamentos como conferidos
+  const markReviewed = useMarkAssistantReviewed();
+  const reviewedMarked = useRef(false);
+  const viaAssistantList = filters.origin === "ASSISTANT" && ledger.isSuccess;
+  useEffect(() => {
+    if (viaAssistantList && !reviewedMarked.current) {
+      reviewedMarked.current = true;
+      markReviewed.mutate(newIdempotencyKey());
+    }
+  }, [viaAssistantList]);
 
   const replaceFilters = useCallback(
     (next: LedgerUiFilters) => {

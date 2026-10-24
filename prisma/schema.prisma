@@ -247,9 +247,12 @@ model Member {
   removedByMemberId String?            @db.Uuid
   removalKind       MemberRemovalKind?
   removalNoticeAt   DateTime?          @db.Timestamptz(3)
+  // US-076a (SDD-027 §R2.2): última conferência dos lançamentos via assistente (cartão da Home)
+  assistantReviewedAt DateTime?        @db.Timestamptz(3)
 
   family Family @relation(fields: [familyId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
+  assistantLimits MemberAssistantLimits?
 
   ownedAccounts                BankAccount[]
   ownedCards                   CreditCard[]
@@ -461,6 +464,10 @@ model Transaction {
   // EN-002 (ADR-016): rateio por lançamento. `NONE` = "Só meu" = sem linhas em transaction_splits.
   splitMode          SplitMode       @default(NONE)
   splitRuleVersionId String?         @db.Uuid
+  // US-076a (SDD-027 §R2.2): lançamento direto pelo assistente. `assistantGrantId` sem FK rígida (a conexão pode ser expurgada)
+  origin           TransactionOrigin @default(APP)
+  assistantGrantId String?           @db.Uuid
+  assistantIdemKey String?
 
   family      Family                @relation(fields: [familyId], references: [id])
   plan        InstallmentPlan?      @relation(fields: [familyId, installmentPlanId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
@@ -485,6 +492,8 @@ model Transaction {
   @@index([familyId, invoiceId])
   @@index([familyId, competenceOn(sort: Desc), createdAt(sort: Desc), id(sort: Desc)], map: "tx_family_competence_idx")
   @@index([familyId, kind, competenceOn], map: "tx_family_kind_competence_idx")
+  @@index([familyId, origin, occurredOn])
+  @@unique([assistantGrantId, assistantIdemKey])
   @@map("transactions")
 }
 
@@ -849,6 +858,27 @@ model CategorySuggestionDismissal {
 }
 
 // ───────── Servidor MCP / servidor de autorização OAuth 2.1 (SDD-024 §2 + §11) ─────────
+enum TransactionOrigin {
+  APP
+  ASSISTANT
+}
+
+// US-076b (SDD-027 §R2.2): limites de lançamento do assistente, por MEMBRO; null = sem limite. Sem linha = padrões sugeridos.
+model MemberAssistantLimits {
+  familyId            String   @db.Uuid
+  memberId            String   @db.Uuid
+  maxAmountPerTxCents BigInt?
+  maxTxPerDay         Int?
+  maxTxPerHour        Int?
+  version             Int      @default(1)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(3)
+
+  member Member @relation(fields: [familyId, memberId], references: [familyId, id])
+
+  @@id([familyId, memberId])
+  @@map("member_assistant_limits")
+}
+
 enum McpClientKind {
   CIMD
   DCR
