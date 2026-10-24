@@ -81,6 +81,11 @@ flowchart TD
 - **Entregáveis**: Código-fonte com base estrita no SDD, suíte completa de testes automatizados (unitários, integração e validação BDD do PO) e cumprimento rigoroso da Definition of Done.
 - **Local de trabalho**: [`agents/developer/`](file:///home/arlan/ai-tests/finance-manager/agents/developer) e diretórios de código da aplicação.
 
+### 6. Agente de Segurança da Informação (auditor independente)
+- **Foco**: encontrar brechas exploráveis, principalmente em **leitura e escrita de dados pessoais**, autenticação/OAuth/MCP e envio de dados à LLM.
+- **Entregáveis**: levantamentos com achados `SEC-xxx` (severidade, evidência, correção sugerida). Só levanta; correções seguem a esteira normal.
+- **Local de trabalho**: [`agents/security/`](file:///home/arlan/ai-tests/finance-manager/agents/security)
+
 ---
 
 ## 📁 Estrutura de Diretórios do Projeto
@@ -91,6 +96,7 @@ finance-manager/
 ├── AGENTS.md                  # Guia mestre de governança, MVP, BDD, SDD e QA
 ├── agents/                    # Diretório dedicado para a operação do Gestor e dos 4 agentes
 │   ├── README.md              # Visão geral do diretório de agentes
+│   ├── security/              # Agente de Segurança (auditoria independente de brechas e dados pessoais)
 │   ├── manager/               # Espaço do Gestor do Projeto (decisões, pedidos, pendências, escalonamentos)
 │   ├── stakeholder/           # Espaço do Agente Stakeholder (dores, personas, regras de valor)
 │   ├── product-owner/         # Espaço do Agente Product Owner (MVP, roadmap, fluxos UI/UX, BDD)

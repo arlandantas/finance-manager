@@ -16,6 +16,10 @@ agents/
 │   ├── README.md                  # Manual do Gestor (protocolo de atendimento, escalonamento, modelos)
 │   └── *.md                       # Decisões, pedidos, pendências externas e checklists
 │
+├── security/                      # Agente de Segurança (auditor independente: brechas e dados pessoais)
+│   ├── README.md                  # Manual do Agente de Segurança (escopo, formato SEC-xxx, regras)
+│   └── relatorios/                # Levantamentos e achados
+│
 ├── stakeholder/                   # Agente 1: Stakeholder (Dono do PROBLEMA e do VALOR)
 │   ├── README.md                  # Manual do Stakeholder (dores, personas, regras de negócio)
 │   └── needs/                     # Levantamento de necessidades e restrições

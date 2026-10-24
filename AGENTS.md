@@ -11,6 +11,9 @@ Todas as instruções específicas de cada papel, histórico de decisões, docum
 ```text
 agents/
 ├── README.md                      # Panorama geral do diretório de agentes
+├── security/                      # 5. Agente de Segurança da Informação (auditor independente: brechas, dados pessoais, OAuth/MCP)
+│   ├── README.md                  # Instruções de operação do Agente de Segurança
+│   └── relatorios/                # Levantamentos e achados (SEC-xxx)
 ├── manager/                       # 0. Agente Gestor do Projeto (interface com o usuário, orquestração, decisões e escalonamentos)
 │   ├── README.md                  # Instruções de operação do Gestor
 │   └── *.md                       # Decisões do gestor, decisões para o usuário, pedidos, pendências externas, checklists
@@ -64,6 +67,12 @@ sequenceDiagram
 ## 🎯 Papel do Gestor do Projeto
 
 O **Gestor** é o único agente que conversa com o **usuário**. Ele recebe os comandos, classifica, quebra em tarefas por papel, delega a cada agente (com o modelo adequado), confere o resultado e reporta. Resolve sozinho conflitos e ambiguidades cobertos por regras/ADRs já aprovados e **escala ao usuário** apenas o que o time não pode decidir (escopo, prazo, regras financeiras sensíveis, contas e gastos externos, ações irreversíveis como `push`/deploy). Protocolo completo em [`agents/manager/README.md`](file:///home/arlan/ai-tests/finance-manager/agents/manager/README.md); registros em `agents/manager/`.
+
+---
+
+## 🛡️ Papel do Agente de Segurança
+
+Auditor **independente** (não faz parte da sequência Stakeholder ➔ PO ➔ TL ➔ Dev). O Gestor o aciona em momentos escolhidos para levantar brechas, com foco em leitura e escrita de dados pessoais. Ele só levanta e prova (somente em ambiente local); cada achado passa pelo Gestor e pelo usuário antes de virar tarefa, e a correção segue a esteira normal (TL ➔ Dev) com reteste. O Tech Lead continua dono do *projeto seguro* (modelo de ameaças nos ADR/SDD). Ver [`agents/security/README.md`](file:///home/arlan/ai-tests/finance-manager/agents/security/README.md).
 
 ---
 
@@ -152,6 +161,7 @@ Todos os commits no repositório devem seguir rigorosamente duas regras fundamen
    - **Product Owner**: `Co-authored-by: Agente Product Owner <po@finance-manager.local>`
    - **Tech Lead**: `Co-authored-by: Agente Tech Lead <tech-lead@finance-manager.local>`
    - **Desenvolvedor & QA**: `Co-authored-by: Agente Desenvolvedor & QA <dev-qa@finance-manager.local>`
+   - **Segurança da Informação**: `Co-authored-by: Agente de Segurança <security@finance-manager.local>`
 
 
 3. **Commit Automático das Próprias Modificações**:
