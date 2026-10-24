@@ -395,3 +395,21 @@ export async function getSentData(tx: Tx, ctx: RequestContext, id: string): Prom
     readable: readableOf(payload),
   };
 }
+
+/** POST /ai/spending-analyses/:id/delete (US-073): `DELETE` físico; o consumo fica com `analysisId` nulo. */
+export async function deleteAnalysis(
+  tx: Tx,
+  ctx: RequestContext,
+  id: string,
+): Promise<{ deleted: number }> {
+  if (!isUuid(id)) throw notFound("Análise não encontrada.");
+  const r = await tx.spendingAnalysis.deleteMany({ where: { id, familyId: ctx.familyId } });
+  if (r.count === 0) throw notFound("Análise não encontrada.");
+  return { deleted: r.count };
+}
+
+/** POST /ai/spending-analyses/delete-all: apaga todo o histórico; descartes (US-071) permanecem. */
+export async function deleteAllAnalyses(tx: Tx, ctx: RequestContext): Promise<{ deleted: number }> {
+  const r = await tx.spendingAnalysis.deleteMany({ where: { familyId: ctx.familyId } });
+  return { deleted: r.count };
+}

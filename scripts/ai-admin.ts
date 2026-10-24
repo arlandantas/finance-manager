@@ -6,6 +6,7 @@ import { createPrismaClient } from "../src/lib/db";
  * Scripts operacionais da IA (SDD-021 §5), NUNCA rota HTTP. Sem conteúdo nas saídas.
  *  - `pnpm ai:set-cap <familyId> <centavos|default>`: sobrescreve (ou limpa) o teto mensal da família.
  *  - `pnpm ai:purge-usage [--months 24]`: apaga eventos de consumo mais antigos que N meses.
+ *  - `pnpm ai:purge-analyses [--months 24]`: apaga análises de gastos mais antigas que N meses (TL-25, US-073).
  */
 export async function run(
   db: PrismaClient,
@@ -51,7 +52,20 @@ export async function run(
     out(`eventos de consumo apagados: ${r.count}`);
     return 0;
   }
-  out("comandos: set-cap | purge-usage");
+  if (cmd === "purge-analyses") {
+    const i = rest.indexOf("--months");
+    const months = i >= 0 ? Number(rest[i + 1]) : 24;
+    if (!Number.isInteger(months) || months < 1) {
+      out("--months deve ser um inteiro >= 1");
+      return 2;
+    }
+    const cutoff = new Date(now);
+    cutoff.setUTCMonth(cutoff.getUTCMonth() - months);
+    const r = await db.spendingAnalysis.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    out(`análises apagadas: ${r.count}`);
+    return 0;
+  }
+  out("comandos: set-cap | purge-usage | purge-analyses");
   return 2;
 }
 
