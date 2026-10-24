@@ -10,6 +10,12 @@ Before(async () => {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ now: null }),
   }).catch(() => undefined);
+  // EN-004: o provedor simulado volta ao cenário "ok", sem atraso e sem chamadas registradas
+  await fetch("http://localhost:3101/api/dev/llm-scenario", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ reset: true }),
+  }).catch(() => undefined);
 });
 
 // US-027: o app começa com valores ocultos (padrão). Os cenários antigos conferem valores na tela,

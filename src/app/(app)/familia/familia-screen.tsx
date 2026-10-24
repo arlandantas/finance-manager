@@ -512,6 +512,15 @@ export function FamiliaScreen() {
           />
 
           <Link
+            href="/analise/gastos-evitaveis"
+            data-testid="avoidable-link"
+            className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 font-medium text-slate-900 dark:bg-slate-100"
+          >
+            Análise de gastos evitáveis
+            <ChevronRight size={18} aria-hidden="true" />
+          </Link>
+
+          <Link
             href="/familia/ia"
             data-testid="ai-settings-link"
             className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 font-medium text-slate-900 dark:bg-slate-100"

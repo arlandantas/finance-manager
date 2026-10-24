@@ -64,7 +64,8 @@ export async function seedSilva(
   if (!(await testDb().category.findFirst({ where: { familyId: fx.family.id, name: "Lazer" } }))) {
     await makeCategory(fx, "Lazer", "utensils");
   }
-  for (const m of o.months ?? MONTHS) {
+  const months = o.months ?? MONTHS;
+  for (const m of months) {
     const tx = (category: string, amountInCents: number, description: string, day = "05") =>
       makeTransaction(fx, {
         account,
@@ -80,7 +81,7 @@ export async function seedSilva(
     await tx("Supermercado", 80_000, "Mercado Central", "10");
     await tx("Saúde", 9_000, "Farmácia", "12");
     await tx("Lazer", 5_590, "Streaming X", "15");
-    await tx("Lazer", m === "2026-10" ? 42_410 : 30_000, "Passeios", "20");
+    await tx("Lazer", m === months.at(-1) ? 42_410 : 30_000, "Passeios", "20");
     await makeTransaction(fx, {
       account,
       type: "INCOME",
