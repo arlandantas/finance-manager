@@ -22,6 +22,7 @@ function atLeast(version: string, min: string): boolean {
 describe("SEC-002/007/014/019 versões mínimas de dependências", () => {
   it.each([
     ["next", "16.4.1"], // GHSA-2464-fhr4-w9xw, GHSA-673q-mjm6-r5xr, GHSA-p3m5-59mp-jv5r
+    ["zod", "4.6.6"], // GHSA-mrhx-c7xc-m3w5
   ])("%s >= %s", (pkg, min) => {
     expect(atLeast(installed(pkg), min), `${pkg} instalado: ${installed(pkg)}`).toBe(true);
   });

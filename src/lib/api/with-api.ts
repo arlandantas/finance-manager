@@ -15,6 +15,7 @@ import {
   requestHash,
   saveIdempotentResponse,
 } from "@/lib/api/idempotency";
+import { readJsonCapped } from "@/lib/api/read-body";
 import { errorResponse, jsonResponse } from "@/lib/api/response";
 import type { ApiResult, RequestContext, Role, Tx, UserContext } from "@/lib/api/types";
 import { findSessionUser, parseCookieHeader, sessionTokenFromCookies } from "@/lib/auth/session";
@@ -144,11 +145,7 @@ export function withApi<A extends AuthMode = "family", B = undefined, Q = undefi
       let rawBody: unknown;
       let body = undefined as B;
       if (opts.body) {
-        try {
-          rawBody = await req.json();
-        } catch {
-          throw badRequest("INVALID_JSON", "Corpo da requisição inválido.");
-        }
+        rawBody = await readJsonCapped(req); // SEC-007: teto de bytes
         const parsed = opts.body.safeParse(rawBody);
         if (!parsed.success) throw validationError(parsed.error);
         body = parsed.data;

@@ -77,6 +77,22 @@ describe("SDD-000 withApi: ordem das verificações", () => {
     expect(prod.body.error.code).toBe("BAD_ORIGIN");
   });
 
+  it("SEC-007: corpo JSON acima do teto -> 413 PAYLOAD_TOO_LARGE (com e sem Content-Length)", async () => {
+    const as = await asUser("mariana@exemplo.com");
+    const big = JSON.stringify({ name: "x".repeat(300 * 1024) });
+    const a = await call(as, "POST", "/api/v1/families", big);
+    expect(a.status).toBe(413);
+    expect(a.body.error.code).toBe("PAYLOAD_TOO_LARGE");
+    // sem Content-Length declarado (corpo em fluxo)
+    const b = await call(as, "POST", "/api/v1/families", big, {
+      headers: { "content-length": "10" },
+    });
+    expect(b.status).toBe(413);
+    expect(await db.family.count()).toBe(0);
+    const ok = await call(as, "POST", "/api/v1/families", { name: "Família Silva" });
+    expect(ok.status).toBe(201);
+  });
+
   it("Content-Type diferente de JSON em mutação -> 403 BAD_ORIGIN", async () => {
     const as = await asUser("mariana@exemplo.com");
     const res = await call(as, "POST", "/api/v1/families", '{"name":"Família Silva"}', {
