@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 | :-- | :-- |
-| Épico / Release | EPIC-24 Acesso por Assistente (MCP) · **R4-D (proposta)** · fatia 2/4 |
+| Épico / Release | EPIC-24 Acesso por Assistente (MCP) · **R4-D (POC)** · fatia 2/4 |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Should · 1,7 · 5 |
-| Status | Refinada (PO) · aguarda SDD do TL (contratos das ferramentas) |
-| Depende de | EN-006, US-074, US-025 (Resumo do Mês), US-007 (Extrato), US-048 (visão sintética) |
+| Status | Refinada (PO, revisão 2) · SDD-026 · marco **POC-1: Claude consultando** |
+| Depende de | EN-006a/b, US-074, US-025 (Resumo do Mês), US-007 (Extrato), US-048 (visão sintética) |
 | Corte | Cortável com o bloco MCP; é a **primeira fatia a entregar valor** do bloco |
 | Rastreabilidade | **NEED-025** (RN-025.2, 025.3, 025.7; Q-U05) · RF43 · D-PO-66 |
 
@@ -27,7 +27,7 @@ Funcionalidade: Consultas pelo assistente
 
   Contexto:
     Dado a "Família Silva" com os membros "Mariana" e "Lucas"
-    E Lucas com um assistente de escopo de leitura conectado
+    E Lucas com o assistente "Meu Claude" conectado só para consulta
     E em nov/2026 os gastos em "Mercado" somam "R$ 1.250,00" no Resumo do Mês
 
   Cenário: Gastos por categoria batem com o app
@@ -57,7 +57,8 @@ Funcionalidade: Consultas pelo assistente
     Quando o assistente de Lucas consulta os gastos de "Mercado"
     Então a resposta não contém lançamentos da "Família Souza"
 
-  Cenário: Não há ferramenta de escrita neste escopo
+  Cenário: Não há ferramenta de escrita sem a permissão de lançar
+    Dado que Lucas não marcou a permissão de lançar despesas
     Quando o assistente de Lucas lista as ferramentas disponíveis
     Então não vê ferramentas para criar, editar ou excluir lançamentos
 
@@ -68,3 +69,4 @@ Funcionalidade: Consultas pelo assistente
 
 ## Histórico
 - 2026-10-24 — Criada (D-PO-66).
+- 2026-10-24 — Revisão 2: POC com Claude; depende de EN-006a/b; cenário de escrita ajustado ao novo escopo de lançamento (D-PO-72).

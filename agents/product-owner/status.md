@@ -1,7 +1,13 @@
 # Status do Product Owner
 
-*Atualizado: 2026-10-24 (R4 proposta: parcelas já pagas, importação de fatura, análise por IA e MCP; US-065..077)*
+*Atualizado: 2026-10-24 (rev. 2 do MCP: EN-007, 076a/b/c, 074b; antes, R4 proposta: parcelas já pagas, importação de fatura, análise por IA e MCP; US-065..077)*
 
+
+## Atualização (2026-10-24, rev. 2): MCP no POC com Claude, lançamento direto e hospedagem
+- **Origem:** D-GES-35..37 e [`respostas-r4d-v2.md`](../tech-lead/respostas-r4d-v2.md) §4; ADR-030/031, SDD-024..027 (rev. 2). Decisões **D-PO-70..78**: [`backlog/decisoes-po-mcp-poc.md`](backlog/decisoes-po-mcp-poc.md).
+- **Ordem do POC (38 pts):** [EN-007](backlog/stories/EN-007-hospedagem-vercel-prisma-postgres.md) 5 > EN-006a 7 > EN-006b 5 > [US-074](backlog/stories/US-074-conceder-e-revogar-acesso-do-assistente.md) 5 > [US-075](backlog/stories/US-075-consultar-pelo-assistente-somente-leitura.md) 5 > [US-077](backlog/stories/US-077-auditoria-do-assistente.md) 3 > [US-076a](backlog/stories/US-076a-lancar-despesa-direto-pelo-assistente.md) 5 + [US-076b](backlog/stories/US-076b-limites-de-lancamento-no-perfil.md) 3. **Ampliação (9 pts):** EN-006c ChatGPT/DCR 2, [US-074b](backlog/stories/US-074b-token-pessoal-do-assistente.md) 3, [US-076c](backlog/stories/US-076c-modo-exigir-confirmacao.md) 3, Gemini 1.
+- **Mudanças de BDD:** US-076 virou história-mãe (076a/b/c); lançamento **direto** (sem proposta/confirmação) com selo "via assistente", filtro Origem, cartão de conferência na Home (Excluir/Desfazer), duplicata natural em 10 min, janela de 60 dias; limites padrão R$ 500 / 10 por dia / 5 por hora, configuráveis no perfil, "sem limite" com aviso de risco e lembrete de que o app não movimenta dinheiro real; US-074 com opt-in de escrita (2ª ciência), só Claude, sem credencial exibida; US-077 com um registro por lançamento. FLUXO-008 (§5) e FLUXO-016 (§3) atualizados.
+- **Pendências:** **Stakeholder valida a troca da RN-025.4** (D-PO-77); Gestor ratifica D-PO-70..78; ações do usuário do item 0 do TL antes da EN-007; TL/Dev criam as TASKs.
 
 ## Atualização (2026-10-24): R4 proposta — NEED-024..027 (US-065..077, EN-004..006)
 - **Origem:** NEED-024 (parcelas já pagas), 025 (MCP), 026 (importação de fatura), 027 (análise de gastos evitáveis), RF42..RF45, RN15/RN16 e a proposta de encaixe do Stakeholder. **81 pts PO prelim.: Must 36 · Should 32 · Could 13.** Nada altera o motor do acerto nem a EN-002.

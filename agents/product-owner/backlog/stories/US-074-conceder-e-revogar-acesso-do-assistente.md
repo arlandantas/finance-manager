@@ -1,30 +1,31 @@
-# US-074 — Conceder, ver e revogar o acesso do meu assistente de IA
+# US-074 — Conectar, ver e revogar o acesso do meu assistente de IA (POC com Claude)
 
 | Campo | Valor |
 | :-- | :-- |
-| Épico / Release | EPIC-24 Acesso por Assistente (MCP) · **R4-D (proposta)** · fatia 1/4 |
-| MoSCoW · WSJF · Tamanho (PO prelim.) | Should · 1,6 · 5 |
-| Status | Refinada (PO) · aguarda ADR/SDD do TL |
-| Depende de | EN-006, US-031/035 (papéis) |
-| Corte | Cortável com o bloco MCP; **não pode ser cortada sozinha** (sem ela as demais não têm como ser ativadas) |
-| Rastreabilidade | **NEED-025** (RN-025.1, 025.2, Q-U04) · RF43 · FLUXO-016 §3 · D-PO-66 |
+| Épico / Release | EPIC-24 Acesso por Assistente (MCP) · **R4-D (POC)** · fatia 1/4 |
+| MoSCoW · WSJF · Tamanho (TL) | Should · 1,6 · 5 |
+| Status | Refinada (PO, revisão 2) · SDD-025 (rev. 2) |
+| Depende de | EN-007, EN-006a, EN-006b, US-031/035 (papéis) |
+| Corte | Cortável com o bloco MCP; **não pode ser cortada sozinha** |
+| Rastreabilidade | **NEED-025** (RN-025.1, 025.2, 025.4 revisada, Q-U04) · RF43 · FLUXO-016 §3 · D-PO-66, D-PO-72, D-PO-73 |
 
 ## História
-Como **membro da família**, quero **conceder, ver e revogar o acesso do meu assistente de IA aos meus dados**, sabendo o que isso expõe, para **usar minha LLM de preferência sem abrir mão do controle**.
+Como **membro da família**, quero **conectar, ver e revogar o acesso do meu assistente de IA (Claude) aos meus dados**, sabendo o que isso expõe, para **usar minha LLM sem abrir mão do controle**.
 
 ## Regras de negócio aplicáveis
-- **Desligado por padrão e por membro** (Q-U04, hipótese); cada membro concede o seu, herdando as próprias permissões.
-- O **Administrador pode bloquear o recurso para a família** (chave "Permitir acesso por assistente"); bloqueado, credenciais existentes deixam de funcionar.
-- Ao conceder: aviso claro de que **os dados consultados vão ao provedor da LLM que o membro escolheu, fora do controle do app** (risco de privacidade); o membro escolhe o nome do assistente (ex.: "Meu Claude"), a validade (30/90 dias) e o escopo (somente leitura na 1ª versão).
-- A credencial é **mostrada uma única vez** (com instruções de conexão); depois só aparecem nome, escopo, validade, criada/último uso.
-- **Revogar** é imediato e visível; o histórico mostra "Revogada em …".
-- Membro removido (US-035) perde as credenciais na hora.
+- **Desligado por padrão e por membro**; cada membro conecta o seu, herdando as próprias permissões.
+- O **Administrador pode bloquear o recurso para a família** (chave "Permitir acesso por assistente"); bloqueado, as conexões existentes deixam de funcionar.
+- **Conexão por OAuth:** o app **não mostra credencial**. O membro copia a **URL do servidor** do app e a cola no Claude, que o leva a autorizar no app. Não existe "credencial mostrada uma única vez".
+- Ao conectar: aviso de que os **dados consultados vão ao provedor da IA que o membro usa**, fora do controle do app (marcar "Entendi"). Escolhe o nome do assistente e a validade (30 ou 90 dias); o acesso se renova sozinho a cada 60 minutos enquanto a conexão valer.
+- **Permissões separadas:** "Consultar meus dados" (marcada) e "**Lançar despesas em seu nome (sem confirmação)**" (**desmarcada**). Marcar a segunda exige uma **segunda ciência** ("Entendi que o assistente grava lançamentos direto, sem pedir minha confirmação, e que posso excluí-los depois"). A permissão de lançar também aparece na tela de autorização do Claude.
+- **Instruções de conexão só para o Claude** (web, Desktop e celular, e Claude Code); outros clientes entram na ampliação.
+- **Revogar** é imediato e visível; o histórico mostra "Revogada em …". Membro removido (US-035) perde as conexões na hora.
 
 ## Critérios de aceite (Gherkin)
 
 ```gherkin
 # language: pt
-Funcionalidade: Conceder e revogar acesso do assistente
+Funcionalidade: Conectar e revogar acesso do assistente
 
   Contexto:
     Dado a "Família Silva" com "Mariana" como Administradora e "Lucas" como membro
@@ -35,16 +36,34 @@ Funcionalidade: Conceder e revogar acesso do assistente
     Quando Lucas abre "Configurações" e "Assistente de IA"
     Então vê "Nenhum assistente conectado"
 
-  Cenário: Conceder exige ciência do risco de privacidade
+  Cenário: Conectar exige ciência do risco de privacidade
     Dado que Lucas toca em "Conectar um assistente"
     Então vê "Os dados que o assistente consultar serão enviados ao provedor da IA que você usa, fora do controle do app"
     E precisa marcar "Entendi" para continuar
 
-  Cenário: Credencial é mostrada uma única vez
-    Dado que Lucas conectou o assistente "Meu Claude" com validade de 30 dias e escopo de leitura
-    Quando Lucas fecha a tela da credencial
-    Então não consegue ver a credencial de novo
-    E vê "Meu Claude · Leitura · expira em 23/11/2026"
+  Cenário: Conexão não mostra credencial
+    Dado que Lucas conectou o assistente "Meu Claude" com validade de 30 dias e só consulta
+    Então vê a URL do servidor para colar no Claude
+    E não vê nenhuma senha, chave ou código para guardar
+
+  Cenário: Instruções são só do Claude
+    Quando Lucas abre as instruções de conexão
+    Então vê os passos para o Claude na web, no Desktop, no celular e no Claude Code
+    E não vê passos para outros assistentes
+
+  Cenário: Lançar despesas vem desmarcado
+    Dado que Lucas toca em "Conectar um assistente"
+    Então a opção "Lançar despesas em seu nome (sem confirmação)" aparece desmarcada
+
+  Cenário: Marcar o lançamento exige segunda ciência
+    Dado que Lucas toca em "Conectar um assistente"
+    Quando Lucas marca "Lançar despesas em seu nome (sem confirmação)"
+    Então vê "O assistente grava lançamentos direto, sem pedir sua confirmação. Você poderá excluí-los depois"
+    E precisa marcar um segundo "Entendi" para continuar
+
+  Cenário: Conexão mostra o que foi permitido
+    Dado que Lucas conectou "Meu Claude" com consulta e lançamento
+    Então vê "Meu Claude · Consulta e lançamento · expira em 23/11/2026"
 
   Cenário: Revogar na hora
     Dado que Lucas tem o assistente "Meu Claude" conectado
@@ -52,7 +71,7 @@ Funcionalidade: Conceder e revogar acesso do assistente
     Então o assistente aparece como "Revogado"
     E o assistente deixa de conseguir consultar dados
 
-  Cenário: Cada membro vê só as suas credenciais
+  Cenário: Cada membro vê só as suas conexões
     Dado que Lucas tem o assistente "Meu Claude" conectado
     Quando Mariana abre "Assistente de IA"
     Então não vê o assistente "Meu Claude"
@@ -67,7 +86,7 @@ Funcionalidade: Conceder e revogar acesso do assistente
     Quando Lucas abre "Assistente de IA"
     Então não vê a chave "Permitir acesso por assistente" editável
 
-  Cenário: Membro removido perde as credenciais
+  Cenário: Membro removido perde as conexões
     Dado que Lucas tem o assistente "Meu Claude" conectado
     Quando Mariana remove Lucas da família
     Então o assistente de Lucas deixa de funcionar
@@ -77,7 +96,8 @@ Funcionalidade: Conceder e revogar acesso do assistente
 [FLUXO-016](../../flows/FLUXO-016-privacidade-e-consentimento-ia.md) §3.
 
 ## Fora de escopo
-Acesso por família, escopo por conta/cartão (hipótese: herda tudo que o membro vê), lista de clientes compatíveis (Q-U06).
+Acesso por família, escopo por conta/cartão (herda tudo que o membro vê), instruções para ChatGPT/Gemini (ampliação), **token pessoal** ([US-074b](US-074b-token-pessoal-do-assistente.md)).
 
 ## Histórico
 - 2026-10-24 — Criada (D-PO-66).
+- 2026-10-24 — Revisão 2 (D-PO-72, D-PO-73): OAuth sem credencial exibida; permissão de lançar à parte com segunda ciência; instruções só do Claude.

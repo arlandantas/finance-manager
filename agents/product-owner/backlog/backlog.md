@@ -204,7 +204,7 @@ Pacote derivado de [`escopo-v0-alpha.md`](../../stakeholder/escopo-v0-alpha.md);
 
 **Ordem de corte da R3 (reescrita, D-PO-34; primeiro a sair):** US-051 (5) ➔ US-050 (3) ➔ US-049 (5) ➔ US-046 (3) ➔ US-044 (3) ➔ US-041 (5) ➔ **US-043 (5, a última)**. A **EN-002 saiu da lista**: é Must porque a US-042 depende dela; só a US-043 (modo "De outro jeito"), que vem depois, é cortável. Cortando tudo isso saem 29 pts e sobram **36 pts**: os 24 de Must (US-040, EN-002, US-042) mais tags (US-045 e 047) e a visão básica (US-048), que só saem por decisão do Gestor. **AP1 (tetos, ciclo, recorrência) vem logo após a R3** (Q-F12).
 
-### R4 (proposta) — "Entrada facilitada e IA" (2026-10-24) — **81 pts (PO, prelim.): Must 36 · Should 32 · Could 13**
+### R4 (proposta) — "Entrada facilitada e IA" (2026-10-24) — **81 pts (PO, prelim.): Must 36 · Should 32 · Could 13** *(revisão 2 do MCP: ver a seção do POC abaixo; total com EN-007, POC e ampliação = 102 pts)*
 
 Origem: [NEED-024..027](../../stakeholder/needs) e a proposta de encaixe do Stakeholder ([`cronograma-e-releases.md`](../../stakeholder/cronograma-e-releases.md)). Decisões **D-PO-53..69** e perguntas **Q-U01..Q-U12** (com hipótese adotada) em [`decisoes-po-ia-e-parcelas.md`](decisoes-po-ia-e-parcelas.md); pedido ao Tech Lead (ADRs de LLM, privacidade/retenção, MCP, custo, testes) em [`pedidos-ao-tech-lead-ia.md`](pedidos-ao-tech-lead-ia.md). Fluxos: [FLUXO-015](../flows/FLUXO-015-importar-fatura-por-arquivo.md), [FLUXO-016](../flows/FLUXO-016-privacidade-e-consentimento-ia.md), [FLUXO-017](../flows/FLUXO-017-analise-de-gastos-evitaveis.md). **Nada aqui altera o motor do acerto nem a EN-002.**
 
@@ -222,14 +222,23 @@ Origem: [NEED-024..027](../../stakeholder/needs) e a proposta de encaixe do Stak
 | 9 | [US-071](stories/US-071-descartar-sugestao-de-gasto-evitavel.md) | Descartar sugestão ("importante para nós") | R4-C | EPIC-23 | Should | 3 | US-070 | NEED-027 | Refinada |
 | 10 | [US-072](stories/US-072-aceitar-sugestao-de-categoria.md) | Aceitar sugestões de categoria, uma a uma | R4-C | EPIC-23 | Could | 3 | US-070 | NEED-027 | Refinada |
 | 11 | [US-073](stories/US-073-historico-e-apagar-analises.md) | Histórico e apagar análises | R4-C | EPIC-23 | Could | 2 | US-070 | NEED-027 | Refinada |
-| 12 | [EN-006](stories/EN-006-servidor-mcp-base.md) | Servidor MCP: autenticação, escopo e auditoria *(Habilitadora)* | R4-D | EPIC-24 | Should | 8 | ADR do TL | NEED-025 | Refinada |
-| 13 | [US-074](stories/US-074-conceder-e-revogar-acesso-do-assistente.md) | Conceder e revogar o acesso do assistente | R4-D | EPIC-24 | Should | 5 | EN-006 | NEED-025 | Refinada |
-| 14 | [US-075](stories/US-075-consultar-pelo-assistente-somente-leitura.md) | Consultar saldos, gastos e extrato (somente leitura) | R4-D | EPIC-24 | Should | 5 | EN-006, US-074 | NEED-025 | Refinada |
-| 15 | [US-077](stories/US-077-auditoria-do-assistente.md) | Auditoria do assistente | R4-D | EPIC-24 | Could | 3 | EN-006, US-074 | NEED-025 | Refinada · antes da 076 |
-| 16 | [US-076](stories/US-076-lancar-despesa-pelo-assistente-com-confirmacao.md) | Lançar despesa pelo assistente (proposta + confirmação) | R4-D | EPIC-24 | Could | 5 | US-075, US-077 | NEED-025 | Refinada · **último** |
+| 12 | [EN-007](stories/EN-007-hospedagem-vercel-prisma-postgres.md) | Hospedagem de produção: Vercel + Prisma Postgres *(Habilitadora)* | R4-D (POC) | EPIC-24 | Should | 5 | ações do usuário (ADR-031 §12) | NEED-025 | Refinada · **prioridade 1, antes do MCP** |
+| 13 | [EN-006a](stories/EN-006-servidor-mcp-base.md) | Servidor MCP: OAuth próprio, POC com Claude *(Habilitadora)* | R4-D (POC) | EPIC-24 | Should | 7 | EN-007 | NEED-025 | Refinada |
+| 14 | [EN-006b](stories/EN-006-servidor-mcp-base.md) | Servidor MCP: endpoint, contexto, taxa e auditoria *(Habilitadora)* | R4-D (POC) | EPIC-24 | Should | 5 | EN-006a | NEED-025 | Refinada |
+| 15 | [US-074](stories/US-074-conceder-e-revogar-acesso-do-assistente.md) | Conectar e revogar o acesso do assistente (opt-in de escrita com 2ª ciência; só Claude) | R4-D (POC) | EPIC-24 | Should | 5 | EN-006b | NEED-025 | Refinada (rev. 2) |
+| 16 | [US-075](stories/US-075-consultar-pelo-assistente-somente-leitura.md) | Consultar saldos, gastos e extrato (somente leitura) | R4-D (POC) | EPIC-24 | Should | 5 | US-074 | NEED-025 | Refinada · **marco POC-1** |
+| 17 | [US-077](stories/US-077-auditoria-do-assistente.md) | Auditoria do assistente (um registro por lançamento) | R4-D (POC) | EPIC-24 | Could | 3 | EN-006b, US-074 | NEED-025 | Refinada (rev. 2) · antes da 076 |
+| 18 | [US-076a](stories/US-076a-lancar-despesa-direto-pelo-assistente.md) | Lançar despesa direto pelo assistente (selo, filtro Origem, conferência na Home) | R4-D (POC) | EPIC-24 | Could | 5 | US-075, US-077, EN-007 | NEED-025 | Refinada (rev. 2) |
+| 19 | [US-076b](stories/US-076b-limites-de-lancamento-no-perfil.md) | Limites de lançamento configuráveis no perfil (R$ 500 · 10/dia · 5/hora; "sem limite" com aviso) | R4-D (POC) | EPIC-24 | Could | 3 | US-076a (saem juntas) | NEED-025 | Refinada · **marco POC-2** |
+| — | | **Fim do POC do MCP (EN-007 a US-076b) = 38 pts** | | | | **38** | | | |
+| A1 | EN-006c *(ampliação)* | Registro dinâmico de clientes + homologação do ChatGPT (Gemini quando liberado: +1) | Ampliação | EPIC-24 | Could | 2 | POC | NEED-025 | Backlog |
+| A2 | [US-074b](stories/US-074b-token-pessoal-do-assistente.md) | Token pessoal para clientes sem OAuth | Ampliação | EPIC-24 | Could | 3 | POC | NEED-025 | Refinada · **backlog, fora do POC** |
+| A3 | [US-076c](stories/US-076c-modo-exigir-confirmacao.md) | Modo "exigir confirmação" por conexão | Ampliação | EPIC-24 | Could | 3 | US-076a/b | NEED-025 | Refinada · **backlog** |
+| A4 | Gemini app *(ampliação)* | Homologar quando liberado no Brasil | Ampliação | EPIC-24 | Could | 1 | A1 | NEED-025 | Sem data |
 
-**Pontos acumulados:** 5 ➔ 13 ➔ 18 ➔ 23 ➔ 31 ➔ 36 (Must) ➔ 39 ➔ 47 ➔ 50 ➔ 53 ➔ 55 ➔ 63 ➔ 68 ➔ 73 ➔ 76 ➔ 81.
-**Linha de corte (de baixo para cima):** US-076 ➔ US-077 ➔ US-075 ➔ US-074 ➔ EN-006 (todo o MCP, 26 pts) ➔ US-073 ➔ US-072 ➔ US-071 ➔ US-070 (toda a análise, 16 pts) ➔ US-069. Os 36 pts de Must **não se cortam**; o bloco MCP e o bloco de análise só entram **depois** de a importação estar homologada. A R4-C e a R4-D são invertíveis por escolha do usuário (cronograma do Stakeholder). **Dependências externas:** US-065 só depende da US-040a/b; a R4-B depende de **Q-U01, Q-U08 e Q-U10** respondidas e dos ADRs do TL.
+**Pontos acumulados (revisão 2, MCP/hospedagem pelo TL):** 5 ➔ 13 ➔ 18 ➔ 23 ➔ 31 ➔ 36 (Must) ➔ 39 ➔ 47 ➔ 50 ➔ 53 ➔ 55 ➔ EN-007 60 ➔ 006a 67 ➔ 006b 72 ➔ 074 77 ➔ 075 82 ➔ 077 85 ➔ 076a 90 ➔ 076b 93 (POC do MCP = 38 pts) ➔ ampliação +9 = **102**.
+**Ordem do POC do MCP (D-PO-78):** EN-007 > EN-006a > EN-006b > US-074 > US-075 > US-077 > US-076a/b. Liberação em produção só com EN-007 pronta, checklist de segurança e ensaio de restauração.
+**Linha de corte (de baixo para cima):** ampliação (US-076c ➔ US-074b ➔ EN-006c) ➔ US-076a/b ➔ US-077 ➔ US-075 ➔ US-074 ➔ EN-006a/b (todo o MCP, sem a EN-007, 33 pts; a EN-007 não se corta se o MCP for ligado) ➔ US-073 ➔ US-072 ➔ US-071 ➔ US-070 (toda a análise, 16 pts) ➔ US-069. Os 36 pts de Must **não se cortam**; o bloco MCP e o bloco de análise só entram **depois** de a importação estar homologada. A R4-C e a R4-D são invertíveis por escolha do usuário (cronograma do Stakeholder). **Dependências externas:** US-065 só depende da US-040a/b; a R4-B depende de **Q-U01, Q-U08 e Q-U10** respondidas e dos ADRs do TL.
 
 ### Critério central das histórias novas
 | ID | Critério central |

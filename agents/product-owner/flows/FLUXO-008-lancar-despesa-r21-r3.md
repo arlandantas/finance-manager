@@ -77,5 +77,25 @@ Divisão:   ( Só meu | Pela regra (50/50) | De outro jeito )   ← controle seg
 ## 4. Estados
 Carregando contas/cartões (skeleton do seletor); sem contas nem cartões ("Cadastre uma conta para começar"); duplo clique protegido (Idempotency-Key); falha de rede ("Sem conexão. Seus dados continuam na tela, tente de novo.").
 
-## 5. Histórico
+## 5. Caminho "via assistente" (R4-D, POC; US-076a/b)
+O membro pede à IA (ex.: Claude) "lance R$ 80 de farmácia no cartão" e o lançamento é **gravado direto**, sem tela de confirmação.
+
+```mermaid
+flowchart TD
+    P["Pedido do membro ao assistente"] --> V{"Dentro dos limites e sem duplicata?"}
+    V -- Não --> B["Nada é gravado; o assistente recebe a mensagem (e a Atividade mostra 'Bloqueado pelo seu limite')"]
+    V -- Sim --> G["Lançamento gravado com selo 'via assistente'"]
+    G --> H["Home: cartão 'N lançamentos via assistente para conferir'"]
+    H --> X["Excluir"] --> U["Aviso com 'Desfazer'"]
+    H --> OK["Marcar como conferidos"]
+    G --> E["Extrato: selo e filtro Origem (Todas, Pelo app, Via assistente)"]
+```
+
+- **Selo "via assistente"** no Extrato e no detalhe, com o nome da conexão ("Lançado via assistente: Meu Claude"); autor é o membro; sempre à vista, "Só meu".
+- **Filtro Origem** no painel de filtros do Extrato; os totais continuam reconciliando.
+- **Cartão de conferência na Home** (até 7 dias): 3 lançamentos mais recentes com Excluir e "Ver todos"; "Marcar como conferidos" o dispensa. Excluir usa o fluxo normal com **Desfazer**.
+- Duplicata natural em 10 minutos e chave repetida não geram segundo lançamento; limites (R$ 500,00 / 10 por dia / 5 por hora, ajustáveis no perfil) bloqueiam o excesso. Ver [FLUXO-016](FLUXO-016-privacidade-e-consentimento-ia.md) §3.
+
+## 6. Histórico
 - 2026-10-04 — Criado no refinamento da R2.1/R3 (revisão 4 do FLUXO-001).
+- 2026-10-24 — Incluído o caminho "via assistente" (D-PO-72, D-PO-75).
