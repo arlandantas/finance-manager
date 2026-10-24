@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   output: "standalone", // ADR-005/ADR-031: usado só pelo Dockerfile; a Vercel ignora e usa o próprio adapter
   allowedDevOrigins: allowedDevOriginsFor(process.env),
   poweredByHeader: false,
+  // SEC-002: o app não usa `next/image`; desliga o otimizador (/_next/image) para reduzir a superfície.
+  images: { unoptimized: true },
   // SDD-024 §4.3: a tela de consentimento OAuth não pode ser embutida (clickjacking).
   async headers() {
     return [
