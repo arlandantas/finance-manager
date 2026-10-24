@@ -3,6 +3,7 @@ import { listarCadastros } from "@/modules/mcp/tools/cadastros";
 import { cartoesEFaturas } from "@/modules/mcp/tools/cartoes";
 import { gastosPorCategoria } from "@/modules/mcp/tools/gastos-categoria";
 import { listarLancamentos } from "@/modules/mcp/tools/lancamentos";
+import { lancarDespesaTool } from "@/modules/mcp/tools/lancar-despesa";
 import { previstasDoMes } from "@/modules/mcp/tools/previstas";
 import { resumoDoMes } from "@/modules/mcp/tools/resumo";
 import { consultarSaldos } from "@/modules/mcp/tools/saldos";
@@ -15,6 +16,7 @@ export const mcpTools: AnyTool[] = [
   cartoesEFaturas,
   consultarSaldos,
   gastosPorCategoria,
+  lancarDespesaTool,
   listarCadastros,
   listarLancamentos,
   previstasDoMes,

@@ -24,6 +24,12 @@ const Input = z
     accountId: uuidSchema.optional(),
     cardId: uuidSchema.optional(),
     type: z.enum(["EXPENSE", "INCOME", "TRANSFER", "INVOICE_PAYMENT"]).optional(),
+    origin: z
+      .enum(["APP", "ASSISTANT"])
+      .optional()
+      .describe(
+        '"ASSISTANT" = lançados por assistente; "APP" = lançados pelo app. Útil para conferir duplicatas.',
+      ),
     q: z.string().trim().min(2).max(50).optional().describe("Busca no texto da descrição"),
     cursor: z.string().max(300).optional().describe("nextCursor da página anterior."),
     limit: z.number().int().min(1).max(50).default(20),
@@ -61,6 +67,7 @@ const Output = z
             card: z.string().nullable(),
             payer: z.string().nullable(),
             isShared: z.boolean(),
+            origin: z.enum(["APP", "ASSISTANT"]),
             installment: z
               .object({ no: z.number().int(), count: z.number().int() })
               .strict()
@@ -90,6 +97,7 @@ export const listarLancamentos: AnyTool = {
     accountId?: string;
     cardId?: string;
     type?: string;
+    origin?: string;
     cursor?: string;
     limit: number;
   }) => ({
@@ -99,6 +107,7 @@ export const listarLancamentos: AnyTool = {
     ...(i.accountId && { accountIds: [i.accountId] }),
     ...(i.cardId && { cardIds: [i.cardId] }),
     ...(i.type && { type: i.type }),
+    ...(i.origin && { origin: i.origin }),
     limit: i.limit,
     page: i.cursor ? 2 : 1,
   }),
@@ -139,6 +148,7 @@ export const listarLancamentos: AnyTool = {
         card: t.card ? name60(t.card.name) : null,
         payer: t.payer ? memberName(t.payer) : null,
         isShared: t.isSharedExpense,
+        origin: t.viaAssistant ? ("ASSISTANT" as const) : ("APP" as const),
         installment: t.installment ? { no: t.installment.no, count: t.installment.count } : null,
       })),
       nextCursor: r.nextCursor,

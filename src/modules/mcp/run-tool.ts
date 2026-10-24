@@ -139,10 +139,14 @@ export async function runTool(
       );
     } catch (e) {
       if (e instanceof ApiError) {
-        await audit(e.status === 400 || e.status === 422 ? "INVALID" : "ERROR", {
-          errorCode: e.code,
-          params,
-        });
+        await audit(
+          e.code === "LIMIT_EXCEEDED"
+            ? "LIMIT_EXCEEDED"
+            : e.status === 400 || e.status === 422
+              ? "INVALID"
+              : "ERROR",
+          { errorCode: e.code, params },
+        );
         return toolError(e.code, e.message);
       }
       logger.error({ tool: def.name, err: e instanceof Error ? e.message : "erro" }, "mcp tool");
