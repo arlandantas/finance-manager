@@ -57,6 +57,8 @@ export default defineConfig({
       // EN-004: IA ligada no app (provedor SIMULADO; nunca chama a API real)
       AI_FEATURES_ENABLED: "true",
       LLM_PROVIDER: "fake",
+      // US-074+: telas do assistente (MCP). Nenhum cliente real é conectado: o OAuth é exercitado em integração.
+      MCP_ENABLED: "true",
     },
   },
 });

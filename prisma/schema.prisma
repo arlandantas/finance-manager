@@ -215,6 +215,7 @@ enum FamilyEventType {
   MEMBER_LEFT
   INVITATION_RESENT
   AI_CONSENT_CHANGED // EN-005
+  ASSISTANT_ACCESS_CHANGED // US-074
 }
 
 // Trilha append-only de eventos da família (trigger forbid_mutation em SQL cru)

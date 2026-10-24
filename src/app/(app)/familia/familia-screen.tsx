@@ -148,6 +148,7 @@ const EVENT_TEXT: Record<FamilyDTO["events"][number]["type"], string> = {
   MEMBER_LEFT: "saiu da família",
   INVITATION_RESENT: "reenviou um convite",
   AI_CONSENT_CHANGED: "alterou o uso de IA",
+  ASSISTANT_ACCESS_CHANGED: "alterou o acesso por assistente",
 };
 
 function RenameDialog({
@@ -526,6 +527,15 @@ export function FamiliaScreen() {
             className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 font-medium text-slate-900 dark:bg-slate-100"
           >
             IA e privacidade
+            <ChevronRight size={18} aria-hidden="true" />
+          </Link>
+
+          <Link
+            href="/configuracoes/assistente"
+            data-testid="assistant-settings-link"
+            className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 font-medium text-slate-900 dark:bg-slate-100"
+          >
+            Assistente de IA
             <ChevronRight size={18} aria-hidden="true" />
           </Link>
 

@@ -165,15 +165,18 @@ export function ConsentForm(p: Props) {
                 }}
               />
               <span>
-                Lançar despesas em seu nome
+                Lançar despesas em seu nome (sem confirmação)
                 <span className="block text-xs text-slate-600">
-                  O assistente grava direto no app, sem pedir sua confirmação. Só despesas à vista
-                  &quot;Só meu&quot;, dentro dos seus limites de lançamento.
+                  Só despesas à vista &quot;Só meu&quot;, dentro dos seus limites de lançamento.
                 </span>
               </span>
             </label>
             {allowWrite ? (
               <div className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                <p>
+                  O assistente grava lançamentos direto, sem pedir sua confirmação. Você poderá
+                  excluí-los depois.
+                </p>
                 <p>
                   Limites sugeridos: até R$ 500,00 por lançamento · 10 por dia · 5 por hora. Você
                   poderá alterá-los em Configurações.
