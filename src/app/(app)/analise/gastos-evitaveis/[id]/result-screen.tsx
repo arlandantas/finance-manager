@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError } from "@/lib/http";
 import type { AnalysisClassDTO, SpendingAnalysisDTO } from "@/modules/analise-ia/dto";
 import { useAnalysis } from "@/modules/analise-ia/hooks";
+import { DismissedList } from "../dismissed-list";
 import { AvoidableCard } from "./avoidable-card";
 
 const CLASS_LABEL: Record<AnalysisClassDTO, string> = {
@@ -108,7 +109,7 @@ function ResultBody({ a }: { a: SpendingAnalysisDTO }) {
             Nenhum gasto apontado como evitável nesta análise.
           </p>
         ) : (
-          a.avoidable.map((item) => <AvoidableCard key={item.key} item={item} />)
+          a.avoidable.map((item) => <AvoidableCard key={item.key} item={item} analysisId={a.id} />)
         )}
       </section>
 
@@ -147,6 +148,8 @@ function ResultBody({ a }: { a: SpendingAnalysisDTO }) {
           </div>
         ))}
       </section>
+
+      <DismissedList />
 
       <p
         data-testid="analysis-disclaimer"

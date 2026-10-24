@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/http";
 import type {
   AnalysisListItemDTO,
   AnalysisPreviewDTO,
+  AvoidableDismissalDTO,
   SentDataDTO,
   SpendingAnalysisDTO,
 } from "@/modules/analise-ia/dto";
@@ -73,5 +74,52 @@ export function useRequestAnalysis() {
         ),
       );
     },
+  });
+}
+
+export const dismissalsKey = ["ai-dismissals"] as const;
+
+export function useDismissals() {
+  return useQuery({
+    queryKey: dismissalsKey,
+    queryFn: () => apiFetch<{ items: AvoidableDismissalDTO[] }>("/api/v1/ai/avoidable-dismissals"),
+  });
+}
+
+function useInvalidateDismissals() {
+  const qc = useQueryClient();
+  return () =>
+    Promise.all(
+      [dismissalsKey, ["ai-analysis"], ["ai-analysis-preview"]].map((queryKey) =>
+        qc.invalidateQueries({ queryKey }),
+      ),
+    );
+}
+
+/** "Importante para nós" (US-071): sem atualização otimista; a lista só muda com o 201. */
+export function useCreateDismissal() {
+  const invalidate = useInvalidateDismissals();
+  return useMutation({
+    mutationFn: (a: { analysisId: string; key: string; reason?: string; idempotencyKey: string }) =>
+      apiFetch<AvoidableDismissalDTO>("/api/v1/ai/avoidable-dismissals", {
+        method: "POST",
+        body: { analysisId: a.analysisId, key: a.key, ...(a.reason ? { reason: a.reason } : {}) },
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+/** "Voltar a sugerir" e o "Desfazer" do aviso. */
+export function useRestoreDismissal() {
+  const invalidate = useInvalidateDismissals();
+  return useMutation({
+    mutationFn: (a: { id: string; idempotencyKey: string }) =>
+      apiFetch<{ restored: true }>(`/api/v1/ai/avoidable-dismissals/${a.id}/restore`, {
+        method: "POST",
+        body: {},
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
   });
 }

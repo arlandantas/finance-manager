@@ -1,13 +1,45 @@
 "use client";
 
 import Link from "next/link";
+import { toast } from "sonner";
 import { Money } from "@/components/money";
+import { Button } from "@/components/ui/button";
+import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import type { SpendingAnalysisDTO } from "@/modules/analise-ia/dto";
+import { useCreateDismissal, useRestoreDismissal } from "@/modules/analise-ia/hooks";
 
 type Item = SpendingAnalysisDTO["avoidable"][number];
 
 /** Cartão de possível gasto evitável: valor mensal e anual calculados pelo app (nunca pela IA). */
-export function AvoidableCard({ item }: { item: Item }) {
+export function AvoidableCard({ item, analysisId }: { item: Item; analysisId: string }) {
+  const create = useCreateDismissal();
+  const restore = useRestoreDismissal();
+
+  function dismiss() {
+    if (create.isPending) return;
+    create.mutate(
+      { analysisId, key: item.key, idempotencyKey: newIdempotencyKey() },
+      {
+        onSuccess: (d) => {
+          // "Desfazer" por 8 s = voltar a sugerir (US-071)
+          toast("Combinado. Não vamos sugerir de novo.", {
+            duration: 8000,
+            action: {
+              label: "Desfazer",
+              onClick: () => restore.mutate({ id: d.id, idempotencyKey: newIdempotencyKey() }),
+            },
+          });
+        },
+        onError: (e) =>
+          toast.error(
+            e instanceof ApiClientError || e instanceof NetworkError
+              ? e.message
+              : "Não foi possível descartar agora",
+          ),
+      },
+    );
+  }
+
   return (
     <article
       data-testid="avoidable-card"
@@ -26,6 +58,9 @@ export function AvoidableCard({ item }: { item: Item }) {
         >
           Ver lançamentos
         </Link>
+        <Button variant="secondary" disabled={create.isPending} onClick={dismiss}>
+          Importante para nós
+        </Button>
       </div>
     </article>
   );
