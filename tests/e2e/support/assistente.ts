@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
+import { newTokenValue } from "@/modules/mcp/tokens";
 import { testDb } from "../../support/db";
 import { loginAs } from "../../support/login";
 import { gotoReady } from "../../support/nav";
@@ -122,4 +123,75 @@ export async function seedAuditEvent(
       createdAt: new Date(o.at),
     },
   });
+}
+
+const SERVER = "http://localhost:3101";
+
+/** Token de acesso gravado direto no banco (só o hash): o "assistente" de teste fala com o /api/mcp real. */
+export async function assistantToken(world: World, grantId: string): Promise<string> {
+  const cache = (world.data.tokens as Record<string, string> | undefined) ?? {};
+  if (cache[grantId]) return cache[grantId];
+  const t = newTokenValue("ACCESS");
+  await testDb().mcpToken.create({
+    data: {
+      grantId,
+      kind: "ACCESS",
+      tokenHash: t.hash,
+      expiresAt: new Date("2027-06-01T00:00:00Z"),
+    },
+  });
+  cache[grantId] = t.value;
+  world.data.tokens = cache;
+  return t.value;
+}
+
+/** `tools/call` no servidor de E2E (era 2025-11-25, sem sessão). */
+export async function assistantCall(
+  world: World,
+  grantId: string,
+  tool: string,
+  args: Record<string, unknown>,
+): Promise<{ status: number; ok: boolean; data: any; message: string; code: string }> {
+  const token = await assistantToken(world, grantId);
+  const res = await fetch(`${SERVER}/api/mcp`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+      "mcp-protocol-version": "2025-11-25",
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: { name: tool, arguments: args },
+    }),
+  });
+  const body = (await res.json()) as any;
+  const result = body?.result;
+  const err = result?.structuredContent?.error;
+  return {
+    status: res.status,
+    ok: res.status === 200 && !result?.isError,
+    data: result?.structuredContent,
+    message: err?.message ?? result?.content?.[0]?.text ?? "",
+    code: err?.code ?? "",
+  };
+}
+
+export async function toolNames(world: World, grantId: string): Promise<string[]> {
+  const token = await assistantToken(world, grantId);
+  const res = await fetch(`${SERVER}/api/mcp`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+      "mcp-protocol-version": "2025-11-25",
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }),
+  });
+  const body = (await res.json()) as any;
+  return (body?.result?.tools ?? []).map((t: { name: string }) => t.name);
 }

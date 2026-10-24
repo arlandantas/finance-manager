@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { testDb } from "../../support/db";
 import { gotoReady } from "../../support/nav";
 import { family } from "../support/acerto";
@@ -9,7 +9,7 @@ import {
   seedGrant,
   type Who,
 } from "../support/assistente";
-import { Given, Then, When } from "../support/fixtures";
+import { Given, Then, When, type World } from "../support/fixtures";
 
 Given("o acesso por assistente permitido pela família", async () => {
   // padrão do app: a família nasce permitindo o acesso por assistente
@@ -31,19 +31,29 @@ Given("que o Claude pediu acesso para consultar e lançar", async ({ world }) =>
 });
 
 // Abre "Configurações" ▸ "Assistente de IA" (US-074) ou "Assistente de IA" ▸ aba (US-077/076b).
-When(
-  "{word} abre {string} e {string}",
-  async ({ world, page }, who: Who, primeiro: string, segundo: string) => {
-    await loginAsWho(world, page, who);
-    await gotoReady(page, "/familia");
-    if (primeiro === "Configurações") {
-      await page.getByTestId("assistant-settings-link").click();
-      await expect(page.getByRole("heading", { name: segundo, level: 1 })).toBeVisible();
-      return;
-    }
-    await openAssistant(world, page, who);
-    await page.getByRole("tab", { name: segundo }).click();
-  },
+async function openAssistantTab(
+  { world, page }: { world: World; page: Page },
+  who: Who,
+  primeiro: string,
+  segundo: string,
+) {
+  await loginAsWho(world, page, who);
+  await gotoReady(page, "/familia");
+  if (primeiro === "Configurações") {
+    await page.getByTestId("assistant-settings-link").click();
+    await expect(page.getByRole("heading", { name: segundo, level: 1 })).toBeVisible();
+    return;
+  }
+  await openAssistant(world, page, who);
+  await page.getByRole("tab", { name: segundo }).click();
+}
+When("{word} abre {string} e {string}", async ({ world, page }, who: Who, a: string, b: string) =>
+  openAssistantTab({ world, page }, who, a, b),
+);
+Given(
+  "que {word} abre {string} e {string}",
+  async ({ world, page }, who: Who, a: string, b: string) =>
+    openAssistantTab({ world, page }, who, a, b),
 );
 
 When("Lucas abre a tela de autorização do Claude", async ({ world, page }) => {
