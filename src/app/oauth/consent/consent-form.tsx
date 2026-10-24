@@ -13,6 +13,8 @@ type Props = {
   redirectIsLoopback: boolean;
   knownHost: boolean;
   wantsWrite: boolean;
+  /** Limites vigentes do membro ("Até R$ 500,00 por lançamento · 10 por dia · 5 por hora" ou "Sem limite"). */
+  limitsText: string;
 };
 
 export function ConsentForm(p: Props) {
@@ -177,9 +179,16 @@ export function ConsentForm(p: Props) {
                   O assistente grava lançamentos direto, sem pedir sua confirmação. Você poderá
                   excluí-los depois.
                 </p>
-                <p>
-                  Limites sugeridos: até R$ 500,00 por lançamento · 10 por dia · 5 por hora. Você
-                  poderá alterá-los em Configurações.
+                <p data-testid="consent-limits">
+                  Seus limites: {p.limitsText}.{" "}
+                  <a
+                    href="/configuracoes/assistente#limites"
+                    target="_blank"
+                    rel="noopener"
+                    className="font-semibold underline"
+                  >
+                    Alterar limites
+                  </a>
                 </p>
                 <label className="flex min-h-11 items-start gap-2 font-medium">
                   <input

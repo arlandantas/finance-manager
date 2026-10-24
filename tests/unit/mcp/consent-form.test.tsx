@@ -12,6 +12,7 @@ const props = {
   redirectIsLoopback: false,
   knownHost: true,
   wantsWrite: true,
+  limitsText: "Até R$ 500,00 por lançamento · 10 por dia · 5 por hora",
 };
 
 describe("EN-006a tela de consentimento (SDD-025 §4.1/§8.1)", () => {
@@ -25,6 +26,10 @@ describe("EN-006a tela de consentimento (SDD-025 §4.1/§8.1)", () => {
     await user.click(screen.getByRole("checkbox", { name: /Lançar despesas em seu nome/ }));
     expect(allow).toBeDisabled();
     expect(screen.getByText(/R\$ 500,00 por lançamento/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Alterar limites" })).toHaveAttribute(
+      "target",
+      "_blank",
+    );
     await user.click(screen.getByRole("checkbox", { name: /sem minha confirmação/ }));
     expect(allow).toBeEnabled();
     await user.click(screen.getByRole("checkbox", { name: /Lançar despesas em seu nome/ }));

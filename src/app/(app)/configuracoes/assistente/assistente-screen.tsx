@@ -12,6 +12,7 @@ import { useAssistantSettings, useSetAssistantAccess } from "@/modules/mcp/hooks
 import { ActivityPanel } from "./activity-panel";
 import { ConnectDialog } from "./connect-dialog";
 import { brDate, brWhen } from "./format";
+import { LimitsPanel } from "./limits-panel";
 import { RevokeDialog } from "./revoke-dialog";
 import { Tabs } from "./tabs";
 
@@ -281,6 +282,7 @@ export function AssistenteScreen() {
           <Tabs
             tabs={[
               { id: "conexoes", label: "Conexões", content: <ConnectionsPanel data={data} /> },
+              { id: "limites", label: "Limites de lançamento", content: <LimitsPanel /> },
               { id: "atividade", label: "Atividade", content: <ActivityPanel /> },
             ]}
           />

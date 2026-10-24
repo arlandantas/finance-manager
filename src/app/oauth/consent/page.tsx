@@ -4,6 +4,8 @@ import { getClock } from "@/lib/clock";
 import { findActiveMembership } from "@/modules/familia/repo";
 import { loadConsentView } from "@/modules/mcp/authorize";
 import { mcpEnabled } from "@/modules/mcp/config";
+import { effectiveLimits } from "@/modules/mcp/limits";
+import { describeLimits } from "@/modules/mcp/limits-schemas";
 import { isLoopbackHost } from "@/modules/mcp/redirect";
 import { mcpDb } from "@/modules/mcp/repo";
 import { ConsentForm } from "./consent-form";
@@ -71,6 +73,7 @@ export default async function ConsentPage({
       text: "Este pedido de conexão expirou. Volte ao seu assistente e tente de novo.",
     });
   }
+  const limits = await effectiveLimits(db, member.familyId, member.id);
   const host = new URL(view.redirectUri).hostname;
   const loopback = isLoopbackHost(host);
   return (
@@ -82,6 +85,7 @@ export default async function ConsentPage({
         redirectIsLoopback={loopback}
         knownHost={loopback || KNOWN_HOSTS.includes(host.toLowerCase())}
         wantsWrite={view.scopesRequested.includes("write")}
+        limitsText={describeLimits(limits)}
       />
     </Shell>
   );
