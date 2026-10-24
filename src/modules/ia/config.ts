@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isProdDeploy } from "@/lib/auth/dev-login-guard";
 import { DEFAULT_PRICES, type Price, parsePricesJson } from "@/modules/ia/pricing";
 
 // SDD-021 §2 / ADR-028 §3: configuração do LLM, lida uma vez do ambiente do servidor.
@@ -45,7 +46,7 @@ export function assertLlmConfig(source: Env = process.env): LlmConfig {
   }
   const cfg = parsed.data;
   const isTest = env.NODE_ENV === "test" || env.APP_HOMOLOG_MODE?.toLowerCase() === "true";
-  const isProd = env.APP_DEPLOY_ENV === "production";
+  const isProd = isProdDeploy(env);
   const featuresEnabled = cfg.AI_FEATURES_ENABLED === "true";
   if (isTest && cfg.LLM_PROVIDER === "anthropic") {
     throw new Error(

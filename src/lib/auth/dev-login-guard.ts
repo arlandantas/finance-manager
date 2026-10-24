@@ -3,7 +3,7 @@ import { hostnameOf, isAllowedDevHost } from "@/lib/dev-origins";
 
 type Env = Record<string, string | undefined>;
 
-/** ADR-026 §5: imagem de produção grava APP_DEPLOY_ENV=production; nela, nada de teste/homologação. */
+/** ADR-026 §5 / ADR-031 §4: em produção (e preview) da Vercel, nada de teste/homologação. */
 export const PROD_FORBIDDEN_VARS = [
   "AUTH_DEV_LOGIN",
   "APP_HOMOLOG_MODE",
@@ -11,7 +11,13 @@ export const PROD_FORBIDDEN_VARS = [
 ] as const;
 
 export function isProdDeploy(env: Env = process.env): boolean {
-  return env.APP_DEPLOY_ENV === "production";
+  // ADR-031 §4: VERCEL_ENV é variável de sistema da Vercel (não depende de alguém configurar); preview entra
+  // porque roda código não revisado em URL pública.
+  return (
+    env.APP_DEPLOY_ENV === "production" ||
+    env.VERCEL_ENV === "production" ||
+    env.VERCEL_ENV === "preview"
+  );
 }
 
 /** Variáveis proibidas presentes (a mera presença, com qualquer valor, conta). */
@@ -57,7 +63,7 @@ export function assertSafeAuthConfig(env: Env = process.env): void {
   const unsafe = unsafeProdVars(env);
   if (unsafe.length > 0) {
     throw new Error(
-      `Configuração insegura em produção (APP_DEPLOY_ENV=production): ${unsafe.join(", ")}`,
+      `Configuração insegura em produção (APP_DEPLOY_ENV/VERCEL_ENV): ${unsafe.join(", ")}`,
     );
   }
   if (env.NODE_ENV !== "production") return;

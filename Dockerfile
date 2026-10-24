@@ -1,4 +1,5 @@
-# ADR-026: imagem de produção (Railway). Multi-stage, standalone, usuário não root.
+# ADR-031: produção = Vercel (não usa este Dockerfile). Mantido para ENSAIAR LOCALMENTE a build de produção
+# (restore, smoke) e como plano B de saída da Vercel. Multi-stage, standalone, usuário não root.
 FROM node:22-alpine AS base
 RUN apk add --no-cache libc6-compat openssl
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -18,7 +19,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm exec prisma generate && pnpm exec next build
 
-# Ferramentas de migração isoladas (o pre-deploy do Railway roda `prisma migrate deploy` aqui).
+# Ferramentas de migração isoladas (uso manual: `docker run ... node node_modules/prisma/build/index.js migrate deploy`).
 FROM base AS migrate
 WORKDIR /opt/migrate
 RUN npm init -y >/dev/null && npm install --no-audit --no-fund prisma@7.10.0 dotenv@18
@@ -28,7 +29,7 @@ COPY prisma.config.ts ./
 FROM node:22-alpine AS runner
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
-# Gravado na imagem: ativa as travas do ADR-026 §5 (login de teste/homologação impossíveis).
+# Gravado na imagem: ativa as travas (ADR-026 §5 / ADR-031 §4): login de teste/homologação impossíveis.
 ENV NODE_ENV=production \
     APP_DEPLOY_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \

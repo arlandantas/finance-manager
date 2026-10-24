@@ -132,6 +132,15 @@ Rota de *cron*: `runtime = "nodejs"`, `maxDuration = 60`; exige `Authorization =
 - (−) *Cron* do Hobby impreciso e 1×/dia; *pool* e região exigem cuidado.
 - (−) Dois provedores (Vercel + Prisma) e backup fora deles (GitHub).
 
+## Adendo do Dev & QA (EN-007, 2026-10-24) — nomes de variáveis da integração Prisma
+A integração Prisma da Vercel injeta `DATABASE_URL`/`POSTGRES_URL` (TCP **direto**, `db.prisma.io`) e `PRISMA_DATABASE_URL` (`prisma+postgres://`). Para não exigir variáveis novas, a leitura é **tolerante** (`src/lib/db-url.ts`, testada em `tests/unit/hospedagem/`):
+- **App (runtime)**: primeira URL `postgres(ql)://` entre `DATABASE_URL`, `POSTGRES_URL`; se o host for `db.prisma.io`, vira `pooled.db.prisma.io` automaticamente. URL já *pooled* (ou de outro host, ex.: dev local) passa intacta.
+- **CLI/backup**: `DIRECT_URL`, depois `DATABASE_URL_UNPOOLED`, `POSTGRES_URL_NON_POOLING`, `DATABASE_URL`, `POSTGRES_URL`; se o host for `pooled.db.prisma.io`, volta a `db.prisma.io` (o CLI nunca usa o *pooler*).
+- `PRISMA_DATABASE_URL` é sempre ignorada. Resultado: **o usuário não precisa criar `DIRECT_URL` nem trocar `DATABASE_URL`** se a integração já as injeta; criar `DIRECT_URL`/URL *pooled* explícitas continua valendo e prevalece.
+- Observação: o `vercel-build` aplica `migrate deploy` por `prisma.config.ts` (mesma resolução), então a migração também funciona só com as variáveis da integração.
+- Implementado: `vercel-build`, *pool* `max 3`/`attachDatabasePool`, `isProdDeploy` por `VERCEL_ENV`, `vercel.json` (*cron* `0 7 * * *`; **sem `regions`**: a região do banco é item do checklist do usuário), rota `/api/cron/purge`, `backup.yml` diário com `DATABASE_DIRECT_URL`, remoção do `railway.json`.
+- Não há configuração de repositório que impeça *previews* de enxergarem variáveis (isso é escopo de variável no painel, `agents/manager/checklist-vercel-producao.md`); no código, `VERCEL_ENV=preview` já é tratado como produção para as travas.
+
 ## Fontes (consultadas em 2026-10-24)
 - Vercel — limites de funções (atualizado 2026-08-24): https://vercel.com/docs/functions/limitations
 - Vercel — Cron: https://vercel.com/docs/cron-jobs · uso e limites (Hobby 1×/dia, ±59 min): https://vercel.com/docs/cron-jobs/usage-and-pricing · `CRON_SECRET`, idempotência, sem *retry*: https://vercel.com/docs/cron-jobs/manage-cron-jobs

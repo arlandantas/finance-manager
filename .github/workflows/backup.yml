@@ -1,8 +1,10 @@
 name: backup-postgres
-# ADR-026 §7: pg_dump semanal criptografado. Segredos do repositório: DATABASE_PUBLIC_URL e BACKUP_PASSPHRASE.
+# ADR-031 §8 (adapta ADR-026 §7): pg_dump criptografado do Prisma Postgres, fora do provedor.
+# Segredos do repositório: DATABASE_DIRECT_URL (URL DIRETA, db.prisma.io, não a pooled) e BACKUP_PASSPHRASE.
+# Diário porque o plano Free do Prisma Postgres não tem snapshot automático (se virar Starter+, pode voltar a semanal).
 on:
   schedule:
-    - cron: "0 6 * * 0" # domingo 03:00 BRT
+    - cron: "0 6 * * *" # diário 03:00 BRT
   workflow_dispatch:
 permissions:
   contents: read
@@ -18,7 +20,7 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
       - name: pg_dump criptografado
         env:
-          DATABASE_PUBLIC_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+          DATABASE_DIRECT_URL: ${{ secrets.DATABASE_DIRECT_URL }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         run: ./scripts/backup.sh finance-backup.dump.gpg
       - uses: actions/upload-artifact@v4

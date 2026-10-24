@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isLocalHost } from "@/lib/auth/dev-login-guard";
+import { resolveRuntimeDatabaseUrl } from "@/lib/db-url";
 import { isAllowedDevHost } from "@/lib/dev-origins";
 
 // Valores vazios no .env (ex.: AUTH_GOOGLE_ID="") equivalem a "não definido".
@@ -14,6 +15,8 @@ const schema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     DATABASE_URL: z.string().min(1),
+    // ADR-031 §3: máximo de conexões do pool por instância (padrão 3).
+    DB_POOL_MAX: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).max(20).optional()),
     APP_TIMEZONE: z.string().default("America/Sao_Paulo"),
     APP_URL: z.string().default("http://localhost:3100"),
     APP_PUBLIC_ORIGIN: optionalString,
@@ -51,7 +54,9 @@ export type Env = z.infer<typeof schema>;
 export function getEnv(
   source: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
 ): Env {
-  return schema.parse(source);
+  // ADR-031 §3: tolera os nomes injetados pela integração Prisma (POSTGRES_URL, host direto -> pooled).
+  const url = resolveRuntimeDatabaseUrl(source);
+  return schema.parse(url ? { ...source, DATABASE_URL: url } : source);
 }
 
 /**

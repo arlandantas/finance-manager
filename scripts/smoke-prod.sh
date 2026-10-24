@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Smoke pós-deploy (ADR-026 §5). Uso: scripts/smoke-prod.sh https://seu-app.up.railway.app
+# Smoke pós-deploy (ADR-031 §5, mantém ADR-026 §5). Uso: scripts/smoke-prod.sh https://verbus-finance.vercel.app
+# A Vercel não barra deploy por healthcheck: rode manualmente após cada deploy de produção.
 set -u
 BASE="${1:?uso: smoke-prod.sh <url-publica>}"
 BASE="${BASE%/}"

@@ -1,6 +1,7 @@
 import { config } from "dotenv";
 import type { PrismaClient } from "../src/generated/prisma/client";
 import { createPrismaClient } from "../src/lib/db";
+import { purgeLlmUsage, purgeSpendingAnalyses } from "../src/modules/ia/purge";
 
 /**
  * Scripts operacionais da IA (SDD-021 §5), NUNCA rota HTTP. Sem conteúdo nas saídas.
@@ -46,10 +47,7 @@ export async function run(
       out("--months deve ser um inteiro >= 1");
       return 2;
     }
-    const cutoff = new Date(now);
-    cutoff.setUTCMonth(cutoff.getUTCMonth() - months);
-    const r = await db.llmUsageEvent.deleteMany({ where: { createdAt: { lt: cutoff } } });
-    out(`eventos de consumo apagados: ${r.count}`);
+    out(`eventos de consumo apagados: ${await purgeLlmUsage(db, now, months)}`);
     return 0;
   }
   if (cmd === "purge-analyses") {
@@ -59,10 +57,7 @@ export async function run(
       out("--months deve ser um inteiro >= 1");
       return 2;
     }
-    const cutoff = new Date(now);
-    cutoff.setUTCMonth(cutoff.getUTCMonth() - months);
-    const r = await db.spendingAnalysis.deleteMany({ where: { createdAt: { lt: cutoff } } });
-    out(`análises apagadas: ${r.count}`);
+    out(`análises apagadas: ${await purgeSpendingAnalyses(db, now, months)}`);
     return 0;
   }
   out("comandos: set-cap | purge-usage | purge-analyses");

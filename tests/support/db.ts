@@ -26,7 +26,7 @@ export async function closeTestDb() {
 export function migrateTestDb() {
   execSync("pnpm exec prisma migrate deploy", {
     stdio: "inherit",
-    env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL },
+    env: { ...process.env, DATABASE_URL: TEST_DATABASE_URL, DIRECT_URL: TEST_DATABASE_URL },
   });
 }
 

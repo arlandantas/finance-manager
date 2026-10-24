@@ -9,10 +9,11 @@
 - **Travas** (ADR-031 §4): `isProdDeploy` = `APP_DEPLOY_ENV=production` **ou** `VERCEL_ENV ∈ {production, preview}`; nele, a presença de `AUTH_DEV_LOGIN`, `APP_HOMOLOG_MODE` ou `APP_NOW_OVERRIDE` derruba o `register()`, desliga o login de teste e faz `/api/health` responder `503 unsafe_config`.
 - **Reversão de código**: *Instant Rollback* da Vercel (não reverte migração).
 - ***Smoke* pós-deploy**: `scripts/smoke-prod.sh https://verbus-finance.vercel.app` (+ `pnpm mcp:smoke` quando o MCP existir).
+- **Implementação (EN-007)**: `scripts/vercel-build.mjs`, `vercel.json` (*cron*), `src/app/api/cron/purge/route.ts`, `src/lib/db-url.ts`, `src/lib/db.ts` (*pool*), `.github/workflows/backup.yml`. Dev continua em Docker (`docker-compose.yml`); o `Dockerfile` serve só para ensaio local da *build*.
 - ***Previews***: sem acesso ao banco/segredos de produção (variáveis só em *Production*); desligadas ou com banco próprio (TL-44); *Deployment Protection* ligada.
 
 ## Variáveis (escopo Production)
-`DATABASE_URL` (pooled), `DIRECT_URL` (direta), `DB_POOL_MAX` (opcional, 3), `APP_DEPLOY_ENV=production`, `APP_URL` e `AUTH_URL` (`https://verbus-finance.vercel.app`), `AUTH_TRUST_HOST=true`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `APP_TIMEZONE=America/Sao_Paulo`, `CRON_SECRET`, variáveis de LLM (SDD-021) e de MCP (`MCP_ENABLED`, `MCP_CIMD_ALLOWED_HOSTS`). Opcional: `SMTP_HOST`, `SMTP_PORT`, `MAIL_FROM`.
+`DATABASE_URL` (a que a integração Prisma injeta serve: o app deriva a *pooled* do host direto; ver ADR-031, adendo do Dev), `DIRECT_URL` (opcional se a integração já injeta a direta), `DB_POOL_MAX` (opcional, 3), `APP_DEPLOY_ENV=production`, `APP_URL` e `AUTH_URL` (`https://verbus-finance.vercel.app`), `AUTH_TRUST_HOST=true`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `APP_TIMEZONE=America/Sao_Paulo`, `CRON_SECRET`, variáveis de LLM (SDD-021) e de MCP (`MCP_ENABLED`, `MCP_CIMD_ALLOWED_HOSTS`). Opcional: `SMTP_HOST`, `SMTP_PORT`, `MAIL_FROM`.
 **Nunca definir** `AUTH_DEV_LOGIN`, `APP_HOMOLOG_MODE`, `APP_NOW_OVERRIDE`.
 
 ## Jobs

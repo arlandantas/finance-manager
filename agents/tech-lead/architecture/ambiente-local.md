@@ -3,6 +3,8 @@
 *Responsável: Agente Tech Lead. **Revisão 2 (2026-10-04)**: portas da D-GES-10 e login de teste da D-GES-11. Referências: [ADR-001](../adrs/ADR-001-stack-tecnologica.md), [ADR-002](../adrs/ADR-002-autenticacao-google.md), [ADR-003](../adrs/ADR-003-jobs-e-agendamento.md), [ADR-008](../adrs/ADR-008-login-de-teste.md), [SDD-006](../sdd/SDD-006-esqueleto-e-ambiente.md).*
 
 ## Objetivo
+> Produção (Vercel + Prisma Postgres) está em [`producao.md`](producao.md) e no ADR-031; este documento cobre só o ambiente local em Docker.
+
 Qualquer pessoa clona o repositório e tem o sistema rodando com poucos comandos, sem depender de produção, de conta Google ou de qualquer serviço externo (diretriz 1 do Gestor).
 
 ## Topologia
