@@ -574,3 +574,10 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 
 ### Rodada US-074 ➔ 075 ➔ 077 ➔ 076a/b — verificação final
 Ver o relatório de entrega ao Gestor e DEV-81..86 em [pedidos-ao-gestor.md](../../manager/pedidos-ao-gestor.md). Pendente de serviço externo (não feito): MCP Inspector, Claude real/Claude Code, `/security-review`, homologação SDD-025 §6, deploy.
+
+### [TASK-073] DEV-86 — E2E da Início desatualizados pela US-061/US-063
+- **Status**: Concluído (aguardando validação do Gestor). **Só testes; nenhum código de produção alterado.**
+- **Causa**: o card "Resumo do mês" vem fechado (US-061), a Início lista 10 lançamentos e Despesas inclui Previstas (US-063); os steps esperavam o card aberto.
+- **Arquivos**: `tests/e2e/support/hooks.ts` (preferência `homeSummaryOpen` simulada como aberta, exceto `@resumo-fechado`), `tests/e2e/features/US-012-home-dashboard.feature` e `steps/US-012-*.ts` (últimos 10; cenário do padrão fechado), `features/US-025-resumo-do-mes.feature` e `steps/US-025-*.ts` (despesas `R$ 2.458,90`; segundo dispositivo).
+- **QA**: Playwright desktop + mobile de US-012/025/026/027/029/036: 94 passando; biome e `tsc --noEmit` limpos. Antes: 32 falhas (16 citadas + US-025/026).
+- **Desvios**: DEV-86.
