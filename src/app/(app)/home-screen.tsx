@@ -16,6 +16,7 @@ import { SUMMARY_COPY } from "@/modules/home/copy";
 import { useHome, useMonthSummary } from "@/modules/home/hooks";
 import type { HomeDTO, MonthSummaryDTO } from "@/modules/home/schemas";
 import { SPLIT_COPY } from "@/modules/split/copy";
+import { AssistantReviewCard } from "./assistant-review-card";
 import { LedgerRow } from "./extrato/ledger-row";
 import { TransactionDetailDrawer } from "./extrato/transaction-detail-drawer";
 import { PayPlannedDrawer } from "./previstas/pay-drawer";
@@ -553,6 +554,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
       {h ? (
         <div className="flex flex-col gap-4">
           {h.onboarding.showChecklist ? <Checklist o={h.onboarding} /> : null}
+          <AssistantReviewCard />
 
           <SummaryFold
             summary={h.monthSummary}

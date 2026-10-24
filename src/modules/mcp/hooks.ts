@@ -4,6 +4,8 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import { apiFetch } from "@/lib/http";
 import type { ActivityResponse } from "@/modules/mcp/activity-schemas";
 import type { AssistantSettingsDTO, ConnectionDTO } from "@/modules/mcp/connections-schemas";
+import type { AssistantLimitsDTO, AssistantLimitsInput } from "@/modules/mcp/limits-schemas";
+import type { AssistantReviewDTO } from "@/modules/mcp/review";
 
 export const assistantSettingsKey = ["assistant-settings"] as const;
 export const assistantActivityKey = ["assistant-activity"] as const;
@@ -73,5 +75,55 @@ export function useAssistantActivity(f: {
       return apiFetch<ActivityResponse>(`/api/v1/assistant/activity?${q.toString()}`);
     },
     getNextPageParam: (last) => last.nextCursor ?? undefined,
+  });
+}
+
+// ── Limites de lançamento (US-076b) ──
+export function useAssistantLimits() {
+  return useQuery({
+    queryKey: assistantLimitsKey,
+    queryFn: () => apiFetch<AssistantLimitsDTO>("/api/v1/assistant/limits"),
+  });
+}
+
+/** Salvar limites: sem atualização otimista (só muda com o 200). */
+export function usePutAssistantLimits() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (a: { input: AssistantLimitsInput; idempotencyKey: string }) =>
+      apiFetch<AssistantLimitsDTO>("/api/v1/assistant/limits", {
+        method: "PUT",
+        body: a.input,
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: () =>
+      Promise.all(
+        [assistantLimitsKey, assistantActivityKey].map((queryKey) =>
+          qc.invalidateQueries({ queryKey }),
+        ),
+      ),
+  });
+}
+
+// ── Conferência dos lançamentos via assistente (cartão da Home, US-076a) ──
+export const assistantReviewKey = ["assistant-review"] as const;
+
+export function useAssistantReview() {
+  return useQuery({
+    queryKey: assistantReviewKey,
+    queryFn: () => apiFetch<AssistantReviewDTO>("/api/v1/assistant/review"),
+  });
+}
+
+export function useMarkAssistantReviewed() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (idempotencyKey: string) =>
+      apiFetch<AssistantReviewDTO>("/api/v1/assistant/reviewed", {
+        method: "POST",
+        body: {},
+        idempotencyKey,
+      }),
+    onSuccess: (data) => qc.setQueryData(assistantReviewKey, data),
   });
 }
