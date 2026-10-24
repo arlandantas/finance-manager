@@ -41,3 +41,5 @@ Origem: NEED-024..027, backlog R4 (US-065..077, EN-004..006, 81 pts PO prelim.) 
 | Q-U11/12 | Análise só com agregados; método essencial/importante/supérfluo | Conforme descrito | R4-C |
 
 **Atualização (2026-10-24):** Q-U01 respondida (opt-in por família + anonimização máxima); Q-U08 respondida (chave única do app); Q-U10 **em análise** pelo usuário; importação de fatura (Q-U07/Q-U09) **adiada para a R5** (D-GES-28). Ver D-GES-27..30.
+
+**Pendentes após o Tech Lead (2026-10-24):** TL-23 (enviar o rótulo saneado da categoria, único texto livre do payload; hipótese: sim), TL-24 (US-072 como regra local, sem IA; hipótese: sim), TL-25 (retenção das análises, expurgo em 24 meses), TL-26 (retenção da Anthropic: o opt-in não promete retenção zero por ora), TL-27 (**teto mensal**; sugestão R$ 5,00 por família, ≈ R$ 0,01 por análise), TL-29 (R5 de importação sem IA, extração local de CSV/OFX/PDF-texto; hipótese: sim). Detalhes em `tech-lead/respostas-r4.md`.

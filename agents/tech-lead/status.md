@@ -1,6 +1,25 @@
 # Status do Tech Lead
 
-*Atualizado: 2026-10-05 · Ciclos: **R2.1 e R3** (pós-homologação, abaixo), liberação da **R1** (EN-001, US-001..013) e especificação da **R2** (US-014..019)*
+*Atualizado: 2026-10-24 · Ciclos: **R4** (parcelas já pagas, infra de LLM, privacidade, análise de gastos — abaixo), **R2.1 e R3**, liberação da **R1** e especificação da **R2***
+
+## Ciclo R4 (D-GES-27..30): US-065, EN-004, EN-005 e US-070..073 **Especificadas**; importação (R5) com parecer; MCP pendente
+Respostas completas, ordem técnica, rastreabilidade e pendências: **[`respostas-r4.md`](respostas-r4.md)**.
+
+| Artefato | Cobre | Observação |
+| :--- | :--- | :--- |
+| [ADR-027 Parcelas anteriores ao app](adrs/ADR-027-parcelas-anteriores-ao-app.md) | US-065 | Contador `paidBeforeAppCount`, âncora na fatura da próxima parcela, centavos do plano completo; estende ADR-017/020 |
+| [SDD-020 Parcelas já pagas](sdd/SDD-020-parcelas-ja-pagas-na-entrada.md) | US-065 | `buildRemainingInstallments` (reusa `buildInstallments`), vetores P1..P8, migração com gatilho de imutabilidade |
+| [ADR-028 Integração LLM](adrs/ADR-028-integracao-llm-cliente-unico-e-teto-de-custo.md) | EN-004, US-070 | `LlmPort` único, Haiku 5.5 por padrão (env), chave só no servidor, reserva de custo atômica, provedor simulado, logs sem conteúdo |
+| [SDD-021 Infra de LLM](sdd/SDD-021-infra-llm-en-004.md) | EN-004 | Config/boot, *adapter*, orçamento em micro-reais, `runLlm`, consumo do mês |
+| [ADR-029 Privacidade e anonimização](adrs/ADR-029-privacidade-e-anonimizacao-para-llm.md) | EN-005, US-070..073 | Opt-in por família/finalidade versionado; *allowlist* só de agregados; recorrente opaco; US-072 local; retenção |
+| [SDD-022 Opt-in](sdd/SDD-022-opt-in-privacidade-en-005.md) | EN-005 | Eventos *append-only*, estado efetivo por versão do texto, corrida desligar × envio |
+| [SDD-023 Análise de gastos](sdd/SDD-023-analise-de-gastos-evitaveis.md) | US-070a/b, 071, 072, 073 | Payload exato (Zod), saída sem números, *preview* = enviado, descarte, sugestão local, histórico |
+| [Parecer R5](parecer-r5-importacao-local.md) | US-066..069 | Extração local viável (CSV/PDF texto) e dispensa a LLM; escaneado inviável |
+
+**Pontos R4 (revista):** 34 (= PO) · US-065 5 · EN-004 8 · EN-005 5 · US-070 8 (070a 5 + 070b 3) · US-071 3 · US-072 3 · US-073 2. **Ordem:** US-065 ➜ EN-004 ➜ EN-005 ➜ 070a ➜ 070b ➜ 071 ➜ 073 ➜ 072.
+**Exigem decisão do usuário:** TL-23 (rótulo de categoria saneado no payload), TL-24 (US-072 por regra local), TL-25 (retenção 24 meses), TL-26 (termos/ZDR da Anthropic), **TL-27 (valor do teto; sugestão R$ 5,00/mês)**, TL-29 (R5 sem IA). Gestor: TL-28, TL-33 (ADR do MCP), pendência externa da conta/chave Anthropic. PO: TL-30..32.
+
+---
 
 ## Ciclo R2.1 e R3 (pós-homologação): R2.1 **Especificada** (SDD-010..013); **R3 Especificada** (SDD-014..017, 2026-10-05); EN-003 **concluída** (ADR-018)
 Respostas completas, estimativas por história, ordem técnica, riscos e ajustes pedidos ao PO: **[`respostas-r21-r3.md`](respostas-r21-r3.md)**.

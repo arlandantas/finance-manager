@@ -55,3 +55,4 @@
 | D-GES-28 | **Importação de fatura (US-066..069) adiada para um segundo momento (R5).** O arquivo bruto não pode ser anonimizado por inteiro. O Tech Lead avalia só a viabilidade de extração local + redação de dados pessoais antes de qualquer envio, para decidir a R5. |
 | D-GES-29 | **Ordem da R4 revisada:** US-065 ➔ EN-004 ➔ EN-005 ➔ análise de gastos (US-070..073). A análise envia à LLM **somente agregados** (totais por categoria/mês, sem nomes, descrições, contas ou membros). MCP (EN-006, US-074..077) fica depois. |
 | D-GES-30 | **D-PO-53..69 ratificadas provisoriamente**, exceto o que tratar de importação (R5) e do teto (Q-U10). |
+| D-GES-31 | **TL-28 ratificado:** modelo padrão `claude-haiku-5-5`, escalável a `claude-sonnet-5-5` só se o teste de ouro (SDD-023 §8.4) mostrar qualidade insuficiente. **SDD-020..023 e ADR-027..029 aprovados para desenvolvimento.** Ordem: US-065 ➔ EN-004 ➔ EN-005 ➔ US-070a ➔ 070b ➔ 071 ➔ 073 ➔ 072 (34 pts). |
