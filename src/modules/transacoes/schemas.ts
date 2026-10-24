@@ -32,6 +32,17 @@ const installmentsSchema = z
   .max(MAX_INSTALLMENTS, INSTALLMENTS_MSG)
   .default(1);
 
+const PAID_INT_MSG = "Informe um número inteiro de parcelas pagas";
+export const PAID_BEFORE_APP_MSG = "Informe menos parcelas pagas do que o total do parcelamento";
+export const PAID_ONLY_INSTALLMENT_MSG = "Parcelas já pagas só valem para compra parcelada";
+/** US-065 (SDD-020 §2): parcelas pagas antes do app. */
+export const paidBeforeAppSchema = z
+  .number({ error: PAID_INT_MSG })
+  .int(PAID_INT_MSG)
+  .min(0, PAID_INT_MSG)
+  .max(MAX_INSTALLMENTS - 1, PAID_BEFORE_APP_MSG)
+  .default(0);
+
 // SDD-008 §3.2: despesa em conta OU compra no cartão. SDD-014 §2: `installments` (só no cartão).
 export const CreateExpenseSchema = z
   .object({
@@ -41,6 +52,7 @@ export const CreateExpenseSchema = z
     cardId: z.uuid({ error: "Escolha um cartão" }).optional(),
     isSharedExpense: z.boolean().default(false), // "Só meu" por padrão (US-030, D-GES-15)
     installments: installmentsSchema,
+    paidBeforeApp: paidBeforeAppSchema,
   })
   .strict()
   .superRefine((v, c) => {
@@ -64,6 +76,15 @@ export const CreateExpenseSchema = z
         path: ["installments"],
         message: "Parcelas só valem para compra no cartão",
       });
+    }
+    if (v.paidBeforeApp > 0 && v.installments < 2) {
+      c.addIssue({
+        code: "custom",
+        path: ["paidBeforeApp"],
+        message: PAID_ONLY_INSTALLMENT_MSG,
+      });
+    } else if (v.installments >= 2 && v.paidBeforeApp >= v.installments) {
+      c.addIssue({ code: "custom", path: ["paidBeforeApp"], message: PAID_BEFORE_APP_MSG });
     }
   });
 export const CreateIncomeSchema = z.object({ type: z.literal("INCOME"), ...common }).strict();
@@ -149,7 +170,10 @@ export type InstallmentPlanDTO = {
   payer: MemberRef;
   author: MemberRef;
   count: number;
-  purchaseOn: string;
+  purchaseOn: string; // data nominal da 1ª parcela LANÇADA (= data da compra quando paidBeforeApp = null)
+  /** US-065: parcelas 1..P anteriores ao app. `amountInCents` é INFORMATIVO (nunca somado em total). */
+  paidBeforeApp: { count: number; fromNo: 1; toNo: number; amountInCents: number } | null;
+  purchaseOnKnown: boolean; // false quando há parcelas anteriores ao app
   totalInCents: number; // total ORIGINAL da compra
   currentTotalInCents: number; // Σ parcelas ATIVAS
   activeCount: number;

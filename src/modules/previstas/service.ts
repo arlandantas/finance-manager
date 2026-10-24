@@ -361,6 +361,7 @@ export async function payPlannedExpense(
       ...((input.note ?? row.note) ? { note: (input.note ?? row.note) as string } : {}),
       isSharedExpense: row.isSharedExpense,
       installments: 1,
+      paidBeforeApp: 0,
     },
     { allowArchivedCategory: true },
   );

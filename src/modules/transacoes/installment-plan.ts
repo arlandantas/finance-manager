@@ -4,6 +4,7 @@ import { fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
 import type { MemberRef } from "@/lib/schemas";
 import { invoiceStatus, openInvoiceRef } from "@/modules/cartoes/cycle";
+import { splitInstallments } from "@/modules/cartoes/installments";
 import { activePayments } from "@/modules/cartoes/queries";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type { InstallmentParcelDTO, InstallmentPlanDTO } from "@/modules/transacoes/schemas";
@@ -86,6 +87,18 @@ export async function loadInstallmentPlanDTO(
     author: ref(plan.authorMemberId),
     count: plan.installmentCount,
     purchaseOn: fromDbDate(plan.purchaseOn),
+    paidBeforeApp:
+      plan.paidBeforeAppCount > 0
+        ? {
+            count: plan.paidBeforeAppCount,
+            fromNo: 1,
+            toNo: plan.paidBeforeAppCount,
+            amountInCents: splitInstallments(toCents(plan.totalInCents), plan.installmentCount)
+              .slice(0, plan.paidBeforeAppCount)
+              .reduce((a, b) => a + b, 0),
+          }
+        : null,
+    purchaseOnKnown: plan.paidBeforeAppCount === 0,
     totalInCents: toCents(plan.totalInCents),
     currentTotalInCents: active.reduce((s, d) => s + d.amountInCents, 0),
     activeCount: active.length,

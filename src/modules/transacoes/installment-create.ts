@@ -3,7 +3,10 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 import { compareDate, fromDbDate, toDbDate, todayInFamilyTz } from "@/lib/dates";
 import { fromCents, toCents } from "@/lib/money";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
-import { buildInstallments, INSTALLMENT_SPLIT_RELEASED } from "@/modules/cartoes/installments";
+import {
+  buildRemainingInstallments,
+  INSTALLMENT_SPLIT_RELEASED,
+} from "@/modules/cartoes/installments";
 import { getOrCreateInvoice, type InvoiceRow } from "@/modules/cartoes/invoices";
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { recordRevision } from "@/modules/contas/ledger";
@@ -34,6 +37,8 @@ export async function createInstallmentPurchase(
   await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: primeira trava (a US-042 grava rateio por parcela)
   const repo = transacoesRepo(tx, ctx.familyId);
   const today = todayInFamilyTz(ctx.clock);
+  const paidBeforeApp = input.paidBeforeApp ?? 0;
+  // US-065: com parcelas pagas a data é a ÂNCORA da próxima parcela (ADR-027); sem elas, a data da compra
   const purchaseOn = input.occurredOn ?? today;
   const payerMemberId = input.payerMemberId ?? ctx.memberId;
   const count = input.installments;
@@ -86,10 +91,11 @@ export async function createInstallmentPurchase(
     }
   }
 
-  const drafts = buildInstallments({
+  const drafts = buildRemainingInstallments({
     totalInCents: input.amountInCents,
     count,
-    purchaseOn,
+    paidBeforeApp,
+    anchorOn: purchaseOn,
     closingDay: card.closingDay,
     dueDay: card.dueDay,
   });
@@ -121,6 +127,7 @@ export async function createInstallmentPurchase(
       cardId: card.id,
       totalInCents: fromCents(input.amountInCents),
       installmentCount: count,
+      paidBeforeAppCount: paidBeforeApp,
       purchaseOn: toDbDate(purchaseOn),
       description,
       note: input.note ?? null,
@@ -177,14 +184,14 @@ export async function createInstallmentPurchase(
             description,
             payerMemberId,
             isSharedExpense: false,
-            installment: { planId: plan.id, no: d.no, count },
+            installment: { planId: plan.id, no: d.no, count, paidBeforeApp },
           },
         },
       ],
     });
   }
 
-  // 6) resposta: parcela 1, plano e limite
+  // 6) resposta: 1ª parcela lançada, plano e limite
   const first = rows[0] as (typeof rows)[number];
   const inv1 = invoices[0] as (typeof invoices)[number];
   const members = new Map((await repo.listMembers()).map((m) => [m.id, memberRefOf(m)] as const));
