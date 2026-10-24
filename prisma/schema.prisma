@@ -468,23 +468,24 @@ model Transaction {
 
 // ───────── Compra parcelada (US-040, ADR-017/020, SDD-014): cabeçalho SEM valor próprio no ledger ─────────
 model InstallmentPlan {
-  id                String    @id @default(uuid()) @db.Uuid
-  familyId          String    @db.Uuid
-  cardId            String    @db.Uuid
-  totalInCents      BigInt // total ORIGINAL (> 0); o corrente é derivado das parcelas
-  installmentCount  Int // 2..24
-  purchaseOn        DateTime  @db.Date
-  description       String // 2..100, sem o sufixo "n/N"
-  note              String?
-  categoryId        String    @db.Uuid
-  payerMemberId     String    @db.Uuid
-  authorMemberId    String    @db.Uuid
-  updatedByMemberId String?   @db.Uuid
-  version           Int       @default(1)
-  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt         DateTime  @updatedAt @db.Timestamptz(3)
-  deletedAt         DateTime? @db.Timestamptz(3)
-  deletedByMemberId String?   @db.Uuid
+  id                 String    @id @default(uuid()) @db.Uuid
+  familyId           String    @db.Uuid
+  cardId             String    @db.Uuid
+  totalInCents       BigInt // total ORIGINAL (> 0); o corrente é derivado das parcelas
+  installmentCount   Int // 2..24
+  purchaseOn         DateTime  @db.Date // data nominal da 1ª parcela LANÇADA (= data da compra quando paidBeforeAppCount = 0)
+  paidBeforeAppCount Int       @default(0) // ADR-027: parcelas 1..P pagas antes do app; imutável (trigger)
+  description        String // 2..100, sem o sufixo "n/N"
+  note               String?
+  categoryId         String    @db.Uuid
+  payerMemberId      String    @db.Uuid
+  authorMemberId     String    @db.Uuid
+  updatedByMemberId  String?   @db.Uuid
+  version            Int       @default(1)
+  createdAt          DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt          DateTime? @db.Timestamptz(3)
+  deletedByMemberId  String?   @db.Uuid
 
   family   Family        @relation(fields: [familyId], references: [id])
   card     CreditCard    @relation(fields: [familyId, cardId], references: [familyId, id])
