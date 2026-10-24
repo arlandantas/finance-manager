@@ -13,7 +13,10 @@ export const AUDIT_PARAM_KEYS = [
   "page",
   "limit",
   "cardId",
+  "origin",
   "proposalId",
+  // alteração de limites (LIMITS_CHANGED): campo e valores (configuração do membro; "none" = sem limite)
+  "field",
   // eventos de conexão/revogação (não são ferramentas)
   "validityDays",
   "scopes",
