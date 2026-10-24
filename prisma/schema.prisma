@@ -163,25 +163,26 @@ model Family {
   // EN-004 (SDD-021 §5): sobrescrita do teto mensal de IA (centavos); nulo = padrão do ambiente
   aiMonthlyCapCents Int?
 
-  llmBudgetMonths     LlmBudgetMonth[]
-  llmUsageEvents      LlmUsageEvent[]
-  spendingAnalyses    SpendingAnalysis[]
-  avoidableDismissals AvoidableDismissal[]
-  aiConsentEvents     AiConsentEvent[]
-  members             Member[]
-  familyEvents        FamilyEvent[]
-  invitations         Invitation[]
-  categories          Category[]
-  splitRules          SplitRuleVersion[]
-  bankAccounts        BankAccount[]
-  creditCards         CreditCard[]
-  plannedExpenses     PlannedExpense[]
-  recurringExpenses   RecurringExpense[]
-  installmentPlans    InstallmentPlan[]
-  transactions        Transaction[]
-  transferGroups      TransferGroup[]
-  splitSnapshots      SplitMigrationSnapshot[]
-  dataMigrations      DataMigration[]
+  llmBudgetMonths              LlmBudgetMonth[]
+  llmUsageEvents               LlmUsageEvent[]
+  spendingAnalyses             SpendingAnalysis[]
+  avoidableDismissals          AvoidableDismissal[]
+  categorySuggestionDismissals CategorySuggestionDismissal[]
+  aiConsentEvents              AiConsentEvent[]
+  members                      Member[]
+  familyEvents                 FamilyEvent[]
+  invitations                  Invitation[]
+  categories                   Category[]
+  splitRules                   SplitRuleVersion[]
+  bankAccounts                 BankAccount[]
+  creditCards                  CreditCard[]
+  plannedExpenses              PlannedExpense[]
+  recurringExpenses            RecurringExpense[]
+  installmentPlans             InstallmentPlan[]
+  transactions                 Transaction[]
+  transferGroups               TransferGroup[]
+  splitSnapshots               SplitMigrationSnapshot[]
+  dataMigrations               DataMigration[]
 
   @@map("families")
 }
@@ -245,21 +246,22 @@ model Member {
   family Family @relation(fields: [familyId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
 
-  ownedAccounts        BankAccount[]
-  ownedCards           CreditCard[]
-  plannedResponsible   PlannedExpense[]     @relation("PlannedResponsible")
-  plannedAuthored      PlannedExpense[]     @relation("PlannedAuthor")
-  recurringResponsible RecurringExpense[]   @relation("RecurringResponsible")
-  recurringAuthored    RecurringExpense[]   @relation("RecurringAuthor")
-  planPayer            InstallmentPlan[]    @relation("PlanPayer")
-  planAuthor           InstallmentPlan[]    @relation("PlanAuthor")
-  transactionSplits    TransactionSplit[]
-  paidTransactions     Transaction[]        @relation("TxPayer")
-  authoredTransactions Transaction[]        @relation("TxAuthor")
-  eventsAsActor        FamilyEvent[]        @relation("EventActor")
-  aiConsentEvents      AiConsentEvent[]
-  spendingAnalyses     SpendingAnalysis[]
-  avoidableDismissals  AvoidableDismissal[]
+  ownedAccounts                BankAccount[]
+  ownedCards                   CreditCard[]
+  plannedResponsible           PlannedExpense[]              @relation("PlannedResponsible")
+  plannedAuthored              PlannedExpense[]              @relation("PlannedAuthor")
+  recurringResponsible         RecurringExpense[]            @relation("RecurringResponsible")
+  recurringAuthored            RecurringExpense[]            @relation("RecurringAuthor")
+  planPayer                    InstallmentPlan[]             @relation("PlanPayer")
+  planAuthor                   InstallmentPlan[]             @relation("PlanAuthor")
+  transactionSplits            TransactionSplit[]
+  paidTransactions             Transaction[]                 @relation("TxPayer")
+  authoredTransactions         Transaction[]                 @relation("TxAuthor")
+  eventsAsActor                FamilyEvent[]                 @relation("EventActor")
+  aiConsentEvents              AiConsentEvent[]
+  spendingAnalyses             SpendingAnalysis[]
+  avoidableDismissals          AvoidableDismissal[]
+  categorySuggestionDismissals CategorySuggestionDismissal[]
 
   @@unique([familyId, id])
   // Unicidade (userId) e (familyId, userId) só entre ATIVOS: índices parciais em SQL cru (r21_ex_membro)
@@ -304,12 +306,13 @@ model Category {
   updatedAt         DateTime     @default(now()) @updatedAt @db.Timestamptz(3)
   updatedByMemberId String?      @db.Uuid
 
-  family              Family               @relation(fields: [familyId], references: [id])
-  installmentPlans    InstallmentPlan[]
-  transactions        Transaction[]
-  plannedExpenses     PlannedExpense[]
-  recurringExpenses   RecurringExpense[]
-  avoidableDismissals AvoidableDismissal[]
+  family                       Family                        @relation(fields: [familyId], references: [id])
+  installmentPlans             InstallmentPlan[]
+  transactions                 Transaction[]
+  plannedExpenses              PlannedExpense[]
+  recurringExpenses            RecurringExpense[]
+  avoidableDismissals          AvoidableDismissal[]
+  categorySuggestionDismissals CategorySuggestionDismissal[]
 
   @@unique([familyId, kind, name])
   @@unique([familyId, id])
@@ -820,4 +823,20 @@ model AvoidableDismissal {
 
   @@index([familyId, createdAt(sort: Desc)])
   @@map("avoidable_dismissals")
+}
+
+// US-072 (SDD-023 §5): "Recusar" uma sugestão local de categoria; vale para a família (regra local, sem IA).
+model CategorySuggestionDismissal {
+  familyId       String   @db.Uuid
+  descriptionKey String
+  toCategoryId   String   @db.Uuid
+  byMemberId     String   @db.Uuid
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+
+  family     Family   @relation(fields: [familyId], references: [id])
+  toCategory Category @relation(fields: [familyId, toCategoryId], references: [familyId, id], onDelete: Restrict, onUpdate: Cascade)
+  byMember   Member   @relation(fields: [familyId, byMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([familyId, descriptionKey, toCategoryId])
+  @@map("category_suggestion_dismissals")
 }
