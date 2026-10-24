@@ -6,7 +6,14 @@ Funcionalidade: Home da família
     Quando abro a Home
     Então vejo "Saldo da família: R$ 7.349,50"
     E a lista de contas com seus saldos
-    E os últimos 5 lançamentos
+    E os últimos 10 lançamentos
+
+  @resumo-fechado
+  Cenário: Resumo do mês vem fechado por padrão e abre ao tocar
+    Dado contas "Itaú Mariana" (R$ 6.500,00) e "Nubank Conjunta" (R$ 849,50)
+    Quando abro a Home
+    Então o card "Resumo do mês" está fechado
+    E ao tocar no card "Resumo do mês" ele mostra "Saldo da família"
 
   Cenário: Resumo do mês exclui transferências e acertos
     Dado receitas de "R$ 5.000,00", despesas de "R$ 1.200,00" e uma transferência de "R$ 1.000,00"

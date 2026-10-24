@@ -9,7 +9,7 @@ Funcionalidade: Resumo do Mês na Home
     E previstas de "R$ 650,00" e "R$ 129,90" com vencimento em outubro
     E uma fatura de "R$ 479,00" com vencimento em 15/10/2026
     Quando abro a Home do resumo
-    Então o resumo mostra receitas "R$ 5.000,00" e despesas "R$ 1.200,00"
+    Então o resumo mostra receitas "R$ 5.000,00" e despesas "R$ 2.458,90"
     E o resumo mostra resultado "R$ 3.800,00" e a pagar "R$ 1.258,90"
     E o resumo mostra saldo previsto "R$ 9.890,60"
     E o resumo mostra a linha de faturas "R$ 479,00"

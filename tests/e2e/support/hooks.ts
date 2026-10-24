@@ -32,6 +32,21 @@ Before(async ({ context, $tags }) => {
   });
 });
 
+// US-061/US-063: o card "Resumo do mês" da Início vem fechado por padrão (preferência por dispositivo).
+// Os cenários que conferem Receitas/Despesas, saldos, participação e acerto precisam dele aberto, então
+// o navegador de teste simula "o usuário já abriu o card" (preferência ausente => aberto), exceto nos
+// cenários marcados com @resumo-fechado, que exercitam o padrão real.
+Before(async ({ context, $tags }) => {
+  if ($tags.includes("@resumo-fechado")) return;
+  await context.addInitScript(() => {
+    const real = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (this: Storage, key: string) {
+      const v = real.call(this, key);
+      return v === null && /^fm:v1:u:.+:homeSummaryOpen$/.test(key) ? "true" : v;
+    };
+  });
+});
+
 After(async () => {
   await closeTestDb();
 });

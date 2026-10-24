@@ -32,8 +32,8 @@ Given(
       openingBalanceInCents: parseBRL(bv) ?? 0,
     });
     world.data.accounts = { itau, nubank };
-    // lançamentos para a lista dos últimos 5 (somam zero no saldo: receita e despesa iguais)
-    for (let i = 0; i < 6; i += 1) {
+    // lançamentos para a lista dos últimos 10 — limite da Início enxuta, US-061 (somam zero no saldo: receita e despesa iguais)
+    for (let i = 0; i < 11; i += 1) {
       await makeTransaction(world.family, {
         account: nubank,
         category: "Supermercado",
@@ -48,7 +48,7 @@ Given(
       account: nubank,
       type: "INCOME",
       category: "Salário",
-      amountInCents: [0, 1, 2, 3, 4, 5].reduce((sum, i) => sum + 1000 + i, 0),
+      amountInCents: Array.from({ length: 11 }, (_, i) => i).reduce((sum, i) => sum + 1000 + i, 0),
       occurredOn: "2026-10-01",
       createdAt: new Date(Date.UTC(2026, 9, 1, 11, 0, 0)),
     });
@@ -66,6 +66,21 @@ Then("a lista de contas com seus saldos", async ({ page }) => {
   await expect(items).toHaveCount(2);
   await expect(items.filter({ hasText: "Itaú Mariana" })).toContainText("R$ 6.500,00");
 });
+
+Then("o card {string} está fechado", async ({ page }, _t: string) => {
+  const toggle = page.getByTestId("home-summary-toggle");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByTestId("home-summary")).toHaveCount(0);
+});
+
+Then(
+  "ao tocar no card {string} ele mostra {string}",
+  async ({ page }, _t: string, texto: string) => {
+    await page.getByTestId("home-summary-toggle").click();
+    await expect(page.getByTestId("home-summary-toggle")).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByTestId("home-balance")).toContainText(texto);
+  },
+);
 
 Then("os últimos {int} lançamentos", async ({ page }, n: number) => {
   await expect(page.getByTestId("home-recent").getByTestId("ledger-row")).toHaveCount(n);

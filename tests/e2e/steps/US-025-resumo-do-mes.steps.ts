@@ -217,6 +217,14 @@ Then(
 );
 When("abro a Home em um celular que nunca usou", async ({ browser, world }) => {
   const ctx = await browser.newContext({ baseURL: "http://localhost:3101" });
+  // US-061: o card "Resumo do mês" vem fechado; aqui só interessa o estado do card de saldos dentro dele.
+  await ctx.addInitScript(() => {
+    const real = Storage.prototype.getItem;
+    Storage.prototype.getItem = function (this: Storage, key: string) {
+      const v = real.call(this, key);
+      return v === null && /^fm:v1:u:.+:homeSummaryOpen$/.test(key) ? "true" : v;
+    };
+  });
   const p = await ctx.newPage();
   await loginAs(p, { email: "lucas@exemplo.com", name: "Lucas Silva" });
   await gotoReady(p, "/");
