@@ -3,6 +3,7 @@ import { addMonthsToRef, invoiceDates, invoiceRefFor } from "@/modules/cartoes/c
 import {
   addMonthsClamped,
   buildInstallments,
+  buildRemainingInstallments,
   previewInstallments,
   splitInstallments,
 } from "@/modules/cartoes/installments";
@@ -150,6 +151,12 @@ describe("previewInstallments", () => {
       othersInCents: 25000,
       sameAmount: true,
       firstInvoiceRef: "2026-11",
+      paidBeforeApp: 0,
+      remainingCount: 10,
+      nextNo: 1,
+      remainingEachInCents: 25000,
+      remainingTotalInCents: 250000,
+      remainderOnPaidParcel: false,
     });
   });
   it("com centavos: primeira diferente", () => {
@@ -206,6 +213,198 @@ describe("propriedades (1000 casos, semente fixa)", () => {
         expect(x.competenceOn).toBe(invoiceDates(x.invoiceRef, closingDay, dueDay).closingDate);
         if (i > 0) expect(x.competenceOn > (d[i - 1]?.competenceOn as string)).toBe(true);
         // occurredOn_k <= closingDate(ref_k) <= occurredOn_k + 1 mês (com o dia ajustado ao fim do mês, a igualdade ocorre; DEV-47)
+        expect(x.occurredOn <= x.competenceOn).toBe(true);
+        expect(x.competenceOn <= addMonthsClamped(x.occurredOn, 1)).toBe(true);
+      });
+    }
+  });
+});
+
+describe("buildRemainingInstallments (US-065, SDD-020 P1..P8)", () => {
+  const base = { closingDay: 25, dueDay: 5 };
+  it("P1: 2.500,00 em 10x, 4 pagas, âncora 2026-11-10", () => {
+    const d = buildRemainingInstallments({
+      ...base,
+      totalInCents: 250000,
+      count: 10,
+      paidBeforeApp: 4,
+      anchorOn: "2026-11-10",
+    });
+    expect(d).toHaveLength(6);
+    expect(d.map((x) => x.no)).toEqual([5, 6, 7, 8, 9, 10]);
+    expect(d.every((x) => x.amountInCents === 25000)).toBe(true);
+    expect(d.map((x) => x.invoiceRef)).toEqual([
+      "2026-11",
+      "2026-12",
+      "2027-01",
+      "2027-02",
+      "2027-03",
+      "2027-04",
+    ]);
+    expect(d[0]?.competenceOn).toBe("2026-11-25");
+    expect(d[5]?.competenceOn).toBe("2027-04-25");
+    expect(d[0]?.occurredOn).toBe("2026-11-10");
+    expect(d[5]?.occurredOn).toBe("2027-04-10");
+  });
+
+  it("P2: P = 0 é idêntico a buildInstallments", () => {
+    for (const [total, count, purchaseOn, closingDay, dueDay] of [
+      [250000, 10, "2026-11-10", 25, 5],
+      [100001, 3, "2026-11-28", 25, 5],
+      [10, 2, "2027-01-31", 28, 10],
+      [999999, 24, "2026-10-25", 25, 5],
+      [2, 2, "2026-02-28", 1, 15],
+    ] as const) {
+      const a = { totalInCents: total, count, closingDay, dueDay };
+      expect(buildRemainingInstallments({ ...a, paidBeforeApp: 0, anchorOn: purchaseOn })).toEqual(
+        buildInstallments({ ...a, purchaseOn }),
+      );
+    }
+  });
+
+  it("P3: resto de centavos fica na 1ª, paga", () => {
+    const d = buildRemainingInstallments({
+      ...base,
+      totalInCents: 100001,
+      count: 3,
+      paidBeforeApp: 1,
+      anchorOn: "2026-11-10",
+    });
+    expect(d.map((x) => [x.no, x.amountInCents])).toEqual([
+      [2, 33333],
+      [3, 33333],
+    ]);
+    const p = previewInstallments({
+      totalInCents: 100001,
+      count: 3,
+      purchaseOn: "2026-11-10",
+      closingDay: 25,
+      paidBeforeApp: 1,
+    });
+    expect(p.remainderOnPaidParcel).toBe(true);
+    expect(
+      splitInstallments(100001, 3)
+        .slice(0, 1)
+        .reduce((a, b) => a + b, 0),
+    ).toBe(33335);
+    expect(p.remainingEachInCents).toBe(33333);
+    expect(p.remainingTotalInCents).toBe(66666);
+  });
+
+  it("P4: restando só 1 parcela", () => {
+    const d = buildRemainingInstallments({
+      ...base,
+      totalInCents: 250000,
+      count: 10,
+      paidBeforeApp: 9,
+      anchorOn: "2026-11-10",
+    });
+    expect(d).toHaveLength(1);
+    expect(d[0]?.no).toBe(10);
+  });
+
+  it("P5: P fora de 0..N-1 lança RangeError", () => {
+    for (const paidBeforeApp of [10, -1, 1.5]) {
+      expect(() =>
+        buildRemainingInstallments({
+          ...base,
+          totalInCents: 250000,
+          count: 10,
+          paidBeforeApp,
+          anchorOn: "2026-11-10",
+        }),
+      ).toThrow(RangeError);
+    }
+    expect(() =>
+      previewInstallments({
+        totalInCents: 250000,
+        count: 10,
+        purchaseOn: "2026-11-10",
+        closingDay: 25,
+        paidBeforeApp: 10,
+      }),
+    ).toThrow(RangeError);
+  });
+
+  it("P6: âncora após o fechamento cai na fatura seguinte", () => {
+    const d = buildRemainingInstallments({
+      ...base,
+      totalInCents: 250000,
+      count: 10,
+      paidBeforeApp: 4,
+      anchorOn: "2026-11-28",
+    });
+    expect(d[0]?.no).toBe(5);
+    expect(d[0]?.invoiceRef).toBe("2026-12");
+  });
+
+  it("P7: âncora = closingDate da fatura fechada anterior", () => {
+    const d = buildRemainingInstallments({
+      ...base,
+      totalInCents: 250000,
+      count: 10,
+      paidBeforeApp: 4,
+      anchorOn: "2026-10-25",
+    });
+    expect(d[0]?.invoiceRef).toBe("2026-10");
+  });
+
+  it("P8: fechamento 28 e âncora 31/01 geram uma parcela por fatura", () => {
+    const d = buildRemainingInstallments({
+      totalInCents: 60000,
+      count: 6,
+      paidBeforeApp: 3,
+      anchorOn: "2027-01-31",
+      closingDay: 28,
+      dueDay: 10,
+    });
+    expect(d.map((x) => x.invoiceRef)).toEqual(["2027-02", "2027-03", "2027-04"]);
+  });
+
+  it("prévia com P = 0 não muda o comportamento anterior", () => {
+    const p = previewInstallments({
+      totalInCents: 250000,
+      count: 10,
+      purchaseOn: "2026-11-10",
+      closingDay: 25,
+    });
+    expect(p).toMatchObject({ paidBeforeApp: 0, remainingCount: 10, nextNo: 1 });
+    expect(p.remainderOnPaidParcel).toBe(false);
+  });
+
+  it("propriedade (1000 casos, semente fixa)", () => {
+    const rnd = mulberry32(6565);
+    const int = (a: number, b: number) => a + Math.floor(rnd() * (b - a + 1));
+    for (let n = 0; n < 1000; n++) {
+      const count = int(2, 24);
+      const paidBeforeApp = int(0, count - 1);
+      const total = int(count, 5_000_000);
+      const closingDay = int(1, 28);
+      const dueDay = int(1, 28);
+      const y = int(2026, 2028);
+      const m = int(1, 12);
+      const day = int(1, new Date(Date.UTC(y, m, 0)).getUTCDate());
+      const anchorOn = `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const d = buildRemainingInstallments({
+        totalInCents: total,
+        count,
+        paidBeforeApp,
+        anchorOn,
+        closingDay,
+        dueDay,
+      });
+      const amounts = splitInstallments(total, count);
+      expect(d).toHaveLength(count - paidBeforeApp);
+      const paidSum = amounts.slice(0, paidBeforeApp).reduce((a, b) => a + b, 0);
+      expect(d.reduce((s, x) => s + x.amountInCents, 0) + paidSum).toBe(total);
+      expect(d.map((x) => x.no)).toEqual(
+        Array.from({ length: count - paidBeforeApp }, (_, k) => paidBeforeApp + k + 1),
+      );
+      expect(d[d.length - 1]?.no).toBe(count);
+      const ref1 = invoiceRefFor(anchorOn, closingDay);
+      d.forEach((x, i) => {
+        expect(x.invoiceRef).toBe(addMonthsToRef(ref1, i));
+        expect(x.competenceOn).toBe(invoiceDates(x.invoiceRef, closingDay, dueDay).closingDate);
         expect(x.occurredOn <= x.competenceOn).toBe(true);
         expect(x.competenceOn <= addMonthsClamped(x.occurredOn, 1)).toBe(true);
       });

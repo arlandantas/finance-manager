@@ -60,28 +60,82 @@ export function buildInstallments(i: {
   });
 }
 
+export type RemainingInstallmentsInput = {
+  totalInCents: number;
+  count: number; // plano COMPLETO (2..24)
+  paidBeforeApp: number; // 0..count-1
+  /** P = 0: data da compra; P >= 1: data na fatura da próxima parcela. */
+  anchorOn: DateISO;
+  closingDay: number;
+  dueDay: number;
+};
+
+/** US-065 (SDD-020 §2, ADR-027): rascunhos SÓ das parcelas a lançar (no = P+1..N). P = 0 ⇒ `buildInstallments`. */
+export function buildRemainingInstallments(i: RemainingInstallmentsInput): InstallmentDraft[] {
+  const amounts = splitInstallments(i.totalInCents, i.count);
+  const p = i.paidBeforeApp;
+  if (!Number.isInteger(p) || p < 0 || p >= i.count) {
+    throw new RangeError("paidBeforeApp deve ser inteiro entre 0 e count - 1");
+  }
+  const remaining = i.count - p;
+  const ref1 = invoiceRefFor(i.anchorOn, i.closingDay);
+  return Array.from({ length: remaining }, (_, j) => {
+    const invoiceRef = addMonthsToRef(ref1, j);
+    return {
+      no: p + j + 1,
+      amountInCents: amounts[p + j] as number,
+      occurredOn: addMonthsClamped(i.anchorOn, j),
+      invoiceRef,
+      competenceOn: invoiceDates(invoiceRef, i.closingDay, i.dueDay).closingDate,
+    };
+  });
+}
+
 export type InstallmentPreview = {
   count: number;
   firstInCents: number;
   othersInCents: number;
   sameAmount: boolean;
   firstInvoiceRef: string;
+  /** 0 = comportamento anterior à US-065. */
+  paidBeforeApp: number;
+  remainingCount: number;
+  nextNo: number;
+  /** Valor de cada restante quando P >= 1 (todas iguais). */
+  remainingEachInCents: number;
+  /** Σ das parcelas a lançar. */
+  remainingTotalInCents: number;
+  /** P >= 1 e o total não divide por N: a sobra ficou na 1ª parcela, já paga. */
+  remainderOnPaidParcel: boolean;
 };
 
 export function previewInstallments(i: {
   totalInCents: number;
   count: number;
+  /** P = 0: data da compra; P >= 1: âncora da próxima parcela. */
   purchaseOn: DateISO;
   closingDay: number;
+  paidBeforeApp?: number;
 }): InstallmentPreview {
+  const p = i.paidBeforeApp ?? 0;
+  if (!Number.isInteger(p) || p < 0 || p >= i.count) {
+    throw new RangeError("paidBeforeApp deve ser inteiro entre 0 e count - 1");
+  }
   const amounts = splitInstallments(i.totalInCents, i.count);
   const first = amounts[0] as number;
   const others = (amounts[1] ?? first) as number;
+  const rest = amounts.slice(p);
   return {
     count: i.count,
     firstInCents: first,
     othersInCents: others,
     sameAmount: first === others,
     firstInvoiceRef: invoiceRefFor(i.purchaseOn, i.closingDay),
+    paidBeforeApp: p,
+    remainingCount: i.count - p,
+    nextNo: p + 1,
+    remainingEachInCents: rest[rest.length - 1] as number,
+    remainingTotalInCents: rest.reduce((a, b) => a + b, 0),
+    remainderOnPaidParcel: p >= 1 && i.totalInCents % i.count !== 0,
   };
 }
