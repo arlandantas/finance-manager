@@ -47,3 +47,11 @@
 | D-GES-24 | **Ajustes TL-10..TL-22** devolvidos ao PO (BDD da US-040, US-041, US-043, US-044, tags/Análise, US-051). Hipóteses conservadoras do TL valem até o PO ratificar. |
 | D-GES-25 | **Ratificadas D-PO-43..47** (R3-A/R3-B, ajustes de BDD da US-040/041/043/044/045/047/049/051). Janela de reversão entre R3-A e R3-B: ≥ 7 dias, `--verify` limpo e um fechamento de mês conferido. O texto "Fatura fechada" da US-041 deve ser confirmado pelo Dev na tela. |
 | D-GES-26 | **DEV-35/DEV-36 aceitos:** "A pagar" é por vencimento no mês (a regra "hoje+7" deixa de existir); BDD das US-025, US-017a e US-018 ajustados pelo PO (b83169c). |
+
+## Ratificações (R4: parcelas pagas, IA e MCP — 2026-10-24)
+| ID | Decisão |
+| :-- | :-- |
+| D-GES-27 | **Usuário decidiu:** chave Anthropic **única do app** (Q-U08); envio de dados à Anthropic **só com opt-in por família** e **anonimização máxima** (Q-U01); **teto mensal de custo: em análise** (Q-U10 aberta; EN-004 nasce com teto configurável e valor pendente). |
+| D-GES-28 | **Importação de fatura (US-066..069) adiada para um segundo momento (R5).** O arquivo bruto não pode ser anonimizado por inteiro. O Tech Lead avalia só a viabilidade de extração local + redação de dados pessoais antes de qualquer envio, para decidir a R5. |
+| D-GES-29 | **Ordem da R4 revisada:** US-065 ➔ EN-004 ➔ EN-005 ➔ análise de gastos (US-070..073). A análise envia à LLM **somente agregados** (totais por categoria/mês, sem nomes, descrições, contas ou membros). MCP (EN-006, US-074..077) fica depois. |
+| D-GES-30 | **D-PO-53..69 ratificadas provisoriamente**, exceto o que tratar de importação (R5) e do teto (Q-U10). |

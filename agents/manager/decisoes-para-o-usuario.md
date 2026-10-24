@@ -39,3 +39,5 @@ Origem: NEED-024..027, backlog R4 (US-065..077, EN-004..006, 81 pts PO prelim.) 
 | Q-U04..06 | MCP por membro; só leitura primeiro; padrão aberto | Conforme descrito | R4-D |
 | Q-U07/09 | Fatura inteira à LLM; PDF e CSV primeiro | Conforme descrito | R4-B |
 | Q-U11/12 | Análise só com agregados; método essencial/importante/supérfluo | Conforme descrito | R4-C |
+
+**Atualização (2026-10-24):** Q-U01 respondida (opt-in por família + anonimização máxima); Q-U08 respondida (chave única do app); Q-U10 **em análise** pelo usuário; importação de fatura (Q-U07/Q-U09) **adiada para a R5** (D-GES-28). Ver D-GES-27..30.
