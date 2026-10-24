@@ -165,6 +165,7 @@ model Family {
 
   llmBudgetMonths   LlmBudgetMonth[]
   llmUsageEvents    LlmUsageEvent[]
+  aiConsentEvents   AiConsentEvent[]
   members           Member[]
   familyEvents      FamilyEvent[]
   invitations       Invitation[]
@@ -206,6 +207,7 @@ enum FamilyEventType {
   MEMBER_REMOVED
   MEMBER_LEFT
   INVITATION_RESENT
+  AI_CONSENT_CHANGED // EN-005
 }
 
 // Trilha append-only de eventos da família (trigger forbid_mutation em SQL cru)
@@ -253,6 +255,7 @@ model Member {
   paidTransactions     Transaction[]      @relation("TxPayer")
   authoredTransactions Transaction[]      @relation("TxAuthor")
   eventsAsActor        FamilyEvent[]      @relation("EventActor")
+  aiConsentEvents      AiConsentEvent[]
 
   @@unique([familyId, id])
   // Unicidade (userId) e (familyId, userId) só entre ATIVOS: índices parciais em SQL cru (r21_ex_membro)
@@ -738,4 +741,27 @@ model LlmUsageEvent {
 
   @@index([familyId, month, status])
   @@map("llm_usage_events")
+}
+
+// EN-005 (SDD-022 §5, ADR-029 §1): consentimento por família e finalidade. Append-only (gatilho em SQL cru).
+// Estado efetivo = último evento ENABLED com textVersion = versão vigente (calculado, nunca armazenado).
+enum AiConsentAction {
+  ENABLED
+  DISABLED
+}
+
+model AiConsentEvent {
+  id          String          @id @default(uuid()) @db.Uuid
+  familyId    String          @db.Uuid
+  purpose     LlmPurpose
+  action      AiConsentAction
+  textVersion Int
+  memberId    String          @db.Uuid
+  createdAt   DateTime        @default(now()) @db.Timestamptz(3)
+
+  family Family @relation(fields: [familyId], references: [id])
+  member Member @relation(fields: [familyId, memberId], references: [familyId, id])
+
+  @@index([familyId, purpose, createdAt(sort: Desc)])
+  @@map("ai_consent_events")
 }

@@ -109,7 +109,8 @@ export type FamilyEventDTO = {
     | "SETTLEMENT_TOGGLED"
     | "MEMBER_REMOVED"
     | "MEMBER_LEFT"
-    | "INVITATION_RESENT";
+    | "INVITATION_RESENT"
+    | "AI_CONSENT_CHANGED";
   actor: { id: string; name: string };
   target: { id: string; name: string } | null;
   changes: Record<string, unknown>;

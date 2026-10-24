@@ -147,6 +147,7 @@ const EVENT_TEXT: Record<FamilyDTO["events"][number]["type"], string> = {
   MEMBER_REMOVED: "removeu",
   MEMBER_LEFT: "saiu da família",
   INVITATION_RESENT: "reenviou um convite",
+  AI_CONSENT_CHANGED: "alterou o uso de IA",
 };
 
 function RenameDialog({
