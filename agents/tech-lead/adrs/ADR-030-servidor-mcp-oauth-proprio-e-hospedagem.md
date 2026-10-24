@@ -1,7 +1,52 @@
 # ADR-030: Servidor MCP dentro do app Next — OAuth 2.1 próprio, escopos `read`/`write`, lançamento em duas etapas e hospedagem
 
 ## Status
-Aceito (Tech Lead), 2026-10-24, **com uma decisão explícita pendente do usuário/Gestor**: hospedagem (§9, TL-35). Nada do resto depende dela: o desenho é *stateless* e roda igual no Railway (ADR-026) ou na Vercel.
+Aceito (Tech Lead), 2026-10-24. **Revisão 2 (2026-10-24, D-GES-36 + refinamentos do Gestor)** — prevalece sobre o texto original onde houver conflito:
+
+| § | O que mudou |
+| :-- | :-- |
+| §6 | **Lançamento direto pelo chat, sem confirmação no app** (decisão do dono do produto). A ferramenta `lancar_despesa` grava a despesa na hora, com idempotência, autor = membro, `origin = ASSISTANT` e selo "via assistente". Salvaguardas na **§6-R2** abaixo. Proposta + confirmação (30 min) deixa de ser o padrão; vira **modo opcional "exigir confirmação"** no *backlog* (US-076c). |
+| §7 | Injeção de instruções: a barreira "confirmação humana" sai; entram limites **configuráveis pelo membro** e reversão simples (§6-R2). Risco residual registrado. |
+| §8 | Auditoria ganha `LIMITS_CHANGED`; limite de lançamento por membro (configurável) ao lado dos limites de transporte (fixos). |
+| §9 | **Resolvido**: produção é **Vercel + Prisma Postgres** ([ADR-031](ADR-031-producao-vercel-prisma-postgres.md)); MCP dentro do mesmo app Next na Vercel. |
+| §2 | Alternativas ao OAuth (token pessoal, cabeçalho estático, ponte stdio, GPT Actions) reavaliadas com fontes na **§2-R2**: **OAuth continua obrigatório para Claude/ChatGPT/Gemini hospedados**; token pessoal fica como **backlog futuro** (fora do POC). |
+| Escopo | **POC com um cliente: Claude** (web/Desktop/mobile; Claude Code de brinde pelo mesmo AS). Registro de cliente só por **CIMD** no POC (Claude e ChatGPT usam CIMD); **DCR adiado** para a ampliação. |
+| Prazos | Aprovados (D-GES-36 d): conexão 30/90 dias, acesso 60 min, auditoria 12 meses. |
+
+### §2-R2. Alternativas ao OAuth — o que cada cliente aceita (verificado 2026-10-24)
+| Cliente | OAuth (por pessoa) | Token/cabeçalho estático | Outras vias | Fonte |
+| :-- | :-- | :-- | :-- | :-- |
+| **Claude** web/Desktop/mobile/Cowork | **Sim** (DCR, CIMD, credenciais Anthropic) | Só *beta* para um grupo limitado de organizações, inserido pelo **Owner**, "credencial da organização, não de uma pessoa" | Sem autenticação; Desktop pode usar **ponte stdio local** (`mcp-remote --header`) — exige Node no computador e arquivo de configuração | claude.com/docs/connectors/building/authentication |
+| **Claude Code** | Sim | **Sim** (`claude mcp add --transport http … --header "Authorization: Bearer …"`, `headersHelper`) | — | code.claude.com/docs/en/mcp |
+| **ChatGPT** (modo desenvolvedor) | **Sim** | **Não confirmado** (fontes de terceiros divergem; várias dizem que não há campo de *token*) | Sem autenticação; **GPT personalizado com Actions** (OpenAPI) aceita *API key* configurada pelo criador ou OAuth — exigiria uma API REST/OpenAPI própria, não o MCP | developers.openai.com/api/docs/actions/authentication · docs.dataddo.com/docs/chatgpt |
+| **Gemini app** | DCR ou credenciais manuais (só EUA) | Não documentado | — | support.google.com/gemini/answer/17209137 |
+| **Gemini CLI** | Sim (descoberta + DCR) | **Sim** (`headers` em `httpUrl`) | — | geminicli.com/docs/tools/mcp-server |
+| **Antigravity** | Sim (fontes relatam instabilidade) | **Sim** (`serverUrl` + `headers`) — fontes comunitárias | — | arcade.dev/blog/how-to-connect-mcp-antigravity |
+| **Cursor** | Sim (PKCE, DCR, *refresh*) | **Sim** (`headers` com `${env:…}`) | `auth` com client ID fixo | cursor.com/docs/context/mcp |
+| **VS Code / Copilot** | Sim (`oauth` com `clientId`; DCR não confirmado na página) | **Sim** (`headers` + `inputs` com `password: true`, guardado com segurança) | — | code.visualstudio.com/docs/copilot/reference/mcp-configuration |
+| **Mistral Le Chat** | Sim (OAuth 2.1 com DCR) | **Sim** (*Bearer*/Basic) — só administrador (dono da conta no Free/Pro) | — | docs.mistral.ai/le-chat/knowledge-integrations/connectors/mcp-connectors |
+
+**Conclusão**: não existe opção que atenda **mais chatbots hospedados** que o OAuth — Claude.ai e ChatGPT, os dois que funcionam no Brasil, só aceitam credencial por pessoa via OAuth. Um **token de acesso pessoal (PAT)** soma **IDEs/CLIs/agentes** (Claude Code, Cursor, VS Code, Gemini CLI, Antigravity, Le Chat, automações) e serve de *plano B* quando o OAuth de um cliente falha. **Recomendação**: oferecer o PAT **além** do OAuth, mas **depois do POC** (US-074b, backlog, **3 pts**):
+- Por membro; nome; escopo `read` (padrão) ou `read write` (com as mesmas salvaguardas da §6-R2); validade **30 ou 90 dias** (sem "nunca expira"); prefixo `fmp_` + 32 bytes; **mostrado uma vez**; guardado só como **SHA-256**; últimos 4 caracteres visíveis; revogável na hora; máx. 5 ativos por membro; mesma auditoria e limites. Implementação: linha em `mcp_grants` com `kind = PAT` e `clientId` nulo ⇒ `resolveMcpContext` igual (SDD-024 §11).
+- **Riscos/custos**: o *token* fica em texto claro em arquivos de configuração (`.mcp.json`, `mcp_config.json`, `claude_desktop_config.json`) e pode ir parar num *commit* ou *backup*; sem rotação automática nem detecção de reuso (o OAuth tem); o usuário precisa copiar segredo (UX pior). Mitigação: validade curta, `write` desmarcado por padrão, aviso "não cole em repositório", revogação e atividade visíveis.
+- **Não recomendado**: ponte stdio própria (manter pacote local sem ganho: Claude Desktop já aceita OAuth); GPT Actions/OpenAPI (+5 pts para uma segunda API; ChatGPT já fala MCP); *static headers* do Claude (beta restrito e credencial de organização).
+
+### §6-R2. Lançamento direto e salvaguardas proporcionais
+Contexto que dimensiona o risco: o app é um **livro-caixa**; nenhuma ferramenta movimenta dinheiro real. O dano possível de uma LLM enganada ou errada é **registro incorreto** nos dados do próprio membro, reversível.
+1. **Escopo `write` à parte e opt-in explícito**: no consentimento, "Lançar despesas em seu nome" vem **desmarcado**, com texto "O assistente grava direto, sem pedir sua confirmação no app"; marcar exige um segundo "Entendi". Conexão só `read` não vê a ferramenta (`tools/list`).
+2. **Capacidade mínima**: só **despesa à vista "Só meu"** do próprio membro (não afeta o acerto de ninguém), conta ou cartão; **nada** de editar, excluir, transferir, pagar fatura, dividir, parcelar ou receita.
+3. **Limites configuráveis pelo membro** (Configurações ▸ Assistente ▸ Limites de lançamento), sugeridos de forma conservadora: **valor máximo por lançamento R$ 500,00**, **10 lançamentos por dia** (dia no fuso da família), **5 por hora**. Cada um pode ser alterado ou **removido ("sem limite")**; remover mostra o aviso de risco e exige confirmação; toda alteração vai à auditoria (`LIMITS_CHANGED`). Os limites **de transporte** (60 chamadas/min e 1.000/dia por conexão) **não são configuráveis**: protegem o serviço, não a decisão do membro. O teto do próprio `amountInCentsSchema` do app continua valendo.
+4. **Validações do app**: as mesmas da despesa (`createExpenseCore`): conta/cartão ativos, categoria de despesa ativa, fatura não paga, data entre hoje − 60 dias e hoje (mais estreito que a tela: lançamento por chat é do dia a dia; fora disso o app recusa e a LLM orienta usar o app).
+5. **Idempotência**: `idempotencyKey` da LLM (mesma chave + mesmo conteúdo ⇒ devolve o mesmo lançamento; conteúdo diferente ⇒ erro) e **duplicata natural** (mesmo conteúdo, mesma conexão, ≤ 10 min) ⇒ **não grava** e devolve o existente com `duplicate: true`; para lançar de novo de propósito, a LLM reenvia com `allowDuplicate: true`.
+6. **Visibilidade e aviso**: selo **"via assistente"** (com o nome da conexão) no Extrato e no detalhe; **filtro "Origem: assistente"** no Extrato; **cartão na Home** "N lançamentos via assistente desde sua última conferência" com link para o Extrato filtrado (marca como conferido ao abrir). Notificação por e-mail/push não existe no app — fica fora.
+7. **Reversão simples**: o lançamento é um lançamento comum ⇒ **Excluir com "Desfazer"** já existente (exclusão lógica + `restore`, SDD-001) e editar. No cartão da Home e no detalhe: atalho "Excluir". Não há ferramenta MCP de excluir (uma LLM enganada não apaga nada).
+8. **Auditoria**: evento `TOOL lancar_despesa` com `transactionId` e resultado (inclusive `LIMIT_EXCEEDED`), sem valor nem descrição no evento; a tela de Atividade mostra o resumo a partir do **lançamento** (dado do próprio membro).
+9. **Camada do cliente** (fora do nosso controle, não contamos com ela): Claude pede permissão por ferramenta (o usuário pode escolher "Sempre permitir"); ChatGPT pede confirmação para escrita. Anotações corretas ajudam: `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: false`.
+10. **Modo opcional "exigir confirmação no app"** (backlog US-076c, 3 pts): por conexão, devolve à proposta + confirmação do desenho original.
+
+**Risco residual (honesto)**: com `write` concedido, uma instrução maliciosa escondida em texto que a LLM leia (descrição de lançamento, página web, e-mail aberto no mesmo chat) ou um erro de interpretação ("80" virando "800", conta errada) **grava lançamentos sem o membro ver na hora**, até os limites configurados — por padrão até 10 × R$ 500 por dia; **sem limite**, sem teto além do *schema* do app. A detecção é **posterior** (cartão da Home, selo, filtro, atividade) e a correção é **manual** (excluir/editar). Não há perda de dinheiro real nem impacto no acerto de outro membro, mas saldo, fatura e relatórios do membro ficam errados até a correção. Esse risco é **aceito pelo dono do produto** ao escolher o lançamento direto.
+
+Original (2026-10-24, rev. 1): **com uma decisão explícita pendente do usuário/Gestor**: hospedagem (§9, TL-35) — resolvida na revisão 2.
 Base dos SDDs [SDD-024](../sdd/SDD-024-mcp-base-oauth-escopo-auditoria-en-006.md) (EN-006), [SDD-025](../sdd/SDD-025-mcp-conexoes-e-revogacao-us-074.md) (US-074), [SDD-026](../sdd/SDD-026-mcp-ferramentas-de-leitura-us-075.md) (US-075) e [SDD-027](../sdd/SDD-027-mcp-proposta-confirmacao-e-auditoria-us-076-077.md) (US-076, US-077).
 Rastreabilidade: NEED-025 (RN-025.1..7; Q-U04..06) · RF43 · RN15 · EN-006, US-074..077 · FLUXO-016 §3 · D-PO-66/67 · **D-GES-35** (por membro; ignora "ocultar valores"; leitura **e** lançamento em duas etapas; Claude, Gemini e ChatGPT com OAuth; preferência pela Vercel) · ADR-009 (idempotência) · ADR-013 (isolamento) · ADR-019 (ex-membro) · ADR-026 (produção).
 
@@ -67,6 +112,7 @@ Contrato do AS (detalhes no SDD-024):
 Cada ferramenta chama o **serviço** já usado pela rota da tela (`listAccounts`, `getMonthSummary`, `listCards`, `listTransactions`, `listPayables`, `listCategories`) e devolve um DTO **construído por *allowlist*** (nunca o DTO interno inteiro), com valores em **centavos inteiros** mais o texto já formatado em R$ (`formatBRL` do app), competência e moeda explícitas. A única agregação nova (gastos por categoria) é extraída de `analise-ia/aggregates.ts` para `transacoes/` e reconciliada com `ledgerTotals` (mesmo predicado, ADR-022). Paginação por cursor do Extrato, `limit ≤ 50`. Nada recalcula saldo.
 
 ### 6. Escrita: proposta + confirmação **no app**, sem editar nem excluir
+> **Substituído pela §6-R2 (revisão 2)**: lançamento direto. O texto abaixo descreve o futuro modo opcional "exigir confirmação" (US-076c).
 - `propor_lancamento` grava só uma **proposta** (`assistant_proposals`, status `PENDING`), à vista, "Só meu", do próprio membro, com as mesmas validações da despesa (conta/cartão ativos da família, categoria de despesa ativa, `amountInCents` pelo mesmo `amountInCentsSchema` do app, data entre hoje − 365 dias e hoje). Devolve `proposalId`, resumo **formatado pelo servidor** e `confirmUrl`.
 - **Confirmação só pelo membro, no app** (`/assistente/propostas/:id`, sessão do app + `POST` com CSRF + `Idempotency-Key`): a tela mostra os dados **do banco**, não o texto da LLM. Confirmar chama `createExpenseCore` na mesma transação que marca a proposta `CONFIRMED` e grava `transactions.origin = ASSISTANT` e `assistantProposalId` (único). Não existe ferramenta MCP de confirmar: uma LLM enganada por injeção **não consegue** gravar nada sozinha.
   - Por que não confirmar no chat: a aprovação de ferramenta do cliente é da interface do cliente, varia por cliente/plano e pode ser "Sempre permitir" (Claude); *elicitation* não é suportada pelo Claude. Confirmar no chat fica como **decisão do usuário** (TL-37), não recomendado.
@@ -88,7 +134,8 @@ O app não controla a LLM; controla **o que ela pode fazer e o que ela recebe**:
 - **Auditoria** (`mcp_audit_events`, *append-only* por gatilho): família, membro, *grant*, nome do cliente (cópia), ferramenta, **parâmetros permitidos** (período, ids de filtro, página — nunca `q` nem descrição), resultado (`OK`, `DENIED_SCOPE`, `INVALID`, `RATE_LIMITED`, `ERROR`), `proposalId`/`transactionId`, duração, data. **Nunca o conteúdo devolvido.** Eventos de conexão/revogação também. Retenção: **12 meses** (expurgo por *script*, como `ai:purge-*`). Chamadas sem *token* válido não têm membro: vão só ao *logger* (contagem, IP truncado).
 - *Logs*: `Authorization`, *tokens*, códigos, `code_verifier` e corpos de resposta no `redact` do pino; teste de *logger*.
 
-### 9. Hospedagem: Railway (ADR-026) × Vercel — **decisão do usuário (TL-35)**
+### 9. Hospedagem: Railway (ADR-026) × Vercel — **resolvido: Vercel + Prisma Postgres ([ADR-031](ADR-031-producao-vercel-prisma-postgres.md))**
+> **Revisão 2**: o app já está na Vercel (D-GES-36). Vale o [ADR-031](ADR-031-producao-vercel-prisma-postgres.md): MCP no mesmo app, `maxDuration = 30` nas rotas do MCP/OAuth, *pool* pequeno com `attachDatabasePool`, limites no Postgres, *previews* sem banco de produção, sem *Attack Challenge Mode* nessas rotas, domínio decidido antes de ligar o MCP. A tabela abaixo fica como histórico.
 O MCP *stateless* roda nos dois sem mudar código. O que muda é **onde o app inteiro roda** (o consentimento precisa da sessão do app, então AS, MCP e telas devem ficar no **mesmo domínio**).
 
 | Critério | Railway (ADR-026, atual) | Vercel (app inteiro) | Vercel **só** para o MCP |
@@ -122,7 +169,7 @@ O MCP *stateless* roda nos dois sem mudar código. O que muda é **onde o app in
 | Divulgação | LLM do membro repassa dados | Fora do controle: aviso explícito no consentimento; respostas mínimas (sem `note`) |
 
 ## Alternativas descartadas
-- **Token pessoal colado** (pedido original do PO): não funciona nos clientes-alvo hospedados (§2); poderia servir a CLIs, mas aumenta superfície. Não construir.
+- **Token pessoal colado** (pedido original do PO): não funciona nos clientes-alvo hospedados (§2). **Revisão 2**: deixa de ser descartado — vira complemento opcional para IDEs/CLIs, **depois do POC** (§2-R2, US-074b).
 - **JWT de acesso**: revogação imediata exigiria lista de bloqueio consultada a cada chamada — o mesmo custo do opaco, com mais complexidade.
 - **Confirmação via ferramenta MCP**: a LLM poderia chamá-la sozinha (§6).
 - **MCP por família**: D-GES-35 decidiu por membro.
@@ -150,4 +197,5 @@ O MCP *stateless* roda nos dois sem mudar código. O que muda é **onde o app in
 - Google — Gemini CLI: MCP e OAuth: https://geminicli.com/docs/tools/mcp-server/ · transição para Antigravity CLI: https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/
 - Antigravity — MCP: https://antigravity.google/docs/mcp (detalhes de OAuth só em fontes comunitárias, ex.: https://wikidocs.net/312519)
 - Vercel — Limites de funções (atualizado 2026-08-24): https://vercel.com/docs/functions/limitations · MCP na Vercel: https://vercel.com/docs/mcp/deploy-mcp-servers-to-vercel
+- Revisão 2 (2026-10-24): Claude Code — `--header`/`headersHelper`: https://code.claude.com/docs/en/mcp · Cursor: https://cursor.com/docs/context/mcp · VS Code: https://code.visualstudio.com/docs/copilot/reference/mcp-configuration · Gemini CLI `headers`: https://geminicli.com/docs/tools/mcp-server/ · Antigravity `serverUrl`+`headers` (comunitária): https://www.arcade.dev/blog/how-to-connect-mcp-antigravity · Mistral Le Chat: https://docs.mistral.ai/le-chat/knowledge-integrations/connectors/mcp-connectors · GPT Actions (None/API Key/OAuth): https://developers.openai.com/api/docs/actions/authentication · ChatGPT sem *token* estático (terceiro): https://docs.dataddo.com/docs/chatgpt · ponte `mcp-remote` (terceiro): https://docs.nautobot.com/projects/nautobot-mcp-server/en/stable/user/claude_desktop/
 - npm: `@modelcontextprotocol/server` 2.4.0, `@modelcontextprotocol/sdk` 1.32.2, `mcp-handler` 2.3.0 (`npm view`, 2026-10-24)

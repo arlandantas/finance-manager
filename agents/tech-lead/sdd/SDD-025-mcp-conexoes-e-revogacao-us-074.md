@@ -101,3 +101,30 @@ Regras:
 ## 7. Estimativa e *commits*
 **5**: API de conexões + revogação + bloqueio + gancho de remoção (2); tela de consentimento (do SDD-024, aqui só o polimento visual e estados) e tela de Configurações com instruções (2); testes E2E (1).
 *Commits*: (1) serviço + rotas + gancho na remoção; (2) telas; (3) E2E.
+
+---
+
+## 8. Revisão 2 (2026-10-24, D-GES-36 + refinamentos do Gestor) — prevalece sobre §1–§7 onde houver conflito
+### 8.1 Consentimento com escrita direta
+- A permissão opcional passa a ser: **"Lançar despesas em seu nome"** com subtítulo "O assistente grava direto no app, **sem pedir sua confirmação**. Só despesas à vista 'Só meu', dentro dos seus limites de lançamento." — desmarcada por padrão; só aparece se o cliente pediu `write`.
+- Ao marcar: painel âmbar com os **limites vigentes do membro** ("Até R$ 500,00 por lançamento · 10 por dia · 5 por hora" ou "Sem limite" quando ele os removeu) + link "Alterar limites" (abre em nova aba `/configuracoes/assistente#limites`) + segunda caixa **"Entendi que o assistente pode lançar sem minha confirmação"** obrigatória para o "Permitir" ficar habilitado.
+- Contrato: `ConsentDecisionSchema` ganha `writeAcknowledged: z.literal(true).optional()`, obrigatório quando `allowWrite = true` (`400` "Confirme que entendeu o aviso de lançamento"). O valor fica registrado no evento `CONNECTED` (`params.writeAcknowledged = true`).
+- Lista de conexões: `scopeLabel` passa a `"Leitura" | "Leitura e lançamento direto"`.
+
+### 8.2 Configurações ▸ Assistente de IA — nova seção **"Limites de lançamento"** (`#limites`)
+Visível para todo membro (cada um configura os **seus**; o ADMIN não altera os dos outros). Contratos em SDD-027 §R2.3.
+- Três linhas, cada uma com campo + interruptor "Sem limite": **Valor máximo por lançamento** (máscara R$, padrão R$ 500,00), **Lançamentos por dia** (inteiro 1..200, padrão 10), **Lançamentos por hora** (1..60, padrão 5). Texto de apoio: "Valores sugeridos pelo app. Você pode mudar ou remover."
+- Ligar "Sem limite" em qualquer linha abre `Dialog`: "**Remover este limite?** Se uma instrução maliciosa ou um erro do assistente acontecer, ele poderá lançar sem esse teto até você perceber. Você continua podendo excluir lançamentos depois." Botões "Remover limite" (destrutivo) e "Manter". Mudar para um valor **maior** que o padrão mostra o mesmo aviso em linha (sem diálogo).
+- Botão "Restaurar sugeridos". Salvar = `PUT` com `version` (409 em conflito ⇒ recarrega). Sem atualização otimista.
+- Rodapé: "Limites de proteção do serviço (60 chamadas por minuto por conexão) não são configuráveis."
+- Estados: `loading` (*skeleton* de 3 linhas), `saving`, `saved` (*toast* "Limites salvos"), erro de validação por campo.
+
+### 8.3 POC só com Claude
+- O `Dialog` "Conectar um assistente" mostra **só a aba Claude** (web/Desktop/mobile) e um bloco recolhido "Claude Code" (`claude mcp add --transport http financas <url>`). Abas ChatGPT/Gemini entram na ampliação.
+- Roteiro de homologação do POC = §6 itens 1 e 2 + item novo: "conectar com 'Lançar despesas', pedir 'lance R$ 80 de farmácia no Nubank', conferir o selo 'via assistente' no Extrato, excluir pelo cartão da Home e restaurar".
+
+### 8.4 Token pessoal (backlog US-074b, fora do POC)
+Seção "Tokens pessoais (avançado)" com "Criar token": nome, validade 30/90 dias, escopo (Leitura; "Lançar despesas" com o mesmo aviso da §8.1) ⇒ mostra o token **uma vez** com "Copiar" e o aviso "Guarde fora de repositórios; quem tiver este token acessa seus dados". Lista com `fmp_…abcd`, último uso, "Revogar". Contratos no SDD-024 §11.4.
+
+### 8.5 Estimativa revista
+US-074 (POC) **5** (inalterada: +opt-in reforçado e só uma aba se compensam). Seção de limites: conta na **US-076b** (SDD-027). US-074b (PAT): **3**, ampliação.

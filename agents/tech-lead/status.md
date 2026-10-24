@@ -1,6 +1,25 @@
 # Status do Tech Lead
 
-*Atualizado: 2026-10-24 · Ciclos: **R4-D** (MCP — abaixo), **R4** (parcelas já pagas, infra de LLM, privacidade, análise de gastos), **R2.1 e R3**, liberação da **R1** e especificação da **R2***
+*Atualizado: 2026-10-24 · Ciclos: **R4-D v2** (Vercel, alternativas ao OAuth, lançamento direto, POC — abaixo), **R4-D** (MCP), **R4**, **R2.1 e R3**, **R1/R2***
+
+## Ciclo R4-D v2 (D-GES-36 + refinamentos do Gestor): hospedagem revista, lançamento direto, POC com Claude
+Respostas, estimativas, ordem, decisões pendentes e ajustes de BDD: **[`respostas-r4d-v2.md`](respostas-r4d-v2.md)**.
+
+| Artefato | Mudança |
+| :--- | :--- |
+| [ADR-031 Produção na Vercel + Prisma Postgres](adrs/ADR-031-producao-vercel-prisma-postgres.md) | **Novo**; substitui o ADR-026 em produção. Dev segue em Docker. URL *pooled*/direta, `vercel-build` com `migrate deploy`, travas por `VERCEL_ENV`, *cron* de expurgo, backup, *previews*, riscos atuais (§12), tarefas do Dev (EN-007, 5 pts) |
+| [ADR-026](adrs/ADR-026-producao-do-alpha.md) | Marcado como substituído em produção |
+| [ADR-030](adrs/ADR-030-servidor-mcp-oauth-proprio-e-hospedagem.md) | Revisão 2: §2-R2 (alternativas ao OAuth com fontes; PAT no *backlog*), §6-R2 (lançamento direto e salvaguardas; risco residual), §9 resolvido, POC Claude |
+| [SDD-024](sdd/SDD-024-mcp-base-oauth-escopo-auditoria-en-006.md) §11 | Vercel, POC só CIMD (EN-006a 7), `write` = lançar, `LIMITS_CHANGED`/`LIMIT_EXCEEDED`, gancho do PAT |
+| [SDD-025](sdd/SDD-025-mcp-conexoes-e-revogacao-us-074.md) §8 | Opt-in de escrita com segunda ciência, tela "Limites de lançamento" (inclui "sem limite" com aviso), aba só Claude, PAT (*backlog*) |
+| [SDD-026](sdd/SDD-026-mcp-ferramentas-de-leitura-us-075.md) | `origin` em `listar_lancamentos` |
+| [SDD-027](sdd/SDD-027-mcp-proposta-confirmacao-e-auditoria-us-076-077.md) rev. 2 | `lancar_despesa` direto, limites configuráveis do membro, selo/filtro/cartão de conferência, testes; fatiado em 076a/b/c |
+| [`architecture/producao.md`](architecture/producao.md) | Reescrito para Vercel + Prisma Postgres |
+
+**Pontos:** POC (Claude) **38** = EN-007 5 · EN-006a 7 · EN-006b 5 · US-074 5 · US-075 5 (marco POC-1 = 27) · US-077 3 · US-076a 5 · US-076b 3. Ampliação **9** = DCR+ChatGPT 2 · US-074b PAT 3 · US-076c 3 · Gemini 1. **Ordem:** ações do usuário ➜ EN-007 ➜ *spike* ➜ 006a ➜ 006b ➜ 074 ➜ 075 ➜ 077 ➜ 076a+076b ➜ ampliação.
+**Exigem decisão do usuário:** TL-42 (PAT), TL-44 (*previews*), TL-45 (domínio antes do MCP), TL-46 (plano/backup do Prisma), TL-47 (padrões dos limites). Informação pedida: TL-49. **Resolvidos:** TL-35..38. PO: TL-39 revisto. **Urgente (produção hoje):** definir `APP_DEPLOY_ENV=production` na Vercel, conferir migrações e backup (ADR-031 §12).
+
+---
 
 ## Ciclo R4-D (D-GES-35): EN-006 e US-074..077 **Especificadas** (MCP por membro, OAuth próprio, leitura e lançamento em duas etapas)
 Respostas completas, verificação de cada cliente com fontes, ordem técnica, rastreabilidade e pendências: **[`respostas-r4d.md`](respostas-r4d.md)**. Resolve o TL-33.

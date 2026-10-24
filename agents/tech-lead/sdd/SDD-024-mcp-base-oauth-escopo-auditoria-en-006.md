@@ -4,7 +4,7 @@
 - **Rastreabilidade**: NEED-025 (RN-025.1, 025.2, 025.5, 025.6, 025.7) · RF43 · D-PO-66 · D-GES-35 · **[ADR-030](../adrs/ADR-030-servidor-mcp-oauth-proprio-e-hospedagem.md)** (leitura obrigatória) · ADR-009, ADR-013, ADR-019, ADR-026
 - **Depende de**: SDD-000 (erros, `withApi`, CSRF), SDD-003 (sessão Auth.js, `findActiveMembership`), SDD-012 (papéis, ex-membro)
 - **Status**: **Aprovado para Desenvolvimento** (R4-D) — a tarefa 0 (*spike* do SDK, §10) vem antes de qualquer outra · **Autor**: Agente Tech Lead · **Executor**: Dev & QA (**Opus** para o AS e a revisão de segurança; Sonnet para o resto)
-- **Estimativa**: **13** (PO: 8) = **EN-006a** AS OAuth 8 + **EN-006b** *endpoint* MCP, contexto, taxa e auditoria 5 — §10.
+- **Estimativa**: **13** (PO: 8) = **EN-006a** AS OAuth 8 + **EN-006b** *endpoint* MCP, contexto, taxa e auditoria 5 — §10. **Revisão 2 (§11)**: POC só com Claude ⇒ EN-006a **7** (CIMD, sem DCR) + EN-006b **5** = **12**; DCR/ChatGPT na ampliação (+2); hospedagem Vercel (ADR-031); `write` = lançamento direto.
 
 ---
 
@@ -330,3 +330,31 @@ API de consulta pelo membro: SDD-027 §5.
 **13** = EN-006a **8** (migração 1; metadados + DCR + CIMD 2; `/authorize` + pedido + consentimento + decisão 2; `/token` + *refresh* rotativo + revogação 2; testes de segurança 1) + EN-006b **5** (transporte nas duas eras + `resolveMcpContext` 2; `runTool` + taxa 1; auditoria + expurgo 1; cliente de teste + *smoke* 1).
 **Tarefa 0 (*spike*, 0,5 dia, dentro dos 13)**: provar com o SDK escolhido um servidor *stateless* que responda `initialize` (2025-11-25) e `server/discover` (2026-07-28) num Route Handler do Next 16, e conectar o **Claude Code** a ele por túnel. Resultado registrado na TASK; se nenhuma versão do SDK servir as duas eras, implementar o *framing* JSON-RPC à mão (≈ +1 pt) — o resto do SDD não muda.
 *Commits*: (1) migração + modelos; (2) metadados + DCR + CIMD; (3) `/authorize` + decisão + página; (4) `/token` + revogação; (5) `/api/mcp` + contexto + taxa; (6) auditoria + expurgo; (7) cliente de teste + *smoke*.
+
+---
+
+## 11. Revisão 2 (2026-10-24, D-GES-36 + refinamentos do Gestor) — prevalece sobre §1–§10 onde houver conflito
+### 11.1 Hospedagem (ADR-031)
+- Rotas `/api/mcp`, `/api/oauth/*`, `/.well-known/*`: `runtime = "nodejs"`, **`maxDuration = 30`** (substitui o `60` do §5.1). Nenhum estado em memória (já era regra).
+- Banco pelo *pool* do ADR-031 §3 (`max` 3, `attachDatabasePool`). Todas as transações do MCP usam só `pg_advisory_xact_lock`/`FOR UPDATE` (compatível com o *pooler* em modo transação). Proibido `SET` de sessão (o `SET TRANSACTION READ ONLY` do §5.3 é de transação: permitido).
+- Expurgo `mcp:purge` (§2) passa a ser também uma tarefa da rota **`GET /api/cron/purge`** (ADR-031 §8); o *script* continua para uso manual.
+- `APP_URL` canônico = `https://verbus-finance.vercel.app` (ou o domínio definitivo, TL-45). `Origin` e `resource` aceitam **só** `APP_URL`; URLs de *deploy* `*.vercel.app` com *hash* não.
+- *Previews*: `MCP_ENABLED` nunca é definido em *Preview*; com `VERCEL_ENV = preview` o MCP responde `404` mesmo que a variável exista (teste de matriz).
+- **Não** ligar *Attack Challenge Mode*/*bot protection* da Vercel nessas rotas (chamadas servidor-a-servidor de `160.79.104.0/21` — Claude).
+
+### 11.2 POC com um cliente (Claude) — o que entra e o que fica para a ampliação
+| Item | POC (Claude web/Desktop/mobile + Claude Code) | Ampliação |
+| :-- | :-- | :-- |
+| Registro de cliente | **Só CIMD**, `MCP_CIMD_ALLOWED_HOSTS=claude.ai` (o Claude escolhe CIMD porque anunciamos `client_id_metadata_document_supported` + `none`). Claude Code usa o CIMD próprio (`https://claude.ai/oauth/claude-code-client-metadata`) com *loopback* | **DCR** (§4.6) para Gemini CLI/Antigravity/Cursor/Le Chat; `chatgpt.com` na *allowlist* do CIMD |
+| Metadados | `registration_endpoint` **ausente** no §4.2 enquanto não houver DCR | Volta com o DCR |
+| Protocolo | Era **2025-11-25** obrigatória (é a que o Claude documenta); 2026-07-28 só se o SDK escolhido no *spike* já servir sem custo | 2026-07-28 completa |
+| Escopos | `read`, `write`, `offline_access` (o Claude pede `offline_access` se anunciado) | — |
+| Instruções na tela | Só a aba **Claude** | Abas ChatGPT, outros |
+| Homologação | Roteiro SDD-025 §6 itens 1–2 | Itens 3–4 |
+Estimativa revista: **EN-006a (POC) = 7** (sem DCR: −1) · **EN-006b = 5** · DCR + ChatGPT na ampliação = **2** (DCR 1 + homologação ChatGPT 1).
+
+### 11.3 Escopo `write` = lançamento direto
+`write` passa a permitir **gravar** despesa (SDD-027 rev. 2), não só propor. Mudanças: (a) consentimento com opt-in reforçado (SDD-025 §8); (b) o `401` continua sugerindo `scope="read write"`, mas o AS só concede `write` se o membro marcar; (c) `McpAuditKind` ganha **`LIMITS_CHANGED`**; `McpAuditOutcome` ganha **`LIMIT_EXCEEDED`**; `RATE.proposePerHour` sai (os limites de lançamento são do membro, SDD-027 §R2.3).
+
+### 11.4 Token de acesso pessoal (PAT) — **backlog, fora do POC** (US-074b, 3 pts; ADR-030 §2-R2)
+Desenho para não fechar portas agora: `enum McpGrantKind { OAUTH PAT }` em `mcp_grants` (`kind @default(OAUTH)`, `clientId` passa a ser opcional com `CHECK ((kind = 'OAUTH') = (clientId IS NOT NULL))`); o PAT é um `McpToken` `kind = ACCESS` com `expiresAt = grant.expiresAt` (30/90 dias), prefixo `fmp_`, só *hash*. `resolveMcpContext` não muda (o `JOIN` com `mcp_clients` vira `LEFT JOIN`). **Na migração do POC já criar a coluna `kind` e o `clientId` opcional** (custo zero agora, evita migração depois).

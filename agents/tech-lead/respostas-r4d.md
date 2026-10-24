@@ -1,5 +1,7 @@
 # Respostas do Tech Lead — R4-D (acesso por assistente de IA via MCP)
 
+> **Atualizado por [`respostas-r4d-v2.md`](respostas-r4d-v2.md) (D-GES-36):** hospedagem Vercel (ADR-031), lançamento direto (sem confirmação no app), POC com Claude, estimativas e pendências novas. Este arquivo fica como histórico.
+
 *Atualizado: 2026-10-24 · De: Agente Tech Lead · Para: Gestor e Product Owner · Cópia: Stakeholder, Dev & QA*
 *Responde a [`pedidos-ao-tech-lead-ia.md`](../product-owner/backlog/pedidos-ao-tech-lead-ia.md) §3 (EN-006, US-074..077), com as decisões do usuário em **D-GES-35** (por membro; ignora "ocultar valores"; leitura **e** lançamento em duas etapas; Claude, Gemini e ChatGPT com OAuth; preferência por Next na Vercel; LLM do usuário).*
 

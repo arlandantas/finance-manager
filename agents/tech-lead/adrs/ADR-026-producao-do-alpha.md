@@ -1,6 +1,8 @@
 # ADR-026: Produção do alpha (v0) — PaaS único, Postgres gerenciado e travas automáticas
 
 ## Status
+> **Substituído na parte de produção pelo [ADR-031](ADR-031-producao-vercel-prisma-postgres.md) (2026-10-24, D-GES-36):** a produção real está na **Vercel + Prisma Postgres**; Railway não é usado. Continuam valendo, adaptados no ADR-031: travas §5 (agora também por `VERCEL_ENV`), §6 (`sessionToken`), *smoke*, `pg_dump` fora do provedor e ensaio de *restore*. O `Dockerfile` fica para ensaio local; `railway.json` sai.
+
 Aceito (Tech Lead), 2026-10-05. **Substitui o [ADR-005](ADR-005-hospedagem-producao-adiada.md)** (hospedagem adiada). Não altera o ADR-024: o modo de homologação continua só local e passa a ser **impossível** na imagem de produção.
 
 ## Contexto

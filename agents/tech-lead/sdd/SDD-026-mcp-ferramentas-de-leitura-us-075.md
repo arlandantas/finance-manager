@@ -173,3 +173,10 @@ Usam o cliente MCP de teste (SDD-024 §8): sem LLM, chamando `tools/call` como o
 ## 6. Estimativa e *commits*
 **5**: infraestrutura de ferramentas + 2 primeiras (1); resumo + cartões + previstas (1,5); extração por categoria com reconciliação (1); Extrato paginado (1); testes de isolamento/propriedade (0,5).
 *Commits*: (1) `common` + cadastros + saldos; (2) extração `expenseByCategory` (refatoração isolada, testes do SDD-023 verdes); (3) demais ferramentas; (4) testes de isolamento e propriedade.
+
+---
+
+## Revisão 2 (2026-10-24, D-GES-36)
+- Hospedagem Vercel (ADR-031): nada muda nos contratos; as ferramentas rodam em `READ ONLY` e com o *pool* do ADR-031 §3. Meta de latência p95 < 1,5 s por ferramenta com o banco na mesma região.
+- `listar_lancamentos`: cada item ganha `origin: "APP" | "ASSISTANT"` e o filtro opcional `origin` (permite à LLM responder "o que você lançou por mim hoje?" e conferir duplicatas antes de lançar). `origin` entra na *allowlist* de auditoria (SDD-024 §7).
+- POC só com Claude: as 7 ferramentas entram inteiras (são o valor do POC). Estimativa inalterada (**5**; +0,5 do filtro `origin` absorvido).
