@@ -133,6 +133,7 @@ describe("EN-004 orçamento: reserva e acerto atômicos", () => {
       ).map((c) => c.column_name);
     expect(await cols("llm_usage_events")).toEqual(
       [
+        "analysisId", // US-070: só o vínculo (uuid) com a análise; nenhum conteúdo
         "attempts",
         "costMicroBrl",
         "createdAt",

@@ -11,8 +11,13 @@ const rows = (page: Page) => page.getByTestId("history-row");
 Given(
   "duas análises salvas de {string} e {string}",
   async ({ world, page }, a: string, b: string) => {
-    await createAnalysisVia(world, page, "Lucas", PERIODS[a] as string);
+    const first = await createAnalysisVia(world, page, "Lucas", PERIODS[a] as string);
     await createAnalysisVia(world, page, "Lucas", PERIODS[b] as string);
+    // o relógio do E2E é fixo: separa as datas de geração para a ordenação ser determinística
+    await testDb().spendingAnalysis.update({
+      where: { id: first },
+      data: { createdAt: new Date("2026-10-03T15:00:00Z") },
+    });
   },
 );
 
