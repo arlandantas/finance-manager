@@ -63,7 +63,7 @@ export function ConsentForm(p: Props) {
     return (
       <p
         role="alert"
-        className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+        className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200"
       >
         O Administrador bloqueou o acesso por assistente
       </p>
@@ -99,12 +99,12 @@ export function ConsentForm(p: Props) {
       </header>
 
       {p.redirectIsLoopback ? (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+        <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200">
           Este aplicativo roda no seu computador. Continue só se foi você que iniciou a conexão
           agora.
         </p>
       ) : !p.knownHost ? (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+        <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200">
           Aplicativo não reconhecido
         </p>
       ) : null}
@@ -174,7 +174,7 @@ export function ConsentForm(p: Props) {
               </span>
             </label>
             {allowWrite ? (
-              <div className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+              <div className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200">
                 <p>
                   O assistente grava lançamentos direto, sem pedir sua confirmação. Você poderá
                   excluí-los depois.

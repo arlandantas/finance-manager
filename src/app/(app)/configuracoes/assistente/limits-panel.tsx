@@ -83,7 +83,7 @@ function RiskNotice() {
   return (
     <div
       data-testid="risk-notice"
-      className="flex flex-col gap-1 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+      className="flex flex-col gap-1 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200"
     >
       <p>{RISK_MSG_NO_LIMIT}</p>
       <p>{RISK_MSG_NO_BANK}</p>

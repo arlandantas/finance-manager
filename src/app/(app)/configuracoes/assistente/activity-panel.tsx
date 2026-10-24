@@ -71,7 +71,7 @@ function ActivityItem({ it }: { it: ActivityItemDTO }) {
       <div className="flex flex-wrap items-center gap-3">
         <span
           data-testid="activity-outcome"
-          className={`rounded-full px-2 py-0.5 text-xs font-medium ${good ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900"}`}
+          className={`rounded-full px-2 py-0.5 text-xs font-medium ${good ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900 dark:text-amber-200"}`}
         >
           {it.outcomeLabel}
         </span>
