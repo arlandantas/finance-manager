@@ -119,5 +119,11 @@ describe("EN-004 check:imports (ADR-028 §1)", () => {
         `${head}import type { AiUsageDTO } from "@/modules/ia/dto";`,
       ),
     ).toEqual([]);
+    expect(
+      checkFile(
+        "src/app/(app)/familia/ia/x.tsx",
+        `${head}import { useAiUsage } from "@/modules/ia/hooks";`,
+      ),
+    ).toEqual([]);
   });
 });

@@ -1,6 +1,16 @@
 "use client";
 
-import { LogOut, MoreHorizontal, Pencil, UserCog, UserMinus, UserPlus, X } from "lucide-react";
+import {
+  ChevronRight,
+  LogOut,
+  MoreHorizontal,
+  Pencil,
+  UserCog,
+  UserMinus,
+  UserPlus,
+  X,
+} from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -499,6 +509,15 @@ export function FamiliaScreen() {
             version={data.family.version}
             isAdmin={isAdmin}
           />
+
+          <Link
+            href="/familia/ia"
+            data-testid="ai-settings-link"
+            className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 font-medium text-slate-900 dark:bg-slate-100"
+          >
+            IA e privacidade
+            <ChevronRight size={18} aria-hidden="true" />
+          </Link>
 
           {data.exMembers.length > 0 ? (
             <section aria-labelledby="ex-title" className="flex flex-col gap-2">

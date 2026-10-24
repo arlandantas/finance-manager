@@ -54,6 +54,9 @@ export default defineConfig({
       SMTP_PORT: "1025",
       // Relógio fixo: "hoje" = 2026-10-04 para todos os cenários (SDD-006 §4)
       APP_NOW_OVERRIDE: "2026-10-04T15:00:00Z",
+      // EN-004: IA ligada no app (provedor SIMULADO; nunca chama a API real)
+      AI_FEATURES_ENABLED: "true",
+      LLM_PROVIDER: "fake",
     },
   },
 });

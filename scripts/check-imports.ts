@@ -47,7 +47,8 @@ const PERIOD_ALLOWED = [/^src\/modules\/transacoes\/ledger-where\.ts$/, /^tests\
 const SDK_IMPORT =
   /from\s+["']@anthropic-ai\/sdk(?:\/[^"']*)?["']|import\(\s*["']@anthropic-ai\/sdk/;
 const SDK_ALLOWED = [/^src\/modules\/ia\/anthropic-adapter\.ts$/, /^tests\//];
-const IA_VALUE_IMPORT = /import\s+(?!type\b)[^;]*?from\s+["']@\/modules\/(?:ia|analise-ia)\//;
+const IA_VALUE_IMPORT =
+  /import\s+(?!type\b)[^;]*?from\s+["']@\/modules\/(?:ia|analise-ia)\/(?!hooks["'])/;
 const USE_CLIENT = /^\s*["']use client["']/m;
 
 export function checkFile(file: string, content: string): Violation[] {
