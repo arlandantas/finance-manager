@@ -8,6 +8,7 @@ import {
   type ScheduledSeries,
 } from "@/modules/analise-ia/recurring";
 import { CATEGORY_ICON_KEYS, type CategoryIconKey } from "@/modules/categorias/schemas";
+import { expenseByCategory } from "@/modules/transacoes/category-totals";
 import { ledgerTotals } from "@/modules/transacoes/extrato";
 import { periodPredicate } from "@/modules/transacoes/ledger-where";
 
@@ -34,8 +35,6 @@ export type WindowData = {
   scheduled: ScheduledSeries[];
   eligible: boolean;
 };
-
-type CatRow = { id: string; total: bigint; n: number };
 
 /** Carrega a janela. Períodos iniciais sem nenhuma despesa são descartados ("últimos N meses"). */
 export async function loadWindow(
@@ -64,16 +63,11 @@ export async function loadWindow(
   const scheduledMap = new Map<string, ScheduledSeries>();
   for (const [idx, p] of periods.entries()) {
     const rel = relOf(idx);
-    const cats = await tx.$queryRaw<CatRow[]>`
-      SELECT t."categoryId"::text AS id, SUM(t."amountInCents")::bigint AS total, COUNT(*)::int AS n
-      FROM transactions t
-      WHERE t."familyId" = ${familyId}::uuid AND t."deletedAt" IS NULL AND t.kind = 'EXPENSE'
-        AND ${periodPredicate("t", p.start, p.end)}
-      GROUP BY t."categoryId"`;
+    const cats = await expenseByCategory(tx, familyId, p);
     for (const c of cats) {
-      const list = perCat.get(c.id) ?? [];
-      list.push({ rel, amountInCents: toCents(c.total), count: c.n });
-      perCat.set(c.id, list);
+      const list = perCat.get(c.categoryId) ?? [];
+      list.push({ rel, amountInCents: c.totalInCents, count: c.count });
+      perCat.set(c.categoryId, list);
     }
     const desc = await tx.$queryRaw<
       Array<{ description: string; categoryId: string; total: bigint }>
