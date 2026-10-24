@@ -47,6 +47,11 @@ export type RunOptions<P, T> = {
   buildPrompt: (payload: P) => { system: string; input: string };
   outputSchema: z.ZodType<T>;
   signal?: AbortSignal;
+  /**
+   * Regra da história que precisa ser decidida na MESMA transação curta da reserva (ex.: limite de
+   * análises por período, US-070). Roda antes do consentimento; se lançar, nada é reservado.
+   */
+  beforeReserve?: (tx: Tx) => Promise<void>;
 };
 
 function purposeSettings(cfg: LlmConfig, purpose: LlmPurpose) {
@@ -89,6 +94,7 @@ export async function runLlm<P, T>(
   // 2) consentimento + reserva na MESMA transação curta (separada da chamada ao provedor)
   const startedAt = ctx.clock.now();
   const reservation = await db.$transaction(async (tx) => {
+    if (opts.beforeReserve) await opts.beforeReserve(tx);
     await assertConsent(tx, ctx.familyId, opts.purpose);
     const capCents = await effectiveCapCents(tx, ctx.familyId, cfg.LLM_MONTHLY_CAP_CENTS);
     return reserveBudget(tx, {

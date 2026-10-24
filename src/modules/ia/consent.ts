@@ -102,6 +102,15 @@ async function featureDto(
   };
 }
 
+/** Estado de uma finalidade para telas de histórias (ex.: pré-visualização da análise). */
+export function getFeatureState(
+  tx: Tx,
+  familyId: string,
+  purpose: LlmPurpose,
+): Promise<AiFeatureStateDTO> {
+  return featureDto(tx, familyId, purpose, getLlmConfig().featuresEnabled);
+}
+
 /** GET /ai/settings (todos os membros). */
 export async function getAiSettings(tx: Tx, ctx: RequestContext): Promise<AiSettingsDTO> {
   const cfg = getLlmConfig();

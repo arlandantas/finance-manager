@@ -43,6 +43,8 @@ export type ApiOptions<A extends AuthMode, B, Q> = {
   /** Roda após autenticação/validação e ANTES da transação do handler (ex.: geração da recorrência). */
   prepare?: (ctx: CtxFor<A>, db: PrismaClient) => Promise<void>;
   isolationLevel?: "ReadCommitted" | "RepeatableRead" | "Serializable";
+  /** Prazo da transação do handler (padrão 30 s). Rotas que esperam o LLM (US-070) precisam de mais. */
+  timeoutMs?: number;
 };
 
 export type HandlerArgs<A extends AuthMode, B, Q> = {
@@ -213,7 +215,7 @@ export function withApi<A extends AuthMode = "family", B = undefined, Q = undefi
         },
         {
           maxWait: 10_000,
-          timeout: 30_000,
+          timeout: opts.timeoutMs ?? 30_000,
           ...(opts.isolationLevel ? { isolationLevel: opts.isolationLevel } : {}),
         },
       );
