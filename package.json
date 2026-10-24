@@ -32,7 +32,9 @@
     "migrate:split": "tsx scripts/migrate-split.ts",
     "ai:set-cap": "tsx scripts/ai-admin.ts set-cap",
     "ai:purge-usage": "tsx scripts/ai-admin.ts purge-usage",
-    "ai:purge-analyses": "tsx scripts/ai-admin.ts purge-analyses"
+    "ai:purge-analyses": "tsx scripts/ai-admin.ts purge-analyses",
+    "mcp:purge": "tsx scripts/mcp-admin.ts purge",
+    "mcp:smoke": "tsx scripts/mcp-smoke.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.2.0",

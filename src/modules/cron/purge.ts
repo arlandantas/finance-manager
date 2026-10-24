@@ -1,22 +1,26 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { logger } from "@/lib/logger";
 import { purgeLlmUsage, purgeSpendingAnalyses } from "@/modules/ia/purge";
+import { purgeMcp } from "@/modules/mcp/purge";
 
 // ADR-031 §8: expurgos diários pelo Vercel Cron -> GET /api/cron/purge. Idempotente (cada tarefa é um
 // DELETE ... WHERE createdAt < corte; execução duplicada é inofensiva), sem retry da Vercel.
 
-export type PurgeTx = Pick<PrismaClient, "llmUsageEvent" | "spendingAnalysis"> &
-  Partial<PrismaClient>;
+export type PurgeTx = Prisma.TransactionClient;
 export type PurgeTask = {
   name: string;
   run: (tx: PurgeTx, now: Date) => Promise<number>;
 };
 
-/** Registro das tarefas. A EN-006b acrescenta `mcp:purge` (SDD-024 §2) por `registerPurgeTask`. */
+/** Registro das tarefas (ADR-031 §8). `mcp:purge` é a EN-006b (SDD-024 §2). */
 const tasks: PurgeTask[] = [
   { name: "ai:purge-usage", run: (tx, now) => purgeLlmUsage(tx, now) },
   { name: "ai:purge-analyses", run: (tx, now) => purgeSpendingAnalyses(tx, now) },
+  {
+    name: "mcp:purge",
+    run: async (tx, now) => Object.values(await purgeMcp(tx, now)).reduce((a, b) => a + b, 0),
+  },
 ];
 
 export function registerPurgeTask(task: PurgeTask): void {
@@ -48,7 +52,7 @@ export async function runPurge(db: PrismaClient, now: Date): Promise<PurgeResult
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended('cron:purge', 0))`;
       const results: PurgeResult[] = [];
       for (const t of tasks) {
-        const deleted = await t.run(tx as unknown as PurgeTx, now);
+        const deleted = await t.run(tx, now);
         // Só contagens no log.
         logger.info({ task: t.name, deleted }, "cron purge");
         results.push({ task: t.name, deleted });

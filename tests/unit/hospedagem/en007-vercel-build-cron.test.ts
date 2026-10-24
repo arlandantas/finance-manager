@@ -35,7 +35,7 @@ describe("EN-007 autenticação do cron", () => {
   });
   it("tarefas registradas incluem os expurgos de IA", () => {
     expect(listPurgeTasks()).toEqual(
-      expect.arrayContaining(["ai:purge-usage", "ai:purge-analyses"]),
+      expect.arrayContaining(["ai:purge-usage", "ai:purge-analyses", "mcp:purge"]),
     );
   });
 });
