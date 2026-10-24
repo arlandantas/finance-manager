@@ -4,8 +4,8 @@ import type { Tx } from "@/lib/api/types";
 import type { Clock } from "@/lib/clock";
 import { logger } from "@/lib/logger";
 import { getLlmConfig, type LlmConfig } from "@/modules/ia/config";
+import { assertConsentEffective } from "@/modules/ia/consent";
 import {
-  aiDisabled,
   aiUnavailable,
   budgetExceeded,
   estimateExceedsBudget,
@@ -23,11 +23,6 @@ import { effectiveCapCents, iaDb, reserveBudget, settleEvent } from "@/modules/i
 // consentimento ➜ reserva (mesma transação curta) ➜ chamada (fora de transação) ➜ validação ➜ acerto.
 
 export type ConsentGuard = (tx: Tx, familyId: string, purpose: LlmPurpose) => Promise<void>;
-
-/** Falha fechada: sem um guarda de consentimento explícito, nada é enviado. */
-const denyAll: ConsentGuard = async () => {
-  throw aiDisabled();
-};
 
 export type RunLogger = {
   info(obj: Record<string, unknown>, msg: string): void;
@@ -73,7 +68,7 @@ export async function runLlm<P, T>(
   const cfg = deps.config ?? getLlmConfig();
   const db = deps.db ?? iaDb();
   const log = deps.log ?? logger;
-  const assertConsent = deps.assertConsent ?? denyAll;
+  const assertConsent = deps.assertConsent ?? assertConsentEffective;
 
   // 1) disponibilidade (flag) e finalidade
   if (!cfg.featuresEnabled) throw aiUnavailable();

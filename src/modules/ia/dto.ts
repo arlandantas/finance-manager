@@ -9,3 +9,24 @@ export type AiUsageDTO = {
   resetsOn: string; // "2026-12-01"
   byPurpose: { purpose: AiPurposeDTO; usedInCents: number; calls: number }[];
 };
+
+// EN-005 (SDD-022 §2)
+export type AiFeatureStateDTO = {
+  purpose: AiPurposeDTO;
+  available: boolean; // false p/ INVOICE_IMPORT (R5) e com a IA indisponível
+  state: "ON" | "OFF" | "NEEDS_RECONSENT" | "UNAVAILABLE";
+  currentText: { version: number; summary: string; details: string[] };
+  lastChange: {
+    action: "ENABLED" | "DISABLED";
+    at: string;
+    by: { id: string; name: string; former: boolean };
+    textVersion: number;
+  } | null;
+};
+
+export type AiSettingsDTO = {
+  canEdit: boolean; // role === ADMIN
+  features: AiFeatureStateDTO[];
+  usage: AiUsageDTO | null; // só ADMIN (SDD-021)
+  familyVersion: number;
+};
