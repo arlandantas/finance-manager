@@ -180,6 +180,14 @@ function ResultBody({ a }: { a: SpendingAnalysisDTO }) {
         ))}
       </section>
 
+      <Link
+        href="/analise/gastos-evitaveis?aba=sugestoes"
+        data-testid="suggestions-link"
+        className="inline-flex min-h-11 items-center text-sm font-medium text-brand-700 underline"
+      >
+        Sugestões de categoria
+      </Link>
+
       <SentData id={a.id} />
 
       <DismissedList />

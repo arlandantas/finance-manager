@@ -65,6 +65,17 @@ export function HistoryList({ id }: { id: string }) {
                 </p>
               ))
             : null}
+          {r.changes.some((c) => c.field === "categoryId" && c.source) ? (
+            <p data-testid="history-source" className="text-slate-700">
+              Categoria alterada de{" "}
+              {mask(String(r.changes.find((c) => c.field === "categoryId")?.fromLabel ?? ""))} para{" "}
+              {mask(String(r.changes.find((c) => c.field === "categoryId")?.toLabel ?? ""))} por{" "}
+              {r.actor.name.split(" ")[0]}{" "}
+              {r.changes.some((c) => c.source === "CATEGORY_SUGGESTION_UNDO")
+                ? "(desfeito, sugestão da análise)"
+                : "(sugestão da análise)"}
+            </p>
+          ) : null}
         </li>
       ))}
     </ol>

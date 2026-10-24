@@ -6,9 +6,11 @@ import type {
   AnalysisListItemDTO,
   AnalysisPreviewDTO,
   AvoidableDismissalDTO,
+  CategorySuggestionDTO,
   SentDataDTO,
   SpendingAnalysisDTO,
 } from "@/modules/analise-ia/dto";
+import { useInvalidateAfterTransactionChange } from "@/modules/transacoes/hooks";
 
 // SDD-023 §6: chaves de cache da análise.
 export const previewKey = (period: string | undefined) =>
@@ -158,5 +160,66 @@ export function useDeleteAllAnalyses() {
         idempotencyKey: a.idempotencyKey,
       }),
     onSuccess: invalidate,
+  });
+}
+
+// ── US-072: sugestões locais de categoria (sem IA) ──
+export const suggestionsKey = ["category-suggestions"] as const;
+
+export function useCategorySuggestions() {
+  return useQuery({
+    queryKey: suggestionsKey,
+    queryFn: () => apiFetch<{ items: CategorySuggestionDTO[] }>("/api/v1/category-suggestions"),
+  });
+}
+
+/** Aceitar UMA sugestão (ou desfazer o aceite). Categoria muda Resumo, Extrato e Análise: invalida tudo. */
+export function useAcceptSuggestion() {
+  const qc = useQueryClient();
+  const invalidateFinancial = useInvalidateAfterTransactionChange();
+  return useMutation({
+    mutationFn: (a: {
+      transactionId: string;
+      version: number;
+      fromCategoryId: string;
+      toCategoryId: string;
+      undo?: boolean;
+      idempotencyKey: string;
+    }) =>
+      apiFetch<{ transaction: { id: string; version: number } }>(
+        "/api/v1/category-suggestions/accept",
+        {
+          method: "POST",
+          body: {
+            transactionId: a.transactionId,
+            version: a.version,
+            fromCategoryId: a.fromCategoryId,
+            toCategoryId: a.toCategoryId,
+            ...(a.undo ? { undo: true } : {}),
+          },
+          idempotencyKey: a.idempotencyKey,
+        },
+      ),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: suggestionsKey }),
+        qc.invalidateQueries({ queryKey: ["ai-analysis"] }),
+        qc.invalidateQueries({ queryKey: ["ai-analysis-preview"] }),
+        invalidateFinancial(),
+      ]);
+    },
+  });
+}
+
+export function useDismissSuggestion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (a: { descriptionKey: string; toCategoryId: string; idempotencyKey: string }) =>
+      apiFetch<{ dismissed: true }>("/api/v1/category-suggestions/dismiss", {
+        method: "POST",
+        body: { descriptionKey: a.descriptionKey, toCategoryId: a.toCategoryId },
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: suggestionsKey }),
   });
 }

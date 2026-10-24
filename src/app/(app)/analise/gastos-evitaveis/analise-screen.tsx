@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { HistoryPanel } from "./history-panel";
 import { RequestPanel } from "./request-panel";
+import { SuggestionsPanel } from "./suggestions-panel";
 
 const TABS = [
   { key: "analisar", label: "Analisar" },
   { key: "historico", label: "Histórico" },
+  { key: "sugestoes", label: "Sugestões de categoria" },
 ] as const;
 
 /** Análise ▸ Gastos evitáveis (FLUXO-017): pedido e histórico. */
@@ -26,7 +28,7 @@ export function AnaliseScreen() {
           alterado por conta própria.
         </p>
       </header>
-      <nav aria-label="Seções da análise" className="flex gap-2">
+      <nav aria-label="Seções da análise" className="flex flex-wrap gap-2">
         {TABS.map((t) => (
           <Link
             key={t.key}
@@ -42,7 +44,9 @@ export function AnaliseScreen() {
           </Link>
         ))}
       </nav>
-      {current === "analisar" ? <RequestPanel /> : <HistoryPanel />}
+      {current === "analisar" ? <RequestPanel /> : null}
+      {current === "historico" ? <HistoryPanel /> : null}
+      {current === "sugestoes" ? <SuggestionsPanel /> : null}
     </main>
   );
 }
