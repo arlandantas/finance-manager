@@ -257,6 +257,11 @@ Given("que a divisão de compras parceladas ainda não foi liberada", async () =
 });
 
 When("Lucas escolhe {string} parcelas", async ({ page, world }, parcelas: string) => {
+  // US-065: com o drawer já aberto só escolhe as parcelas
+  if (await drawer(page).isVisible()) {
+    await drawer(page).getByLabel("Parcelas", { exact: true }).selectOption({ label: parcelas });
+    return;
+  }
   await fillExpense(page, {
     amount: "R$ 90,00",
     card: mainCard(world).name,

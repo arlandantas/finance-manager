@@ -62,7 +62,10 @@ Then(
 );
 
 When("Lucas abre o Extrato de {word}", async ({ page }, periodo: string) => {
-  await gotoReady(page, `/extrato?period=${periodo}`);
+  // aceita "2026-12" ou "out/2026" (US-065)
+  const m = /^(\w{3})\/(\d{4})$/.exec(periodo);
+  const ref = m ? `${m[2]}-${String(MESES.indexOf(m[1] as string) + 1).padStart(2, "0")}` : periodo;
+  await gotoReady(page, `/extrato?period=${ref}`);
 });
 
 Then(

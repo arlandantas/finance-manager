@@ -166,7 +166,12 @@ export function InstallmentPlanDialog({
               >
                 <Money cents={plan.totalInCents} />
               </p>
-              {plan.currentTotalInCents !== plan.totalInCents ? (
+              {plan.paidBeforeApp ? (
+                <p data-testid="plan-remaining" className="text-sm text-slate-600">
+                  Total da compra <Money cents={plan.totalInCents} /> · restante lançado{" "}
+                  <Money cents={plan.currentTotalInCents} />
+                </p>
+              ) : plan.currentTotalInCents !== plan.totalInCents ? (
                 <p className="text-sm text-slate-600">
                   Total atual <Money cents={plan.currentTotalInCents} />
                 </p>
@@ -177,9 +182,22 @@ export function InstallmentPlanDialog({
                 </p>
               ) : null}
               <p className="text-sm text-slate-600">
-                Comprado em {brDate(plan.purchaseOn)} · pago por {plan.payer.name.split(" ")[0]}
+                {plan.purchaseOnKnown
+                  ? `Comprado em ${brDate(plan.purchaseOn)} · pago por`
+                  : "Pago por"}{" "}
+                {plan.payer.name.split(" ")[0]}
               </p>
             </header>
+            {plan.paidBeforeApp ? (
+              <p
+                data-testid="plan-paid-before"
+                className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700"
+              >
+                {plan.paidBeforeApp.count === 1
+                  ? "Parcela 1: anterior ao app (já paga)"
+                  : `Parcelas 1 a ${plan.paidBeforeApp.toNo}: anteriores ao app (já pagas)`}
+              </p>
+            ) : null}
             <table className="w-full text-sm" aria-label="Parcelas">
               <thead>
                 <tr className="text-left text-xs text-slate-500">
