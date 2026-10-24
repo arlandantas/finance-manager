@@ -129,7 +129,7 @@ export function fold(s: string): string {
 }
 
 /** Palavras (≥ 3 letras, fora conectivos) dos nomes, sobrenomes e partes de e-mail dos membros. */
-function memberWordSet(memberNames: string[]): Set<string> {
+export function memberWordSet(memberNames: string[]): Set<string> {
   const out = new Set<string>();
   for (const entry of memberNames) {
     for (const w of fold(entry.normalize("NFKC")).split(/[^a-z0-9]+/)) {

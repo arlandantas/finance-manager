@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 /**
  * Apoio a E2E (mesmas travas do login de teste, ADR-008/026): escolhe o cenário do provedor simulado.
  * 404 fora do ferramental de dev (inclui produção); 403 fora de localhost.
- * Corpo: `{ "scenario": "ok" | "unavailable" | ... }`; `{ "reset": true }` zera cenário e chamadas.
+ * Corpo: `{ "scenario": "ok" | "unavailable" | ..., "delayMs"?: n }`; `{ "reset": true }` zera cenário e chamadas.
  */
 export async function POST(req: Request): Promise<Response> {
   if (!isDevToolingEnabled()) return new Response(null, { status: 404 });
@@ -19,7 +19,7 @@ export async function POST(req: Request): Promise<Response> {
   }
   const fake = getFakeAdapter();
   if (!fake) return new Response(null, { status: 404 });
-  let raw: { scenario?: unknown; reset?: unknown };
+  let raw: { scenario?: unknown; reset?: unknown; delayMs?: unknown };
   try {
     raw = (await req.json()) as typeof raw;
   } catch {
@@ -31,6 +31,11 @@ export async function POST(req: Request): Promise<Response> {
   if (raw.reset === true) {
     fake.reset();
     return Response.json({ scenario: fake.scenario, calls: 0 });
+  }
+  if (typeof raw.delayMs === "number" && raw.delayMs >= 0 && raw.delayMs <= 60_000) {
+    fake.delayMs = raw.delayMs; // cenário lento (E2E de "Cancelar")
+    if (raw.scenario === undefined)
+      return Response.json({ scenario: fake.scenario, delayMs: fake.delayMs });
   }
   if (typeof raw.scenario !== "string" || !FAKE_SCENARIOS.includes(raw.scenario as FakeScenario)) {
     return Response.json(

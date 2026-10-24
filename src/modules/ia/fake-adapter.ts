@@ -15,6 +15,7 @@ export type FakeScenario =
   | "numbers_in_text"
   | "member_name_in_text"
   | "unknown_ids"
+  | "duplicate_refs"
   | "truncated"
   | "refusal"
   | "unavailable"
@@ -29,6 +30,7 @@ export const FAKE_SCENARIOS: readonly FakeScenario[] = [
   "numbers_in_text",
   "member_name_in_text",
   "unknown_ids",
+  "duplicate_refs",
   "truncated",
   "refusal",
   "unavailable",
@@ -37,7 +39,10 @@ export const FAKE_SCENARIOS: readonly FakeScenario[] = [
   "auth",
 ];
 
-/** `fixtures[purpose][scenario]`: objeto (será validado pelo schema) ou string crua (JSON do provedor). */
+/**
+ * `fixtures[purpose][scenario]`: objeto (será validado pelo schema), string crua (JSON do provedor) ou
+ * função `(input) => objeto|string` — para finalidades cujo `input` sorteia referências por pedido (US-070).
+ */
 export type FakeFixtures = Partial<Record<LlmPurpose, Partial<Record<FakeScenario, unknown>>>>;
 
 export type FakeCall = {
@@ -108,9 +113,16 @@ export class FakeLlmAdapter implements LlmPort {
     const raw = this.fixtures[req.purpose]?.[this.scenario];
     if (raw === undefined) throw new LlmError("INVALID_RESPONSE", usage);
     let value: unknown = raw;
-    if (typeof raw === "string") {
+    if (typeof value === "function") {
       try {
-        value = JSON.parse(raw);
+        value = (value as (input: unknown) => unknown)(JSON.parse(req.input));
+      } catch {
+        throw new LlmError("INVALID_RESPONSE", usage);
+      }
+    }
+    if (typeof value === "string") {
+      try {
+        value = JSON.parse(value);
       } catch {
         throw new LlmError("INVALID_RESPONSE", usage);
       }
