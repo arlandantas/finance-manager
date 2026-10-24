@@ -43,6 +43,13 @@ const MONEY_FORMAT = /\bformatBRL\b|Intl\.NumberFormat\([^)]*currency/;
 const PERIOD_FILTER = /(?:occurredOn|competenceOn)"?\s*(?:BETWEEN\b|:\s*\{\s*(?:gte|lte|gt|lt)\b)/;
 const PERIOD_ALLOWED = [/^src\/modules\/transacoes\/ledger-where\.ts$/, /^tests\//, /^prisma\//];
 
+// ADR-028 §1: só o adapter importa o SDK da Anthropic; módulo ia/ nunca entra em componente client.
+const SDK_IMPORT =
+  /from\s+["']@anthropic-ai\/sdk(?:\/[^"']*)?["']|import\(\s*["']@anthropic-ai\/sdk/;
+const SDK_ALLOWED = [/^src\/modules\/ia\/anthropic-adapter\.ts$/, /^tests\//];
+const IA_VALUE_IMPORT = /import\s+(?!type\b)[^;]*?from\s+["']@\/modules\/(?:ia|analise-ia)\//;
+const USE_CLIENT = /^\s*["']use client["']/m;
+
 export function checkFile(file: string, content: string): Violation[] {
   const out: Violation[] = [];
   const rel = file.split(path.sep).join("/");
@@ -52,6 +59,24 @@ export function checkFile(file: string, content: string): Violation[] {
       rule: "db-import",
       message:
         "`@/lib/db` só pode ser importado em src/lib/api, src/lib/auth, repo.ts, ledger*.ts, tests, prisma e scripts",
+    });
+  }
+  if (SDK_IMPORT.test(content) && !SDK_ALLOWED.some((re) => re.test(rel))) {
+    out.push({
+      file: rel,
+      rule: "llm-sdk-import",
+      message: "@anthropic-ai/sdk só pode ser importado em src/modules/ia/anthropic-adapter.ts",
+    });
+  }
+  if (
+    /^src\/(app|components)\//.test(rel) &&
+    USE_CLIENT.test(content) &&
+    IA_VALUE_IMPORT.test(content)
+  ) {
+    out.push({
+      file: rel,
+      rule: "ia-in-client",
+      message: "Componente client não importa valores de src/modules/ia (só `import type`)",
     });
   }
   if (PURE.some((re) => re.test(rel))) {

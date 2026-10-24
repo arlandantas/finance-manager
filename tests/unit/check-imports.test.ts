@@ -95,3 +95,29 @@ describe("SDD-010 regras de CI: Money e predicado único de período", () => {
     );
   });
 });
+
+describe("EN-004 check:imports (ADR-028 §1)", () => {
+  it("só o anthropic-adapter importa o SDK", () => {
+    const sdk = `import Anthropic from "@anthropic-ai/sdk";`;
+    expect(checkFile("src/modules/ia/anthropic-adapter.ts", sdk)).toEqual([]);
+    for (const f of ["src/modules/ia/run.ts", "src/app/api/v1/ai/usage/route.ts"]) {
+      expect(checkFile(f, sdk)[0]?.rule).toBe("llm-sdk-import");
+    }
+  });
+
+  it("componente client não importa valores de ia/, só tipos", () => {
+    const head = `"use client";\n`;
+    expect(
+      checkFile(
+        "src/app/(app)/familia/ia/x.tsx",
+        `${head}import { runLlm } from "@/modules/ia/run";`,
+      )[0]?.rule,
+    ).toBe("ia-in-client");
+    expect(
+      checkFile(
+        "src/app/(app)/familia/ia/x.tsx",
+        `${head}import type { AiUsageDTO } from "@/modules/ia/dto";`,
+      ),
+    ).toEqual([]);
+  });
+});

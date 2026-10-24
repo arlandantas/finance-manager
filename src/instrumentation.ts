@@ -2,4 +2,7 @@
 export async function register() {
   const { assertSafeAuthConfig } = await import("@/lib/auth/dev-login-guard");
   assertSafeAuthConfig();
+  // SDD-021 §2: falha fechada na subida (provedor, chave, preço do modelo).
+  const { assertLlmConfig } = await import("@/modules/ia/config");
+  assertLlmConfig();
 }
