@@ -127,3 +127,19 @@ describe("EN-004 check:imports (ADR-028 §1)", () => {
     ).toEqual([]);
   });
 });
+
+describe("US-075 check:imports (SDD-026 §1: fonte única, sem SQL próprio nas ferramentas)", () => {
+  it("src/modules/mcp/tools/** não importa o db nem usa SQL cru", () => {
+    const file = "src/modules/mcp/tools/saldos.ts";
+    expect(checkFile(file, `import { getDb } from "@/lib/db";`).map((v) => v.rule)).toContain(
+      "mcp-tools-no-sql",
+    );
+    expect(checkFile(file, "await tx.$queryRaw`SELECT 1`;")[0]?.rule).toBe("mcp-tools-no-sql");
+    expect(checkFile(file, "await tx.$executeRaw`SELECT 1`;")[0]?.rule).toBe("mcp-tools-no-sql");
+    expect(checkFile(file, `import { listAccounts } from "@/modules/contas/service";`)).toEqual([]);
+    // fora da pasta das ferramentas o serviço do MCP segue livre (a regra db-import ainda vale)
+    expect(checkFile("src/modules/mcp/connections.ts", "await tx.$queryRaw`SELECT 1`;")).toEqual(
+      [],
+    );
+  });
+});

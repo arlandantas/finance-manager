@@ -28,6 +28,10 @@ export type ToolDef<I = unknown, O = unknown> = {
   auditParams: (input: I) => AuditParams;
   handler: (args: { ctx: McpContext; input: I; tx: Tx }) => Promise<O>;
   rateKey?: (ctx: McpContext) => { key: string; limit: number; windowS: number };
+  /** Mesmo `prepare` da rota da tela (ex.: horizonte da recorrência), ANTES da transação da ferramenta. */
+  prepare?: (ctx: McpContext, db: PrismaClient) => Promise<void>;
+  /** Mesmo nível de isolamento da rota da tela (Resumo do Mês é `RepeatableRead`). */
+  isolationLevel?: "ReadCommitted" | "RepeatableRead" | "Serializable";
   /** Ferramentas que gravam informam o lançamento criado para a auditoria. */
   transactionIdOf?: (output: O) => string | null;
 };
@@ -120,13 +124,18 @@ export async function runTool(
     const params = def.auditParams(parsed.data);
     let output: unknown;
     try {
+      if (def.prepare) await def.prepare(ctx, db);
       output = await db.$transaction(
         async (tx) => {
           if (def.scope === "read") await tx.$executeRaw`SET TRANSACTION READ ONLY`;
           const out = await def.handler({ ctx, input: parsed.data, tx });
           return def.output.parse(out);
         },
-        { maxWait: 5_000, timeout: 10_000 },
+        {
+          maxWait: 5_000,
+          timeout: 10_000,
+          ...(def.isolationLevel ? { isolationLevel: def.isolationLevel } : {}),
+        },
       );
     } catch (e) {
       if (e instanceof ApiError) {

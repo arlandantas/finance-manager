@@ -52,6 +52,10 @@ const IA_VALUE_IMPORT =
   /import\s+(?!type\b)[^;]*?from\s+["']@\/modules\/(?:ia|analise-ia)\/(?!hooks["'])/;
 const USE_CLIENT = /^\s*["']use client["']/m;
 
+// SDD-026 §1 (RN-025.7): as ferramentas do MCP só TRADUZEM o que os serviços das telas devolvem.
+const MCP_TOOLS = /^src\/modules\/mcp\/tools\//;
+const RAW_SQL = /\$queryRaw|\$executeRaw|\$queryRawUnsafe|\$executeRawUnsafe/;
+
 export function checkFile(file: string, content: string): Violation[] {
   const out: Violation[] = [];
   const rel = file.split(path.sep).join("/");
@@ -107,6 +111,14 @@ export function checkFile(file: string, content: string): Violation[] {
       rule: "money-format",
       message:
         "Valor monetário só é formatado por <Money> (src/components/money.tsx); use <Money cents />",
+    });
+  }
+  if (MCP_TOOLS.test(rel) && (DB_IMPORT.test(content) || RAW_SQL.test(content))) {
+    out.push({
+      file: rel,
+      rule: "mcp-tools-no-sql",
+      message:
+        "src/modules/mcp/tools/** não importa @/lib/db nem usa SQL próprio: chame os serviços das telas",
     });
   }
   if (
