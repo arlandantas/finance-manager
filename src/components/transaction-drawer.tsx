@@ -13,7 +13,7 @@ import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
-import { invoiceHint } from "@/modules/cartoes/cycle";
+import { addMonthsToRef, formatInvoiceLabel, invoiceHint } from "@/modules/cartoes/cycle";
 import { useCards } from "@/modules/cartoes/hooks";
 import {
   INSTALLMENT_SPLIT_NOTICE,
@@ -29,6 +29,8 @@ import {
   type CreateTransactionInput,
   CreateTransactionSchema,
   DESCRIPTION_MSG,
+  PAID_BEFORE_APP_MSG,
+  paidBeforeAppSchema,
 } from "@/modules/transacoes/schemas";
 
 type Kind = "EXPENSE" | "INCOME";
@@ -41,7 +43,8 @@ type FieldKey =
   | "description"
   | "note"
   | "payerMemberId"
-  | "installments";
+  | "installments"
+  | "paidBeforeApp";
 
 const TEXT: Record<Kind, { title: string; payer: string; save: string; success: string }> = {
   EXPENSE: {
@@ -76,6 +79,8 @@ export function TransactionDrawer({
   const [payerId, setPayerId] = useState("");
   const [shared, setShared] = useState(false); // nasce "Só meu" e não lembra a escolha (US-030)
   const [installments, setInstallments] = useState(1); // US-040a: só vale com cartão
+  const [paidText, setPaidText] = useState("0"); // US-065: parcelas já pagas antes do app
+  const [nextInvoice, setNextInvoice] = useState("open"); // "open" ou ref da fatura fechada não paga
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
   const [note, setNote] = useState("");
@@ -103,6 +108,8 @@ export function TransactionDrawer({
     setCategoryId("");
     setShared(false);
     setInstallments(1);
+    setPaidText("0");
+    setNextInvoice("open");
     setDate("");
     setDescription("");
     setNote("");
@@ -131,6 +138,32 @@ export function TransactionDrawer({
     ? cardList.find((c) => `card:${c.id}` === source)
     : undefined;
   const parcelado = kind === "EXPENSE" && selectedCard !== undefined && installments > 1;
+  const paidBeforeApp = paidText.trim() === "" ? 0 : Number(paidText);
+  const paidActive = parcelado && paidBeforeApp >= 1;
+  // fatura fechada e não paga imediatamente anterior à aberta (SDD-020 §1)
+  const closedPrev = selectedCard
+    ? selectedCard.payableInvoices.find(
+        (i) => i.ref === addMonthsToRef(selectedCard.openInvoice.ref, -1),
+      )
+    : undefined;
+  const effectiveNext =
+    nextInvoice !== "open" && closedPrev?.ref === nextInvoice ? nextInvoice : "open";
+  // âncora da próxima parcela: hoje (fatura aberta) ou o fechamento da fatura fechada escolhida
+  const anchorOn =
+    paidActive && effectiveNext !== "open" && closedPrev
+      ? closedPrev.closingDate
+      : defaults.data?.today || new Date().toISOString().slice(0, 10);
+  const paidParsed = paidBeforeAppSchema.safeParse(paidBeforeApp);
+  const paidError =
+    !parcelado || Number.isNaN(paidBeforeApp)
+      ? Number.isNaN(paidBeforeApp)
+        ? "Informe um número inteiro de parcelas pagas"
+        : undefined
+      : !paidParsed.success
+        ? (paidParsed.error.issues[0]?.message as string)
+        : paidBeforeApp >= installments
+          ? PAID_BEFORE_APP_MSG
+          : undefined;
   // US-042 libera "Dividir" no parcelado; até lá a UI avisa e não envia `isSharedExpense`
   const splitInstallmentsAvailable = defaults.data?.split.installmentsAvailable ?? false;
   const splitBlocked = parcelado && !splitInstallmentsAvailable;
@@ -157,11 +190,18 @@ export function TransactionDrawer({
       categoryId,
       amountInCents: cents,
       ...(payerId ? { payerMemberId: payerId } : {}),
-      ...(date ? { occurredOn: date } : {}),
+      ...(paidActive
+        ? effectiveNext !== "open"
+          ? { occurredOn: anchorOn }
+          : {}
+        : date
+          ? { occurredOn: date }
+          : {}),
       ...(description.trim() ? { description } : {}),
       ...(note.trim() ? { note } : {}),
       ...(kind === "EXPENSE" ? { isSharedExpense: splitAvailable && shared && !splitBlocked } : {}),
       ...(fromCard && installments > 1 ? { installments } : {}),
+      ...(fromCard && installments > 1 && paidBeforeApp >= 1 ? { paidBeforeApp } : {}),
     } as CreateTransactionInput;
   }
 
@@ -326,7 +366,9 @@ export function TransactionDrawer({
         {selectedCard && kind === "EXPENSE" ? (
           <p data-testid="invoice-hint" className="-mt-3 text-sm text-slate-600">
             {invoiceHint(
-              date || defaults.data?.today || new Date().toISOString().slice(0, 10),
+              paidActive
+                ? anchorOn
+                : date || defaults.data?.today || new Date().toISOString().slice(0, 10),
               selectedCard.closingDay,
               selectedCard.dueDay,
             )}
@@ -340,8 +382,10 @@ export function TransactionDrawer({
                 className={inputClass}
                 value={installments}
                 onChange={(e) => {
-                  setInstallments(Number(e.target.value));
-                  setErrors((x) => ({ ...x, installments: undefined }));
+                  const n = Number(e.target.value);
+                  setInstallments(n);
+                  if (n < 2) setPaidText("0");
+                  setErrors((x) => ({ ...x, installments: undefined, paidBeforeApp: undefined }));
                 }}
                 aria-invalid={errors.installments ? true : undefined}
               >
@@ -352,13 +396,59 @@ export function TransactionDrawer({
                 ))}
               </select>
             </Field>
+            {installments > 1 ? (
+              <>
+                <Field
+                  id="tx-paid-before"
+                  label="Parcelas já pagas"
+                  hint="Quantas já foram pagas antes de usar o app?"
+                  error={errors.paidBeforeApp ?? paidError}
+                >
+                  <input
+                    id="tx-paid-before"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={installments - 1}
+                    step={1}
+                    className={inputClass}
+                    value={paidText}
+                    onChange={(e) => {
+                      setPaidText(e.target.value);
+                      setErrors((x) => ({ ...x, paidBeforeApp: undefined }));
+                    }}
+                    aria-invalid={errors.paidBeforeApp || paidError ? true : undefined}
+                  />
+                </Field>
+                {paidActive && !paidError ? (
+                  <Field id="tx-next-invoice" label="Próxima parcela na fatura de">
+                    <select
+                      id="tx-next-invoice"
+                      className={inputClass}
+                      value={effectiveNext}
+                      onChange={(e) => setNextInvoice(e.target.value)}
+                    >
+                      <option value="open">
+                        {formatInvoiceLabel(selectedCard.openInvoice.ref)} (aberta)
+                      </option>
+                      {closedPrev ? (
+                        <option value={closedPrev.ref}>
+                          {formatInvoiceLabel(closedPrev.ref)} (fechada, ainda não paga)
+                        </option>
+                      ) : null}
+                    </select>
+                  </Field>
+                ) : null}
+              </>
+            ) : null}
             <div aria-live="polite" className="-mt-3">
-              {installments > 1 && cents >= installments ? (
+              {installments > 1 && cents >= installments && !paidError ? (
                 <InstallmentPreviewText
                   totalInCents={cents}
                   count={installments}
-                  purchaseOn={date || defaults.data?.today || new Date().toISOString().slice(0, 10)}
+                  purchaseOn={paidActive ? anchorOn : date || anchorOn}
                   closingDay={selectedCard.closingDay}
+                  paidBeforeApp={paidBeforeApp}
                 />
               ) : null}
             </div>
@@ -533,17 +623,19 @@ export function TransactionDrawer({
             Mais detalhes
           </summary>
           <div className="mt-3 flex flex-col gap-4">
-            <Field id="tx-date" label="Data" error={errors.occurredOn}>
-              <input
-                id="tx-date"
-                type="date"
-                className={inputClass}
-                value={date}
-                {...(defaults.data ? { max: defaults.data.today } : {})}
-                onChange={(e) => setDate(e.target.value)}
-                aria-invalid={errors.occurredOn ? true : undefined}
-              />
-            </Field>
+            {paidActive ? null : (
+              <Field id="tx-date" label="Data" error={errors.occurredOn}>
+                <input
+                  id="tx-date"
+                  type="date"
+                  className={inputClass}
+                  value={date}
+                  {...(defaults.data ? { max: defaults.data.today } : {})}
+                  onChange={(e) => setDate(e.target.value)}
+                  aria-invalid={errors.occurredOn ? true : undefined}
+                />
+              </Field>
+            )}
             <Field id="tx-note" label="Observação" error={errors.note}>
               <textarea
                 id="tx-note"
@@ -561,7 +653,9 @@ export function TransactionDrawer({
             type="submit"
             variant={overLimit ? "danger" : "primary"}
             className="w-full"
-            disabled={create.isPending || liveDescriptionError !== undefined}
+            disabled={
+              create.isPending || liveDescriptionError !== undefined || paidError !== undefined
+            }
           >
             {create.isPending ? "Salvando…" : overLimit ? "Confirmar mesmo assim" : text.save}
           </Button>
