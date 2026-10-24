@@ -25,6 +25,29 @@ describe("US-001 Rota protegida sem sessão: safeCallbackUrl", () => {
     expect(safeCallbackUrl("/extrato?period=2026-10")).toBe("/extrato?period=2026-10");
   });
 
+  // SEC-003: TAB/LF/CR são removidos pelo navegador ("/\t/evil" vira "//evil"); espaços e controles também saem.
+  it.each([
+    "/\t/evil.example",
+    "/\n/evil.example",
+    "/\r/evil.example",
+    "/ /evil.example",
+    "/\u0000/x",
+    "/\u200b/evil.example",
+    "/%09/evil.example",
+    "/%0a/evil.example",
+    "/%2f/evil.example",
+    "/%5cevil.example",
+    "/\\/evil.example",
+    "//evil.example",
+    "/.//evil.example",
+  ])("SEC-003 rejeita %j", (raw) => {
+    expect(safeCallbackUrl(raw)).toBe("/");
+  });
+
+  it.each(["/extrato?a=b%20c", "/contas/abc#x", "/a/b-c_d.e~f"])("SEC-003 aceita %j", (raw) => {
+    expect(safeCallbackUrl(raw)).toBe(raw);
+  });
+
   it.each(["//evil.com", "https://x", "/\\x", "", null, undefined, "javascript:alert(1)", "evil"])(
     "rejeita %j",
     (raw) => {
