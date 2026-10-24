@@ -7,6 +7,19 @@ const nextConfig: NextConfig = {
   output: "standalone", // ADR-005/ADR-031: usado só pelo Dockerfile; a Vercel ignora e usa o próprio adapter
   allowedDevOrigins: allowedDevOriginsFor(process.env),
   poweredByHeader: false,
+  // SDD-024 §4.3: a tela de consentimento OAuth não pode ser embutida (clickjacking).
+  async headers() {
+    return [
+      {
+        source: "/oauth/consent",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Cache-Control", value: "no-store" },
+        ],
+      },
+    ];
+  },
   // O E2E usa um diretório de build próprio para não colidir com o `pnpm dev` (porta 3100).
   distDir: process.env.NEXT_DIST_DIR || ".next",
 };

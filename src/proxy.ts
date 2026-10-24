@@ -19,5 +19,9 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/|login|convite|_next/static|_next/image|favicon.ico|.*\\.[a-zA-Z0-9]+$).*)"],
+  // `.well-known/` (metadados OAuth/RFC 9728, públicos) e `oauth/authorize` (endpoint que valida o pedido e
+  // grava antes do login; a tela de consentimento `/oauth/consent` continua protegida) ficam fora do proxy.
+  matcher: [
+    "/((?!api/|\\.well-known/|oauth/authorize$|login|convite|_next/static|_next/image|favicon.ico|.*\\.[a-zA-Z0-9]+$).*)",
+  ],
 };

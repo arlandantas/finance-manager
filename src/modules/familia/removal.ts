@@ -8,6 +8,7 @@ import { cardInvoiceSummaries } from "@/modules/cartoes/queries";
 import { accountBalances } from "@/modules/contas/ledger-queries";
 import { lockFamilyAdmins } from "@/modules/familia/manage";
 import type { RemovalReviewDTO, RemoveMemberParsed } from "@/modules/familia/schemas";
+import { revokeMemberGrants } from "@/modules/mcp/grants";
 import { isSettlementEnabled } from "@/modules/split/guard";
 import { pendingSettlementMonths } from "@/modules/split/pending";
 import { splitRepo } from "@/modules/split/repo";
@@ -290,6 +291,8 @@ export async function removeMember(
     where: { id: target.id },
     data: { removedAt: now, removedByMemberId: ctx.memberId, removalKind: kind },
   });
+  // EN-006 (ADR-030 §4): sem vínculo ativo não há acesso por assistente; revoga na mesma transação.
+  await revokeMemberGrants(tx, ctx.familyId, target.id, "MEMBER_REMOVED", now, ctx.memberId);
   await tx.familyEvent.create({
     data: {
       familyId: ctx.familyId,
