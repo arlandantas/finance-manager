@@ -31,6 +31,9 @@ const schema = z
     HOSTNAME: optionalString,
     AUTH_GOOGLE_ID: optionalString,
     AUTH_GOOGLE_SECRET: optionalString,
+    // EN-006 (SDD-024 §3): servidor MCP/OAuth desligado por padrão; em preview da Vercel nunca liga.
+    MCP_ENABLED: flag,
+    MCP_CIMD_ALLOWED_HOSTS: optionalString,
     SMTP_HOST: z.string().default("localhost"),
     SMTP_PORT: z.coerce.number().int().default(1025),
     MAIL_FROM: z.string().default("Finance Manager <no-reply@finance-manager.local>"),
@@ -42,6 +45,14 @@ const schema = z
         code: "custom",
         path: ["AUTH_DEV_LOGIN"],
         message: "AUTH_DEV_LOGIN não pode estar ativo em produção",
+      });
+    }
+    // SDD-024 §3: o `resource` OAuth e o issuer precisam de https em produção.
+    if (env.NODE_ENV === "production" && env.MCP_ENABLED && !env.APP_URL.startsWith("https://")) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["APP_URL"],
+        message: "APP_URL precisa ser https quando MCP_ENABLED=true em produção",
       });
     }
     if (env.NODE_ENV !== "test" && !env.AUTH_SECRET) {

@@ -162,6 +162,8 @@ model Family {
   updatedByMemberId String?     @db.Uuid
   // EN-004 (SDD-021 §5): sobrescrita do teto mensal de IA (centavos); nulo = padrão do ambiente
   aiMonthlyCapCents Int?
+  // EN-006a (ADR-030 §4): o Administrador pode bloquear o acesso por assistente (MCP) da família inteira
+  assistantAccessEnabled Boolean @default(true)
 
   llmBudgetMonths              LlmBudgetMonth[]
   llmUsageEvents               LlmUsageEvent[]
@@ -169,6 +171,8 @@ model Family {
   avoidableDismissals          AvoidableDismissal[]
   categorySuggestionDismissals CategorySuggestionDismissal[]
   aiConsentEvents              AiConsentEvent[]
+  mcpGrants                    McpGrant[]
+  mcpAuditEvents               McpAuditEvent[]
   members                      Member[]
   familyEvents                 FamilyEvent[]
   invitations                  Invitation[]
@@ -259,6 +263,8 @@ model Member {
   authoredTransactions         Transaction[]                 @relation("TxAuthor")
   eventsAsActor                FamilyEvent[]                 @relation("EventActor")
   aiConsentEvents              AiConsentEvent[]
+  mcpGrants                    McpGrant[]
+  mcpAuditEvents               McpAuditEvent[]
   spendingAnalyses             SpendingAnalysis[]
   avoidableDismissals          AvoidableDismissal[]
   categorySuggestionDismissals CategorySuggestionDismissal[]
@@ -839,4 +845,178 @@ model CategorySuggestionDismissal {
 
   @@id([familyId, descriptionKey, toCategoryId])
   @@map("category_suggestion_dismissals")
+}
+
+// ───────── Servidor MCP / servidor de autorização OAuth 2.1 (SDD-024 §2 + §11) ─────────
+enum McpClientKind {
+  CIMD
+  DCR
+}
+
+enum McpGrantStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+// Rev. 2 (§11.4): PAT fica para o backlog (US-074b), mas a coluna e o clientId opcional já existem.
+enum McpGrantKind {
+  OAUTH
+  PAT
+}
+
+enum McpRevokedReason {
+  MEMBER
+  FAMILY_BLOCKED
+  MEMBER_REMOVED
+  REFRESH_REUSE
+  CODE_REUSE
+  CLIENT
+}
+
+enum McpTokenKind {
+  CODE
+  ACCESS
+  REFRESH
+}
+
+enum McpAuditOutcome {
+  OK
+  DENIED_SCOPE
+  INVALID
+  RATE_LIMITED
+  ERROR
+  LIMIT_EXCEEDED // §11.3
+}
+
+enum McpAuditKind {
+  TOOL
+  CONNECTED
+  REVOKED
+  BLOCKED
+  LIMITS_CHANGED // §11.3
+}
+
+// Cliente OAuth (CIMD ou DCR); sem segredo: só clientes públicos
+model McpClient {
+  id                 String        @id @default(uuid()) @db.Uuid
+  clientId           String        @unique // URL do CIMD ou "dcr_<random>"
+  kind               McpClientKind
+  clientName         String
+  redirectUris       String[]
+  softwareId         String?
+  metadataFetchedAt  DateTime?     @db.Timestamptz(3)
+  registrationIpHash String?
+  createdAt          DateTime      @default(now()) @db.Timestamptz(3)
+  lastUsedAt         DateTime?     @db.Timestamptz(3)
+
+  grants   McpGrant[]
+  requests McpAuthorizationRequest[]
+
+  @@map("mcp_clients")
+}
+
+// Pedido validado do /oauth/authorize (TTL 10 min, uso único)
+model McpAuthorizationRequest {
+  id              String    @id @default(uuid()) @db.Uuid
+  clientId        String    @db.Uuid
+  redirectUri     String
+  state           String?
+  codeChallenge   String
+  scopesRequested String[]
+  resource        String
+  userId          String?   @db.Uuid
+  expiresAt       DateTime  @db.Timestamptz(3)
+  consumedAt      DateTime? @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+
+  client McpClient @relation(fields: [clientId], references: [id])
+
+  @@index([expiresAt])
+  @@map("oauth_authorization_requests")
+}
+
+// "Conexão" do assistente = consentimento de UM membro a UM cliente
+model McpGrant {
+  id                String            @id @default(uuid()) @db.Uuid
+  familyId          String            @db.Uuid
+  memberId          String            @db.Uuid
+  userId            String            @db.Uuid
+  kind              McpGrantKind      @default(OAUTH)
+  clientId          String?           @db.Uuid
+  label             String
+  scopes            String[]
+  resource          String
+  status            McpGrantStatus    @default(ACTIVE)
+  expiresAt         DateTime          @db.Timestamptz(3)
+  revokedAt         DateTime?         @db.Timestamptz(3)
+  revokedReason     McpRevokedReason?
+  revokedByMemberId String?           @db.Uuid
+  lastUsedAt        DateTime?         @db.Timestamptz(3)
+  createdAt         DateTime          @default(now()) @db.Timestamptz(3)
+
+  family Family     @relation(fields: [familyId], references: [id])
+  member Member     @relation(fields: [familyId, memberId], references: [familyId, id])
+  client McpClient? @relation(fields: [clientId], references: [id])
+  tokens McpToken[]
+  audits McpAuditEvent[]
+
+  @@unique([familyId, id])
+  @@index([familyId, memberId, status])
+  @@map("mcp_grants")
+}
+
+model McpToken {
+  id            String       @id @default(uuid()) @db.Uuid
+  grantId       String       @db.Uuid
+  kind          McpTokenKind
+  tokenHash     String       @unique // sha256 hex do valor (o valor nunca é gravado)
+  codeChallenge String? // só CODE
+  redirectUri   String? // só CODE
+  parentId      String?      @db.Uuid
+  expiresAt     DateTime     @db.Timestamptz(3)
+  usedAt        DateTime?    @db.Timestamptz(3)
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+
+  grant McpGrant @relation(fields: [grantId], references: [id], onDelete: Cascade)
+
+  @@index([grantId, kind])
+  @@index([expiresAt])
+  @@map("mcp_tokens")
+}
+
+// Limite de taxa em janela fixa, no Postgres (nada em memória: ADR-031 §7)
+model McpRateBucket {
+  key         String
+  windowStart DateTime @db.Timestamptz(3)
+  count       Int
+
+  @@id([key, windowStart])
+  @@map("mcp_rate_buckets")
+}
+
+// Append-only (gatilho em SQL cru, como ai_consent_events)
+model McpAuditEvent {
+  id            String          @id @default(uuid()) @db.Uuid
+  familyId      String          @db.Uuid
+  memberId      String          @db.Uuid
+  grantId       String?         @db.Uuid
+  clientName    String
+  kind          McpAuditKind
+  tool          String?
+  params        Json            @default("{}")
+  outcome       McpAuditOutcome
+  errorCode     String?
+  proposalId    String?         @db.Uuid
+  transactionId String?         @db.Uuid
+  durationMs    Int
+  createdAt     DateTime        @default(now()) @db.Timestamptz(3)
+
+  family Family    @relation(fields: [familyId], references: [id])
+  member Member    @relation(fields: [familyId, memberId], references: [familyId, id])
+  grant  McpGrant? @relation(fields: [grantId], references: [id], onDelete: Restrict)
+
+  @@index([familyId, memberId, createdAt(sort: Desc)])
+  @@index([grantId, createdAt(sort: Desc)])
+  @@map("mcp_audit_events")
 }
