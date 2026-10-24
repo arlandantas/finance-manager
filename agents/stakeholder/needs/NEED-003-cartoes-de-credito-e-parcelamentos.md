@@ -56,3 +56,8 @@ O usuário não encontrou como lançar **compra parcelada** no cartão. Não é 
   - **RN-003.9:** compras com juros: o app trabalha com o **total pago**; não calcula juros.
 - **Relação com NEED-008 (desdobramento de compra):** são coisas **diferentes**. Parcelar divide uma compra **no tempo**; desdobrar divide uma compra **entre categorias/membros**. Sem dependência: o parcelamento sai antes e o desdobramento continua no AP2; no futuro, as duas funções devem compor (cada parcela herda o desdobramento).
 - **Fora de escopo agora:** antecipar parcelas, parcelamento fora de cartão (carnê/boleto, tratar como recorrente/previsto no AP1), renegociação.
+
+---
+
+## 6. Extensão — 2026-10-24
+Compras parceladas **com parcelas já pagas** na entrada (quem começa a usar o app com parcelamentos em andamento) estão em [`NEED-024`](NEED-024-parcelas-ja-pagas-na-entrada.md). A importação de fatura por arquivo (parcelas "3/10" incluídas) está em [`NEED-026`](NEED-026-importacao-de-fatura-por-arquivo.md).

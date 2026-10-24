@@ -233,3 +233,11 @@ Novos requisitos de negócio, detalhados em [`needs/`](needs/) e priorizados em 
 - **RN13 - Histórico é sagrado:** remover membro ou arquivar conta nunca apaga lançamentos, acertos ou faturas.
 - **RN14 - Privacidade por padrão:** valores começam ocultos em dispositivo novo.
 - **Futuro:** grupos não familiares e múltiplos grupos (NEED-021); assistente de IA (NEED-023).
+
+## 7. Novas solicitações do usuário — 2026-10-24
+- **RF42 - Parcelamento com parcelas já pagas** (NEED-024; estende RF41): lançar compra parcelada informando a posição atual; só o saldo restante é projetado.
+- **RF43 - Acesso por LLM via MCP** (NEED-025): consulta (e, depois, lançamento) via assistente, com as permissões do membro, opt-in e auditoria.
+- **RF44 - Importação de fatura por arquivo** (NEED-026): LLM valida e extrai; revisão humana obrigatória; anti-duplicidade; conferência de total.
+- **RF45 - Análise de gastos evitáveis por IA** (NEED-027; concretiza NEED-023): sugestão com opt-in, sem gravação automática.
+- **RN15 - IA nunca grava sozinha:** toda extração ou sugestão de LLM passa por confirmação humana antes de alterar dados.
+- **RN16 - Dado financeiro enviado a LLM exige opt-in da família,** aviso do que sai e minimização; a chave da API (do app ou por usuário) é decisão do usuário (Q-U08).

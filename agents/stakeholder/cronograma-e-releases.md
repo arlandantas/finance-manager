@@ -130,3 +130,19 @@ Observação: o **Épico 7 (parcelamento)** sai do AP1 e passa à R3. Se o Tech 
    ├── Épico 14: Importação de Extratos OFX e Faturas CSV
    └── Épico 15: Notificações e Alertas Externos (WhatsApp/Telegram)
 ```
+
+
+---
+
+## 🆕 Proposta de encaixe — novas solicitações do usuário (2026-10-24)
+
+*Proposta do Stakeholder por valor; releases já homologadas (R1, R2, R2.1) não são alteradas. Cronograma e estimativas são do Gestor, Tech Lead e Dev.*
+
+| Ordem sugerida | Necessidade | Prioridade de valor | Justificativa |
+| :---: | :--- | :---: | :--- |
+| 1 | **NEED-024** Parcelas já pagas na entrada | **Alta** | Pequena extensão do parcelamento (NEED-003/US-042), sem IA nem risco de privacidade; destrava a adoção por quem já tem parcelas. |
+| 2 | **NEED-026** Importar fatura por arquivo | **Alta** | Maior ganho contra a fadiga de cadastro. Depende das decisões Q-U07..Q-U10 (privacidade, chave, custo). Antecipa o item de importação do AP3. |
+| 3 | **NEED-027** Análise de gastos evitáveis | **Média** | Reaproveita a infraestrutura de LLM e o opt-in do NEED-026; melhor após alguns meses de dados bons. |
+| 4 | **NEED-025** Acesso por LLM via MCP | **Média** | Conveniência; independente da chave Anthropic do app; começar somente leitura. |
+
+Dependência comum: uma **decisão única de privacidade e de chave de API (Q-U01, Q-U07, Q-U08)** destrava os NEEDs 026 e 027. O NEED-024 pode andar de imediato. A ordem entre 025 e 027 pode ser invertida pelo usuário.

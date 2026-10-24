@@ -35,3 +35,6 @@ Passo intermediário **sem IA generativa**: sugestão de categoria baseada em de
 
 ## 6. Pergunta que permanece com o usuário
 - **Q-U01:** aceitar o envio de agregados financeiros a um provedor externo de IA (qual provedor, opt-in)? Privacidade e serviço externo: o time não decide. Só após a v0 em produção.
+
+## 7. Atualização — 2026-10-24
+O usuário pediu análise por LLM com a chave de API da Anthropic. A parte "analisar gastos e apontar o que é evitável" foi detalhada em [`NEED-027`](NEED-027-analise-de-gastos-evitaveis-por-ia.md), que **herda** as regras RN-023.1 a RN-023.6. Q-U01 passa a ter provedor sugerido (Anthropic) e segue com o usuário. A pré-condição "v0 com 2 a 3 fechamentos de mês" permanece como hipótese conservadora para a análise, mas **não** se aplica às demais solicitações (NEED-024..026). Este NEED-023 fica como guarda-chuva de privacidade e princípios de IA.
