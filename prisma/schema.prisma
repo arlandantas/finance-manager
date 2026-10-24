@@ -165,6 +165,7 @@ model Family {
 
   llmBudgetMonths   LlmBudgetMonth[]
   llmUsageEvents    LlmUsageEvent[]
+  spendingAnalyses  SpendingAnalysis[]
   aiConsentEvents   AiConsentEvent[]
   members           Member[]
   familyEvents      FamilyEvent[]
@@ -737,7 +738,11 @@ model LlmUsageEvent {
   createdAt        DateTime       @default(now()) @db.Timestamptz(3)
   settledAt        DateTime?      @db.Timestamptz(3)
 
-  family Family @relation(fields: [familyId], references: [id])
+  // US-070 (SDD-023 §5): análise gerada com este consumo; apagar a análise zera o vínculo (o consumo fica)
+  analysisId String? @db.Uuid
+
+  family   Family            @relation(fields: [familyId], references: [id])
+  analysis SpendingAnalysis? @relation(fields: [analysisId], references: [id], onDelete: SetNull)
 
   @@index([familyId, month, status])
   @@map("llm_usage_events")
@@ -764,4 +769,27 @@ model AiConsentEvent {
 
   @@index([familyId, purpose, createdAt(sort: Desc)])
   @@map("ai_consent_events")
+}
+
+// ───────── Análise de gastos por IA (SDD-023 §5) ─────────
+model SpendingAnalysis {
+  id                  String   @id @default(uuid()) @db.Uuid
+  familyId            String   @db.Uuid
+  periodKey           String // "YYYY-MM"
+  partial             Boolean
+  requestedByMemberId String   @db.Uuid
+  model               String
+  promptVersion       Int
+  payload             Json // exatamente o enviado (US-073 "O que foi enviado")
+  result              Json // AnalysisResult reconciliado
+  refMap              Json // SÓ local: C*/R* ⇒ ids/descrições (nunca vai à LLM)
+  usageEventId        String?  @db.Uuid
+  createdAt           DateTime @default(now()) @db.Timestamptz(3)
+
+  family      Family          @relation(fields: [familyId], references: [id])
+  usageEvents LlmUsageEvent[]
+
+  @@index([familyId, createdAt(sort: Desc)])
+  @@index([familyId, periodKey])
+  @@map("spending_analyses")
 }
