@@ -93,6 +93,21 @@ describe("SDD-000 withApi: ordem das verificações", () => {
     expect(ok.status).toBe(201);
   });
 
+  it("SEC-012: erro inesperado responde 500 e o log não leva message nem stack com dado pessoal", async () => {
+    const { logger } = await import("@/lib/logger");
+    const { withApi } = await import("@/lib/api/with-api");
+    const spy = vi.spyOn(logger, "error").mockImplementation(() => undefined);
+    const handler = withApi({ auth: "none" }, async () => {
+      throw new Error("Invalid create(): description: 'Farmácia da Maria'");
+    });
+    const res = await handler(new Request("http://localhost:3100/api/x"), {
+      params: Promise.resolve({}),
+    });
+    expect(res.status).toBe(500);
+    expect(JSON.stringify(spy.mock.calls)).not.toContain("Farmácia");
+    spy.mockRestore();
+  });
+
   it("Content-Type diferente de JSON em mutação -> 403 BAD_ORIGIN", async () => {
     const as = await asUser("mariana@exemplo.com");
     const res = await call(as, "POST", "/api/v1/families", '{"name":"Família Silva"}', {

@@ -6,6 +6,7 @@ import {
 } from "@modelcontextprotocol/server";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { Clock } from "@/lib/clock";
+import { describeError } from "@/lib/log-error";
 import { logger } from "@/lib/logger";
 import { recordAudit } from "@/modules/mcp/audit";
 import {
@@ -197,7 +198,7 @@ export async function handleMcp(req: Request, deps: McpDeps): Promise<Response> 
     const modern = createMcpHandler(factory, { legacy: "reject", responseMode: "json" });
     return await modern.fetch(forward);
   } catch (e) {
-    logger.error({ err: e instanceof Error ? e.message : "erro" }, "mcp transport");
+    logger.error({ err: describeError(e) }, "mcp transport");
     return rpcError(500, -32603, "Erro interno.");
   }
 }

@@ -24,6 +24,7 @@ import { getDb } from "@/lib/db";
 import { isAllowedDevHost } from "@/lib/dev-origins";
 import { getEnv } from "@/lib/env";
 import { newId } from "@/lib/ids";
+import { describeError } from "@/lib/log-error";
 import { logger } from "@/lib/logger";
 import { findActiveMembership } from "@/modules/familia/repo";
 
@@ -234,10 +235,7 @@ export function withApi<A extends AuthMode = "family", B = undefined, Q = undefi
       return jsonResponse(result, requestId);
     } catch (e) {
       if (e instanceof ApiError) return errorResponse(e.status, e.toBody(), requestId);
-      logger.error(
-        { requestId, err: e instanceof Error ? { message: e.message, stack: e.stack } : String(e) },
-        "erro inesperado na API",
-      );
+      logger.error({ requestId, err: describeError(e) }, "erro inesperado na API"); // SEC-012: sem message
       return errorResponse(
         500,
         { error: { code: "INTERNAL", message: "Erro inesperado. Tente novamente em instantes." } },

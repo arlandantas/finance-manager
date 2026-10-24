@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { ApiError } from "@/lib/api/errors";
+import { describeError } from "@/lib/log-error";
 import { logger } from "@/lib/logger";
 import { type AuditParams, recordAudit } from "@/modules/mcp/audit";
 import type { McpScope } from "@/modules/mcp/config";
@@ -149,7 +150,7 @@ export async function runTool(
         );
         return toolError(e.code, e.message);
       }
-      logger.error({ tool: def.name, err: e instanceof Error ? e.message : "erro" }, "mcp tool");
+      logger.error({ tool: def.name, err: describeError(e) }, "mcp tool");
       await audit("ERROR", { errorCode: "INTERNAL", params });
       return internal();
     }
@@ -160,10 +161,7 @@ export async function runTool(
       structuredContent: output as Record<string, unknown>,
     };
   } catch (e) {
-    logger.error(
-      { tool: def.name, err: e instanceof Error ? e.message : "erro" },
-      "mcp audit/internal",
-    );
+    logger.error({ tool: def.name, err: describeError(e) }, "mcp audit/internal");
     return internal();
   }
 }
