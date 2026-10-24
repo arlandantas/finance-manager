@@ -1,6 +1,20 @@
 # Status do Tech Lead
 
-*Atualizado: 2026-10-24 · Ciclos: **R4-D v2** (Vercel, alternativas ao OAuth, lançamento direto, POC — abaixo), **R4-D** (MCP), **R4**, **R2.1 e R3**, **R1/R2***
+*Atualizado: 2026-10-24 · Ciclos: **SEC Grupo B** (ADR-032, SDD-028 — abaixo), **R4-D v2** (Vercel, alternativas ao OAuth, lançamento direto, POC — abaixo), **R4-D** (MCP), **R4**, **R2.1 e R3**, **R1/R2***
+
+## Ciclo SEC Grupo B (D-GES-40): correções de segurança **Especificadas**
+| Artefato | Cobre |
+| :--- | :--- |
+| [ADR-032 Correções de segurança do Grupo B](adrs/ADR-032-correcoes-de-seguranca-grupo-b.md) | Decisões para SEC-004, 009, 010, 011, 013, 017 e 018, com alternativas rejeitadas e riscos residuais |
+| [SDD-028 Correções de segurança do Grupo B](sdd/SDD-028-correcoes-de-seguranca-grupo-b.md) | Contratos Zod/API, migrações, estados de UI, testes obrigatórios com o **reteste da reprodução** do relatório, estimativa e ordem |
+
+**Pontos:** **39** = SEC-004 5 · SEC-010 3 · SEC-011 3 · SEC-018a 3 · SEC-013 3 · SEC-009 3 · SEC-017a 3 · SEC-018b 2 · SEC-017b 3 · SEC-017c 5 · SEC-017d 5 · SEC-017e 1 (correções 1–8 = 25; funcionalidades LGPD = 14).
+**Ordem:** 004 ➜ 010 ➜ 011 ➜ 018a (fase 2 da migração ≥ 1 dia depois) ➜ 013 (antes de ligar IA em produção) ➜ 009 ➜ 017a ➜ 018b ➜ 017b ➜ 017c ➜ 017d; 017e em paralelo (PO).
+**Exigem decisão do usuário (SDD-028 §9):** U1 aceite explícito sem troca de família (rec. sim) · U2 sessão 30 d ociosa / 90 d absoluta · U3 teto global de IA R$ 50/mês + alerta · U4 e-mail de conexão nova (rec. sim) · U5 retenção de ex-membro e prazos LGPD (validar juridicamente) · U6 allowlist de e-mails no alpha (rec. sim, fora do SDD). **Informação pedida ao Dev:** URL exata do `client_id` CIMD do Claude.
+**PO (SDD-028 §10):** US-003 (aceite/recusa/vários convites/já tem família), US-039, US-035, US-074, US-075, história da análise com IA, RN-012.3 (com o Stakeholder) e novas histórias (encerrar sessões, exportar, excluir conta, excluir família, privacidade).
+**Fora:** SEC-021 (pergunta ao usuário), SEC-001/015/016/008 (risco aceito), Grupo A (Dev).
+
+---
 
 ## Ciclo R4-D v2 (D-GES-36 + refinamentos do Gestor): hospedagem revista, lançamento direto, POC com Claude
 Respostas, estimativas, ordem, decisões pendentes e ajustes de BDD: **[`respostas-r4d-v2.md`](respostas-r4d-v2.md)**.
