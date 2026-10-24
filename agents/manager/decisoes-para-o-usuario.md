@@ -26,3 +26,16 @@ Ver [`pendencias-externas.md`](pendencias-externas.md) (Google OAuth, SMTP/domí
 
 ## E. Acesso externo ao app local (túnel)
 Ver `pendencias-externas.md`, item EXT-10.
+
+## F. R4 proposta: parcelas pagas, importação de fatura, análise por IA e MCP (2026-10-24)
+Origem: NEED-024..027, backlog R4 (US-065..077, EN-004..006, 81 pts PO prelim.) e [`decisoes-po-ia-e-parcelas.md`](../product-owner/backlog/decisoes-po-ia-e-parcelas.md). Hipóteses valem até o usuário responder.
+
+| ID | Decisão | Hipótese adotada | Bloqueia |
+| :-- | :-- | :-- | :-- |
+| Q-U01 | Enviar dados financeiros à Anthropic, com opt-in por família | Sim, com opt-in e aviso | R4-B/C (se "não", cai o bloco de IA, ~50 pts) |
+| Q-U08 | Chave Anthropic: única do app ou por usuário/família | Única do app | R4-B/C |
+| Q-U10 | Teto mensal de custo de API por família | Definido pelo usuário (valor em aberto) | R4-B |
+| Q-U03 | Parcelas já pagas: reconstruir histórico passado? | Não, só o restante | não bloqueia a US-065 |
+| Q-U04..06 | MCP por membro; só leitura primeiro; padrão aberto | Conforme descrito | R4-D |
+| Q-U07/09 | Fatura inteira à LLM; PDF e CSV primeiro | Conforme descrito | R4-B |
+| Q-U11/12 | Análise só com agregados; método essencial/importante/supérfluo | Conforme descrito | R4-C |

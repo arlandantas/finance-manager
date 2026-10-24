@@ -1,6 +1,25 @@
 # Status do Product Owner
 
-*Atualizado: 2026-10-05 (triagem da homologação da R2.1: R2.2, US-052..055)*
+*Atualizado: 2026-10-24 (R4 proposta: parcelas já pagas, importação de fatura, análise por IA e MCP; US-065..077)*
+
+
+## Atualização (2026-10-24): R4 proposta — NEED-024..027 (US-065..077, EN-004..006)
+- **Origem:** NEED-024 (parcelas já pagas), 025 (MCP), 026 (importação de fatura), 027 (análise de gastos evitáveis), RF42..RF45, RN15/RN16 e a proposta de encaixe do Stakeholder. **81 pts PO prelim.: Must 36 · Should 32 · Could 13.** Nada altera o motor do acerto nem a EN-002.
+- **Habilitadoras** (infra comum de LLM, sem repetir nas histórias): [EN-004](backlog/stories/EN-004-infra-llm-chave-do-app-e-teto-de-custo.md) (8: chave Anthropic do app, cliente único, teto de custo), [EN-005](backlog/stories/EN-005-opt-in-de-privacidade-para-ia.md) (5: opt-in por família), [EN-006](backlog/stories/EN-006-servidor-mcp-base.md) (8: base do MCP).
+
+| Ordem | História | Entrega | MoSCoW | Pts |
+| :-: | :-- | :-: | :-: | :-: |
+| 1 | [US-065](backlog/stories/US-065-parcelas-ja-pagas-na-entrada.md) Parcelas já pagas | R4-A | Must | 5 |
+| 2-3 | EN-004, EN-005 | R4-B | Must | 8 + 5 |
+| 4-6 | [US-066](backlog/stories/US-066-enviar-fatura-e-validar-arquivo.md) enviar/validar · [US-067](backlog/stories/US-067-revisar-itens-extraidos-da-fatura.md) revisar · [US-068](backlog/stories/US-068-confirmar-e-gravar-importacao.md) gravar | R4-B | Must | 5 + 8 + 5 |
+| 7 | [US-069](backlog/stories/US-069-reverter-importacao-em-lote.md) reverter lote | R4-B | Should | 3 |
+| 8-11 | [US-070](backlog/stories/US-070-analise-de-gastos-evitaveis.md) análise · 071 descartar · 072 recategorizar · 073 histórico | R4-C | Should/Should/Could/Could | 8 + 3 + 3 + 2 |
+| 12-16 | EN-006 · [US-074](backlog/stories/US-074-conceder-e-revogar-acesso-do-assistente.md) acesso · 075 leitura · 077 auditoria · [US-076](backlog/stories/US-076-lancar-despesa-pelo-assistente-com-confirmacao.md) lançar | R4-D | Should×3 / Could×2 | 8 + 5 + 5 + 3 + 5 |
+
+- **Corte (de baixo para cima):** 076 ➔ 077 ➔ 075 ➔ 074 ➔ EN-006 ➔ 073 ➔ 072 ➔ 071 ➔ 070 ➔ 069; os 36 pts de Must não se cortam.
+- **Fluxos novos:** [FLUXO-015](flows/FLUXO-015-importar-fatura-por-arquivo.md) importação de fatura · [FLUXO-016](flows/FLUXO-016-privacidade-e-consentimento-ia.md) privacidade/consentimento (inclui MCP) · [FLUXO-017](flows/FLUXO-017-analise-de-gastos-evitaveis.md) análise.
+- **Decisões D-PO-53..69 e Q-U01..Q-U12 (cada uma com hipótese conservadora):** [`backlog/decisoes-po-ia-e-parcelas.md`](backlog/decisoes-po-ia-e-parcelas.md). **Pedido ao TL:** [`backlog/pedidos-ao-tech-lead-ia.md`](backlog/pedidos-ao-tech-lead-ia.md) (ADR de LLM, privacidade/retenção, MCP, custo, testes sem API real).
+- **Pendências:** Gestor (ratificar D-PO-53..69; encaminhar as Q-U ao usuário; **Q-U01, Q-U08 e Q-U10 bloqueiam o início da R4-B**, Q-U03 não bloqueia a R4-A); TL (ADRs, SDD curto da US-065, estimativas); Stakeholder (conferir textos de privacidade da EN-005).
 
 
 ## Atualização (2026-10-05): pacote v0 alpha (US-056..064)

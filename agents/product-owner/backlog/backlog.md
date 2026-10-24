@@ -1,6 +1,6 @@
 # 📑 Backlog do Produto (Product Owner)
 
-*Status: **R1 e R2 (Inc 3) Especificadas e homologadas com ressalvas** · **R2.1 (US-022..039): Especificada** (SDD-010..013, **67 pts** do TL) · **R3 (US-040..051, EN-002): Esboçada** (SDD-014..017, 65 pts pendentes) · **EN-003 concluída** (ADR-018) · Atualizado: 2026-10-05 (R2.2 criada pós-homologação da R2.1: US-052..055, D-PO-48..52)*
+*Status: **R1 e R2 (Inc 3) Especificadas e homologadas com ressalvas** · **R2.1 (US-022..039): Especificada** (SDD-010..013, **67 pts** do TL) · **R3 (US-040..051, EN-002): Esboçada** (SDD-014..017, 65 pts pendentes) · **EN-003 concluída** (ADR-018) · Atualizado: 2026-10-24 (R4 proposta: US-065..077, EN-004..006, D-PO-53..69; antes, 2026-10-05: R2.2 US-052..055, D-PO-48..52)*
 *Responsável: Agente Product Owner (PO)*
 *Método e portões (DoR/DoD): [`working-agreement.md`](working-agreement.md) · Escopo: [`mvp-definition.md`](mvp-definition.md)*
 
@@ -50,6 +50,8 @@ Os épicos adotam a numeração do cronograma do Stakeholder ([`cronograma-e-rel
 | **EPIC-20** | Cartão Completo: parcelamento | NEED-003 (fase 2 antecipada) | R3 (1ª entrega; não coube na R2.1, TL-02) |
 | **EPIC-21** | Classificação e Análise (tags, visões sintéticas, cor, receitas previstas) | NEED-013, NEED-016, NEED-017, NEED-015 | R3 |
 | **EPIC-22** | Modelo de Grupos (spike) | NEED-021 | R3 (spike **concluído**, ADR-018) |
+| **EPIC-23** | Entrada de Dados e Análise por IA (importação de fatura, infra de LLM, análise de gastos evitáveis) | NEED-026, NEED-027 (NEED-023) | R4-B / R4-C (proposta) |
+| **EPIC-24** | Acesso por Assistente de IA (MCP) | NEED-025 | R4-D (proposta) |
 
 ---
 
@@ -202,6 +204,33 @@ Pacote derivado de [`escopo-v0-alpha.md`](../../stakeholder/escopo-v0-alpha.md);
 
 **Ordem de corte da R3 (reescrita, D-PO-34; primeiro a sair):** US-051 (5) ➔ US-050 (3) ➔ US-049 (5) ➔ US-046 (3) ➔ US-044 (3) ➔ US-041 (5) ➔ **US-043 (5, a última)**. A **EN-002 saiu da lista**: é Must porque a US-042 depende dela; só a US-043 (modo "De outro jeito"), que vem depois, é cortável. Cortando tudo isso saem 29 pts e sobram **36 pts**: os 24 de Must (US-040, EN-002, US-042) mais tags (US-045 e 047) e a visão básica (US-048), que só saem por decisão do Gestor. **AP1 (tetos, ciclo, recorrência) vem logo após a R3** (Q-F12).
 
+### R4 (proposta) — "Entrada facilitada e IA" (2026-10-24) — **81 pts (PO, prelim.): Must 36 · Should 32 · Could 13**
+
+Origem: [NEED-024..027](../../stakeholder/needs) e a proposta de encaixe do Stakeholder ([`cronograma-e-releases.md`](../../stakeholder/cronograma-e-releases.md)). Decisões **D-PO-53..69** e perguntas **Q-U01..Q-U12** (com hipótese adotada) em [`decisoes-po-ia-e-parcelas.md`](decisoes-po-ia-e-parcelas.md); pedido ao Tech Lead (ADRs de LLM, privacidade/retenção, MCP, custo, testes) em [`pedidos-ao-tech-lead-ia.md`](pedidos-ao-tech-lead-ia.md). Fluxos: [FLUXO-015](../flows/FLUXO-015-importar-fatura-por-arquivo.md), [FLUXO-016](../flows/FLUXO-016-privacidade-e-consentimento-ia.md), [FLUXO-017](../flows/FLUXO-017-analise-de-gastos-evitaveis.md). **Nada aqui altera o motor do acerto nem a EN-002.**
+
+| Ordem | ID | História | Entrega | Épico | MoSCoW | Pts | Depende de | Rastreio | Status |
+| :-: | :-- | :-- | :-: | :-- | :-: | :-: | :-- | :-- | :-- |
+| 1 | [US-065](stories/US-065-parcelas-ja-pagas-na-entrada.md) | Parcelas já pagas na entrada | **R4-A** | EPIC-20 | **Must** | 5 | US-040a/b, US-041 (divisão: US-042) | NEED-024 | Refinada · sem IA, pode andar já |
+| 2 | [EN-004](stories/EN-004-infra-llm-chave-do-app-e-teto-de-custo.md) | Infra de LLM: chave do app, cliente único, teto de custo *(Habilitadora)* | R4-B | EPIC-23 | **Must** | 8 | ADR do TL; Q-U08/Q-U10 | NEED-026/027 | Refinada |
+| 3 | [EN-005](stories/EN-005-opt-in-de-privacidade-para-ia.md) | Opt-in de privacidade por família *(Habilitadora)* | R4-B | EPIC-23 | **Must** | 5 | EN-004; Q-U01/Q-U07 | NEED-026/027 | Refinada |
+| 4 | [US-066](stories/US-066-enviar-fatura-e-validar-arquivo.md) | Enviar a fatura e validar o arquivo | R4-B | EPIC-23 | **Must** | 5 | EN-004, EN-005 | NEED-026 | Refinada |
+| 5 | [US-067](stories/US-067-revisar-itens-extraidos-da-fatura.md) | Revisar os itens extraídos | R4-B | EPIC-23 | **Must** | 8 | US-066 | NEED-026 | Refinada (fatiável) |
+| 6 | [US-068](stories/US-068-confirmar-e-gravar-importacao.md) | Confirmar e gravar (lote atômico, sem duplicar) | R4-B | EPIC-23 | **Must** | 5 | US-067 | NEED-026 | Refinada |
+| 7 | [US-069](stories/US-069-reverter-importacao-em-lote.md) | Reverter importação em lote | R4-B | EPIC-23 | Should | 3 | US-068 | NEED-026 | Refinada · **1º corte do bloco** |
+| — | | **Fim dos Must = 36 pts** (R4-A 5 + R4-B 31) | | | | **36** | | | |
+| 8 | [US-070](stories/US-070-analise-de-gastos-evitaveis.md) | Análise de gastos evitáveis | R4-C | EPIC-23 | Should | 8 | EN-004, EN-005, US-048/049 | NEED-027 | Refinada |
+| 9 | [US-071](stories/US-071-descartar-sugestao-de-gasto-evitavel.md) | Descartar sugestão ("importante para nós") | R4-C | EPIC-23 | Should | 3 | US-070 | NEED-027 | Refinada |
+| 10 | [US-072](stories/US-072-aceitar-sugestao-de-categoria.md) | Aceitar sugestões de categoria, uma a uma | R4-C | EPIC-23 | Could | 3 | US-070 | NEED-027 | Refinada |
+| 11 | [US-073](stories/US-073-historico-e-apagar-analises.md) | Histórico e apagar análises | R4-C | EPIC-23 | Could | 2 | US-070 | NEED-027 | Refinada |
+| 12 | [EN-006](stories/EN-006-servidor-mcp-base.md) | Servidor MCP: autenticação, escopo e auditoria *(Habilitadora)* | R4-D | EPIC-24 | Should | 8 | ADR do TL | NEED-025 | Refinada |
+| 13 | [US-074](stories/US-074-conceder-e-revogar-acesso-do-assistente.md) | Conceder e revogar o acesso do assistente | R4-D | EPIC-24 | Should | 5 | EN-006 | NEED-025 | Refinada |
+| 14 | [US-075](stories/US-075-consultar-pelo-assistente-somente-leitura.md) | Consultar saldos, gastos e extrato (somente leitura) | R4-D | EPIC-24 | Should | 5 | EN-006, US-074 | NEED-025 | Refinada |
+| 15 | [US-077](stories/US-077-auditoria-do-assistente.md) | Auditoria do assistente | R4-D | EPIC-24 | Could | 3 | EN-006, US-074 | NEED-025 | Refinada · antes da 076 |
+| 16 | [US-076](stories/US-076-lancar-despesa-pelo-assistente-com-confirmacao.md) | Lançar despesa pelo assistente (proposta + confirmação) | R4-D | EPIC-24 | Could | 5 | US-075, US-077 | NEED-025 | Refinada · **último** |
+
+**Pontos acumulados:** 5 ➔ 13 ➔ 18 ➔ 23 ➔ 31 ➔ 36 (Must) ➔ 39 ➔ 47 ➔ 50 ➔ 53 ➔ 55 ➔ 63 ➔ 68 ➔ 73 ➔ 76 ➔ 81.
+**Linha de corte (de baixo para cima):** US-076 ➔ US-077 ➔ US-075 ➔ US-074 ➔ EN-006 (todo o MCP, 26 pts) ➔ US-073 ➔ US-072 ➔ US-071 ➔ US-070 (toda a análise, 16 pts) ➔ US-069. Os 36 pts de Must **não se cortam**; o bloco MCP e o bloco de análise só entram **depois** de a importação estar homologada. A R4-C e a R4-D são invertíveis por escolha do usuário (cronograma do Stakeholder). **Dependências externas:** US-065 só depende da US-040a/b; a R4-B depende de **Q-U01, Q-U08 e Q-U10** respondidas e dos ADRs do TL.
+
 ### Critério central das histórias novas
 | ID | Critério central |
 | :-- | :-- |
@@ -227,7 +256,7 @@ Pacote derivado de [`escopo-v0-alpha.md`](../../stakeholder/escopo-v0-alpha.md);
 | EN-003 | **Concluída:** ADR-018 do spike de múltiplos grupos (sem funcionalidade). |
 
 ### Fora do escopo desta rodada (Futuro, sem refinamento)
-Assistente de IA generativa (NEED-023; depende de **Q-U01** com o usuário e de ADR de privacidade), grupos não familiares e contas privadas (NEED-021; só o spike), exclusão da família (**Q-U02**), construtor de relatórios, hierarquia/cor de tags, barra inferior no desktop (Opção A), corrigir forma de pagamento (achado 6), unificar linhas de transferência (achado 9). *(Faturas em Contas a pagar, antigo achado 10, entrou na R2.2 como US-055; D-PO-51.)*
+Assistente de IA generativa de uso geral (NEED-023 foi **concretizada** em US-070..073 / NEED-027; depende de **Q-U01** e de ADR de privacidade), grupos não familiares e contas privadas (NEED-021; só o spike), exclusão da família (**Q-U02**), construtor de relatórios, hierarquia/cor de tags, barra inferior no desktop (Opção A), corrigir forma de pagamento (achado 6), unificar linhas de transferência (achado 9). *(Faturas em Contas a pagar, antigo achado 10, entrou na R2.2 como US-055; D-PO-51.)*
 
 ---
 
@@ -254,6 +283,7 @@ Assistente de IA generativa (NEED-023; depende de **Q-U01** com o usuário e de 
 | **Inc 3** — AP0 completo (R2) | US-014, 015, 016a/b, 017a/b, 018, 019 | ✅ Sim (SDD-007, 008, 009) | Nenhum SDD pendente; a R2 começa depois da R1 (US-012 e US-013a são pré-requisitos de cenários) |
 | **Inc 4** — R2.1 | US-022..039 | ✅ **Especificadas** (SDD-010..013; 67 pts) | Nenhum SDD pendente; ratificação de D-PO-33..42 pelo Gestor; linha de base E2E (D-GES-19) |
 | **Inc 5** — R3 | US-040..051, EN-002 (EN-003 concluída) | ✅ Refinadas e **Esboçadas** (SDD-014..017; ADR-016..018) | SDD completo antes de cada história; depende da R2.1 (predicado único, `findActiveMembership`, `FamilyEvent`) |
+| **Inc 6** — R4 (proposta) | US-065..077, EN-004..006 | ⏳ Refinadas; **aguardam ADRs/SDD do TL** ([`pedidos-ao-tech-lead-ia.md`](pedidos-ao-tech-lead-ia.md)) e ratificação de D-PO-53..69 | R4-A: nenhum além do SDD curto. R4-B: Q-U01, Q-U08, Q-U10 e ADRs de LLM/privacidade. R4-D: ADR do MCP |
 
 ---
 
@@ -305,3 +335,4 @@ Assistente de IA generativa (NEED-023; depende de **Q-U01** com o usuário e de 
 | **D-PO-50** | Decisão | **Valores começam ocultos ao entrar como outro usuário: MANTIDO.** É o padrão intencional da US-027/Q-F04 (preferência por usuário e dispositivo; sem preferência = oculto). Só se ajusta o **texto da dica do olho** (US-053). Lembrar entre dispositivos exigiria guardar no servidor e vai contra "não expor sem ação"; fora de escopo. | Gestor ratifica | Não |
 | **D-PO-51** | Decisão | **Faturas na tela "A pagar" entram no escopo** (US-055; antes "fora do escopo", achado 10): mesma definição e total do "A pagar" do Resumo; sem pagar dentro da lista. | Gestor ratifica | Não |
 | **D-PO-52** | Decisão | Achado 2 amplia a US-054: o diálogo de arquivar (cartão e conta) **lista todos os impedimentos antes de confirmar**; validação do servidor mantida. Achado 5 (botão flutuante) resolvido com espaço inferior reservado nas listas. | Gestor ratifica | Não |
+| **D-PO-53..69** | Decisão | **R4 (proposta):** parcelas já pagas (só o restante), infra de LLM e opt-in como Habilitadoras, importação de fatura em 4 fatias (revisão obrigatória, lote atômico, anti-duplicidade, arquivo descartado), análise de gastos (método fixo, só agregados, números do app), MCP por membro (leitura primeiro, lançar com confirmação), ordem e corte. Detalhe e **perguntas Q-U01..Q-U12 ao usuário** (com hipótese) em [`decisoes-po-ia-e-parcelas.md`](decisoes-po-ia-e-parcelas.md). | Gestor ratifica; usuário responde Q-U | Q-U01/08/10 bloqueiam o início da R4-B |
