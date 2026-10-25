@@ -1,6 +1,6 @@
 # Status — Agente de Segurança da Informação
 
-**Última atualização:** 2026-10-26 · **Estágio:** reteste da rodada 6 do "Só meu" + D-GES-55 entregue; aguardando o Gestor (SEC-047..050).
+**Última atualização:** 2026-10-26 · **Estágio:** reteste da rodada 7 (SEC-047..050, D-GES-57/58) entregue; aguardando o Gestor (SEC-051..053, resíduo DEV-132).
 
 ## Entregas
 | Data | Entrega | Resultado |
@@ -10,6 +10,7 @@
 | 2026-10-25 | [Revisão dedicada de LGPD](relatorios/revisao-lgpd-2026-10-25.md) (`3fc271d`..`41b8d9f`) | Sem IDOR/BOLA nem bypass de trava; 9 achados novos: 4 Baixa (SEC-029..032), 5 Informativa (SEC-033..037) |
 | 2026-10-25 | [Reteste do "Só meu" ampliado](relatorios/reteste-so-meu-2026-10-25.md) (`bdd9ed1`..`672ea70`, D-GES-50/51) | Núcleo da regra, IDOR, ex-membro, exportação e MCP sem furo; 5 achados novos: SEC-042 (Média), 043, 044, 045 (Baixa), 046 (Info); suítes 47/47 |
 | 2026-10-26 | [Reteste da rodada 6 + D-GES-55](relatorios/reteste-rodada6-2026-10-26.md) (`adc6946`..`ac946e9`) | SEC-042..045 Corrigidos, 046 Corrigido (aviso); D-GES-52..55 conformes; 4 novos: SEC-047, 048, 049 (Baixa), 050 (Info); suítes 100/100 |
+| 2026-10-26 | [Reteste da rodada 7](relatorios/reteste-rodada7-2026-10-26.md) (`20bfdfe`..`0d33261`, D-GES-57/58) | SEC-047, 049, 050 Corrigidos; SEC-048 Corrigido no passo único, contornável em dois (SEC-051); resíduo DEV-132 quantificado (Admin +V·(n−1)/n); 3 novos: SEC-051 (Baixa), 052, 053 (Info); int 1094/1094 (1 skip) |
 | 2026-10-25 | [Reteste final](relatorios/reteste-final-2026-10-25.md) (`b494e0c`..`849008c`) | 14 Corrigidos, 1 Parcial (SEC-026), 0 Não corrigidos, 0 regressões em achados antigos; 4 novos: SEC-038, 039 (Baixa), SEC-040, 041 (Info); suítes 359/359 |
 
 ## Quadro consolidado (estado final após o reteste final de 2026-10-25)
@@ -64,14 +65,17 @@
 | 044 | Baixa | Corrigido | (a)..(d) 403 |
 | 045 | Baixa | Corrigido | `endSeries` preserva |
 | 046 | Info | Corrigido (aviso) | `reassignNotice` |
-| **047** | Baixa | **Em análise (usuário)** | Admin vira titular do cartão e controla "Só meu" de membro ativo |
-| **048** | Baixa | **Em análise (usuário)** | poder pleno fabrica crédito no acerto com despesa de ex-membro |
-| **049** | Baixa | **Em análise (usuário)** | remover e reconvidar: Admin com poder pleno permanente; quem volta perde o controle |
-| **050** | Info | **Em análise (usuário)** | tornar dividido o "Só meu" de ex-membro o leva à exportação de todos |
+| 047 | Baixa | Corrigido | só o titular troca; via remoção ⇒ SEC-052 |
+| 048 | Baixa | Corrigido (passo único) | dois passos ⇒ SEC-051; resíduo DEV-132 (aceito por ora, D-GES-58) |
+| 049 | Baixa | Corrigido | acerto em duas linhas ⇒ SEC-053 |
+| 050 | Info | Corrigido | nota volta se o pagador deixa de ser ex-membro (SEC-051/DEV-132) |
+| **051** | Baixa | **Em análise (usuário)** | dividir e depois trocar o pagador da dividida do ex-membro move o crédito |
+| **052** | Info | **Em análise (usuário)** | Admin reatribui a si cartão/conta na remoção e controla "Só meu" de ativo |
+| **053** | Info | **Em análise (usuário)** | quem voltou e divide o item antigo aparece em duas linhas no acerto |
 
 ## Pendências e bloqueios
-- Perguntas do reteste da rodada 6 (§1): Admin trocar titular (SEC-047), pagador ao tornar dividido (SEC-048), quem volta à família (SEC-049), exportação (SEC-050).
-- Retestar SEC-047..050 quando o Gestor promover as decisões/correções. UI da rodada 6 não verificada no navegador.
+- Perguntas do reteste da rodada 7 (§1): pagador de ex-membro imutável (SEC-051 + resíduo DEV-132), reatribuição na remoção (SEC-052), acerto de quem voltou (SEC-053).
+- Retestar SEC-051..053 quando o Gestor promover as decisões/correções. UI das rodadas 6 e 7 não verificada no navegador.
 - Perguntas do reteste final (§1): SEC-038 (regra nas previstas), "Só meu" na conta de outro dono, limite de convites por pessoa (SEC-040).
 - Retestar SEC-038..041 quando o Gestor promover as correções.
 - Perguntas ao usuário na seção 1 do reteste: regra do "Só meu" para SEC-025/026, risco residual da SEC-011, visão pública do health (SEC-022).
