@@ -635,6 +635,36 @@ export function FamiliaScreen() {
               )}
             </section>
           ) : null}
+
+          {isAdmin ? (
+            <section
+              aria-labelledby="risk-title"
+              data-testid="zona-de-risco"
+              className="flex flex-col gap-2 border-t border-slate-200 pt-4"
+            >
+              <h2 id="risk-title" className="text-lg font-semibold text-slate-900">
+                Zona de risco
+              </h2>
+              {data.members.length > 1 ? (
+                <p className="text-sm text-slate-600" data-testid="excluir-familia-bloqueada">
+                  Remova os outros membros antes de excluir a família.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-slate-600">
+                    Apaga de vez todos os dados financeiros da família. Não há como desfazer.
+                  </p>
+                  <Link
+                    href="/familia/excluir"
+                    data-testid="excluir-familia-link"
+                    className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-red-700 underline dark:text-red-300"
+                  >
+                    Excluir família
+                  </Link>
+                </>
+              )}
+            </section>
+          ) : null}
         </>
       ) : null}
 
