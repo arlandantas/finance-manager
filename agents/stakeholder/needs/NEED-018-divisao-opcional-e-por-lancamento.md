@@ -26,6 +26,8 @@ Hoje "Dividir com a família" nasce **ligado**. O usuário discorda: nem todo ga
 - **RN-018.4:** Lançamentos antigos migram com o percentual que o cálculo vigente já produzia (nenhum número de acerto muda).
 - **RN-018.5:** Editar o modo de divisão de um lançamento de mês já acertado segue as regras de mês acertado (US-013b).
 
+- **RN-018.6 (D-GES-50):** o "Só meu" é visível a todos, mas controlado (editar, excluir, restaurar, estornar) por **pagador, dono da conta/cartão e lançador**. Motivo: confiança e controle doméstico; a conta e quem registra precisam poder corrigir. Ninguém torna "Só meu" o que não é seu nem cria em nome de outro; exportação omite "Só meu" alheio; dono ex-membro ⇒ somente leitura para todos. Ver RN17/RF46 em `requisitos-negocio.md`.
+
 ## 4. Riscos e salvaguardas
 - **Risco de sub-registro:** com padrão desligado, despesas comuns esquecidas reduzem o acerto e viram discussão. Salvaguardas: lembrar por categoria (item 4) e um **aviso de revisão no fechamento do mês** ("12 despesas não divididas, revisar?") com filtro direto no Extrato.
 - **Risco de complexidade:** exibir 3 modos pode lentificar o lançamento. Meta: o fluxo "Só meu" continua com os mesmos 4 toques.
