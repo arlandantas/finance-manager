@@ -27,7 +27,8 @@ import {
   assertPlannedControllerLimits,
   assertPlannedNoCapture,
   assertPlannedResultAllowed,
-  isAdminOverRemovedOwner,
+  memberRefsWithReturn,
+  ownerStanding,
   PERSONAL_OWNER_ONLY_CODE,
   PERSONAL_STRUCTURE_MESSAGE,
 } from "@/modules/transacoes/ownership";
@@ -48,7 +49,7 @@ export const memberRefOf = (m: MemberRow): MemberRef => ({
 });
 
 export async function memberMap(repo: Repo): Promise<Map<string, MemberRef>> {
-  return new Map((await repo.listMembers()).map((m) => [m.id, memberRefOf(m)] as const));
+  return memberRefsWithReturn(await repo.listMembers(), memberRefOf);
 }
 
 const unknownMember = (id: string): MemberRef => ({ id, name: "Membro", image: null });
@@ -247,9 +248,14 @@ export async function updatePlannedExpense(
   await assertCanWritePlanned(tx, ctx, row); // SEC-026a: "Só meu" é só do responsável
   assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
   // SEC-043/044: quem só controla não muda divisão, responsável nem conta; D-GES-55: Admin sobre ex-membro pode
-  const fullPower =
-    !row.isSharedExpense && (await isAdminOverRemovedOwner(tx, ctx, row.responsibleMemberId));
-  assertPlannedControllerLimits(ctx, row, input, { fullPower });
+  const standing = row.isSharedExpense
+    ? { ownerIsActor: false, ownerRemoved: false }
+    : await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
+  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved;
+  assertPlannedControllerLimits(ctx, row, input, {
+    fullPower,
+    ownerIsActor: standing.ownerIsActor,
+  });
   assertPlannedResultAllowed(
     ctx,
     {
@@ -371,7 +377,12 @@ export async function payPlannedExpense(
     throw unprocessable("FUTURE_DATE_NOT_ALLOWED", message, [{ path: "paidOn", message }]);
   }
   const effective = input.amountInCents ?? toCents(row.amountInCents);
-  const payerMemberId = input.payerMemberId ?? row.responsibleMemberId;
+  const standing = row.isSharedExpense
+    ? { ownerIsActor: false, ownerRemoved: false }
+    : await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
+  // quem voltou à família paga em nome do vínculo atual (o antigo, removido, não é pagador válido)
+  const ownerId = standing.ownerIsActor ? ctx.memberId : row.responsibleMemberId;
+  const payerMemberId = input.payerMemberId ?? ownerId;
   if (
     !(await tx.bankAccount.findFirst({ where: { id: input.accountId, familyId: ctx.familyId } }))
   ) {
@@ -379,9 +390,8 @@ export async function payPlannedExpense(
   }
   if (!(await repo.findMember(payerMemberId))) throw invalidRef("payerMemberId", "Membro inválido");
   // SEC-044d: quem só controla (não é o responsável) só dá baixa com conta do responsável ou a sua
-  const fullPower =
-    !row.isSharedExpense && (await isAdminOverRemovedOwner(tx, ctx, row.responsibleMemberId));
-  if (!row.isSharedExpense && row.responsibleMemberId !== ctx.memberId && !fullPower) {
+  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved;
+  if (!row.isSharedExpense && ownerId !== ctx.memberId && !fullPower) {
     const acc = await tx.bankAccount.findFirst({
       where: { id: input.accountId, familyId: ctx.familyId },
       select: { ownerMemberId: true },
@@ -396,9 +406,9 @@ export async function payPlannedExpense(
   }
   // D-GES-50: a baixa materializa um "Só meu" que já existe; quem controla (dono da conta, lançador) dá a baixa
   // sem virar o pagador, mas ninguém entrega a baixa em nome de um terceiro.
-  if (!row.isSharedExpense && payerMemberId !== row.responsibleMemberId) {
+  if (!row.isSharedExpense && payerMemberId !== ownerId) {
     // SEC-043: quem só controla não assume o pagamento (a baixa mantém o pagador original)
-    if (row.responsibleMemberId !== ctx.memberId && !fullPower) {
+    if (ownerId !== ctx.memberId && !fullPower) {
       throw forbidden(PERSONAL_STRUCTURE_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
     }
     assertPersonalForSelf(ctx, { isSharedExpense: false, payerMemberId });

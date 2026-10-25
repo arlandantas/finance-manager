@@ -12,5 +12,6 @@ export const memberRefSchema = z.object({
   image: z.string().nullable(),
   removed: z.literal(true).optional(), // ex-membro (ADR-019): UI mostra "(ex-membro)"; nunca o e-mail
   deleted: z.literal(true).optional(), // conta excluída (`users.deletedAt`, SEC-033): nunca decidido pelo nome
+  activeId: uuidSchema.optional(), // SEC-049: vínculo removido cujo usuário voltou; id do vínculo ativo atual (mesma pessoa)
 });
 export type MemberRef = z.infer<typeof memberRefSchema>;

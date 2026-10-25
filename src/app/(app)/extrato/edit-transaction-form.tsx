@@ -11,7 +11,7 @@ import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
 import { useUpdateTransaction } from "@/modules/transacoes/hooks";
-import { canChangeStructure } from "@/modules/transacoes/ownership";
+import { canChangeStructure, effectiveOwner } from "@/modules/transacoes/ownership";
 import { type TransactionDetailDTO, UpdateTransactionSchema } from "@/modules/transacoes/schemas";
 
 type FieldKey =
@@ -44,7 +44,7 @@ export function EditTransactionForm({
   const [cents, setCents] = useState(t.amountInCents);
   const [accountId, setAccountId] = useState(t.account?.id ?? "");
   const [categoryId, setCategoryId] = useState(t.category?.id ?? "");
-  const [payerId, setPayerId] = useState(t.payer?.id ?? "");
+  const [payerId, setPayerId] = useState(effectiveOwner(t.payer).id ?? "");
   const [shared, setShared] = useState(t.isSharedExpense);
   const [date, setDate] = useState(t.occurredOn);
   const [description, setDescription] = useState(t.description);
@@ -58,9 +58,11 @@ export function EditTransactionForm({
   // SEC-026: despesa "Só meu" é sempre em nome de quem edita (dono); para outra pessoa, divida.
   const myMemberId = family.data?.currentMemberId ?? "";
   // SEC-043/044: quem só controla o "Só meu" de outro não muda divisão, pagador nem conta (nem assume o pagamento)
-  const ownerId = t.payer?.id ?? t.author.id;
+  // SEC-049: quem voltou à família é o mesmo dono (o vínculo antigo aponta o vínculo ativo atual)
+  const owner = effectiveOwner(t.payer);
+  const ownerId = owner.id ?? t.author.id;
   // D-GES-55: o Administrador atual sobre o "Só meu" de ex-membro tem poderes plenos (altera tudo)
-  const ownerGone = t.payer?.removed === true;
+  const ownerGone = owner.removed;
   const fullPower = canChangeStructure(
     ownerId,
     { memberId: myMemberId, role: family.data?.currentRole },

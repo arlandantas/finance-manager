@@ -7,7 +7,11 @@ import {
   canWritePlanned,
   canWriteTransaction,
   controllerNames,
+  effectiveOwner,
+  isAdminOverRemovedOwner,
   isPersonalExpense,
+  memberRefsWithReturn,
+  ownerStanding,
   personalControllerIds,
   personalWriteMessage,
   plannedControllerIds,
@@ -279,5 +283,108 @@ describe("D-GES-55 poderes plenos do Administrador sobre o 'Só meu' de ex-membr
         { fullPower: true },
       ),
     ).not.toThrow();
+  });
+});
+
+describe("SEC-049 dono ativo: o mesmo usuário com vínculo ativo na mesma família", () => {
+  type M = { id: string; familyId: string; userId: string; removedAt: Date | null };
+  const gone = new Date("2026-10-03T00:00:00Z");
+  /** tx falso: só `member.findFirst`, com o filtro por `where` aplicado como o Prisma faria. */
+  const fakeTx = (members: M[]) =>
+    ({
+      member: {
+        findFirst: async ({ where }: { where: Record<string, unknown> }) =>
+          members.find(
+            (m) =>
+              (where.id === undefined || m.id === where.id) &&
+              (where.familyId === undefined || m.familyId === where.familyId) &&
+              (where.userId === undefined || m.userId === where.userId) &&
+              (where.removedAt !== null || m.removedAt === null),
+          ) ?? null,
+      },
+    }) as never;
+  const actor = (memberId: string, userId: string, role: "ADMIN" | "MEMBER" = "MEMBER") =>
+    ({ memberId, userId, role, familyId: "f1" }) as RequestContext;
+  const base: M[] = [
+    { id: "old", familyId: "f1", userId: "u-lucas", removedAt: gone },
+    { id: "new", familyId: "f1", userId: "u-lucas", removedAt: null },
+    { id: "adm", familyId: "f1", userId: "u-adm", removedAt: null },
+    { id: "bye", familyId: "f1", userId: "u-bye", removedAt: gone },
+    { id: "far", familyId: "f2", userId: "u-bye", removedAt: null }, // vínculo ativo em OUTRA família
+  ];
+
+  it("quem voltou é o próprio dono; o Admin deixa de ter poder pleno", async () => {
+    const tx = fakeTx(base);
+    expect(await ownerStanding(tx, actor("new", "u-lucas"), "old")).toEqual({
+      ownerIsActor: true,
+      ownerRemoved: false,
+    });
+    expect(await ownerStanding(tx, actor("adm", "u-adm", "ADMIN"), "old")).toEqual({
+      ownerIsActor: false,
+      ownerRemoved: false,
+    });
+    expect(await isAdminOverRemovedOwner(tx, actor("adm", "u-adm", "ADMIN"), "old")).toBe(false);
+  });
+  it("ex-membro de verdade (sem vínculo ativo na família) segue com o Admin; vínculo em outra família não conta", async () => {
+    const tx = fakeTx(base);
+    expect(await ownerStanding(tx, actor("adm", "u-adm", "ADMIN"), "bye")).toEqual({
+      ownerIsActor: false,
+      ownerRemoved: true,
+    });
+    expect(await isAdminOverRemovedOwner(tx, actor("adm", "u-adm", "ADMIN"), "bye")).toBe(true);
+    expect(await isAdminOverRemovedOwner(tx, actor("adm", "u-adm"), "bye")).toBe(false); // Membro, não
+  });
+  it("vínculo de outra família (IDOR): o dono não é achado fora da família do ator", async () => {
+    const tx = fakeTx(base);
+    expect(await ownerStanding(tx, actor("x", "u-x"), "far")).toEqual({
+      ownerIsActor: false,
+      ownerRemoved: false,
+    });
+  });
+  it("assertCanMakePersonal e limites da prevista: ownerIsActor age como dono", () => {
+    const lucas = actor("new", "u-lucas");
+    const cur = {
+      kind: "EXPENSE",
+      isSharedExpense: false,
+      payerMemberId: "old",
+      authorMemberId: "old",
+    };
+    expect(() => assertCanMakePersonal(lucas, cur, { isSharedExpense: true })).toThrow();
+    expect(() =>
+      assertCanMakePersonal(lucas, cur, { isSharedExpense: true }, { ownerIsActor: true }),
+    ).not.toThrow();
+    const planned = { isSharedExpense: false, responsibleMemberId: "old", paymentAccountId: "a1" };
+    expect(() =>
+      assertPlannedControllerLimits(lucas, planned, { isSharedExpense: true }),
+    ).toThrow();
+    expect(() =>
+      assertPlannedControllerLimits(
+        lucas,
+        planned,
+        { isSharedExpense: true },
+        { ownerIsActor: true },
+      ),
+    ).not.toThrow();
+  });
+  it("UI: effectiveOwner e memberRefsWithReturn", () => {
+    expect(effectiveOwner(null)).toEqual({ id: null, removed: false });
+    expect(effectiveOwner({ id: "old", removed: true, activeId: "new" })).toEqual({
+      id: "new",
+      removed: false,
+    });
+    expect(effectiveOwner({ id: "bye", removed: true })).toEqual({ id: "bye", removed: true });
+    expect(effectiveOwner({ id: "adm" })).toEqual({ id: "adm", removed: false });
+    const refs = memberRefsWithReturn(
+      base.filter((m) => m.familyId === "f1"),
+      (m) => ({
+        id: m.id,
+        name: m.id,
+        image: null,
+        ...(m.removedAt ? { removed: true as const } : {}),
+      }),
+    );
+    expect(refs.get("old")?.activeId).toBe("new");
+    expect(refs.get("bye")?.activeId).toBeUndefined();
+    expect(refs.get("new")?.activeId).toBeUndefined();
   });
 });

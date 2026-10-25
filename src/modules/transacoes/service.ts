@@ -23,7 +23,7 @@ import {
   ledgerPageIds,
   ledgerTotals,
 } from "@/modules/transacoes/extrato";
-import { assertPersonalForSelf } from "@/modules/transacoes/ownership";
+import { assertPersonalForSelf, memberRefsWithReturn } from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
   CreateTransactionParsed,
@@ -312,7 +312,7 @@ export async function createExpenseCore(
       ? { ref: invoice.ref, closingDate: invoice.closingDate, dueDate: invoice.dueDate }
       : null,
     category: categoryRefOf(category),
-    members: new Map((await repo.listMembers()).map((m) => [m.id, memberRefOf(m)] as const)),
+    members: memberRefsWithReturn(await repo.listMembers(), memberRefOf),
     ...(opts.assistant
       ? { assistantLabels: new Map([[opts.assistant.grantId, opts.assistant.label]]) }
       : {}),
@@ -405,7 +405,7 @@ async function createIncome(
   const dto = toTransactionDTO(row, {
     account,
     category: categoryRefOf(category),
-    members: new Map((await repo.listMembers()).map((m) => [m.id, memberRefOf(m)] as const)),
+    members: memberRefsWithReturn(await repo.listMembers(), memberRefOf),
   });
   await recordRevision(tx, {
     familyId: ctx.familyId,
@@ -485,7 +485,7 @@ async function assistantLabelsOf(
 }
 
 async function memberMap(repo: ReturnType<typeof transacoesRepo>) {
-  return new Map((await repo.listMembers()).map((m) => [m.id, memberRefOf(m)] as const));
+  return memberRefsWithReturn(await repo.listMembers(), memberRefOf);
 }
 
 /** Resolve a faixa de datas do filtro: `period`, `from/to` ou o período corrente (ADR-010). */

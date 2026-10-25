@@ -59,21 +59,23 @@ export async function listCategorySuggestions(
     WHERE t."familyId" = ${ctx.familyId}::uuid AND t."deletedAt" IS NULL AND t.kind = 'EXPENSE'
       AND t."installmentPlanId" IS NULL AND t."categoryId" IS NOT NULL
       AND ${periodPredicate("t", first.start, current.end)}`;
+  // SEC-049: o vínculo removido de quem voltou à família (mesmo usuário ativo) não é "ex-membro": é o próprio dono
+  const members = await tx.member.findMany({
+    where: { familyId: ctx.familyId },
+    select: { id: true, userId: true, removedAt: true },
+  });
+  const activeUsers = new Set(members.filter((m) => m.removedAt === null).map((m) => m.userId));
   const removed = new Set(
-    (
-      await tx.member.findMany({
-        where: { familyId: ctx.familyId, removedAt: { not: null } },
-        select: { id: true },
-      })
-    ).map((m) => m.id),
+    members.filter((m) => m.removedAt !== null && !activeUsers.has(m.userId)).map((m) => m.id),
   );
+  const mine = new Set(members.filter((m) => m.userId === ctx.userId).map((m) => m.id));
   const rows: SuggestionRow[] = [];
   for (const r of raw) {
     const key = normalizeDescription(r.description);
     if (!key) continue;
     // SEC-021: não sugere (nem deixa aceitar) mudança em "Só meu" de outro membro
     const owner = r.payerMemberId ?? r.authorMemberId;
-    if (!canWriteTransaction(r, ctx, removed.has(owner))) continue;
+    if (!mine.has(owner) && !canWriteTransaction(r, ctx, removed.has(owner))) continue;
     rows.push({
       id: r.id,
       version: r.version,

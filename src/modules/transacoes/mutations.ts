@@ -21,8 +21,8 @@ import {
 import {
   assertCanMakePersonal,
   assertCanWriteTransaction,
-  isAdminOverRemovedOwner,
   isPersonalExpense,
+  ownerStanding,
   personalOwnerId,
 } from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
@@ -174,9 +174,11 @@ export async function updateTransaction(
   const repo = transacoesRepo(tx, ctx.familyId);
   const row = await loadMutable(tx, ctx, repo, id);
   // D-GES-55: Administrador atual sobre o "Só meu" de ex-membro tem poderes plenos
-  const fullPower =
-    isPersonalExpense(row) && (await isAdminOverRemovedOwner(tx, ctx, personalOwnerId(row)));
-  assertCanMakePersonal(ctx, row, input, { fullPower });
+  const standing = isPersonalExpense(row)
+    ? await ownerStanding(tx, ctx, personalOwnerId(row))
+    : { ownerIsActor: false, ownerRemoved: false };
+  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved;
+  assertCanMakePersonal(ctx, row, input, { fullPower, ownerIsActor: standing.ownerIsActor }); // SEC-049
   if (row.deletedAt) {
     throw unprocessable(
       "TRANSACTION_DELETED",

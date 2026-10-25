@@ -1,5 +1,6 @@
 import { forbidden } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
+import type { MemberRef } from "@/lib/schemas";
 
 // SEC-021 (D-GES-42, DEV-88) revisado por D-GES-50 (DEV-120): lançamento "Só meu" é alterado (editar,
 // excluir, restaurar, estornar/dar baixa) por quem TEM CONTROLE sobre ele. Os demais membros continuam
@@ -73,12 +74,59 @@ export async function isAdminOverRemovedOwner(
   ctx: RequestContext,
   ownerId: string,
 ): Promise<boolean> {
-  if (ctx.role !== "ADMIN" || ownerId === ctx.memberId) return false;
+  if (ctx.role !== "ADMIN") return false;
+  return (await ownerStanding(tx, ctx, ownerId)).ownerRemoved;
+}
+
+/**
+ * SEC-049 (D-GES-57): o "dono" é a PESSOA, não o vínculo. Quem sai e volta por convite ganha um vínculo novo; o
+ * "Só meu" antigo continua apontando o vínculo removido, mas é do mesmo usuário. Lido na transação e sempre
+ * filtrado por `familyId` (vínculos do usuário em outras famílias não contam).
+ *  - `ownerIsActor`: o dono é o próprio ator (vínculo atual ou vínculo antigo do mesmo usuário): age como dono.
+ *  - `ownerRemoved`: o dono saiu E o usuário dele não tem vínculo ativo na família: só aí vale a regra do ex-membro.
+ */
+export async function ownerStanding(
+  tx: Tx,
+  ctx: RequestContext,
+  ownerId: string,
+): Promise<{ ownerIsActor: boolean; ownerRemoved: boolean }> {
+  if (ownerId === ctx.memberId) return { ownerIsActor: true, ownerRemoved: false };
   const owner = await tx.member.findFirst({
     where: { id: ownerId, familyId: ctx.familyId },
-    select: { removedAt: true },
+    select: { removedAt: true, userId: true },
   });
-  return owner?.removedAt != null;
+  if (!owner || owner.removedAt == null) return { ownerIsActor: false, ownerRemoved: false };
+  if (owner.userId === ctx.userId) return { ownerIsActor: true, ownerRemoved: false };
+  const returned = await tx.member.findFirst({
+    where: { familyId: ctx.familyId, userId: owner.userId, removedAt: null },
+    select: { id: true },
+  });
+  return { ownerIsActor: false, ownerRemoved: returned == null };
+}
+
+/** SEC-049: marca (`activeId`) o vínculo removido cujo usuário voltou à família, para a UI tratá-lo como o mesmo dono. */
+export function memberRefsWithReturn<
+  R extends { id: string; userId?: string | undefined; removedAt?: Date | null | undefined },
+>(rows: R[], toRef: (row: R) => MemberRef): Map<string, MemberRef> {
+  const activeByUser = new Map(
+    rows.filter((m) => !m.removedAt && m.userId).map((m) => [m.userId as string, m.id] as const),
+  );
+  return new Map(
+    rows.map((m) => {
+      const ref = toRef(m);
+      const activeId = m.removedAt && m.userId ? activeByUser.get(m.userId) : undefined;
+      return [m.id, activeId ? { ...ref, activeId } : ref] as const;
+    }),
+  );
+}
+
+/** Regra pura da UI: o vínculo removido que voltou (`activeId`) é o mesmo dono; sem `activeId`, é ex-membro. */
+export function effectiveOwner(
+  ref: { id: string; removed?: true | undefined; activeId?: string | undefined } | null | undefined,
+): { id: string | null; removed: boolean } {
+  if (!ref) return { id: null, removed: false };
+  if (ref.removed && ref.activeId) return { id: ref.activeId, removed: false };
+  return { id: ref.id, removed: ref.removed === true };
 }
 
 /** Regra pura (usada também pela UI): `ownerRemoved` = o dono já saiu da família (somente leitura). */
@@ -158,11 +206,8 @@ export async function assertCanWriteTransaction(
   if (!isPersonalExpense(row)) return;
   const ownerId = personalOwnerId(row);
   if (ownerId === ctx.memberId) return;
-  const owner = await tx.member.findFirst({
-    where: { id: ownerId, familyId: ctx.familyId },
-    select: { removedAt: true },
-  });
-  const ownerRemoved = owner?.removedAt != null;
+  const { ownerIsActor, ownerRemoved } = await ownerStanding(tx, ctx, ownerId); // SEC-049
+  if (ownerIsActor) return;
   if (!ownerRemoved && row.authorMemberId === ctx.memberId) return;
   if (ownerRemoved && ctx.role === "ADMIN") return; // D-GES-52
   const accountOwnerMemberId =
@@ -191,10 +236,12 @@ export function assertCanMakePersonal(
     payerMemberId?: string | undefined;
     accountId?: string | undefined;
   },
-  opts: { fullPower?: boolean } = {},
+  opts: { fullPower?: boolean; ownerIsActor?: boolean } = {},
 ): void {
   if (current.kind !== "EXPENSE") return;
   const currentOwner = personalOwnerId(current);
+  // SEC-049: quem voltou à família é o dono do "Só meu" antigo, ainda que o registro aponte o vínculo antigo
+  const isOwner = currentOwner === ctx.memberId || opts.ownerIsActor === true;
   // SEC-048 (D-GES-57): o Administrador que divide o "Só meu" de ex-membro não escolhe novo pagador: quem pagou
   // continua sendo o ex-membro (o Admin só vira pagador enquanto o lançamento segue "Só meu", DEV-129).
   if (
@@ -209,7 +256,7 @@ export function assertCanMakePersonal(
   // SEC-043/044: num "Só meu" que NÃO é seu, quem só controla altera valor, data, descrição, categoria e
   // observação, mas não a divisão, o pagador (nem "assume" o pagamento) nem a conta. Exceção (D-GES-55): o
   // Administrador atual sobre o "Só meu" de ex-membro (`fullPower`).
-  if (!current.isSharedExpense && currentOwner !== ctx.memberId && !opts.fullPower) {
+  if (!current.isSharedExpense && !isOwner && !opts.fullPower) {
     const changesDivision = next.isSharedExpense === true;
     const changesPayer = next.payerMemberId !== undefined && next.payerMemberId !== currentOwner;
     const changesAccount =
@@ -221,7 +268,7 @@ export function assertCanMakePersonal(
     }
   }
   const nextPayer = next.payerMemberId ?? currentOwner;
-  if (current.isSharedExpense && next.isSharedExpense === false && currentOwner !== ctx.memberId) {
+  if (current.isSharedExpense && next.isSharedExpense === false && !isOwner) {
     throw forbidden(PERSONAL_CAPTURE_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
   }
   const willBePersonal =
@@ -236,7 +283,7 @@ export function assertCanMakePersonal(
   if (
     current.isSharedExpense &&
     next.payerMemberId === ctx.memberId &&
-    currentOwner !== ctx.memberId &&
+    !isOwner &&
     current.authorMemberId !== ctx.memberId
   ) {
     throw forbidden(PERSONAL_CAPTURE_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
@@ -325,11 +372,8 @@ export async function plannedWriteDecision(
   if (row.isSharedExpense || row.responsibleMemberId === ctx.memberId) {
     return { allowed: true, controllers: [] };
   }
-  const owner = await tx.member.findFirst({
-    where: { id: row.responsibleMemberId, familyId: ctx.familyId },
-    select: { removedAt: true },
-  });
-  const ownerRemoved = owner?.removedAt != null;
+  const { ownerIsActor, ownerRemoved } = await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
+  if (ownerIsActor) return { allowed: true, controllers: [] };
   if (!ownerRemoved && row.authorMemberId === ctx.memberId) {
     return { allowed: true, controllers: [] };
   }
@@ -364,8 +408,9 @@ export function assertPlannedControllerLimits(
     responsibleMemberId?: string | undefined;
     paymentAccountId?: string | null | undefined;
   },
-  opts: { fullPower?: boolean } = {},
+  opts: { fullPower?: boolean; ownerIsActor?: boolean } = {},
 ): void {
+  if (opts.ownerIsActor) return; // SEC-049: quem voltou é o responsável do "Só meu" antigo
   if (opts.fullPower) {
     // D-GES-55; SEC-048 (D-GES-57): ao dividir, o responsável continua sendo o ex-membro
     if (

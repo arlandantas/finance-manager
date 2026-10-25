@@ -39,6 +39,7 @@ import {
   canWritePlanned,
   canWriteTransaction,
   controllerNames,
+  effectiveOwner,
   personalControllerIds,
   personalWriteMessage,
 } from "@/modules/transacoes/ownership";
@@ -91,12 +92,12 @@ function PayableRow({
       canWritePlanned(
         {
           isSharedExpense: item.isSharedExpense ?? true,
-          responsibleMemberId: item.responsible?.id ?? "",
+          responsibleMemberId: effectiveOwner(item.responsible).id ?? "",
           authorMemberId: item.authorId,
           accountOwnerMemberId: item.paymentAccountOwnerId ?? null,
         },
         { memberId: family.currentMemberId, role: family.currentRole },
-        item.responsible?.removed === true,
+        effectiveOwner(item.responsible).removed,
       ));
   return (
     <li
@@ -218,7 +219,7 @@ function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void
     ? {
         kind: "EXPENSE",
         isSharedExpense: item.isSharedExpense,
-        payerMemberId: paid.payer.id,
+        payerMemberId: effectiveOwner(paid.payer).id,
         authorMemberId: paid.authorId ?? paid.payer.id,
         accountOwnerMemberId: paid.accountOwnerId ?? null,
       }
@@ -230,7 +231,7 @@ function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void
       canWriteTransaction(
         paidRow,
         { memberId: family.currentMemberId, role: family.currentRole },
-        paid.payer.removed === true,
+        effectiveOwner(paid.payer).removed,
       ));
   return (
     <li

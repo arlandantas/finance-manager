@@ -34,7 +34,11 @@ import {
 } from "@/modules/previstas/schemas";
 import { splitSwitchLabel } from "@/modules/split/shares-label";
 import { useDefaults } from "@/modules/transacoes/hooks";
-import { canChangeStructure, violatesPlannedCapture } from "@/modules/transacoes/ownership";
+import {
+  canChangeStructure,
+  effectiveOwner,
+  violatesPlannedCapture,
+} from "@/modules/transacoes/ownership";
 import { monthLabel } from "../extrato/filters";
 
 type FieldKey =
@@ -124,7 +128,7 @@ export function PlannedDrawer({
       setDescription(planned.description);
       setCents(planned.amountInCents);
       setCategoryId(planned.category.id);
-      setResponsibleId(planned.responsible.id);
+      setResponsibleId(effectiveOwner(planned.responsible).id ?? planned.responsible.id);
       setShared(planned.isSharedExpense);
       setDueOn(planned.dueOn);
       setNote(planned.note ?? "");
@@ -152,7 +156,7 @@ export function PlannedDrawer({
     setDescription(series.description);
     setCents(series.amountInCents);
     setCategoryId(series.category.id);
-    setResponsibleId(series.responsible.id);
+    setResponsibleId(effectiveOwner(series.responsible).id ?? series.responsible.id);
     setShared(series.isSharedExpense);
     setDay(String(series.dayOfMonth));
     setEndKind(series.endMonth ? "COUNT" : "NONE");
@@ -178,22 +182,21 @@ export function PlannedDrawer({
   // SEC-043/044: quem só controla o "Só meu" de outro altera valor, data, descrição, categoria e observação, mas não
   // a divisão, o responsável nem o "Pagar com" (a API também recusa)
   // D-GES-55: o Administrador atual sobre o "Só meu" de ex-membro tem poderes plenos (altera tudo)
+  // SEC-049: quem voltou à família é o mesmo responsável (o vínculo antigo aponta o vínculo ativo atual)
+  const owner = effectiveOwner(existing?.responsible);
+  const ownerId = owner.id;
   const fullPower =
     !!me &&
     !!existing &&
-    canChangeStructure(
-      existing.responsible.id,
-      { memberId: me, role: family.data?.currentRole },
-      existing.responsible.removed === true,
-    );
+    !!ownerId &&
+    canChangeStructure(ownerId, { memberId: me, role: family.data?.currentRole }, owner.removed);
   const controllerOnly =
-    !!me && !!existing && !existing.isSharedExpense && existing.responsible.id !== me && !fullPower;
-  const goneResponsible =
-    fullPower && existing?.responsible.removed === true ? existing.responsible : null;
+    !!me && !!existing && !existing.isSharedExpense && ownerId !== me && !fullPower;
+  const goneResponsible = fullPower && owner.removed ? (existing?.responsible ?? null) : null;
   // SEC-048: ao dividir o "Só meu" de ex-membro, o responsável continua sendo o ex-membro (a API também recusa outro)
   const lockGoneResponsible = !!goneResponsible && !existing?.isSharedExpense && !personalPlanned;
   const effectiveResponsibleId = controllerOnly
-    ? existing?.responsible.id
+    ? ownerId
     : lockGoneResponsible
       ? goneResponsible?.id
       : personalPlanned && me && !(goneResponsible && responsibleId === goneResponsible.id)
@@ -207,7 +210,7 @@ export function PlannedDrawer({
       { memberId: me },
       {
         isSharedExpense: existing.isSharedExpense,
-        responsibleMemberId: existing.responsible.id,
+        responsibleMemberId: ownerId ?? existing.responsible.id,
         authorMemberId: existing.author.id,
       },
       next,

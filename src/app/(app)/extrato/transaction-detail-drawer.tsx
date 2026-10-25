@@ -24,6 +24,7 @@ import {
 import {
   canWriteTransaction,
   controllerNames,
+  effectiveOwner,
   personalControllerIds,
   personalWriteMessage,
 } from "@/modules/transacoes/ownership";
@@ -97,7 +98,7 @@ export function TransactionDetailDrawer({
     ? {
         kind: t.type,
         isSharedExpense: t.isSharedExpense,
-        payerMemberId: t.payer?.id ?? null,
+        payerMemberId: effectiveOwner(t.payer).id,
         authorMemberId: t.author.id,
         accountOwnerMemberId: t.accountOwnerId ?? null,
       }
@@ -109,9 +110,9 @@ export function TransactionDetailDrawer({
       canWriteTransaction(
         ownershipRow,
         { memberId: family.currentMemberId, role: family.currentRole },
-        t.payer?.removed === true,
+        effectiveOwner(t.payer).removed,
       ));
-  const ownerGone = t?.payer?.removed === true;
+  const ownerGone = effectiveOwner(t?.payer).removed;
   const controlLine =
     ownershipRow && family
       ? ownerGone
