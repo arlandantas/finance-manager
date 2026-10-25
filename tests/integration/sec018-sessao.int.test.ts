@@ -214,6 +214,7 @@ describe("DEV-91 remoção de membro encerra as sessões dele (US-035)", () => {
 });
 
 describe("SEC-018 migração sem derrubar sessões (SQL real das migrações, em schema de fixture)", () => {
+  // "../pending/..": a fase 2 fica fora de prisma/migrations até o intervalo de ≥ 1 dia (DEV-97)
   const sql = (name: string) =>
     readFileSync(`prisma/migrations/${name}/migration.sql`, "utf8")
       .split("\n")
@@ -269,11 +270,8 @@ describe("SEC-018 migração sem derrubar sessões (SQL real das migrações, em
         `SELECT extract(epoch FROM (expires - now()))/86400 AS d FROM mig018.sessions WHERE "sessionToken"='cookie-antigo-2'`,
       );
       expect(Number(short[0]?.d)).toBeLessThan(3.01); // quem tinha menos de 30 dias não ganha tempo
-      // 3) fase 2 (preparada para o PR seguinte)
-      await run([
-        `UPDATE sessions SET "sessionToken" = NULL`,
-        `ALTER TABLE sessions DROP COLUMN "sessionToken"`,
-      ]);
+      // 3) fase 2 (pendente em prisma/pending; só vai para prisma/migrations ≥ 1 dia após a fase 1 em produção)
+      await run(sql("../pending/20261027000000_sec018_drop_plain_session_token"));
       const cols = await db.$queryRawUnsafe<Array<{ column_name: string }>>(
         `SELECT column_name FROM information_schema.columns WHERE table_schema='mig018' AND table_name='sessions'`,
       );
