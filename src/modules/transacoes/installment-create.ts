@@ -45,7 +45,7 @@ export async function createInstallmentPurchase(
   const count = input.installments;
 
   // 1) referências da família (cartão ativo, categoria ativa de despesa, pagador ativo)
-  const card = input.cardId ? await repo.findCard(input.cardId) : null;
+  const card = input.cardId ? await repo.findCardForPosting(input.cardId) : null;
   if (!card) throw invalidRef("cardId", "Escolha um cartão");
   const category = await repo.findCategory(input.categoryId);
   if (!category) throw invalidRef("categoryId", "Escolha uma categoria");

@@ -30,6 +30,18 @@ export function transacoesRepo(tx: Tx, familyId: string) {
         where: { id, familyId },
         select: { id: true, name: true, closingDay: true, dueDay: true, limitInCents: true },
       }),
+    /**
+     * Cartão para POSTAR uma compra: trava a linha (FOR SHARE) ANTES de ler os dias de fechamento e vencimento.
+     * Sem isso, um PATCH do ciclo confirmado entre a leitura e `getOrCreateInvoice` gerava a 1ª fatura com as
+     * datas do ciclo antigo. O PATCH pega FOR UPDATE e, depois, vê a fatura criada (CYCLE_LOCKED).
+     */
+    findCardForPosting: async (id: string) => {
+      await tx.$executeRaw`SELECT 1 FROM credit_cards WHERE id = ${id}::uuid AND "familyId" = ${familyId}::uuid FOR SHARE`;
+      return tx.creditCard.findFirst({
+        where: { id, familyId },
+        select: { id: true, name: true, closingDay: true, dueDay: true, limitInCents: true },
+      });
+    },
     findAccount: (id: string) =>
       tx.bankAccount.findFirst({ where: { id, familyId }, select: { id: true, name: true } }),
     countMembers: () => tx.member.count({ where: { familyId, removedAt: null } }),

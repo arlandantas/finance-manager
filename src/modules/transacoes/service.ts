@@ -218,7 +218,7 @@ export async function createExpenseCore(
   const account = input.accountId ? await repo.findAccount(input.accountId) : null;
   if (input.accountId && !account) throw invalidRef("accountId", "Escolha uma conta");
   if (account) await lockAccountsForPosting(tx, ctx.familyId, [account.id]);
-  const card = input.cardId ? await repo.findCard(input.cardId) : null;
+  const card = input.cardId ? await repo.findCardForPosting(input.cardId) : null;
   if (input.cardId && !card) throw invalidRef("cardId", "Escolha um cartão");
   const category = opts.allowArchivedCategory
     ? await repo.findCategoryAny(input.categoryId)

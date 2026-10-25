@@ -399,6 +399,74 @@ describe("US-016a Idempotência, extrato, atomicidade e concorrência", () => {
     expect(closingDay).toBe(card.closingDay);
     if (patch.status === 422) expect(patch.body.error.code).toBe("CYCLE_LOCKED");
   });
+
+  // Causa raiz do flaky (BUG REAL de concorrência): a compra lia o cartão ANTES de travá-lo (FOR SHARE em
+  // getOrCreateInvoice) e usava os dias lidos. Se o PATCH do ciclo confirmava nesse intervalo, a 1ª fatura
+  // nascia com datas do ciclo antigo e o cartão ficava no novo. Aqui o intervalo é forçado: uma transação
+  // segura o UPDATE do ciclo (não confirmado) enquanto a compra começa; só soltamos depois que a compra
+  // está esperando o lock do cartão.
+  async function waitForBlockedBackend(): Promise<void> {
+    for (let i = 0; i < 200; i++) {
+      const rows = await db.$queryRaw<Array<{ n: number }>>`
+        SELECT count(*)::int AS n FROM pg_stat_activity
+        WHERE datname = current_database() AND wait_event_type = 'Lock' AND pid <> pg_backend_pid()`;
+      if ((rows[0]?.n ?? 0) > 0) return;
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    throw new Error("a compra não chegou a esperar o lock do cartão");
+  }
+
+  const purchaseDuringCycleChange = async (body: Record<string, unknown>) => {
+    let release!: () => void;
+    const held = new Promise<void>((r) => {
+      release = r;
+    });
+    let started!: () => void;
+    const begun = new Promise<void>((r) => {
+      started = r;
+    });
+    const patchTx = db.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`UPDATE credit_cards SET "closingDay" = 20, "dueDay" = 10, version = version + 1
+          WHERE id = ${nubank.id}::uuid`;
+        started();
+        await held;
+      },
+      { timeout: 20_000 },
+    );
+    await begun;
+    const purchase = buy(lucas(), body);
+    await waitForBlockedBackend();
+    release();
+    await patchTx;
+    return purchase;
+  };
+
+  it("PATCH do ciclo confirmado no meio da 1ª compra: a fatura nasce com os dias NOVOS (determinístico)", async () => {
+    const purchase = await purchaseDuringCycleChange({});
+    expect(purchase.status).toBe(201);
+    const card = await db.creditCard.findUniqueOrThrow({ where: { id: nubank.id } });
+    expect(card.closingDay).toBe(20);
+    const invoices = await db.cardInvoice.findMany({ where: { cardId: nubank.id } });
+    expect(invoices).toHaveLength(1);
+    expect(Number(invoices[0]?.closingDate.toISOString().slice(8, 10))).toBe(20);
+    expect(Number(invoices[0]?.dueDate.toISOString().slice(8, 10))).toBe(10);
+  });
+
+  it("idem na compra parcelada: todas as faturas seguem o ciclo novo (determinístico)", async () => {
+    const purchase = await purchaseDuringCycleChange({
+      installments: 3,
+      amountInCents: 90000,
+      isSharedExpense: false,
+    });
+    expect(purchase.status).toBe(201);
+    const invoices = await db.cardInvoice.findMany({ where: { cardId: nubank.id } });
+    expect(invoices.length).toBeGreaterThanOrEqual(3);
+    for (const inv of invoices) {
+      expect(Number(inv.closingDate.toISOString().slice(8, 10))).toBe(20);
+      expect(Number(inv.dueDate.toISOString().slice(8, 10))).toBe(10);
+    }
+  });
 });
 
 describe("US-016a/US-015 Ciclo travado após a primeira compra", () => {
