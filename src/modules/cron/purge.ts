@@ -1,6 +1,12 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { logger } from "@/lib/logger";
+import {
+  purgeIdempotency,
+  purgeInvitations,
+  purgeSessions,
+  purgeVerificationTokens,
+} from "@/modules/cron/retention";
 import { purgeLlmUsage, purgeSpendingAnalyses } from "@/modules/ia/purge";
 import { purgeMcp } from "@/modules/mcp/purge";
 
@@ -15,6 +21,11 @@ export type PurgeTask = {
 
 /** Registro das tarefas (ADR-031 §8). `mcp:purge` é a EN-006b (SDD-024 §2). */
 const tasks: PurgeTask[] = [
+  // SEC-017a (SDD-028 §7): retenção técnica de autenticação, convites e idempotência
+  { name: "auth:purge-sessions", run: (tx, now) => purgeSessions(tx, now) },
+  { name: "auth:purge-verification", run: (tx, now) => purgeVerificationTokens(tx, now) },
+  { name: "familia:purge-invitations", run: (tx, now) => purgeInvitations(tx, now) },
+  { name: "api:purge-idempotency", run: (tx, now) => purgeIdempotency(tx, now) },
   { name: "ai:purge-usage", run: (tx, now) => purgeLlmUsage(tx, now) },
   { name: "ai:purge-analyses", run: (tx, now) => purgeSpendingAnalyses(tx, now) },
   {

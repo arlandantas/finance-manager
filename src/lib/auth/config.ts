@@ -4,7 +4,7 @@ import type { Adapter } from "next-auth/adapters";
 import Google from "next-auth/providers/google";
 import { normalizeEmail } from "@/lib/auth/email";
 import { SESSION_IDLE_SECONDS, SESSION_UPDATE_AGE_SECONDS } from "@/lib/auth/session";
-import { hashedSessionAdapter } from "@/lib/auth/session-adapter";
+import { hashedSessionAdapter, noProviderTokensAdapter } from "@/lib/auth/session-adapter";
 import { getDb } from "@/lib/db";
 import { getEnv } from "@/lib/env";
 
@@ -109,7 +109,9 @@ export function buildAuthConfig(): NextAuthConfig {
   const env = getEnv();
   const db = getDb();
   return {
-    adapter: hashedSessionAdapter(lowercaseEmailAdapter(PrismaAdapter(db as never)), db),
+    adapter: noProviderTokensAdapter(
+      hashedSessionAdapter(lowercaseEmailAdapter(PrismaAdapter(db as never)), db),
+    ),
     session: sessionConfig,
     secret: env.AUTH_SECRET,
     providers: isGoogleConfigured(env)

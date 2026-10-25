@@ -53,3 +53,21 @@ export function hashedSessionAdapter(base: Adapter, db: Db): Adapter {
     },
   };
 }
+
+/**
+ * SEC-017a (SDD-028 §7.1): o app só usa `openid email profile` no login (sessão em banco, sem chamar APIs do
+ * Google depois do callback), então os tokens do Google NÃO são guardados em `accounts`.
+ */
+export function noProviderTokensAdapter(base: Adapter): Adapter {
+  return {
+    ...base,
+    linkAccount: (account) =>
+      (base.linkAccount as NonNullable<Adapter["linkAccount"]>)({
+        ...account,
+        access_token: null,
+        refresh_token: null,
+        id_token: null,
+        session_state: null,
+      } as never),
+  };
+}
