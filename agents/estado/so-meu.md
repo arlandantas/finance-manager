@@ -1,13 +1,13 @@
 # Estado vigente: "Só meu" (propriedade e controle de lançamentos)
 
-Atualizado: 2026-10-26 (HEAD 09ab715). Fonte de verdade: código + testes (§f). Mudou a regra? Atualize ESTE arquivo no mesmo commit.
+Atualizado: 2026-10-26 (após D-GES-61). Fonte de verdade: código + testes (§f). Mudou a regra? Atualize ESTE arquivo no mesmo commit.
 
 ## a) Resumo para o usuário
 - "Só meu" = despesa com `isSharedExpense=false` (inclui compra no cartão, parcelas, baixa de prevista, lançamento do assistente; prevista/série pelo responsável). Receita, transferência, acerto e pagamento de fatura não são "Só meu".
 - Todos veem; altera (valor, data, descrição, categoria, observação, excluir, restaurar, estornar) quem PAGOU, o DONO DA CONTA/CARTÃO e o LANÇADOR. Só o pagador muda divisão, pagador, conta e "Pagar com".
 - Ninguém torna "Só meu" o que não é seu nem cria "Só meu" em nome de outro.
-- Dono ex-membro: só o Administrador age (poderes plenos: divisão, conta, "Pagar com"), mas o pagador de ex-membro que não voltou é imutável para todos (D-GES-59). Quem volta à família recupera o controle.
-- "Só meu" alheio nunca vai à exportação.
+- Dono ex-membro: só o Administrador age (poderes plenos: divisão, conta, "Pagar com"), mas o pagador de ex-membro que não voltou é imutável para todos (D-GES-59). Quem volta à família (mesmo usuário, vínculo novo) recupera o controle total do item e o Administrador perde o poder pleno sobre ele (SEC-049).
+- "Só meu" alheio (dono não está nos vínculos do solicitante) nunca vai à exportação.
 - Ciclo de segurança encerrado (rodadas 1..8, D-GES-61). Aberto: SEC-054/055/056 aceitos por decisão do Gestor, sujeitos a veto do usuário; UI nunca verificada no navegador.
 - Decisões que dependem do usuário: veto a D-GES-57/61 (aceites de risco); reautenticação nas exclusões (SEC-037, recomendação: manter confirmação digitada + e-mail).
 
