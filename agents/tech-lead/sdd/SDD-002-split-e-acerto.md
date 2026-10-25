@@ -1,5 +1,7 @@
 # SDD-002: Divisão Familiar e Acerto de Contas (US-008, US-009, US-011)
 
+> Estado vigente consolidado em agents/estado/acerto-divisao.md
+
 - **Histórias**: [US-008](../../product-owner/backlog/stories/US-008-regra-de-divisao-familiar.md) · [US-009](../../product-owner/backlog/stories/US-009-painel-de-acerto-de-contas.md) · [US-011](../../product-owner/backlog/stories/US-011-registrar-acerto-de-contas.md)
 - **Fluxo**: [FLUXO-003](../../product-owner/flows/FLUXO-003-acerto-de-contas.md)
 - **Rastreabilidade**: NEED-007 · RN-007.1..3 · ADR-006, ADR-007, ADR-009, ADR-010, **ADR-011** · D-GES-08, D-PO-03 · Q-08 (respondida: **sim**, vigência por data)
