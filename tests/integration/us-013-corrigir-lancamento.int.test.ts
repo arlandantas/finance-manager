@@ -92,18 +92,30 @@ describe("US-013a Corrigir ou excluir um lançamento", () => {
 
   it("Trilha de auditoria: CREATE e UPDATE com ator, campo, antes/depois e rótulos; ordem decrescente", async () => {
     const t = await create();
-    await patch(mariana(), t.id, {
+    // Lucas (pagador) repassa o pagamento a Mariana e muda conta/categoria; depois Mariana (agora a
+    // pagadora) torna a despesa "Só meu" (SEC-025: só o pagador atual converte).
+    await patch(lucas(), t.id, {
       version: 1,
       accountId: itau.id,
       categoryId: await cat("Transporte"),
       payerMemberId: mid("Mariana"),
-      isSharedExpense: false,
     });
+    await patch(mariana(), t.id, { version: 2, isSharedExpense: false });
     const h = await at(() => call(lucas(), "GET", `/api/v1/transactions/${t.id}/history`));
     expect(h.status).toBe(200);
-    expect(h.body.items.map((i: { action: string }) => i.action)).toEqual(["UPDATE", "CREATE"]);
-    const upd = h.body.items[0];
-    expect(upd.actor.name).toBe("Mariana Silva");
+    expect(h.body.items.map((i: { action: string }) => i.action)).toEqual([
+      "UPDATE",
+      "UPDATE",
+      "CREATE",
+    ]);
+    const personal = h.body.items[0];
+    expect(personal.actor.name).toBe("Mariana Silva");
+    expect(
+      Object.fromEntries(personal.changes.map((c: { field: string }) => [c.field, c]))
+        .isSharedExpense,
+    ).toMatchObject({ label: "Dividir com a família", fromLabel: "Comum", toLabel: "Pessoal" });
+    const upd = h.body.items[1];
+    expect(upd.actor.name).toBe("Lucas Silva");
     const by = Object.fromEntries(upd.changes.map((c: { field: string }) => [c.field, c]));
     expect(by.accountId).toMatchObject({
       label: "Conta",
@@ -120,12 +132,7 @@ describe("US-013a Corrigir ou excluir um lançamento", () => {
       fromLabel: "Lucas Silva",
       toLabel: "Mariana Silva",
     });
-    expect(by.isSharedExpense).toMatchObject({
-      label: "Dividir com a família",
-      fromLabel: "Comum",
-      toLabel: "Pessoal",
-    });
-    expect(h.body.items[1].actor.name).toBe("Lucas Silva");
+    expect(h.body.items[2].actor.name).toBe("Lucas Silva");
     // trilha é append-only
     const rev = await db.transactionRevision.findFirstOrThrow({ where: { transactionId: t.id } });
     await expect(

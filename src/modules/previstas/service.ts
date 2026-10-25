@@ -20,7 +20,11 @@ import type {
 } from "@/modules/previstas/schemas";
 import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
-import { assertCanWriteTransaction } from "@/modules/transacoes/ownership";
+import {
+  assertCanWritePlanned,
+  assertCanWriteTransaction,
+  assertPlannedResultAllowed,
+} from "@/modules/transacoes/ownership";
 import { createExpenseCore } from "@/modules/transacoes/service";
 
 type Repo = ReturnType<typeof previstasRepo>;
@@ -131,6 +135,7 @@ export async function createPlannedExpense(
   const today = todayInFamilyTz(ctx.clock);
   const responsibleMemberId = input.responsibleMemberId ?? ctx.memberId;
   if (input.isSharedExpense) await assertCanShare(tx, ctx);
+  assertPlannedResultAllowed(ctx, { isSharedExpense: input.isSharedExpense, responsibleMemberId }); // SEC-026
   await checkCategory(repo, input.categoryId);
   if (!(await repo.findMember(responsibleMemberId))) {
     throw invalidRef("responsibleMemberId", "Responsável inválido");
@@ -229,6 +234,11 @@ export async function updatePlannedExpense(
 ): Promise<{ plannedExpense: PlannedExpenseDTO }> {
   const repo = previstasRepo(tx, ctx.familyId);
   const row = await loadForChange(tx, ctx, repo, id, input.version);
+  await assertCanWritePlanned(tx, ctx, row); // SEC-026a: "Só meu" é só do responsável
+  assertPlannedResultAllowed(ctx, {
+    isSharedExpense: input.isSharedExpense ?? row.isSharedExpense,
+    responsibleMemberId: input.responsibleMemberId ?? row.responsibleMemberId,
+  });
   if (input.categoryId !== undefined && input.categoryId !== row.categoryId) {
     await checkCategory(repo, input.categoryId);
   }
@@ -295,7 +305,8 @@ export async function deletePlannedExpense(
   version: number,
 ): Promise<{ deleted: true }> {
   const repo = previstasRepo(tx, ctx.familyId);
-  await loadForChange(tx, ctx, repo, id, version);
+  const row = await loadForChange(tx, ctx, repo, id, version);
+  await assertCanWritePlanned(tx, ctx, row); // SEC-026a
   const res = await repo.markDeleted(id, version, ctx.memberId, ctx.clock.now());
   if (res.count === 0) throw await versionConflict(repo, tx, ctx.familyId, id);
   return { deleted: true };
@@ -333,6 +344,7 @@ export async function payPlannedExpense(
   if (row.status === "PAGO") {
     throw conflict("PLANNED_ALREADY_PAID", "Esta despesa prevista já foi paga");
   }
+  await assertCanWritePlanned(tx, ctx, row); // SEC-026b: dar baixa num "Só meu" é só do responsável
   const today = todayInFamilyTz(ctx.clock);
   const paidOn = input.paidOn ?? today;
   if (compareDate(paidOn, today) > 0) {

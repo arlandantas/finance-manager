@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { canWriteTransaction, isPersonalExpense } from "@/modules/transacoes/ownership";
+import {
+  canWritePlanned,
+  canWriteTransaction,
+  isPersonalExpense,
+} from "@/modules/transacoes/ownership";
 
 const row = (over: Partial<Parameters<typeof canWriteTransaction>[0]> = {}) => ({
   kind: "EXPENSE",
@@ -34,5 +38,24 @@ describe("SEC-021 ownership", () => {
   it("despesa dividida e receita: qualquer membro", () => {
     expect(canWriteTransaction(row({ isSharedExpense: true }), member("m2"), false)).toBe(true);
     expect(canWriteTransaction(row({ kind: "INCOME" }), member("m2"), false)).toBe(true);
+  });
+});
+
+// SEC-025/026 (D-GES-45): previstas "Só meu" e "Só meu" só em nome de quem age.
+describe("SEC-026 regras puras de previstas e de pagador", () => {
+  const viewer = { memberId: "a" };
+  it("prevista dividida: qualquer membro; 'Só meu': só o responsável e não se ele saiu", () => {
+    expect(
+      canWritePlanned({ isSharedExpense: true, responsibleMemberId: "b" }, viewer, false),
+    ).toBe(true);
+    expect(
+      canWritePlanned({ isSharedExpense: false, responsibleMemberId: "a" }, viewer, false),
+    ).toBe(true);
+    expect(
+      canWritePlanned({ isSharedExpense: false, responsibleMemberId: "b" }, viewer, false),
+    ).toBe(false);
+    expect(
+      canWritePlanned({ isSharedExpense: false, responsibleMemberId: "a" }, viewer, true),
+    ).toBe(false);
   });
 });

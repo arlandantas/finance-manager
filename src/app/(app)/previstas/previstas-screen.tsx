@@ -35,7 +35,7 @@ import {
 import { useEndSeries, useSeries, useSeriesImpact } from "@/modules/previstas/recurring-hooks";
 import { differenceLabel } from "@/modules/previstas/rules";
 import type { PayableItemDTO, PlannedExpenseDTO } from "@/modules/previstas/schemas";
-import { canWriteTransaction } from "@/modules/transacoes/ownership";
+import { canWritePlanned, canWriteTransaction } from "@/modules/transacoes/ownership";
 import { monthLabel, shiftMonthKey } from "../extrato/filters";
 import { PayPlannedDrawer } from "./pay-drawer";
 import { PlannedDrawer } from "./planned-drawer";
@@ -76,7 +76,20 @@ function PayableRow({
   onAction: (kind: ActionKind) => void;
   onPay: () => void;
 }) {
+  const family = useFamily().data;
+  // SEC-026: prevista "Só meu" só é alterada pelo responsável (dono); os outros veem, sem ações
   const planned = item.type === "PLANNED";
+  const canAct =
+    planned &&
+    (family === undefined ||
+      canWritePlanned(
+        {
+          isSharedExpense: item.isSharedExpense ?? true,
+          responsibleMemberId: item.responsible?.id ?? "",
+        },
+        { memberId: family.currentMemberId },
+        item.responsible?.removed === true,
+      ));
   return (
     <li
       id={item.id}
@@ -95,12 +108,12 @@ function PayableRow({
         <span className="font-semibold tabular-nums text-slate-900">
           <Money cents={item.amountInCents} />
         </span>
-        {planned ? (
+        {canAct ? (
           <Button variant="secondary" aria-label={`Dar baixa em ${item.title}`} onClick={onPay}>
             Dar baixa
           </Button>
         ) : null}
-        {planned ? (
+        {canAct ? (
           <Menu
             label={`Ações de ${item.title}`}
             trigger={<MoreHorizontal size={20} aria-hidden="true" />}

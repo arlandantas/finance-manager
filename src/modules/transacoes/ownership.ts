@@ -55,17 +55,84 @@ export async function assertCanWriteTransaction(
   throw forbidden(PERSONAL_OWNER_ONLY_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
 }
 
-/** D-PO-92: só quem pagou torna uma despesa dividida "Só meu". */
+export const PERSONAL_ON_BEHALF_CODE = "PERSONAL_ON_BEHALF_FORBIDDEN";
+export const PERSONAL_ON_BEHALF_MESSAGE =
+  'Um lançamento "Só meu" só pode ser em seu próprio nome. Para outra pessoa, divida com a família.';
+
+/**
+ * D-PO-92 / SEC-025 (D-GES-45): só o pagador ATUAL torna uma despesa dividida "Só meu", e só em seu
+ * próprio nome. Quem não é o pagador (nem o autor) também não "assume" o pagamento de uma despesa
+ * dividida de outro (segundo caminho do achado: trocar o pagador primeiro, "Só meu" depois).
+ */
 export function assertCanMakePersonal(
   ctx: RequestContext,
   current: OwnershipRow,
   next: { isSharedExpense?: boolean | undefined; payerMemberId?: string | undefined },
 ): void {
-  if (current.kind !== "EXPENSE" || !current.isSharedExpense || next.isSharedExpense !== false) {
-    return;
-  }
-  const payer = next.payerMemberId ?? current.payerMemberId ?? current.authorMemberId;
-  if (payer !== ctx.memberId) {
+  if (current.kind !== "EXPENSE") return;
+  const currentOwner = personalOwnerId(current);
+  const nextPayer = next.payerMemberId ?? currentOwner;
+  if (current.isSharedExpense && next.isSharedExpense === false && currentOwner !== ctx.memberId) {
     throw forbidden(PERSONAL_OWNER_ONLY_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
+  }
+  const willBePersonal =
+    next.isSharedExpense === undefined ? !current.isSharedExpense : !next.isSharedExpense;
+  if (willBePersonal && nextPayer !== ctx.memberId) {
+    // ninguém cria nem entrega um "Só meu" em nome de outro membro (SEC-026c)
+    throw forbidden(PERSONAL_ON_BEHALF_MESSAGE, PERSONAL_ON_BEHALF_CODE);
+  }
+  if (
+    current.isSharedExpense &&
+    next.payerMemberId === ctx.memberId &&
+    currentOwner !== ctx.memberId &&
+    current.authorMemberId !== ctx.memberId
+  ) {
+    throw forbidden(PERSONAL_OWNER_ONLY_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
+  }
+}
+
+/** SEC-026c: criação de despesa "Só meu" só em nome de quem lança. */
+export function assertPersonalForSelf(
+  ctx: RequestContext,
+  input: { isSharedExpense: boolean; payerMemberId: string },
+): void {
+  if (!input.isSharedExpense && input.payerMemberId !== ctx.memberId) {
+    throw forbidden(PERSONAL_ON_BEHALF_MESSAGE, PERSONAL_ON_BEHALF_CODE);
+  }
+}
+
+// --- Despesas previstas (SEC-026a/b): "Só meu" = `isSharedExpense = false`; dono = responsável ---
+
+export type PlannedOwnershipRow = { isSharedExpense: boolean; responsibleMemberId: string };
+
+/** Regra pura (usada também pela UI) para editar, excluir ou dar baixa numa prevista. */
+export function canWritePlanned(
+  row: PlannedOwnershipRow,
+  viewer: { memberId: string },
+  ownerRemoved: boolean,
+): boolean {
+  if (row.isSharedExpense) return true;
+  return row.responsibleMemberId === viewer.memberId && !ownerRemoved;
+}
+
+export async function assertCanWritePlanned(
+  tx: Tx,
+  ctx: RequestContext,
+  row: PlannedOwnershipRow,
+): Promise<void> {
+  if (row.isSharedExpense) return;
+  if (row.responsibleMemberId === ctx.memberId) return;
+  const owner = await tx.member.findFirst({
+    where: { id: row.responsibleMemberId, familyId: ctx.familyId },
+    select: { removedAt: true },
+  });
+  if (canWritePlanned(row, ctx, owner?.removedAt != null)) return;
+  throw forbidden(PERSONAL_OWNER_ONLY_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
+}
+
+/** Resultado de criar/editar uma prevista (ou série): "Só meu" só em nome de quem age. */
+export function assertPlannedResultAllowed(ctx: RequestContext, result: PlannedOwnershipRow): void {
+  if (!result.isSharedExpense && result.responsibleMemberId !== ctx.memberId) {
+    throw forbidden(PERSONAL_ON_BEHALF_MESSAGE, PERSONAL_ON_BEHALF_CODE);
   }
 }

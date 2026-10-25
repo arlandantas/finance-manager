@@ -99,7 +99,12 @@ When(
   "Lucas cadastra {string} de {string} com responsável {string}",
   async ({ page }, nome: string, valor: string, resp: string) => {
     await gotoReady(page, "/previstas");
-    await createPlannedViaUi(page, { description: nome, amount: valor, responsible: resp });
+    await createPlannedViaUi(page, {
+      description: nome,
+      amount: valor,
+      responsible: resp,
+      shared: true, // SEC-026: "Só meu" é sempre em nome de quem cadastra
+    });
     await expect(page.getByText("Despesa prevista cadastrada!")).toBeVisible();
   },
 );

@@ -94,11 +94,11 @@ export async function fillExpense(page: Page, o: BuyOptions) {
       .getByLabel("Parcelas", { exact: true })
       .selectOption({ label: o.installments });
   }
-  if (o.payer) await drawer(page).getByRole("radio", { name: o.payer, exact: true }).click();
   // "Só meu" é o padrão (US-030): o interruptor só é tocado para dividir
   if (o.shared === true) {
     await drawer(page).getByRole("switch", { name: "Dividir com a família" }).click();
   }
+  if (o.payer) await drawer(page).getByRole("radio", { name: o.payer, exact: true }).click();
   if (o.date) await setDate(page, o.date);
   if (o.submit !== false) {
     await drawer(page)

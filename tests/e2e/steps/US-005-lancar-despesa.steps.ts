@@ -90,6 +90,8 @@ When(
     await openDrawer(page);
     await fillAmount(page, valor);
     await pickCategory(page, categoria);
+    // SEC-026: "Só meu" é sempre em nome de quem lança; em nome de outro só dividindo
+    await page.getByRole("switch", { name: "Dividir com a família" }).click();
     await page.getByRole("radio", { name: escolha.split(": ")[1] as string, exact: true }).click();
     await save(page, "Salvar Despesa");
     await waitSaved(page);

@@ -22,6 +22,7 @@ import type {
 import { previstasRepo } from "@/modules/previstas/repo";
 import { checkCategory, checkPaymentAccount, memberMap } from "@/modules/previstas/service";
 import { assertCanShare } from "@/modules/split/guard";
+import { assertCanWritePlanned, assertPlannedResultAllowed } from "@/modules/transacoes/ownership";
 
 // ADR-025 / SDD-019 §3.3 e §3.5.
 const HORIZON = 12;
@@ -188,6 +189,7 @@ export async function createSeries(
   }
   const responsibleMemberId = input.responsibleMemberId ?? ctx.memberId;
   if (input.isSharedExpense) await assertCanShare(tx, ctx);
+  assertPlannedResultAllowed(ctx, { isSharedExpense: input.isSharedExpense, responsibleMemberId }); // SEC-026
   await checkCategory(prevRepo, input.categoryId);
   if (!(await prevRepo.findMember(responsibleMemberId))) {
     throw invalidRef("responsibleMemberId", "Responsável inválido");
@@ -244,6 +246,11 @@ export async function updateSeries(
   if (!row) throw notFound(NOT_FOUND);
   if (row.endedAt) throw seriesEnded();
   if (row.version !== input.version) throw await versionConflict(repo, tx, ctx, id);
+  await assertCanWritePlanned(tx, ctx, row); // SEC-026: série "Só meu" é só do responsável
+  assertPlannedResultAllowed(ctx, {
+    isSharedExpense: input.isSharedExpense ?? row.isSharedExpense,
+    responsibleMemberId: input.responsibleMemberId ?? row.responsibleMemberId,
+  });
 
   if (input.categoryId !== undefined && input.categoryId !== row.categoryId) {
     await checkCategory(prevRepo, input.categoryId);
@@ -363,6 +370,7 @@ export async function endSeries(
   if (!row) throw notFound(NOT_FOUND);
   if (row.endedAt) throw seriesEnded();
   if (row.version !== version) throw await versionConflict(repo, tx, ctx, id);
+  await assertCanWritePlanned(tx, ctx, row); // SEC-026
   const now = ctx.clock.now();
   const res = await repo.markEnded(id, version, ctx.memberId, now);
   if (res.count === 0) throw await versionConflict(repo, tx, ctx, id);

@@ -167,6 +167,10 @@ export function TransactionDrawer({
   // US-042 libera "Dividir" no parcelado; até lá a UI avisa e não envia `isSharedExpense`
   const splitInstallmentsAvailable = defaults.data?.split.installmentsAvailable ?? false;
   const splitBlocked = parcelado && !splitInstallmentsAvailable;
+  // SEC-026: "Só meu" é sempre em nome de quem lança; para registrar o gasto de outra pessoa, divida.
+  const myMemberId = family.data?.currentMemberId ?? defaults.data?.payerMemberId ?? "";
+  const personalExpense = kind === "EXPENSE" && !(shared && splitAvailable && !splitBlocked);
+  const effectivePayerId = personalExpense && myMemberId ? myMemberId : payerId;
   // Receita só entra em conta: se o padrão veio como cartão, volta para a primeira conta.
   const effectiveSource = kind === "INCOME" && source.startsWith("card:") ? "" : source;
 
@@ -189,7 +193,7 @@ export function TransactionDrawer({
         : { accountId: effectiveSource.startsWith("acc:") ? effectiveSource.slice(4) : "" }),
       categoryId,
       amountInCents: cents,
-      ...(payerId ? { payerMemberId: payerId } : {}),
+      ...(effectivePayerId ? { payerMemberId: effectivePayerId } : {}),
       ...(paidActive
         ? effectiveNext !== "open"
           ? { occurredOn: anchorOn }
@@ -551,12 +555,16 @@ export function TransactionDrawer({
                 key={m.memberId}
                 type="button"
                 role="radio"
-                aria-checked={payerId === m.memberId}
+                aria-checked={effectivePayerId === m.memberId}
                 aria-label={m.name.split(" ")[0]}
-                onClick={() => setPayerId(m.memberId)}
+                aria-disabled={personalExpense && m.memberId !== myMemberId ? true : undefined}
+                onClick={() => {
+                  if (!(personalExpense && m.memberId !== myMemberId)) setPayerId(m.memberId);
+                }}
                 className={cn(
                   "flex min-h-11 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm font-medium",
-                  payerId === m.memberId
+                  personalExpense && m.memberId !== myMemberId && "opacity-50",
+                  effectivePayerId === m.memberId
                     ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
                     : "border-slate-200 bg-white dark:bg-slate-100 text-slate-700",
                 )}
@@ -603,18 +611,16 @@ export function TransactionDrawer({
             </button>
           </div>
         ) : null}
-        {kind === "EXPENSE" &&
-        !(shared && splitAvailable && !splitBlocked) &&
-        family.data &&
-        payerId &&
-        payerId !== family.data.currentMemberId ? (
+        {personalExpense && members.length > 1 ? (
           <p
             role="note"
-            data-testid="personal-other-payer-notice"
-            className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200"
+            data-testid="personal-self-payer-notice"
+            className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
           >
-            Despesa "Só meu" de outra pessoa: depois de salvar, só quem pagou poderá editá-la ou
-            excluí-la.
+            Despesa "Só meu" é sempre em seu nome.
+            {splitAvailable
+              ? ' Para registrar o gasto de outra pessoa, ative "Dividir com a família".'
+              : ""}
           </p>
         ) : null}
         {splitBlocked && showInstallmentNotice(splitAvailable) ? (

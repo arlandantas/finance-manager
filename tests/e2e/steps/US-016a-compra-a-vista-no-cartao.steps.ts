@@ -168,6 +168,7 @@ When(
       category: categoria,
       card: cartao,
       payer: quem.replace(/^Quem pagou:\s*/, ""),
+      shared: true, // SEC-026: "Só meu" é sempre em nome de quem lança
     });
   },
 );

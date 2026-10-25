@@ -169,6 +169,11 @@ export function PlannedDrawer({
   }, [open, planned, today]);
 
   const me = family.data?.currentMemberId;
+  // SEC-026: prevista "Só meu" é sempre em nome de quem cadastra (o responsável é o dono)
+  const personalPlanned = splitAvailable
+    ? !shared
+    : !(planned?.isSharedExpense ?? series?.isSharedExpense ?? false);
+  const effectiveResponsibleId = personalPlanned && me ? me : responsibleId;
   useEffect(() => {
     if (open && !planned && me) setResponsibleId((cur) => cur || me);
   }, [open, planned, me]);
@@ -208,7 +213,7 @@ export function PlannedDrawer({
         description,
         amountInCents: cents,
         categoryId,
-        ...(responsibleId ? { responsibleMemberId: responsibleId } : {}),
+        ...(effectiveResponsibleId ? { responsibleMemberId: effectiveResponsibleId } : {}),
         isSharedExpense: splitAvailable ? shared : false,
         paymentAccountId: accountId,
         dayOfMonth: Number(day),
@@ -245,7 +250,7 @@ export function PlannedDrawer({
         description,
         amountInCents: cents,
         categoryId,
-        ...(responsibleId ? { responsibleMemberId: responsibleId } : {}),
+        ...(effectiveResponsibleId ? { responsibleMemberId: effectiveResponsibleId } : {}),
         isSharedExpense: splitAvailable ? shared : series.isSharedExpense,
         ...(accountId ? { paymentAccountId: accountId } : {}),
         dayOfMonth: Number(day),
@@ -286,7 +291,7 @@ export function PlannedDrawer({
       description,
       amountInCents: cents,
       categoryId,
-      ...(responsibleId ? { responsibleMemberId: responsibleId } : {}),
+      ...(effectiveResponsibleId ? { responsibleMemberId: effectiveResponsibleId } : {}),
       isSharedExpense: splitAvailable ? shared : (planned?.isSharedExpense ?? false),
       ...(dueOn ? { dueOn } : {}),
     };
@@ -479,12 +484,16 @@ export function PlannedDrawer({
                   key={m.memberId}
                   type="button"
                   role="radio"
-                  aria-checked={responsibleId === m.memberId}
+                  aria-checked={effectiveResponsibleId === m.memberId}
                   aria-label={m.name.split(" ")[0]}
-                  onClick={() => setResponsibleId(m.memberId)}
+                  aria-disabled={personalPlanned && m.memberId !== me ? true : undefined}
+                  onClick={() => {
+                    if (!(personalPlanned && m.memberId !== me)) setResponsibleId(m.memberId);
+                  }}
                   className={cn(
                     "flex min-h-11 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm font-medium",
-                    responsibleId === m.memberId
+                    personalPlanned && m.memberId !== me && "opacity-50",
+                    effectiveResponsibleId === m.memberId
                       ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
                       : "border-slate-200 bg-white dark:bg-slate-100 text-slate-700",
                   )}

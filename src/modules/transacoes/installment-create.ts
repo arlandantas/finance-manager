@@ -13,6 +13,7 @@ import { recordRevision } from "@/modules/contas/ledger";
 import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
 import { loadInstallmentPlanDTO } from "@/modules/transacoes/installment-plan";
+import { assertPersonalForSelf } from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
   CreateTransactionParsed,
@@ -50,6 +51,7 @@ export async function createInstallmentPurchase(
   if (!category) throw invalidRef("categoryId", "Escolha uma categoria");
   const payer = await repo.findMember(payerMemberId);
   if (!payer) throw invalidRef("payerMemberId", "Membro inválido");
+  assertPersonalForSelf(ctx, { isSharedExpense: input.isSharedExpense, payerMemberId }); // SEC-026c
   if (category.kind !== "EXPENSE") {
     throw unprocessable(
       "CATEGORY_KIND_MISMATCH",

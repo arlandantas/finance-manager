@@ -54,6 +54,11 @@ export function EditTransactionForm({
   const submitting = useRef(false);
   const update = useUpdateTransaction();
 
+  // SEC-026: despesa "Só meu" é sempre em nome de quem edita (dono); para outra pessoa, divida.
+  const myMemberId = family.data?.currentMemberId ?? "";
+  const personalExpense = kind === "EXPENSE" && !shared && myMemberId !== "";
+  const effectivePayerId = personalExpense ? myMemberId : payerId;
+
   function payload(confirmSettledPeriod?: boolean) {
     return {
       version: t.version,
@@ -61,7 +66,7 @@ export function EditTransactionForm({
       categoryId,
       amountInCents: cents,
       occurredOn: date,
-      payerMemberId: payerId,
+      payerMemberId: effectivePayerId,
       description,
       note: note.trim() === "" ? null : note,
       ...(kind === "EXPENSE" ? { isSharedExpense: shared } : {}),
@@ -221,12 +226,14 @@ export function EditTransactionForm({
       {select(
         "ed-payer",
         kind === "INCOME" ? "Quem recebeu?" : "Quem pagou?",
-        payerId,
+        effectivePayerId,
         setPayerId,
-        (family.data?.members ?? []).map((m) => ({
-          id: m.memberId,
-          name: m.name.split(" ")[0] ?? m.name,
-        })),
+        (family.data?.members ?? [])
+          .filter((m) => !personalExpense || m.memberId === myMemberId)
+          .map((m) => ({
+            id: m.memberId,
+            name: m.name.split(" ")[0] ?? m.name,
+          })),
         errors.payerMemberId,
       )}
       {kind === "EXPENSE" ? (

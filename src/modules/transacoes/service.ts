@@ -23,6 +23,7 @@ import {
   ledgerPageIds,
   ledgerTotals,
 } from "@/modules/transacoes/extrato";
+import { assertPersonalForSelf } from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
   CreateTransactionParsed,
@@ -225,6 +226,7 @@ export async function createExpenseCore(
   if (!category) throw invalidRef("categoryId", "Escolha uma categoria");
   const payer = await repo.findMember(payerMemberId);
   if (!payer) throw invalidRef("payerMemberId", "Membro inválido");
+  assertPersonalForSelf(ctx, { isSharedExpense: input.isSharedExpense, payerMemberId }); // SEC-026c
 
   // 3) tipo x categoria
   if (category.kind !== "EXPENSE") {

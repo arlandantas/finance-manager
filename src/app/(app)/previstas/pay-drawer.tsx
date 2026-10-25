@@ -67,6 +67,11 @@ export function PayPlannedDrawer({
     setPayerId(planned.responsible.id);
   }, [loadedId, planned?.version]);
 
+  // SEC-026: baixa de prevista "Só meu" é sempre em nome do dono (quem está pagando)
+  const myMemberId = family.data?.currentMemberId ?? "";
+  const personalPay = planned !== undefined && planned !== null && !planned.isSharedExpense;
+  const effectivePayerId = personalPay && myMemberId ? myMemberId : payerId;
+
   const source = useSourceAccount({
     open,
     amountInCents: cents,
@@ -108,7 +113,7 @@ export function PayPlannedDrawer({
       accountId,
       amountInCents: cents,
       ...(paidOn ? { paidOn } : {}),
-      ...(payerId ? { payerMemberId: payerId } : {}),
+      ...(effectivePayerId ? { payerMemberId: effectivePayerId } : {}),
     };
     const parsed = PayPlannedExpenseSchema.safeParse(payload);
     if (!parsed.success) {
@@ -256,12 +261,16 @@ export function PayPlannedDrawer({
                   key={m.memberId}
                   type="button"
                   role="radio"
-                  aria-checked={payerId === m.memberId}
+                  aria-checked={effectivePayerId === m.memberId}
                   aria-label={m.name.split(" ")[0]}
-                  onClick={() => setPayerId(m.memberId)}
+                  aria-disabled={personalPay && m.memberId !== myMemberId ? true : undefined}
+                  onClick={() => {
+                    if (!(personalPay && m.memberId !== myMemberId)) setPayerId(m.memberId);
+                  }}
                   className={cn(
                     "flex min-h-11 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm font-medium",
-                    payerId === m.memberId
+                    personalPay && m.memberId !== myMemberId && "opacity-50",
+                    effectivePayerId === m.memberId
                       ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
                       : "border-slate-200 bg-white dark:bg-slate-100 text-slate-700",
                   )}
