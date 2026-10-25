@@ -26,15 +26,31 @@ const displayName = (m: MemberWithUser) => m.user.name ?? localPart(m.user.email
 
 type TxRow = Awaited<ReturnType<typeof loadTransactions>>[number];
 
-function loadTransactions(tx: Tx, familyId: string, mine: string[] | null) {
-  return tx.transaction.findMany({
+/** Lote de ids por consulta: bem abaixo do limite de 32.767 parâmetros do protocolo (SEC-032). */
+const BATCH = 5000;
+
+async function loadTransactions(tx: Tx, familyId: string, mine: string[] | null) {
+  const rows = await tx.transaction.findMany({
     where: {
       familyId,
       ...(mine ? { OR: [{ authorMemberId: { in: mine } }, { payerMemberId: { in: mine } }] } : {}),
     },
-    include: { splits: true },
     orderBy: [{ occurredOn: "asc" }, { createdAt: "asc" }, { id: "asc" }],
   });
+  // As divisões vêm em lotes (um `include` único passava de 32 mil parâmetros com ~33 mil lançamentos).
+  const splitsBy = new Map<string, Awaited<ReturnType<typeof tx.transactionSplit.findMany>>>();
+  for (let i = 0; i < rows.length; i += BATCH) {
+    const ids = rows.slice(i, i + BATCH).map((r) => r.id);
+    const splits = await tx.transactionSplit.findMany({
+      where: { familyId, transactionId: { in: ids } },
+    });
+    for (const sp of splits) {
+      const list = splitsBy.get(sp.transactionId) ?? [];
+      list.push(sp);
+      splitsBy.set(sp.transactionId, list);
+    }
+  }
+  return rows.map((r) => ({ ...r, splits: splitsBy.get(r.id) ?? [] }));
 }
 
 const mapTransaction = (t: TxRow) => ({
@@ -194,7 +210,12 @@ async function formerFamily(tx: Tx, familyId: string, mine: string[]) {
     include: { user: { select: { name: true, email: true } } },
     orderBy: [{ joinedAt: "asc" }, { id: "asc" }],
   });
-  const txs = await loadTransactions(tx, familyId, mine);
+  // SEC-029: o ex-membro segue a mesma regra do ativo: "Só meu" de OUTRA pessoa não sai, nem a observação
+  // que a dona escreveu depois, ainda que ele tenha cadastrado o lançamento.
+  const own = new Set(mine);
+  const txs = (await loadTransactions(tx, familyId, mine)).filter(
+    (t) => !isPersonalExpense(t) || own.has(personalOwnerId(t)),
+  );
   // Só os nomes de quem aparece nos lançamentos exportados (nunca e-mail, papel ou outros dados).
   const seen = new Set(mine);
   for (const t of txs) {
