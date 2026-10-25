@@ -124,6 +124,12 @@ export function OnboardingFlow({
         </div>
       </header>
 
+      <p className="-mt-4 mb-6 text-sm">
+        <Link href="/perfil" className="text-slate-600 underline">
+          Perfil e meus dados
+        </Link>
+      </p>
+
       <h1 className="mb-1 text-2xl font-bold text-slate-900">Crie sua família</h1>
       <p className="mb-6 text-slate-600">Só precisamos de um nome para começar.</p>
 

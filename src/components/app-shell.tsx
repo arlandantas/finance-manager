@@ -11,6 +11,7 @@ import {
   MonitorX,
   Scale,
   Tags,
+  UserRound,
   Users,
   Wallet,
 } from "lucide-react";
@@ -123,6 +124,15 @@ function UserMenu({ user }: { user: ShellUser }) {
           >
             <Tags size={16} aria-hidden="true" />
             Categorias
+          </Link>
+          <Link
+            href="/perfil"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          >
+            <UserRound size={16} aria-hidden="true" />
+            Perfil e meus dados
           </Link>
           <button
             type="button"
