@@ -45,13 +45,17 @@ export async function listCategorySuggestions(
       isSharedExpense: boolean;
       payerMemberId: string | null;
       authorMemberId: string;
+      accountOwnerMemberId: string | null;
     }>
   >`
     SELECT t.id::text AS id, t.version, t.description, t."occurredOn", t."amountInCents",
            t."categoryId"::text AS "categoryId", t.kind::text AS kind,
            t."isSharedExpense", t."payerMemberId"::text AS "payerMemberId",
-           t."authorMemberId"::text AS "authorMemberId"
+           t."authorMemberId"::text AS "authorMemberId",
+           COALESCE(a."ownerMemberId", c."ownerMemberId")::text AS "accountOwnerMemberId"
     FROM transactions t
+    LEFT JOIN bank_accounts a ON a.id = t."accountId" AND a."familyId" = t."familyId"
+    LEFT JOIN credit_cards c ON c.id = t."cardId" AND c."familyId" = t."familyId"
     WHERE t."familyId" = ${ctx.familyId}::uuid AND t."deletedAt" IS NULL AND t.kind = 'EXPENSE'
       AND t."installmentPlanId" IS NULL AND t."categoryId" IS NOT NULL
       AND ${periodPredicate("t", first.start, current.end)}`;

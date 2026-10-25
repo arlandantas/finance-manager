@@ -282,7 +282,7 @@ describe("US-059 conta de pagamento (C)", () => {
       paymentAccountId: corrente.id,
     });
     expect(ok.status).toBe(201);
-    expect(ok.body.plannedExpense.paymentAccount).toEqual({
+    expect(ok.body.plannedExpense.paymentAccount).toMatchObject({
       id: corrente.id,
       name: "Corrente",
       archived: false,

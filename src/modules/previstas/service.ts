@@ -23,6 +23,7 @@ import { lockFamilySplit } from "@/modules/split/lock";
 import {
   assertCanWritePlanned,
   assertCanWriteTransaction,
+  assertPersonalForSelf,
   assertPlannedNoCapture,
   assertPlannedResultAllowed,
 } from "@/modules/transacoes/ownership";
@@ -84,6 +85,7 @@ export function toPlannedDTO(
           id: row.paymentAccount.id,
           name: row.paymentAccount.name,
           archived: row.paymentAccount.archivedAt !== null,
+          ownerId: row.paymentAccount.ownerMemberId,
         }
       : null,
     paid:
@@ -96,6 +98,8 @@ export function toPlannedDTO(
             amountInCents: toCents(paidTx.amountInCents),
             differenceInCents: plannedDifference(planned, toCents(paidTx.amountInCents)),
             payer: ref(paidTx.payerMemberId ?? row.responsibleMemberId),
+            authorId: paidTx.authorMemberId,
+            accountOwnerId: paidTx.account?.ownerMemberId ?? null,
           }
         : null,
     version: row.version,
@@ -238,10 +242,14 @@ export async function updatePlannedExpense(
   const row = await loadForChange(tx, ctx, repo, id, input.version);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026a: "Só meu" é só do responsável
   assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
-  assertPlannedResultAllowed(ctx, {
-    isSharedExpense: input.isSharedExpense ?? row.isSharedExpense,
-    responsibleMemberId: input.responsibleMemberId ?? row.responsibleMemberId,
-  });
+  assertPlannedResultAllowed(
+    ctx,
+    {
+      isSharedExpense: input.isSharedExpense ?? row.isSharedExpense,
+      responsibleMemberId: input.responsibleMemberId ?? row.responsibleMemberId,
+    },
+    row,
+  );
   if (input.categoryId !== undefined && input.categoryId !== row.categoryId) {
     await checkCategory(repo, input.categoryId);
   }
@@ -362,6 +370,11 @@ export async function payPlannedExpense(
     throw invalidRef("accountId", "Escolha a conta do pagamento");
   }
   if (!(await repo.findMember(payerMemberId))) throw invalidRef("payerMemberId", "Membro inválido");
+  // D-GES-50: a baixa materializa um "Só meu" que já existe; quem controla (dono da conta, lançador) dá a baixa
+  // sem virar o pagador, mas ninguém entrega a baixa em nome de um terceiro.
+  if (!row.isSharedExpense && payerMemberId !== row.responsibleMemberId) {
+    assertPersonalForSelf(ctx, { isSharedExpense: false, payerMemberId });
+  }
 
   const created = await createExpenseCore(
     tx,
@@ -379,7 +392,7 @@ export async function payPlannedExpense(
       installments: 1,
       paidBeforeApp: 0,
     },
-    { allowArchivedCategory: true },
+    { allowArchivedCategory: true, personalFromPlanned: true },
   );
   const res = await repo.markPaid(id, input.version, created.transaction.id, ctx.memberId);
   if (res.count === 0) throw await versionConflict(repo, tx, ctx.familyId, id);

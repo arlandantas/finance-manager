@@ -21,7 +21,12 @@ import {
   useTransactionDetail,
   useTransactionState,
 } from "@/modules/transacoes/hooks";
-import { canWriteTransaction } from "@/modules/transacoes/ownership";
+import {
+  canWriteTransaction,
+  controllerNames,
+  personalControllerIds,
+  personalWriteMessage,
+} from "@/modules/transacoes/ownership";
 import type { TransactionDetailDTO } from "@/modules/transacoes/schemas";
 import { EditTransactionForm } from "./edit-transaction-form";
 import { HistoryList } from "./history-list";
@@ -87,20 +92,38 @@ export function TransactionDetailDrawer({
   const parcel = planQuery.data?.plan.installments.find((p) => p.no === installment?.no);
   const editable = t && (t.type === "EXPENSE" || t.type === "INCOME") && !installment;
   const family = useFamily().data;
-  // SEC-021: "Só meu" de outro membro é somente leitura (só o dono altera)
+  // SEC-021 / D-GES-50: "Só meu" é alterado por quem controla (pagador, dono da conta e lançador)
+  const ownershipRow = t
+    ? {
+        kind: t.type,
+        isSharedExpense: t.isSharedExpense,
+        payerMemberId: t.payer?.id ?? null,
+        authorMemberId: t.author.id,
+        accountOwnerMemberId: t.accountOwnerId ?? null,
+      }
+    : null;
   const canWrite =
     !t ||
+    !ownershipRow ||
     (family !== undefined &&
       canWriteTransaction(
-        {
-          kind: t.type,
-          isSharedExpense: t.isSharedExpense,
-          payerMemberId: t.payer?.id ?? null,
-          authorMemberId: t.author.id,
-        },
+        ownershipRow,
         { memberId: family.currentMemberId, role: family.currentRole },
         t.payer?.removed === true,
       ));
+  const ownerGone = t?.payer?.removed === true;
+  const controlLine =
+    ownershipRow && family
+      ? ownerGone
+        ? `Pago por ${t?.payer?.name} (ex-membro): este lançamento "Só meu" é somente leitura.`
+        : personalWriteMessage(
+            controllerNames(
+              personalControllerIds(ownershipRow),
+              family.members.map((m) => ({ id: m.memberId, name: m.name })),
+            ),
+            " (Só meu)",
+          )
+      : "";
   const readOnlyPersonal = Boolean(t && !canWrite);
   const isLeg = t && (t.type === "TRANSFER_OUT" || t.type === "TRANSFER_IN");
   const isPayment = t?.type === "INVOICE_PAYMENT";
@@ -312,8 +335,7 @@ export function TransactionDetailDrawer({
                 data-testid="personal-readonly"
                 className="mb-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800"
               >
-                Despesa pessoal ("Só meu") de <strong>{t?.payer?.name ?? t?.author.name}</strong>:
-                só quem pagou pode editar, excluir ou restaurar.
+                <strong>{t?.payer?.name ?? t?.author.name}</strong>, "Só meu": {controlLine}
               </p>
             ) : null}
             <dl>

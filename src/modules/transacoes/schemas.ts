@@ -130,6 +130,8 @@ export type TransactionDTO = {
   author: MemberRef; // autor do cadastro (RN-001.1)
   updatedBy: MemberRef | null;
   isSharedExpense: boolean; // "Dividir com a família"
+  /** D-GES-50: dono da conta (ou do cartão) do lançamento; quem controla um "Só meu" junto com o pagador e o autor. */
+  accountOwnerId?: string | null;
   /** US-076a: selo "via assistente" (rótulo da conexão; "assistente removido" se expurgada). */
   viaAssistant: { label: string } | null;
   transferGroupId: string | null;

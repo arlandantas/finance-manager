@@ -88,7 +88,7 @@ export type PlannedExpenseDTO = {
   series: { id: string; dayOfMonth: number } | null;
   isException: boolean;
   occurrenceMonth: string | null; // YYYY-MM (ocorrência de série)
-  paymentAccount: { id: string; name: string; archived: boolean } | null;
+  paymentAccount: { id: string; name: string; archived: boolean; ownerId?: string } | null;
   paid: null | {
     // da Transaction gerada (fonte única do valor pago)
     transactionId: string;
@@ -98,6 +98,9 @@ export type PlannedExpenseDTO = {
     amountInCents: number;
     differenceInCents: number; // efetivo − previsto (pode ser negativo)
     payer: MemberRef;
+    /** D-GES-50: lançador e dono da conta da despesa gerada (quem controla o "Só meu" com o pagador). */
+    authorId?: string;
+    accountOwnerId?: string | null;
   };
   version: number;
   createdAt: string;
@@ -128,6 +131,9 @@ export type PayableItemDTO = {
   invoiceStatus: "OPEN" | "CLOSED" | null; // selo da fatura (US-055); null em PLANNED
   isRecurring: boolean; // ocorrência de série (US-058)
   paymentAccountName: string | null; // "Pagar com" (US-059)
+  /** D-GES-50: lançador e dono da conta "Pagar com" (controlam a prevista "Só meu" com o responsável). */
+  authorId?: string;
+  paymentAccountOwnerId?: string | null;
   href: string; // /previstas#id | /cartoes/{cardId}?ref={ref}
 };
 

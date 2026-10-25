@@ -5,8 +5,8 @@ import { fromCents } from "@/lib/money";
 const include = {
   category: true,
   series: { select: { id: true, dayOfMonth: true } },
-  paymentAccount: { select: { id: true, name: true, archivedAt: true } },
-  paidTx: { include: { account: { select: { id: true, name: true } } } },
+  paymentAccount: { select: { id: true, name: true, archivedAt: true, ownerMemberId: true } },
+  paidTx: { include: { account: { select: { id: true, name: true, ownerMemberId: true } } } },
 } as const;
 
 /** Previstas sempre escopadas por `familyId` (ADR-013). */

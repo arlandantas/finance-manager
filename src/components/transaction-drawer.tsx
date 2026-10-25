@@ -617,7 +617,8 @@ export function TransactionDrawer({
             data-testid="personal-self-payer-notice"
             className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
           >
-            Despesa "Só meu" é sempre em seu nome.
+            Despesa "Só meu" é sempre em seu nome. Depois de salvar, só você, o dono da conta (ou do
+            cartão) e quem a lançou poderão alterá-la.
             {splitAvailable
               ? ' Para registrar o gasto de outra pessoa, ative "Dividir com a família".'
               : ""}

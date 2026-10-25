@@ -253,10 +253,14 @@ export async function updateSeries(
   if (row.version !== input.version) throw await versionConflict(repo, tx, ctx, id);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026: série "Só meu" é só do responsável
   assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
-  assertPlannedResultAllowed(ctx, {
-    isSharedExpense: input.isSharedExpense ?? row.isSharedExpense,
-    responsibleMemberId: input.responsibleMemberId ?? row.responsibleMemberId,
-  });
+  assertPlannedResultAllowed(
+    ctx,
+    {
+      isSharedExpense: input.isSharedExpense ?? row.isSharedExpense,
+      responsibleMemberId: input.responsibleMemberId ?? row.responsibleMemberId,
+    },
+    row,
+  );
 
   if (input.categoryId !== undefined && input.categoryId !== row.categoryId) {
     await checkCategory(prevRepo, input.categoryId);

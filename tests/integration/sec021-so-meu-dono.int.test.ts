@@ -103,7 +103,7 @@ describe("SEC-021 lançamento Só meu: só o dono altera", () => {
     expect(res.status).toBe(200);
   });
 
-  it("dono = quem pagou: o autor que lançou em nome de outro não altera; o pagador altera", async () => {
+  it("D-GES-50: o autor que lançou em nome de outro (e o pagador) alteram; terceiro não", async () => {
     const t = await mkPersonal("Lucas", { author: "Mariana" });
     const byAuthor = await at(() =>
       call(mariana(), "PATCH", `/api/v1/transactions/${t.id}`, {
@@ -111,9 +111,16 @@ describe("SEC-021 lançamento Só meu: só o dono altera", () => {
         amountInCents: 1 + 5000,
       }),
     );
-    expect(byAuthor.status).toBe(403);
+    expect(byAuthor.status).toBe(200);
+    const byOther = await at(() =>
+      call(fx.byName.Carla?.as ?? null, "PATCH", `/api/v1/transactions/${t.id}`, {
+        version: 2,
+        amountInCents: 5200,
+      }),
+    );
+    expect(byOther.status).toBe(403);
     const byPayer = await at(() =>
-      call(lucas(), "PATCH", `/api/v1/transactions/${t.id}`, { version: 1, amountInCents: 5100 }),
+      call(lucas(), "PATCH", `/api/v1/transactions/${t.id}`, { version: 2, amountInCents: 5100 }),
     );
     expect(byPayer.status).toBe(200);
   });

@@ -70,6 +70,28 @@ async function respond(
 }
 
 /** US-040b (SDD-014 §4.3): exclui a compra inteira, só se TODA parcela ativa está em fatura aberta. */
+/** As parcelas de um plano repetem pagador, autor e cartão: confere cada combinação uma só vez. */
+async function assertCanWriteParcels(
+  tx: Tx,
+  ctx: RequestContext,
+  parcels: Array<Parameters<typeof assertCanWriteTransaction>[2]>,
+) {
+  const seen = new Set<string>();
+  for (const p of parcels) {
+    const key = [
+      p.kind,
+      p.isSharedExpense,
+      p.payerMemberId,
+      p.authorMemberId,
+      p.cardId,
+      p.accountId,
+    ].join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    await assertCanWriteTransaction(tx, ctx, p);
+  }
+}
+
 export async function deleteInstallmentPlan(
   tx: Tx,
   ctx: RequestContext,
@@ -86,7 +108,7 @@ export async function deleteInstallmentPlan(
     include: { invoice: true },
     orderBy: { installmentNo: "asc" },
   });
-  for (const p of parcels) await assertCanWriteTransaction(tx, ctx, p); // SEC-021
+  await assertCanWriteParcels(tx, ctx, parcels); // SEC-021 / D-GES-50
   const invoiceIds = parcels.flatMap((p) => (p.invoiceId ? [p.invoiceId] : []));
   await lockInvoices(tx, ctx.familyId, invoiceIds);
   const today = todayInFamilyTz(ctx.clock);
@@ -174,7 +196,7 @@ export async function restoreInstallmentPlan(
     where: { familyId: ctx.familyId, installmentPlanId: id, deletedAt: plan.deletedAt },
     orderBy: { installmentNo: "asc" },
   });
-  for (const p of parcels) await assertCanWriteTransaction(tx, ctx, p); // SEC-021
+  await assertCanWriteParcels(tx, ctx, parcels); // SEC-021 / D-GES-50
   const invoiceIds = parcels.flatMap((p) => (p.invoiceId ? [p.invoiceId] : []));
   await lockInvoices(tx, ctx.familyId, invoiceIds);
   if ((await activePayments(tx, ctx.familyId, invoiceIds)).size > 0) {

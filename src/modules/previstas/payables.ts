@@ -30,6 +30,8 @@ const plannedItem = (
     invoiceStatus: null,
     isRecurring: r.seriesId !== null,
     paymentAccountName: r.paymentAccount?.name ?? null,
+    authorId: r.authorMemberId,
+    paymentAccountOwnerId: r.paymentAccount?.ownerMemberId ?? null,
     href: `/previstas#${r.id}`,
   };
 };

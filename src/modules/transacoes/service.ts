@@ -100,6 +100,7 @@ export function toTransactionDTO(
     card?: { id: string; name: string; archived?: boolean } | null;
     invoice?: { ref: string; closingDate: string; dueDate: string } | null;
     plannedExpenseId?: string | null;
+    accountOwnerId?: string | null;
     category: CategoryRef | null;
     members: Map<string, MemberRef>;
     /** Rótulos das conexões (grantId ⇒ "Meu Claude") para o selo "via assistente". */
@@ -133,6 +134,7 @@ export function toTransactionDTO(
     author,
     updatedBy: member(row.updatedByMemberId),
     isSharedExpense: row.isSharedExpense,
+    ...(ctx.accountOwnerId !== undefined ? { accountOwnerId: ctx.accountOwnerId } : {}),
     viaAssistant:
       row.origin === "ASSISTANT"
         ? {
@@ -204,6 +206,8 @@ export async function createExpenseCore(
   input: ExpenseInput,
   opts: {
     allowArchivedCategory?: boolean;
+    /** D-GES-50: baixa de prevista "Só meu" (já existente): quem controla não vira o pagador (checagem na baixa). */
+    personalFromPlanned?: boolean;
     /** US-076a: lançamento direto pelo assistente (só a ferramenta `lancar_despesa` informa). */
     assistant?: { grantId: string; idemKey: string | null; label: string };
   },
@@ -227,7 +231,9 @@ export async function createExpenseCore(
   if (!category) throw invalidRef("categoryId", "Escolha uma categoria");
   const payer = await repo.findMember(payerMemberId);
   if (!payer) throw invalidRef("payerMemberId", "Membro inválido");
-  assertPersonalForSelf(ctx, { isSharedExpense: input.isSharedExpense, payerMemberId }); // SEC-026c
+  if (!opts.personalFromPlanned) {
+    assertPersonalForSelf(ctx, { isSharedExpense: input.isSharedExpense, payerMemberId }); // SEC-026c
+  }
 
   // 3) tipo x categoria
   if (category.kind !== "EXPENSE") {
@@ -451,6 +457,7 @@ function dtoFromLoaded(
         }
       : null,
     plannedExpenseId: r.paidPlanned?.id ?? null,
+    accountOwnerId: r.account?.ownerMemberId ?? r.card?.ownerMemberId ?? null,
     category: r.category ? categoryRefOf(r.category) : null,
     members,
     ...(assistantLabels ? { assistantLabels } : {}),
