@@ -7,6 +7,7 @@ import {
   type ExportFile,
   ExportSchema,
 } from "@/modules/privacidade/export-schema";
+import { isPersonalExpense, personalOwnerId } from "@/modules/transacoes/ownership";
 
 // SEC-017b (SDD-028 §7.3): exportar os dados do titular. Só lê; roda numa transação READ ONLY.
 // O mesmo mapeamento serve ao membro ativo (família atual completa) e ao ex-membro (só o que ele fez ou pagou).
@@ -69,13 +70,17 @@ const mapTransaction = (t: TxRow) => ({
   excluidoEm: tsOrNull(t.deletedAt),
 });
 
-async function currentFamily(tx: Tx, familyId: string, memberId: string) {
+async function currentFamily(tx: Tx, familyId: string, memberId: string, myIds: string[]) {
   const family = await tx.family.findUniqueOrThrow({ where: { id: familyId } });
   const members = await tx.member.findMany({
     where: { familyId },
     include: { user: { select: { name: true, email: true } } },
     orderBy: [{ joinedAt: "asc" }, { id: "asc" }],
   });
+  // "Só meu" de OUTRA pessoa (despesa não dividida, prevista ou recorrente) é dado pessoal dela: não sai no
+  // meu arquivo, embora as telas ainda a mostrem (DEV-101).
+  const mine = new Set(myIds);
+  const visibleToMe = (t: TxRow) => !isPersonalExpense(t) || mine.has(personalOwnerId(t));
   const [accounts, cards, categories, txs, planned, recurring, groups] = await Promise.all([
     tx.bankAccount.findMany({
       where: { familyId },
@@ -134,36 +139,40 @@ async function currentFamily(tx: Tx, familyId: string, memberId: string) {
       icone: c.icon,
       arquivadaEm: tsOrNull(c.archivedAt),
     })),
-    lancamentos: txs.map(mapTransaction),
-    previstas: planned.map((p) => ({
-      id: p.id,
-      descricao: p.description,
-      valorEmCentavos: num(p.amountInCents),
-      vencimento: fromDbDate(p.dueOn),
-      categoriaId: p.categoryId,
-      responsavelId: p.responsibleMemberId,
-      dividida: p.isSharedExpense,
-      observacao: p.note,
-      situacao: p.status,
-      lancamentoPagoId: p.paidTransactionId,
-      recorrenciaId: p.seriesId,
-      criadaEm: ts(p.createdAt),
-      excluidaEm: tsOrNull(p.deletedAt),
-    })),
-    recorrentes: recurring.map((r) => ({
-      id: r.id,
-      descricao: r.description,
-      valorEmCentavos: num(r.amountInCents),
-      categoriaId: r.categoryId,
-      responsavelId: r.responsibleMemberId,
-      dividida: r.isSharedExpense,
-      contaPagamentoId: r.paymentAccountId,
-      diaDoMes: r.dayOfMonth,
-      mesInicial: fromDbDate(r.startMonth),
-      mesFinal: r.endMonth ? fromDbDate(r.endMonth) : null,
-      encerradaEm: tsOrNull(r.endedAt),
-      criadaEm: ts(r.createdAt),
-    })),
+    lancamentos: txs.filter(visibleToMe).map(mapTransaction),
+    previstas: planned
+      .filter((p) => p.isSharedExpense || mine.has(p.responsibleMemberId))
+      .map((p) => ({
+        id: p.id,
+        descricao: p.description,
+        valorEmCentavos: num(p.amountInCents),
+        vencimento: fromDbDate(p.dueOn),
+        categoriaId: p.categoryId,
+        responsavelId: p.responsibleMemberId,
+        dividida: p.isSharedExpense,
+        observacao: p.note,
+        situacao: p.status,
+        lancamentoPagoId: p.paidTransactionId,
+        recorrenciaId: p.seriesId,
+        criadaEm: ts(p.createdAt),
+        excluidaEm: tsOrNull(p.deletedAt),
+      })),
+    recorrentes: recurring
+      .filter((r) => r.isSharedExpense || mine.has(r.responsibleMemberId))
+      .map((r) => ({
+        id: r.id,
+        descricao: r.description,
+        valorEmCentavos: num(r.amountInCents),
+        categoriaId: r.categoryId,
+        responsavelId: r.responsibleMemberId,
+        dividida: r.isSharedExpense,
+        contaPagamentoId: r.paymentAccountId,
+        diaDoMes: r.dayOfMonth,
+        mesInicial: fromDbDate(r.startMonth),
+        mesFinal: r.endMonth ? fromDbDate(r.endMonth) : null,
+        encerradaEm: tsOrNull(r.endedAt),
+        criadaEm: ts(r.createdAt),
+      })),
     acertos: groups.map((g) => ({
       id: g.id,
       tipo: g.kind,
@@ -227,7 +236,14 @@ export async function buildExport(
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
   });
 
-  const familiaAtual = active ? await currentFamily(tx, active.familyId, active.id) : null;
+  const familiaAtual = active
+    ? await currentFamily(
+        tx,
+        active.familyId,
+        active.id,
+        memberships.filter((m) => m.familyId === active.familyId).map((m) => m.id),
+      )
+    : null;
   const former = new Map<string, string[]>();
   for (const m of memberships) {
     if (active && m.familyId === active.familyId) continue;

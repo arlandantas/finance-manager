@@ -8,6 +8,7 @@ import {
   type FamilyFixture,
   makeAccount,
   makeFamily,
+  makePlannedExpense,
   makeTransaction,
 } from "../support/factories";
 import { oauthDance, stubCimd, useMcpEnv } from "../support/mcp-client";
@@ -105,6 +106,57 @@ describe("SEC-017b exportar meus dados", () => {
         "tipo",
         "valorEmCentavos",
       ].sort(),
+    );
+  });
+
+  it('"Só meu" de outra pessoa não sai no arquivo (despesa, prevista); o próprio e o dividido saem', async () => {
+    const nub = await makeAccount(fx, {
+      name: "Nubank",
+      owner: "Mariana",
+      openingBalanceInCents: 1000,
+    });
+    const mk = (author: "Mariana" | "Lucas", cents: number, shared: boolean, description: string) =>
+      makeTransaction(fx, {
+        account: nub,
+        category: "Supermercado",
+        amountInCents: cents,
+        occurredOn: "2026-10-03",
+        author,
+        payer: author,
+        shared,
+        description,
+      });
+    await mk("Mariana", 1111, false, "Só meu da Mariana");
+    await mk("Mariana", 2222, true, "Dividido da Mariana");
+    await mk("Lucas", 3333, false, "Só meu do Lucas");
+    await makePlannedExpense(fx, {
+      description: "Previsto da Mariana",
+      amountInCents: 500,
+      dueOn: "2026-11-10",
+      responsible: "Mariana",
+      shared: false,
+    });
+    await makePlannedExpense(fx, {
+      description: "Previsto do Lucas",
+      amountInCents: 600,
+      dueOn: "2026-11-11",
+      responsible: "Lucas",
+      shared: false,
+    });
+    const l = (await exp(lucas())).body.familiaAtual;
+    const descr = l.lancamentos.map((t: { descricao: string }) => t.descricao);
+    expect(descr).toContain("Dividido da Mariana");
+    expect(descr).toContain("Só meu do Lucas");
+    expect(descr).not.toContain("Só meu da Mariana");
+    expect(l.previstas.map((p: { descricao: string }) => p.descricao)).toEqual([
+      "Previsto do Lucas",
+    ]);
+    const m = (await exp(mariana())).body.familiaAtual;
+    expect(m.lancamentos.map((t: { descricao: string }) => t.descricao)).toContain(
+      "Só meu da Mariana",
+    );
+    expect(m.lancamentos.map((t: { descricao: string }) => t.descricao)).not.toContain(
+      "Só meu do Lucas",
     );
   });
 
