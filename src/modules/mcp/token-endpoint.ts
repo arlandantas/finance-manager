@@ -152,15 +152,6 @@ async function exchangeCode(
     await revokeForReuse(db, grant.id, "CODE_REUSE", now);
     return err(400, "invalid_grant", "Código inválido.");
   }
-  // consumo atômico: só uma troca concorrente vence
-  const claimed = await db.mcpToken.updateMany({
-    where: { id: token.id, usedAt: null },
-    data: { usedAt: now },
-  });
-  if (claimed.count === 0) {
-    await revokeForReuse(db, grant.id, "CODE_REUSE", now);
-    return err(400, "invalid_grant", "Código inválido.");
-  }
   if (token.expiresAt <= now) return err(400, "invalid_grant", "Código expirado.");
   if (grant.status !== "ACTIVE" || grant.expiresAt <= now) {
     return err(400, "invalid_grant", "Conexão inválida.");
@@ -170,6 +161,18 @@ async function exchangeCode(
     return err(400, "invalid_grant", "redirect_uri não confere.");
   if (!token.codeChallenge || !safeEqual(pkceS256(verifier), token.codeChallenge)) {
     return err(400, "invalid_grant", "Verificador PKCE inválido.");
+  }
+
+  // SEC-023: o código só é consumido DEPOIS de validar cliente, redirect e PKCE; quem intercepta o código
+  // sem o verificador não consegue queimá-lo (o limite por segredo freia a adivinhação).
+  // consumo atômico: só uma troca concorrente vence
+  const claimed = await db.mcpToken.updateMany({
+    where: { id: token.id, usedAt: null },
+    data: { usedAt: now },
+  });
+  if (claimed.count === 0) {
+    await revokeForReuse(db, grant.id, "CODE_REUSE", now);
+    return err(400, "invalid_grant", "Código inválido.");
   }
   return issuePair(db, grant, token.id, now);
 }

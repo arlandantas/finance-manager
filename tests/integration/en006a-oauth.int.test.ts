@@ -381,6 +381,32 @@ describe("/token: PKCE, replay e expiração", () => {
     expect(await db.mcpToken.count({ where: { kind: "ACCESS" } })).toBe(0);
   });
 
+  it("SEC-023: verificador errado NÃO queima o código; a troca correta depois ainda funciona", async () => {
+    const { verifier, challenge } = pkcePair();
+    const auth = await getAuthorize(authorizeUrl({ member: lucas() }, challenge));
+    const requestId = new URL(auth.location).searchParams.get("request");
+    const dec = await postDecision(lucas(), {
+      requestId,
+      decision: "allow",
+      privacyAcknowledged: true,
+    });
+    const code = new URL(dec.body.redirectTo).searchParams.get("code") as string;
+    const exchange = (v: string) =>
+      postToken({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: REDIRECT_URI,
+        client_id: CIMD_URL,
+        code_verifier: v,
+      });
+    const bad = await exchange("A".repeat(43));
+    expect(bad.status).toBe(400);
+    expect(bad.body.error).toBe("invalid_grant");
+    const good = await exchange(verifier);
+    expect(good.status).toBe(200);
+    expect((await grantsOf("Lucas"))[0]?.status).toBe("ACTIVE");
+  });
+
   it("código usado duas vezes => 2ª invalid_grant e a conexão é revogada (CODE_REUSE); o acesso da 1ª deixa de valer", async () => {
     const { verifier, challenge } = pkcePair();
     const auth = await getAuthorize(authorizeUrl({ member: lucas() }, challenge));
