@@ -480,6 +480,8 @@ Ao fim de cada item, o Dev registra a TASK e pede o **reteste ao Agente de Segur
 
 ## 11. "Só meu": alcance e matriz de quem pode o quê (SEC-021, revisado por D-GES-50, D-GES-52/53, D-GES-55, D-GES-57 e D-GES-59, 2026-10-26)
 
+> Estado vigente consolidado em agents/estado/so-meu.md
+
 Origem: D-GES-42 (só o dono), D-GES-45/48 (travas anti-captura SEC-025/026/038) e **D-GES-50** (o usuário amplia o controle). Fonte única da regra: `src/modules/transacoes/ownership.ts`.
 
 ### 11.1 Definições

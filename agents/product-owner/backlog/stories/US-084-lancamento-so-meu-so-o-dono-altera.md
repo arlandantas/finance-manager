@@ -1,5 +1,7 @@
 # US-084 — Lançamento "Só meu" só pode ser alterado por quem tem controle sobre ele
 
+> Estado vigente consolidado em agents/estado/so-meu.md
+
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-25 Segurança, Privacidade e Acesso · **R4-S (correções SEC do alpha)** |
