@@ -120,6 +120,10 @@ export function PerfilScreen({ name, email }: { name: string; email: string }) {
       </section>
 
       <p className="text-sm text-slate-600">
+        <Link href="/privacidade" data-testid="link-privacidade" className="underline">
+          Privacidade
+        </Link>
+        {" · "}
         <Link href="/" className="underline">
           Voltar ao início
         </Link>

@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { consumeMembershipEnded } from "@/lib/auth/membership-ended";
 import { safeCallbackUrl } from "@/lib/auth/redirect";
@@ -39,6 +40,12 @@ export default async function LoginPage({
       ) : null}
 
       <LoginOptions callbackUrl={callbackUrl} />
+
+      <footer className="text-center text-sm">
+        <Link href="/privacidade" className="text-slate-600 underline">
+          Privacidade
+        </Link>
+      </footer>
     </main>
   );
 }
