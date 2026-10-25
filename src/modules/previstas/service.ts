@@ -1,4 +1,4 @@
-import { conflict, notFound, unprocessable } from "@/lib/api/errors";
+import { conflict, forbidden, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import { compareDate, fromDbDate, todayInFamilyTz } from "@/lib/dates";
@@ -24,8 +24,11 @@ import {
   assertCanWritePlanned,
   assertCanWriteTransaction,
   assertPersonalForSelf,
+  assertPlannedControllerLimits,
   assertPlannedNoCapture,
   assertPlannedResultAllowed,
+  PERSONAL_OWNER_ONLY_CODE,
+  PERSONAL_STRUCTURE_MESSAGE,
 } from "@/modules/transacoes/ownership";
 import { createExpenseCore } from "@/modules/transacoes/service";
 
@@ -242,6 +245,7 @@ export async function updatePlannedExpense(
   const row = await loadForChange(tx, ctx, repo, id, input.version);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026a: "Só meu" é só do responsável
   assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
+  assertPlannedControllerLimits(ctx, row, input); // SEC-043/044: quem só controla não muda divisão, responsável nem conta
   assertPlannedResultAllowed(
     ctx,
     {
@@ -370,9 +374,27 @@ export async function payPlannedExpense(
     throw invalidRef("accountId", "Escolha a conta do pagamento");
   }
   if (!(await repo.findMember(payerMemberId))) throw invalidRef("payerMemberId", "Membro inválido");
+  // SEC-044d: quem só controla (não é o responsável) só dá baixa com conta do responsável ou a sua
+  if (!row.isSharedExpense && row.responsibleMemberId !== ctx.memberId) {
+    const acc = await tx.bankAccount.findFirst({
+      where: { id: input.accountId, familyId: ctx.familyId },
+      select: { ownerMemberId: true },
+    });
+    if (
+      acc &&
+      acc.ownerMemberId !== row.responsibleMemberId &&
+      acc.ownerMemberId !== ctx.memberId
+    ) {
+      throw forbidden(PERSONAL_STRUCTURE_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
+    }
+  }
   // D-GES-50: a baixa materializa um "Só meu" que já existe; quem controla (dono da conta, lançador) dá a baixa
   // sem virar o pagador, mas ninguém entrega a baixa em nome de um terceiro.
   if (!row.isSharedExpense && payerMemberId !== row.responsibleMemberId) {
+    // SEC-043: quem só controla não assume o pagamento (a baixa mantém o pagador original)
+    if (row.responsibleMemberId !== ctx.memberId) {
+      throw forbidden(PERSONAL_STRUCTURE_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
+    }
     assertPersonalForSelf(ctx, { isSharedExpense: false, payerMemberId });
   }
 
@@ -423,6 +445,7 @@ export async function undoPlannedPayment(
     where: { id: row.paidTransactionId, familyId: ctx.familyId },
   });
   if (!t) throw notFound(NOT_FOUND);
+  await assertCanWritePlanned(tx, ctx, row); // SEC-044d: o estorno checa também o controle da prevista
   await assertCanWriteTransaction(tx, ctx, t); // SEC-021: estornar a baixa de um "Só meu" é só do dono
   if (!t.deletedAt) {
     const marked = await tx.transaction.updateMany({

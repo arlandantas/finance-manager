@@ -10,7 +10,10 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 //    pagamento de fatura não têm o rótulo "Só meu" e seguem como estão.
 //  - controladores = (1) dono = quem PAGOU (`payerMemberId`; sem pagador, o autor); (2) dono da conta onde
 //    o lançamento está (conta de débito ou, na compra no cartão, o dono do cartão); (3) lançador (autor).
-//  - dono que saiu da família ⇒ lançamento somente leitura para todos (D-PO-92).
+//  - dono que saiu da família ⇒ lançamento somente leitura, EXCETO para o Administrador atual (D-GES-52), que
+//    age como quem só controla (sem mudar divisão, pagador, conta nem "Pagar com").
+//  - quem só controla (não é o dono) NÃO muda divisão, pagador/responsável, conta nem "Pagar com" e não
+//    assume o pagamento (D-GES-53, SEC-043/044).
 //  - torná-lo "Só meu" (SEC-025/026/038) continua sendo só do pagador/responsável ATUAL
 //    (assertCanMakePersonal / violatesPlannedCapture): o controle é sobre o que JÁ é "Só meu".
 
@@ -20,6 +23,9 @@ export const PERSONAL_OWNER_ONLY_MESSAGE =
   'Este lançamento é "Só meu". Só quem pagou, o dono da conta e quem o lançou podem alterá-lo.';
 /** Recusa de captura: só o pagador/responsável atual torna "Só meu" uma despesa dividida. */
 export const PERSONAL_CAPTURE_MESSAGE = 'Só quem pagou pode tornar este lançamento "Só meu".';
+/** SEC-043/044: quem só controla não muda divisão, pagador, conta nem "Pagar com" (nem assume o pagamento). */
+export const PERSONAL_STRUCTURE_MESSAGE =
+  "Só quem pagou pode alterar a divisão, o pagador e a conta deste lançamento.";
 
 export type OwnershipRow = {
   kind: string;
@@ -28,6 +34,8 @@ export type OwnershipRow = {
   authorMemberId: string;
   /** Dono da conta (ou do cartão) onde o lançamento está; ausente/nulo = sem dono de conta. */
   accountOwnerMemberId?: string | null | undefined;
+  /** Conta de débito (para detectar troca de conta por quem só controla). */
+  accountId?: string | null | undefined;
 };
 
 export const isPersonalExpense = (row: Pick<OwnershipRow, "kind" | "isSharedExpense">): boolean =>
@@ -51,7 +59,7 @@ export function canWriteTransaction(
   ownerRemoved: boolean,
 ): boolean {
   if (!isPersonalExpense(row)) return true;
-  if (ownerRemoved) return false;
+  if (ownerRemoved) return viewer.role === "ADMIN"; // D-GES-52
   return personalControllerIds(row).includes(viewer.memberId);
 }
 
@@ -127,6 +135,7 @@ export async function assertCanWriteTransaction(
   });
   const ownerRemoved = owner?.removedAt != null;
   if (!ownerRemoved && row.authorMemberId === ctx.memberId) return;
+  if (ownerRemoved && ctx.role === "ADMIN") return; // D-GES-52
   const accountOwnerMemberId =
     row.accountOwnerMemberId !== undefined
       ? row.accountOwnerMemberId
@@ -148,18 +157,34 @@ export const PERSONAL_ON_BEHALF_MESSAGE =
 export function assertCanMakePersonal(
   ctx: RequestContext,
   current: OwnershipRow,
-  next: { isSharedExpense?: boolean | undefined; payerMemberId?: string | undefined },
+  next: {
+    isSharedExpense?: boolean | undefined;
+    payerMemberId?: string | undefined;
+    accountId?: string | undefined;
+  },
 ): void {
   if (current.kind !== "EXPENSE") return;
   const currentOwner = personalOwnerId(current);
+  // SEC-043/044: num "Só meu" que NÃO é seu, quem só controla (ou o Admin sobre ex-membro) altera valor, data,
+  // descrição, categoria e observação, mas não a divisão, o pagador (nem "assume" o pagamento) nem a conta.
+  if (!current.isSharedExpense && currentOwner !== ctx.memberId) {
+    const changesDivision = next.isSharedExpense === true;
+    const changesPayer = next.payerMemberId !== undefined && next.payerMemberId !== currentOwner;
+    const changesAccount =
+      next.accountId !== undefined &&
+      current.accountId !== undefined &&
+      next.accountId !== current.accountId;
+    if (changesDivision || changesPayer || changesAccount) {
+      throw forbidden(PERSONAL_STRUCTURE_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
+    }
+  }
   const nextPayer = next.payerMemberId ?? currentOwner;
   if (current.isSharedExpense && next.isSharedExpense === false && currentOwner !== ctx.memberId) {
     throw forbidden(PERSONAL_CAPTURE_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
   }
   const willBePersonal =
     next.isSharedExpense === undefined ? !current.isSharedExpense : !next.isSharedExpense;
-  // D-GES-50: quem só controla (dono da conta, lançador) altera o "Só meu" alheio sem mexer no pagador;
-  // a trava vale quando o "Só meu" NASCE ou quando o pagador MUDA.
+  // a trava vale quando o "Só meu" NASCE ou quando o pagador MUDA (o dono entrega a outro).
   const newlyPersonal = current.isSharedExpense && next.isSharedExpense === false;
   const payerChanges = nextPayer !== currentOwner;
   if (willBePersonal && nextPayer !== ctx.memberId && (newlyPersonal || payerChanges)) {
@@ -195,6 +220,8 @@ export type PlannedOwnershipRow = {
   authorMemberId?: string | undefined;
   /** Dono da conta "Pagar com" (quando houver). */
   accountOwnerMemberId?: string | null | undefined;
+  /** Conta "Pagar com" (para detectar troca por quem só controla). */
+  paymentAccountId?: string | null | undefined;
 };
 
 /**
@@ -239,34 +266,72 @@ export function plannedControllerIds(row: PlannedOwnershipRow): string[] {
 /** Regra pura (usada também pela UI) para editar, excluir ou dar baixa numa prevista. */
 export function canWritePlanned(
   row: PlannedOwnershipRow,
-  viewer: { memberId: string },
+  viewer: { memberId: string; role?: "ADMIN" | "MEMBER" },
   ownerRemoved: boolean,
 ): boolean {
   if (row.isSharedExpense) return true;
-  if (ownerRemoved) return false;
+  if (ownerRemoved) return viewer.role === "ADMIN"; // D-GES-52
   return plannedControllerIds(row).includes(viewer.memberId);
 }
 
-export async function assertCanWritePlanned(
+/** Decisão (sem lançar) de escrita numa prevista; `controllers` = quem pode, para a mensagem do 403. */
+export async function plannedWriteDecision(
   tx: Tx,
   ctx: RequestContext,
-  row: PlannedOwnershipRow & { paymentAccountId?: string | null | undefined },
-): Promise<void> {
-  if (row.isSharedExpense) return;
-  if (row.responsibleMemberId === ctx.memberId) return;
+  row: PlannedOwnershipRow,
+): Promise<{ allowed: boolean; controllers: string[] }> {
+  if (row.isSharedExpense || row.responsibleMemberId === ctx.memberId) {
+    return { allowed: true, controllers: [] };
+  }
   const owner = await tx.member.findFirst({
     where: { id: row.responsibleMemberId, familyId: ctx.familyId },
     select: { removedAt: true },
   });
   const ownerRemoved = owner?.removedAt != null;
-  if (!ownerRemoved && row.authorMemberId === ctx.memberId) return;
+  if (!ownerRemoved && row.authorMemberId === ctx.memberId) {
+    return { allowed: true, controllers: [] };
+  }
+  if (ownerRemoved && ctx.role === "ADMIN") return { allowed: true, controllers: [] }; // D-GES-52
   const accountOwnerMemberId =
     row.accountOwnerMemberId !== undefined
       ? row.accountOwnerMemberId
       : await accountOwnerOf(tx, ctx, { accountId: row.paymentAccountId });
   const full = { ...row, accountOwnerMemberId };
-  if (canWritePlanned(full, ctx, ownerRemoved)) return;
-  await deny(tx, ctx, ownerRemoved ? [] : plannedControllerIds(full));
+  if (canWritePlanned(full, ctx, ownerRemoved)) return { allowed: true, controllers: [] };
+  return { allowed: false, controllers: ownerRemoved ? [] : plannedControllerIds(full) };
+}
+
+export async function assertCanWritePlanned(
+  tx: Tx,
+  ctx: RequestContext,
+  row: PlannedOwnershipRow,
+): Promise<void> {
+  const d = await plannedWriteDecision(tx, ctx, row);
+  if (!d.allowed) await deny(tx, ctx, d.controllers);
+}
+
+/**
+ * SEC-043/044: numa prevista/série "Só meu" que NÃO é sua, quem só controla (ou o Admin sobre ex-membro) não muda
+ * a divisão, o responsável (nem "assume") nem o "Pagar com". Compara com o valor atual.
+ */
+export function assertPlannedControllerLimits(
+  ctx: RequestContext,
+  current: PlannedOwnershipRow,
+  next: {
+    isSharedExpense?: boolean | undefined;
+    responsibleMemberId?: string | undefined;
+    paymentAccountId?: string | null | undefined;
+  },
+): void {
+  if (current.isSharedExpense || current.responsibleMemberId === ctx.memberId) return;
+  const changes =
+    next.isSharedExpense === true ||
+    (next.responsibleMemberId !== undefined &&
+      next.responsibleMemberId !== current.responsibleMemberId) ||
+    (next.paymentAccountId !== undefined &&
+      current.paymentAccountId !== undefined &&
+      next.paymentAccountId !== current.paymentAccountId);
+  if (changes) throw forbidden(PERSONAL_STRUCTURE_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
 }
 
 /**

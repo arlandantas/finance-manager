@@ -168,7 +168,7 @@ describe("SEC-021 lançamento Só meu: só o dono altera", () => {
     expect(res.status).toBe(200);
   });
 
-  it("dono que saiu da família: o lançamento é somente leitura para todos (D-PO-92)", async () => {
+  it("dono que saiu da família: somente leitura, exceto o Administrador (D-PO-92, D-GES-52)", async () => {
     const t = await mkPersonal("Carla");
     await db.member.update({
       where: { id: fx.byName.Carla?.memberId as string },
@@ -181,7 +181,7 @@ describe("SEC-021 lançamento Só meu: só o dono altera", () => {
     const byAdmin = await at(() =>
       call(mariana(), "PATCH", `/api/v1/transactions/${t.id}`, { version: 1, amountInCents: 5100 }),
     );
-    expect(byAdmin.status).toBe(403);
+    expect(byAdmin.status).toBe(200); // D-GES-52: o Administrador dá continuidade
   });
 
   it("estorno do pagamento de uma prevista 'Só meu' (desfazer a baixa) é só do dono", async () => {

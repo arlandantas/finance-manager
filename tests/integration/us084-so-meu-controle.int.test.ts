@@ -219,7 +219,7 @@ describe("US-084 prevista 'Só meu': dono da conta 'Pagar com' controla", () => 
       payerMemberId: idOf("Bia"),
     });
     expect(res.status).toBe(403);
-    expect(res.body.error.code).toBe("PERSONAL_ON_BEHALF_FORBIDDEN");
+    expect(res.body.error.code).toBe("PERSONAL_OWNER_ONLY"); // SEC-043: a baixa mantém o pagador original
   });
 });
 
@@ -249,13 +249,16 @@ describe("US-084 as travas anti-captura continuam", () => {
     expect(res.body.error.code).toBe("PERSONAL_ON_BEHALF_FORBIDDEN");
   });
 
-  it("quem controla sem pagar só assume o pagamento em nome próprio, não entrega a terceiro", async () => {
+  it("SEC-043: quem só controla não assume o pagamento nem entrega a terceiro; o dono também não entrega", async () => {
     const t = await mk(accCarla, "Lucas", "Lucas");
-    const toThird = await patch("Carla", t.id, 1, { payerMemberId: idOf("Bia") });
-    expect(toThird.status).toBe(403);
-    expect(toThird.body.error.code).toBe("PERSONAL_ON_BEHALF_FORBIDDEN");
-    const toSelf = await patch("Carla", t.id, 1, { payerMemberId: idOf("Carla") });
-    expect(toSelf.status, JSON.stringify(toSelf.body)).toBe(200);
+    for (const to of ["Bia", "Carla"]) {
+      const res = await patch("Carla", t.id, 1, { payerMemberId: idOf(to) });
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe("PERSONAL_OWNER_ONLY");
+    }
+    const owner = await patch("Lucas", t.id, 1, { payerMemberId: idOf("Bia") });
+    expect(owner.status).toBe(403);
+    expect(owner.body.error.code).toBe("PERSONAL_ON_BEHALF_FORBIDDEN");
   });
 
   it("despesa dividida e receita seguem editáveis por qualquer membro", async () => {
@@ -264,18 +267,19 @@ describe("US-084 as travas anti-captura continuam", () => {
   });
 });
 
-describe("US-084 ex-membro continua somente leitura", () => {
-  it("'Só meu' cujo dono saiu: nem o dono da conta nem o lançador alteram", async () => {
+describe("US-084 ex-membro: somente leitura, exceto o Administrador (D-GES-52)", () => {
+  it("'Só meu' cujo dono saiu: nem o dono da conta nem o lançador alteram; o Admin sim", async () => {
     const t = await mk(accCarla, "Lucas", "Bia");
     await db.member.update({
       where: { id: idOf("Lucas") },
       data: { removedAt: new Date("2026-10-03T00:00:00Z"), removalKind: "LEFT" },
     });
-    for (const who of ["Carla", "Bia", "Mariana"]) {
+    for (const who of ["Carla", "Bia"]) {
       const res = await patch(who, t.id, 1, { amountInCents: 5100 });
       expect(res.status).toBe(403);
       expect(res.body.error.code).toBe("PERSONAL_OWNER_ONLY");
     }
+    expect((await patch("Mariana", t.id, 1, { amountInCents: 5100 })).status).toBe(200);
   });
 
   it("dono da conta que saiu não impede o dono de agir; o lançador ativo segue valendo", async () => {
@@ -286,6 +290,6 @@ describe("US-084 ex-membro continua somente leitura", () => {
     });
     expect((await patch("Lucas", t.id, 1, { amountInCents: 5100 })).status).toBe(200);
     expect((await patch("Bia", t.id, 2, { amountInCents: 5200 })).status).toBe(200);
-    expect((await patch("Mariana", t.id, 3, { amountInCents: 5300 })).status).toBe(403);
+    expect((await patch("Mariana", t.id, 3, { amountInCents: 5300 })).status).toBe(403); // Admin sem relação, dono ativo
   });
 });

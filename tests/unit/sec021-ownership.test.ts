@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import type { RequestContext } from "@/lib/api/types";
 import {
+  assertCanMakePersonal,
+  assertPlannedControllerLimits,
   canWritePlanned,
   canWriteTransaction,
   controllerNames,
@@ -64,14 +67,16 @@ describe("SEC-021 ownership", () => {
       ),
     ).toEqual(["Mariana", "Lucas"]);
   });
-  it("dono removido: somente leitura para todos, inclusive dono da conta e lançador", () => {
+  it("D-GES-52: dono removido ⇒ somente leitura, exceto o Administrador atual", () => {
     expect(canWriteTransaction(row({ accountOwnerMemberId: "m2" }), member("m2"), true)).toBe(
       false,
     );
     expect(canWriteTransaction(row({ payerMemberId: "m3" }), member("m1"), true)).toBe(false);
     expect(canWriteTransaction(row(), member("m2"), true)).toBe(false);
-    expect(canWriteTransaction(row(), member("m2", "ADMIN"), true)).toBe(false);
     expect(canWriteTransaction(row(), member("m1"), true)).toBe(false);
+    expect(canWriteTransaction(row(), member("m2", "ADMIN"), true)).toBe(true);
+    // Admin não ganha nada num 'Só meu' de dono ATIVO
+    expect(canWriteTransaction(row(), member("m2", "ADMIN"), false)).toBe(false);
   });
   it("despesa dividida e receita: qualquer membro", () => {
     expect(canWriteTransaction(row({ isSharedExpense: true }), member("m2"), false)).toBe(true);
@@ -125,5 +130,74 @@ describe("SEC-026 regras puras de previstas e de pagador", () => {
     expect(
       canWritePlanned({ isSharedExpense: false, responsibleMemberId: "a" }, viewer, true),
     ).toBe(false);
+    // D-GES-52: o Administrador altera a prevista "Só meu" de ex-membro
+    expect(
+      canWritePlanned(
+        { isSharedExpense: false, responsibleMemberId: "b" },
+        { memberId: "a", role: "ADMIN" },
+        true,
+      ),
+    ).toBe(true);
+    expect(
+      canWritePlanned(
+        { isSharedExpense: false, responsibleMemberId: "b" },
+        { memberId: "a", role: "ADMIN" },
+        false,
+      ),
+    ).toBe(false);
+  });
+});
+
+const ctx = (memberId: string) => ({ memberId, familyId: "f", role: "MEMBER" }) as RequestContext;
+const expense = (over = {}) => ({
+  kind: "EXPENSE",
+  isSharedExpense: false,
+  payerMemberId: "m1",
+  authorMemberId: "m1",
+  accountId: "acc1",
+  ...over,
+});
+
+describe("SEC-043/044 quem só controla não muda divisão, pagador nem conta", () => {
+  it("o dono pode tudo; quem só controla altera o que não é estrutural", () => {
+    expect(() => assertCanMakePersonal(ctx("m1"), expense(), { accountId: "acc2" })).not.toThrow();
+    expect(() => assertCanMakePersonal(ctx("m2"), expense(), {})).not.toThrow();
+    expect(() =>
+      assertCanMakePersonal(ctx("m2"), expense(), { payerMemberId: "m1", accountId: "acc1" }),
+    ).not.toThrow(); // reenviar o mesmo valor não conta
+  });
+  it("não assume o pagamento, não troca pagador, divisão nem conta", () => {
+    for (const next of [
+      { payerMemberId: "m2" }, // assume (SEC-043)
+      { payerMemberId: "m3" },
+      { isSharedExpense: true },
+      { accountId: "acc2" },
+    ]) {
+      expect(() => assertCanMakePersonal(ctx("m2"), expense(), next)).toThrow(
+        /Só quem pagou pode alterar a divisão, o pagador e a conta/,
+      );
+    }
+  });
+  it("na prevista: responsável, divisão e 'Pagar com' são do responsável", () => {
+    const planned = { isSharedExpense: false, responsibleMemberId: "m1", paymentAccountId: "a1" };
+    expect(() =>
+      assertPlannedControllerLimits(ctx("m1"), planned, { responsibleMemberId: "m1" }),
+    ).not.toThrow();
+    expect(() => assertPlannedControllerLimits(ctx("m2"), planned, {})).not.toThrow();
+    for (const next of [
+      { responsibleMemberId: "m2" },
+      { isSharedExpense: true },
+      { paymentAccountId: "a2" },
+      { paymentAccountId: null },
+    ]) {
+      expect(() => assertPlannedControllerLimits(ctx("m2"), planned, next)).toThrow();
+    }
+    expect(() =>
+      assertPlannedControllerLimits(
+        ctx("m2"),
+        { ...planned, isSharedExpense: true },
+        { isSharedExpense: true },
+      ),
+    ).not.toThrow();
   });
 });

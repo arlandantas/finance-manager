@@ -24,8 +24,10 @@ import { checkCategory, checkPaymentAccount, memberMap } from "@/modules/previst
 import { assertCanShare } from "@/modules/split/guard";
 import {
   assertCanWritePlanned,
+  assertPlannedControllerLimits,
   assertPlannedNoCapture,
   assertPlannedResultAllowed,
+  plannedWriteDecision,
 } from "@/modules/transacoes/ownership";
 
 // ADR-025 / SDD-019 §3.3 e §3.5.
@@ -253,6 +255,7 @@ export async function updateSeries(
   if (row.version !== input.version) throw await versionConflict(repo, tx, ctx, id);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026: série "Só meu" é só do responsável
   assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
+  assertPlannedControllerLimits(ctx, row, input); // SEC-043/044
   assertPlannedResultAllowed(
     ctx,
     {
@@ -384,11 +387,16 @@ export async function endSeries(
   const now = ctx.clock.now();
   const res = await repo.markEnded(id, version, ctx.memberId, now);
   if (res.count === 0) throw await versionConflict(repo, tx, ctx, id);
-  const pending = await repo.pendingOccurrences(
+  const candidates = await repo.pendingOccurrences(
     id,
     monthStr(row.startMonth) as MonthISO,
     todayInFamilyTz(ctx.clock),
   );
+  // SEC-045: as ocorrências "Só meu" que o ator não controla ficam (encerrar não contorna a regra de excluir)
+  const pending: typeof candidates = [];
+  for (const o of candidates) {
+    if ((await plannedWriteDecision(tx, ctx, o)).allowed) pending.push(o);
+  }
   if (pending.length > 0) {
     await repo.softDeleteOccurrences(
       pending.map((o) => o.id),
