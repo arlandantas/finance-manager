@@ -108,6 +108,26 @@ describe("SDD-000 withApi: ordem das verificações", () => {
     spy.mockRestore();
   });
 
+  it("SEC-020: mais de 300 requisições/min de um usuário => 429 RATE_LIMITED; outro usuário e o minuto seguinte seguem livres", async () => {
+    const { API_RATE_PER_MIN } = await import("@/lib/api/rate-limit");
+    const { withClock } = await import("@/lib/clock");
+    const a = await asUser("mariana@exemplo.com");
+    const b = await asUser("lucas@exemplo.com");
+    const t0 = "2026-10-04T15:00:10Z";
+    await withClock(t0, async () => {
+      for (let i = 0; i < API_RATE_PER_MIN; i++) {
+        expect((await call(a, "GET", "/api/v1/me")).status).toBe(200);
+      }
+      const over = await call(a, "GET", "/api/v1/me");
+      expect(over.status).toBe(429);
+      expect(over.body.error.code).toBe("RATE_LIMITED");
+      expect((await call(b, "GET", "/api/v1/me")).status).toBe(200);
+    });
+    await withClock("2026-10-04T15:01:05Z", async () => {
+      expect((await call(a, "GET", "/api/v1/me")).status).toBe(200);
+    });
+  });
+
   it("Content-Type diferente de JSON em mutação -> 403 BAD_ORIGIN", async () => {
     const as = await asUser("mariana@exemplo.com");
     const res = await call(as, "POST", "/api/v1/families", '{"name":"Família Silva"}', {

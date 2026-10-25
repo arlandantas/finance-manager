@@ -15,6 +15,7 @@ import {
   requestHash,
   saveIdempotentResponse,
 } from "@/lib/api/idempotency";
+import { API_RATE_PER_MIN, hitApiRate } from "@/lib/api/rate-limit";
 import { readJsonCapped } from "@/lib/api/read-body";
 import { errorResponse, jsonResponse } from "@/lib/api/response";
 import type { ApiResult, RequestContext, Role, Tx, UserContext } from "@/lib/api/types";
@@ -118,6 +119,14 @@ export function withApi<A extends AuthMode = "family", B = undefined, Q = undefi
         const user = await findSessionUser(db, sessionTokenFromCookies(cookies));
         if (!user) throw unauthenticated();
         userId = user.userId;
+        // SEC-020: limite por usuário no Postgres (janela de 1 min; serverless não tem memória compartilhada)
+        const rate = await hitApiRate(db, user.userId, clock.now());
+        if (!rate.ok) {
+          throw new ApiError(429, "RATE_LIMITED", "Muitas requisições. Aguarde um instante.", {
+            limit: API_RATE_PER_MIN,
+            retryAfterSeconds: rate.retryAfterS,
+          });
+        }
         const base: UserContext = {
           userId: user.userId,
           email: user.email,
