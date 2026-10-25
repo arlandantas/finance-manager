@@ -210,3 +210,5 @@ Rodar após cada deploy de produção.
 - [ ] **9.3 Validar juridicamente** os prazos e o texto de privacidade/LGPD (SEC-017, U5).
 - [ ] **9.4 `MCP_CIMD_ALLOWED_CLIENT_IDS`** (lista vazia = nenhum cliente MCP aceito). Descobrir a URL do `client_id` do Claude na primeira tentativa real de conexão (tela de consentimento/log) e cadastrar; depois rodar uma vez `scripts/sec010-revalidate-mcp-clients.ts` (DEV-89).
 - [ ] **9.5 `LLM_GLOBAL_MONTHLY_CAP_CENTS` e `OPS_ALERT_EMAIL`**: obrigatórias em produção com IA ligada (DEV-93, SEC-013).
+- [ ] **9.6 `PRIVACY_CONTACT_EMAIL`** e aprovação do texto da página `/privacidade` (rascunho; trocar `POLICY_IS_DRAFT` e a data em `src/modules/privacidade/policy.ts` depois de aprovado e validado juridicamente) — SEC-017e.
+- [ ] **9.7 Promoção da fase 2 da SEC-018** (sessões): só ≥ 1 dia depois da fase 1 em produção; tarefa do Gestor (renomear a pasta de `prisma/pending` com timestamp mais novo que as migrações atuais).
