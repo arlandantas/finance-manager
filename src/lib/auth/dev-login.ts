@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import { normalizeEmail } from "@/lib/auth/email";
-import { SESSION_MAX_AGE_SECONDS } from "@/lib/auth/session";
+import { hashSessionToken, SESSION_IDLE_SECONDS } from "@/lib/auth/session";
 import { randomToken } from "@/lib/ids";
 
 /** Reproduz o fim de um login OAuth: upsert do User + Session em banco (ADR-008 §1). */
@@ -24,7 +24,9 @@ export async function createDevSession(
         data: { email, emailVerified: now, name: input.name ?? localPart(email) },
       });
   const sessionToken = randomToken(32);
-  const expires = new Date(now.getTime() + SESSION_MAX_AGE_SECONDS * 1000);
-  await db.session.create({ data: { sessionToken, userId: user.id, expires } });
+  const expires = new Date(now.getTime() + SESSION_IDLE_SECONDS * 1000);
+  await db.session.create({
+    data: { tokenHash: hashSessionToken(sessionToken), userId: user.id, expires, createdAt: now },
+  });
   return { user, sessionToken, expires };
 }

@@ -3,7 +3,8 @@ import type { NextAuthConfig } from "next-auth";
 import type { Adapter } from "next-auth/adapters";
 import Google from "next-auth/providers/google";
 import { normalizeEmail } from "@/lib/auth/email";
-import { SESSION_MAX_AGE_SECONDS, SESSION_UPDATE_AGE_SECONDS } from "@/lib/auth/session";
+import { SESSION_IDLE_SECONDS, SESSION_UPDATE_AGE_SECONDS } from "@/lib/auth/session";
+import { hashedSessionAdapter } from "@/lib/auth/session-adapter";
 import { getDb } from "@/lib/db";
 import { getEnv } from "@/lib/env";
 
@@ -77,7 +78,7 @@ export function buildSessionPayload(
 
 export const sessionConfig = {
   strategy: "database",
-  maxAge: SESSION_MAX_AGE_SECONDS,
+  maxAge: SESSION_IDLE_SECONDS,
   updateAge: SESSION_UPDATE_AGE_SECONDS,
 } as const;
 
@@ -85,7 +86,7 @@ export function buildAuthConfig(): NextAuthConfig {
   const env = getEnv();
   const db = getDb();
   return {
-    adapter: lowercaseEmailAdapter(PrismaAdapter(db as never)),
+    adapter: hashedSessionAdapter(lowercaseEmailAdapter(PrismaAdapter(db as never)), db),
     session: sessionConfig,
     secret: env.AUTH_SECRET,
     providers: isGoogleConfigured(env)

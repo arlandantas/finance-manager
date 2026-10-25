@@ -2,7 +2,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { register } from "@/instrumentation";
 import { lowercaseEmailAdapter } from "@/lib/auth/config";
-import { endSession, findSessionUser } from "@/lib/auth/session";
+import { endSession, findSessionUser, hashSessionToken } from "@/lib/auth/session";
 import { call } from "../support/call";
 import { resetDb, testDb } from "../support/db";
 import { asUser, makeFamily } from "../support/factories";
@@ -34,7 +34,7 @@ describe("US-001 Login de teste em desenvolvimento local (dev-login)", () => {
     expect(await db.session.count({ where: { userId: user?.id } })).toBe(1);
   });
 
-  it("define o cookie de sessão do Auth.js (httpOnly, SameSite=Lax, 90 dias)", async () => {
+  it("define o cookie de sessão do Auth.js (httpOnly, SameSite=Lax, 30 dias de ociosidade)", async () => {
     enableDevLogin();
     const res = await call(null, "POST", "/api/dev/login", { email: "lucas@exemplo.com" });
     const cookie = res.headers.get("set-cookie") ?? "";
@@ -42,7 +42,7 @@ describe("US-001 Login de teste em desenvolvimento local (dev-login)", () => {
     expect(cookie).toContain("HttpOnly");
     expect(cookie).toContain("SameSite=Lax");
     expect(cookie).toContain("Path=/");
-    expect(cookie).toContain(`Max-Age=${60 * 60 * 24 * 90}`);
+    expect(cookie).toContain(`Max-Age=${60 * 60 * 24 * 30}`);
     expect(cookie).not.toContain("Secure"); // AUTH_URL é http em dev
     const user = await db.user.findUnique({ where: { email: "lucas@exemplo.com" } });
     expect(user?.name).toBe("lucas"); // parte local do e-mail quando não há nome
@@ -128,15 +128,14 @@ describe("US-001 Login de teste em desenvolvimento local (dev-login)", () => {
 
   it("(infra) endSession remove a sessão pelo cookie comum ou __Secure- (logout atrás de túnel)", async () => {
     enableDevLogin();
+    const tokens: string[] = [];
     for (const email of ["a@exemplo.com", "b@exemplo.com"]) {
-      await call(null, "POST", "/api/dev/login", { email });
+      const r = await call(null, "POST", "/api/dev/login", { email });
+      tokens.push(/session-token=([^;]+)/.exec(r.headers.get("set-cookie") ?? "")?.[1] as string);
     }
-    const [one, two] = await db.session.findMany({ orderBy: { expires: "asc" } });
     expect(await endSession(db, {})).toBe(0);
-    expect(await endSession(db, { "authjs.session-token": one?.sessionToken as string })).toBe(1);
-    expect(
-      await endSession(db, { "__Secure-authjs.session-token": two?.sessionToken as string }),
-    ).toBe(1);
+    expect(await endSession(db, { "authjs.session-token": tokens[0] as string })).toBe(1);
+    expect(await endSession(db, { "__Secure-authjs.session-token": tokens[1] as string })).toBe(1);
     expect(await db.session.count()).toBe(0);
   });
 
@@ -203,19 +202,16 @@ describe("US-001 Sessão persistente: findSessionUser", () => {
     const base = new Date("2026-10-04T12:00:00Z");
     const as = await asUser("lucas@exemplo.com", { now: base });
     const token = as.cookie.split("=")[1] as string;
-    const original = (await db.session.findUnique({ where: { sessionToken: token } }))
-      ?.expires as Date;
+    const byToken = () => db.session.findUnique({ where: { tokenHash: hashSessionToken(token) } });
+    const original = (await byToken())?.expires as Date;
 
     await findSessionUser(db, token, new Date(base.getTime() + 60 * 60 * 1000)); // +1 h: não renova
-    expect((await db.session.findUnique({ where: { sessionToken: token } }))?.expires).toEqual(
-      original,
-    );
+    expect((await byToken())?.expires).toEqual(original);
 
     const later = new Date(base.getTime() + 25 * 60 * 60 * 1000); // +25 h: renova
     await findSessionUser(db, token, later);
-    const renewed = (await db.session.findUnique({ where: { sessionToken: token } }))
-      ?.expires as Date;
-    expect(renewed.getTime()).toBe(later.getTime() + 90 * 24 * 60 * 60 * 1000);
+    const renewed = (await byToken())?.expires as Date;
+    expect(renewed.getTime()).toBe(later.getTime() + 30 * 24 * 60 * 60 * 1000); // ociosidade de 30 dias (SEC-018)
   });
 
   it("sem token ou token desconhecido: null", async () => {

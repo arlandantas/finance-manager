@@ -111,6 +111,9 @@ export async function changeRole(
     if (admins.length <= 1) throw unprocessable("LAST_ADMIN", LAST_ADMIN_MSG);
   }
   await tx.member.update({ where: { id: target.id }, data: { role } });
+  // SEC-018 (SDD-028 §6.2): troca de papel encerra as sessões de QUEM foi afetado (não a de quem age)
+  if (target.userId !== ctx.userId)
+    await tx.session.deleteMany({ where: { userId: target.userId } });
   await tx.familyEvent.create({
     data: {
       familyId: ctx.familyId,

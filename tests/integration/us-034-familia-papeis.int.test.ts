@@ -3,7 +3,7 @@ import { withClock } from "@/lib/clock";
 import { UpdateFamilySchema } from "@/modules/familia/schemas";
 import { call } from "../support/call";
 import { resetDb, testDb } from "../support/db";
-import { type FamilyFixture, makeFamily } from "../support/factories";
+import { asUser, type FamilyFixture, makeFamily } from "../support/factories";
 
 const db = testDb();
 const NOW = "2026-10-12T15:00:00Z";
@@ -14,8 +14,15 @@ const mid = (n: "Mariana" | "Lucas") => fx.byName[n]?.memberId as string;
 const at = <T>(fn: () => Promise<T>) => withClock(NOW, fn);
 const rename = (as: ReturnType<typeof mariana>, name: string, version = 1) =>
   at(() => call(as, "PATCH", "/api/v1/family", { name, version }));
-const role = (as: ReturnType<typeof mariana>, id: string, r: string) =>
-  at(() => call(as, "PATCH", `/api/v1/members/${id}`, { role: r }));
+// SEC-018: trocar o papel de OUTRA pessoa encerra as sessões dela; o teste "faz login de novo" para ela.
+const role = async (as: ReturnType<typeof mariana>, id: string, r: string) => {
+  const res = await at(() => call(as, "PATCH", `/api/v1/members/${id}`, { role: r }));
+  const target = fx.members.find((m) => m.memberId === id);
+  if (res.status === 200 && target && target.userId !== as?.userId) {
+    target.as = { ...(await asUser(target.email, { name: target.name })), name: target.name };
+  }
+  return res;
+};
 
 beforeEach(async () => {
   await resetDb();

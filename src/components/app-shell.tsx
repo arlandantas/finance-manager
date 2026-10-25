@@ -8,6 +8,7 @@ import {
   Home,
   ListOrdered,
   LogOut,
+  MonitorX,
   Scale,
   Tags,
   Users,
@@ -20,6 +21,7 @@ import { signOutAction } from "@/app/actions";
 import { JoinedNotice } from "@/components/joined-notice";
 import { HIDE_VALUES_HINT, useHideValues } from "@/components/money";
 import { QuickAddProvider } from "@/components/quick-add";
+import { RevokeOtherSessions } from "@/components/revoke-other-sessions";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
 import { useTheme } from "@/lib/use-theme";
@@ -41,6 +43,7 @@ const NAV_ITEMS: Array<{ href: string; label: string; icon: typeof Home }> = [
 
 function UserMenu({ user }: { user: ShellUser }) {
   const [open, setOpen] = useState(false);
+  const [revokeOpen, setRevokeOpen] = useState(false);
   const [theme, setTheme] = useTheme();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -121,6 +124,18 @@ function UserMenu({ user }: { user: ShellUser }) {
             <Tags size={16} aria-hidden="true" />
             Categorias
           </Link>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              setRevokeOpen(true);
+            }}
+            className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          >
+            <MonitorX size={16} aria-hidden="true" />
+            Encerrar as outras sessões
+          </button>
           <form action={signOutAction}>
             <button
               type="submit"
@@ -133,6 +148,7 @@ function UserMenu({ user }: { user: ShellUser }) {
           </form>
         </div>
       ) : null}
+      <RevokeOtherSessions open={revokeOpen} onOpenChange={setRevokeOpen} />
     </div>
   );
 }

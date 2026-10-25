@@ -126,9 +126,11 @@ model Account {
 
 model Session {
   id           String   @id @default(uuid()) @db.Uuid
-  sessionToken String   @unique
+  tokenHash    String   @unique // SEC-018: sha256(token) em hex; o banco nunca guarda o token
+  sessionToken String?  @unique // LEGADO: só leitura pelo código antigo durante o deploy; removido na fase 2
   userId       String   @db.Uuid
-  expires      DateTime @db.Timestamptz(3)
+  expires      DateTime @db.Timestamptz(3) // ociosidade (deslizante, 30 dias)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3) // base do prazo absoluto (90 dias)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

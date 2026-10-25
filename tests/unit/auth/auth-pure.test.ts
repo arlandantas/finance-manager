@@ -75,9 +75,9 @@ describe("US-001 E-mail Google não verificado: authorizeSignIn", () => {
 });
 
 describe("US-001 Sessão persistente: configuração", () => {
-  it("sessão em banco, 90 dias deslizantes, renovação a cada 24 h", () => {
+  it("sessão em banco, 30 dias de ociosidade deslizante (SEC-018), renovação a cada 24 h", () => {
     expect(sessionConfig.strategy).toBe("database");
-    expect(sessionConfig.maxAge).toBe(60 * 60 * 24 * 90);
+    expect(sessionConfig.maxAge).toBe(60 * 60 * 24 * 30);
     expect(sessionConfig.updateAge).toBe(60 * 60 * 24);
   });
 
