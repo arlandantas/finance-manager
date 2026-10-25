@@ -1,6 +1,6 @@
 # Status — Agente de Segurança da Informação
 
-**Última atualização:** 2026-10-25 · **Estágio:** reteste final das rodadas 3 e 4 entregue; aguardando o Gestor (SEC-038..041).
+**Última atualização:** 2026-10-25 · **Estágio:** reteste da regra do "Só meu" (D-GES-50/51) entregue; aguardando o Gestor (SEC-042..046).
 
 ## Entregas
 | Data | Entrega | Resultado |
@@ -8,6 +8,7 @@
 | 2026-10-24 | [Levantamento completo](relatorios/levantamento-2026-10-24.md) (commit analisado `bdeef19`) | 24 achados: 0 Crítica, 2 Alta, 6 Média, 12 Baixa, 4 Informativa |
 | 2026-10-25 | [Reteste das correções](relatorios/reteste-2026-10-25.md) (`ae290d1`..`93d78f2` + Grupo A) | 14 Corrigidos, 7 Parciais, 0 Não corrigidos; 4 achados novos (SEC-025..028) |
 | 2026-10-25 | [Revisão dedicada de LGPD](relatorios/revisao-lgpd-2026-10-25.md) (`3fc271d`..`41b8d9f`) | Sem IDOR/BOLA nem bypass de trava; 9 achados novos: 4 Baixa (SEC-029..032), 5 Informativa (SEC-033..037) |
+| 2026-10-25 | [Reteste do "Só meu" ampliado](relatorios/reteste-so-meu-2026-10-25.md) (`bdd9ed1`..`672ea70`, D-GES-50/51) | Núcleo da regra, IDOR, ex-membro, exportação e MCP sem furo; 5 achados novos: SEC-042 (Média), 043, 044, 045 (Baixa), 046 (Info); suítes 47/47 |
 | 2026-10-25 | [Reteste final](relatorios/reteste-final-2026-10-25.md) (`b494e0c`..`849008c`) | 14 Corrigidos, 1 Parcial (SEC-026), 0 Não corrigidos, 0 regressões em achados antigos; 4 novos: SEC-038, 039 (Baixa), SEC-040, 041 (Info); suítes 359/359 |
 
 ## Quadro consolidado (estado final após o reteste final de 2026-10-25)
@@ -57,8 +58,15 @@
 | **039** | Baixa | **Aberto** | limpeza de idempotência por trecho de nome atinge outras famílias |
 | **040** | Info | **Aberto** | limite de convites contornável recriando a família |
 | **041** | Info | **Aberto** | balde de falhas do `/token` não freia tentativas |
+| **042** | Média | **Aberto** | qualquer membro troca o titular do cartão e controla o "Só meu" alheio |
+| **043** | Baixa | **Em análise (usuário)** | "assumir o pagamento" captura o "Só meu" alheio em um passo |
+| **044** | Baixa | **Em análise (usuário)** | quem só controla entrega o "Só meu" (ou o controle) a terceiro |
+| **045** | Baixa | **Aberto** | encerrar série dividida apaga ocorrência "Só meu" de outro |
+| **046** | Info | **Em análise (usuário)** | titular reatribuído na remoção passa a controlar "Só meu" de quem ficou |
 
 ## Pendências e bloqueios
+- Perguntas do reteste do "Só meu" (§1): titular do cartão (SEC-042), "assumir" (SEC-043), campos que quem só controla altera (SEC-044), encerramento de série (SEC-045).
+- Retestar SEC-042..046 quando o Gestor promover as correções.
 - Perguntas do reteste final (§1): SEC-038 (regra nas previstas), "Só meu" na conta de outro dono, limite de convites por pessoa (SEC-040).
 - Retestar SEC-038..041 quando o Gestor promover as correções.
 - Perguntas ao usuário na seção 1 do reteste: regra do "Só meu" para SEC-025/026, risco residual da SEC-011, visão pública do health (SEC-022).
@@ -72,3 +80,4 @@
 - 2026-10-25 — Reteste: revisão dos diffs, exploração local em `127.0.0.1:3190` com os bancos descartáveis `finance_sec_rt` e `finance_sec_rt2` no `db-test` (os dois apagados), integração de segurança 162/162. `tsconfig.json` e `AGENTS.md` reescritos pelo `next dev` foram revertidos; `.next-sec/` apagada. O Dev commitou SEC-017b e trabalhava na 017c durante a sessão (não revisados). Sem commit (regra da tarefa).
 - 2026-10-25 — Revisão dedicada de LGPD (`3fc271d`..`41b8d9f`): leitura de código, exploração local em `127.0.0.1:3190` com banco descartável `finance_sec_lgpd` e suíte `sec017*` (50/50) em `finance_sec_lgpd2` no `db-test` (os dois apagados). `tsconfig.json` e `AGENTS.md` reescritos pelo `next dev` foram revertidos; `.next-sec/` apagada. Havia mudanças não commitadas do Dev (rodada 3) na árvore; não foram tocadas. Sem commit (regra da tarefa).
 - 2026-10-25 — Reteste final (`b494e0c`..`849008c`): revisão dos diffs, exploração local em `127.0.0.1:3190` com o banco descartável `finance_sec_final` e as suítes (28 arquivos, 359/359) em `finance_sec_final2` no `db-test` (os dois apagados). `tsconfig.json` e `AGENTS.md` reescritos pelo `next dev` foram revertidos; `.next-sec/` apagada. Sem commit (regra da tarefa).
+- 2026-10-25 — Reteste do "Só meu" ampliado (`bdd9ed1`..`672ea70`): leitura de código, 19 cenários de prova (handlers em processo, arquivo só no scratchpad) e suítes `sec021`/`sec025-026`/`sec038`/`us-030`/`us084` (47/47) no banco descartável `finance_sec_somu` no `db-test` (apagado). Sem `next dev` (nada a reverter). Relatório e status commitados (regra do README).
