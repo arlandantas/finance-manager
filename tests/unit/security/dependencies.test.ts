@@ -28,3 +28,11 @@ describe("SEC-002/007/014/019 versões mínimas de dependências", () => {
     expect(atLeast(installed(pkg), min), `${pkg} instalado: ${installed(pkg)}`).toBe(true);
   });
 });
+
+describe("SEC-019 lockfile sem versões vulneráveis duplicadas", () => {
+  it("não há zod 4.6.5 (GHSA-mrhx-c7xc-m3w5) na árvore do MCP SDK nem em outro ponto", () => {
+    const lock = readFileSync(path.resolve(import.meta.dirname, "../../../pnpm-lock.yaml"), "utf8");
+    // zod@4.1.11 (só @vercel/cli-config, uso da CLI da Vercel) permanece: ver SEC-019 no quadro.
+    expect(lock).not.toMatch(/^ {2}zod@4\.6\.5:/m);
+  });
+});
