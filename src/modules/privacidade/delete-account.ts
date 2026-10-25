@@ -149,10 +149,10 @@ export async function deleteAccount(tx: Tx, ctx: UserContext, body: DeleteAccoun
   // (valem para a conta nova que a pessoa criar com o mesmo e-mail)
   const anon = deletedEmailOf(user.id);
   await tx.$executeRaw`UPDATE invitations SET email = ${anon} WHERE lower(email) = ${user.email.toLowerCase()} AND status <> 'PENDING'`;
-  await tx.$executeRaw`SELECT set_config('app.anonymize_user', 'on', true)`;
+  await tx.$executeRaw`SELECT set_config('app.anonymize_user', ${user.id}, true)`;
   await tx.$executeRaw`UPDATE family_events SET changes = jsonb_set(changes, '{email}', to_jsonb(${anon}::text))
     WHERE type = 'INVITATION_RESENT' AND lower(changes->>'email') = ${user.email.toLowerCase()}`;
-  await tx.$executeRaw`SELECT set_config('app.anonymize_user', 'off', true)`;
+  await tx.$executeRaw`SELECT set_config('app.anonymize_user', '', true)`;
 
   // (5) rede de segurança: nenhum vínculo ativo sobrevive (ex.: aceite de convite concorrente)
   await tx.member.updateMany({
