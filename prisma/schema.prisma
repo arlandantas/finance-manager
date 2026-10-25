@@ -226,6 +226,7 @@ enum FamilyEventType {
   AI_CONSENT_CHANGED // EN-005
   ASSISTANT_ACCESS_CHANGED // US-074
   MEMBER_JOINED // SEC-004: entrou por convite (aceite explícito)
+  CARD_OWNER_CHANGED // SEC-042: troca de titular de cartão (quem trocou, de quem para quem)
 }
 
 // Trilha append-only de eventos da família (trigger forbid_mutation em SQL cru)

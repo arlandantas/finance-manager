@@ -1,5 +1,5 @@
 import { isUniqueViolation } from "@/lib/api/db-errors";
-import { conflict, notFound, unprocessable } from "@/lib/api/errors";
+import { conflict, forbidden, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import { todayInFamilyTz } from "@/lib/dates";
@@ -25,6 +25,9 @@ type CardRow = NonNullable<Awaited<ReturnType<ReturnType<typeof cartoesRepo>["fi
 
 const NOT_FOUND = "Cartão não encontrado.";
 const DUPLICATE_NAME = "Já existe um cartão com este nome";
+export const CARD_OWNER_ONLY_CODE = "CARD_OWNER_ONLY";
+export const CARD_OWNER_ONLY_MESSAGE =
+  "Só o titular do cartão ou o Administrador podem trocar o titular.";
 export const CYCLE_LOCKED_MESSAGE =
   "Os dias de fechamento e vencimento não podem ser alterados porque já há compras neste cartão";
 
@@ -162,6 +165,15 @@ export async function updateCard(
   await repo.lockForUpdate(id);
   const row = (await repo.findById(id)) as CardRow;
 
+  // SEC-042: o titular do cartão virou papel de autorização ("Só meu"); só o titular atual (ou o Administrador) o troca
+  if (
+    input.ownerMemberId !== undefined &&
+    input.ownerMemberId !== row.ownerMemberId &&
+    row.ownerMemberId !== ctx.memberId &&
+    ctx.role !== "ADMIN"
+  ) {
+    throw forbidden(CARD_OWNER_ONLY_MESSAGE, CARD_OWNER_ONLY_CODE);
+  }
   if (input.ownerMemberId && !(await repo.memberExists(input.ownerMemberId))) {
     throw unprocessable("INVALID_REFERENCE", "Titular inválido.", [
       { path: "ownerMemberId", message: "Titular inválido." },
@@ -204,6 +216,22 @@ export async function updateCard(
     throw e;
   }
   if (res.count === 0) throw await versionConflict(repo, id);
+  if ("ownerMemberId" in wanted) {
+    await tx.familyEvent.create({
+      data: {
+        familyId: ctx.familyId,
+        type: "CARD_OWNER_CHANGED",
+        actorMemberId: ctx.memberId,
+        targetMemberId: wanted.ownerMemberId,
+        changes: {
+          cardId: id,
+          cardName: row.name,
+          fromMemberId: row.ownerMemberId,
+          toMemberId: wanted.ownerMemberId,
+        },
+      },
+    });
+  }
   const fresh = (await repo.findById(id)) as CardRow;
   return { card: (await toCardDTOs(tx, ctx, [fresh]))[0] as CardDTO };
 }

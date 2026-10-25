@@ -167,6 +167,11 @@ export function RemoveMemberDialog({
                     </label>
                   </li>
                 ) : null}
+                {r.reassignNotice ? (
+                  <li data-testid="removal-reassign-notice" className="text-slate-700">
+                    {r.reassignNotice}
+                  </li>
+                ) : null}
                 {r.accounts.map((a) => (
                   <li key={a.id} data-testid="removal-account">
                     {a.mustReassign ? (

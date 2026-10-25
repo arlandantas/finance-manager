@@ -112,7 +112,8 @@ export type FamilyEventDTO = {
     | "INVITATION_RESENT"
     | "AI_CONSENT_CHANGED"
     | "ASSISTANT_ACCESS_CHANGED"
-    | "MEMBER_JOINED";
+    | "MEMBER_JOINED"
+    | "CARD_OWNER_CHANGED";
   actor: { id: string; name: string };
   target: { id: string; name: string } | null;
   changes: Record<string, unknown>;
@@ -188,4 +189,6 @@ export type RemovalReviewDTO = {
   planned: Array<{ id: string; description: string; dueOn: string }>;
   candidates: Array<{ id: string; name: string; role: Role }>;
   blockers: Array<"LAST_ADMIN" | "ONLY_MEMBER">;
+  /** SEC-046: aviso de que contas/cartões reatribuídos dão controle sobre os "Só meu" lançados neles. */
+  reassignNotice: string | null;
 };

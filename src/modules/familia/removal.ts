@@ -138,6 +138,10 @@ export async function removalReview(
       .filter((m) => m.id !== target.id)
       .map((m) => ({ id: m.id, name: nameOf(m), role: m.role })),
     blockers: blockersOf(g.active, target),
+    reassignNotice:
+      g.accounts.length + g.cards.length > 0
+        ? `As contas e os cartões de ${nameOf(target)} que forem reatribuídos passam a ${target.id === ctx.memberId ? "quem você escolher" : "você (ou a pessoa que você escolher)"}, que passará a controlar os lançamentos "Só meu" lançados neles.`
+        : null,
   };
 }
 
