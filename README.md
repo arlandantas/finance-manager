@@ -136,13 +136,14 @@ pnpm dev                          # http://localhost:3100  (health: /api/health)
 | :-- | :-- |
 | `pnpm dev` / `build` / `start` | App (HMR) / build de produção / servir build |
 | `pnpm lint` / `lint:fix` / `typecheck` | Biome / `tsc --noEmit` |
-| `pnpm test` | `check:imports` (ADR-013) + unidade e componentes (Vitest + Testing Library) |
+| `pnpm test` | `check:imports` (ADR-013) + `check:docs` + unidade e componentes (Vitest + Testing Library) |
 | `pnpm check:imports` | Verifica restrições de import (`@/lib/db` só em repositórios; regras puras sem Next/Prisma/relógio) |
+| `pnpm check:docs` | Links relativos de `agents/**` e README/AGENTS/CLAUDE; `agents/estado/*.md` com "Atualizado:" e até 2800 palavras; INDEX só cita estados existentes |
 | `pnpm test:int` | Integração contra o Postgres `db-test` (porta 5443) |
 | `pnpm test:e2e` | Playwright + playwright-bdd (features em `tests/e2e/features`). Sobe o app em **3101** contra o `db-test` (5443), com relógio fixo em 2026-10-04 e e-mails no Mailpit. Primeira vez: `pnpm exec playwright install chromium` |
 | `pnpm db:migrate` / `db:deploy` / `db:seed` / `db:reset` | Migrações (dev) / aplicar existentes / seed / recriar banco |
 
-Hooks (Husky): `pre-commit` roda `lint` + `typecheck` + `check:imports`; `commit-msg` exige Conventional Commits e o trailer `Co-authored-by:`.
+Hooks (Husky): `pre-commit` roda `lint` + `typecheck` + `check:imports` + `check:docs`; `commit-msg` exige Conventional Commits e o trailer `Co-authored-by:`.
 
 Estrutura de código: `src/app` (rotas Next), `src/modules/<dominio>` (regras puras), `src/lib` (env, db), `prisma/` (schema, migrações, seed), `tests/{unit,integration,e2e}`.
 

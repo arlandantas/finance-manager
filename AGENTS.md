@@ -1,5 +1,7 @@
 # 🤖 Protocolo e Governança dos Agentes (AGENTS.md)
 
+> **Primeira leitura obrigatória: [`agents/INDEX.md`](agents/INDEX.md)** (mapa por área/tarefa; o estado vigente de cada área está em `agents/estado/`; o histórico fica em `agents/_historico/`). Mudou uma regra? Atualize o arquivo de estado no mesmo commit.
+
 Este documento estabelece o protocolo operacional, fluxo de trabalho e governança dos **quatro agentes inteligentes** que colaboram na construção da aplicação web de **Gestão Financeira Familiar**, sob a gestão e orquestração do **Gestor do Projeto**.
 
 ---
@@ -13,7 +15,7 @@ agents/
 ├── README.md                      # Panorama geral do diretório de agentes
 ├── security/                      # 5. Agente de Segurança da Informação (auditor independente: brechas, dados pessoais, OAuth/MCP)
 │   ├── README.md                  # Instruções de operação do Agente de Segurança
-│   └── relatorios/                # Levantamentos e achados (SEC-xxx)
+│   └── status.md                  # Quadro dos achados (SEC-xxx); relatórios fechados em _historico/
 ├── manager/                       # 0. Agente Gestor do Projeto (interface com o usuário, orquestração, decisões e escalonamentos)
 │   ├── README.md                  # Instruções de operação do Gestor
 │   └── *.md                       # Decisões do gestor, decisões para o usuário, pedidos, pendências externas, checklists
