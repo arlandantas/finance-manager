@@ -208,3 +208,5 @@ Rodar após cada deploy de produção.
 - [ ] **9.1 `ALLOWED_SIGNUP_EMAILS`** (lista de e-mails permitidos no alpha; vazia = cadastro aberto). Definir na Vercel, escopo Production, antes de divulgar o link (D-GES-42, U6).
 - [ ] **9.2 Teto global de IA** (`LLM_GLOBAL_MONTHLY_CAP_CENTS`, sugerido R$ 50) e limite de gasto na console da Anthropic, antes de ligar `AI_FEATURES_ENABLED` (SEC-013). Nome exato da variável: confirmar no SDD-028.
 - [ ] **9.3 Validar juridicamente** os prazos e o texto de privacidade/LGPD (SEC-017, U5).
+- [ ] **9.4 `MCP_CIMD_ALLOWED_CLIENT_IDS`** (lista vazia = nenhum cliente MCP aceito). Descobrir a URL do `client_id` do Claude na primeira tentativa real de conexão (tela de consentimento/log) e cadastrar; depois rodar uma vez `scripts/sec010-revalidate-mcp-clients.ts` (DEV-89).
+- [ ] **9.5 `LLM_GLOBAL_MONTHLY_CAP_CENTS` e `OPS_ALERT_EMAIL`**: obrigatórias em produção com IA ligada (DEV-93, SEC-013).
