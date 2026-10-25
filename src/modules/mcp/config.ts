@@ -34,12 +34,15 @@ export function mcpEnabled(env: Env = process.env): boolean {
   return env.MCP_ENABLED?.trim().toLowerCase() === "true";
 }
 
-/** Hosts autorizados a servir o metadado CIMD (POC: só claude.ai). */
-export function cimdAllowedHosts(env: Env = process.env): string[] {
-  const raw = env.MCP_CIMD_ALLOWED_HOSTS?.trim();
-  return (raw ? raw : "claude.ai")
+/**
+ * SEC-010 (SDD-028 §3.1): URLs EXATAS de `client_id` CIMD autorizadas (lista separada por vírgula).
+ * Vazia = nenhum cliente CIMD é aceito (falha fechada; o DCR continua valendo). `MCP_CIMD_ALLOWED_HOSTS`
+ * está obsoleta e é ignorada (DEV-89).
+ */
+export function cimdAllowedClientIds(env: Env = process.env): string[] {
+  return (env.MCP_CIMD_ALLOWED_CLIENT_IDS ?? "")
     .split(",")
-    .map((h) => h.trim().toLowerCase())
+    .map((u) => u.trim())
     .filter(Boolean);
 }
 

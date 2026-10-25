@@ -33,6 +33,7 @@ const schema = z
     AUTH_GOOGLE_SECRET: optionalString,
     // EN-006 (SDD-024 §3): servidor MCP/OAuth desligado por padrão; em preview da Vercel nunca liga.
     MCP_ENABLED: flag,
+    MCP_CIMD_ALLOWED_CLIENT_IDS: optionalString, // SEC-010: URLs exatas; MCP_CIMD_ALLOWED_HOSTS obsoleta (ignorada)
     MCP_CIMD_ALLOWED_HOSTS: optionalString,
     SMTP_HOST: z.string().default("localhost"),
     SMTP_PORT: z.coerce.number().int().default(1025),

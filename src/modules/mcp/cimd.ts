@@ -1,6 +1,8 @@
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
 import { z } from "zod";
+import { isHiddenChar } from "@/lib/text/hidden-chars";
 import { CIMD_MAX_BYTES, CIMD_TIMEOUT_MS } from "@/modules/mcp/config";
-import { isAcceptableRedirectUri } from "@/modules/mcp/redirect";
 
 // SDD-024 §4.7: Client ID Metadata Document. O cliente é identificado por uma URL https cujo conteúdo
 // descreve o cliente. A busca é a única chamada de rede de saída do AS: protegida contra SSRF.
@@ -25,17 +27,6 @@ const DocSchema = z.object({
   software_id: z.string().max(200).optional(),
 });
 
-/** Controles C0/C1 e caracteres invisíveis/de direção (U+200B-200F, U+2028-202E, U+2066-2069). */
-function isHiddenChar(code: number): boolean {
-  return (
-    code <= 0x1f ||
-    (code >= 0x7f && code <= 0x9f) ||
-    (code >= 0x200b && code <= 0x200f) ||
-    (code >= 0x2028 && code <= 0x202e) ||
-    (code >= 0x2066 && code <= 0x2069)
-  );
-}
-
 /** Saneia nomes exibidos: NFKC, sem caracteres de controle/formatação, ≤ 80. */
 export function sanitizeClientName(raw: string | undefined): string {
   const cleaned = Array.from((raw ?? "").normalize("NFKC"), (ch) =>
@@ -47,8 +38,45 @@ export function sanitizeClientName(raw: string | undefined): string {
 
 export type FetchImpl = (url: string, init: RequestInit) => Promise<Response>;
 
-/** Valida a URL do `client_id` sem rede: https, host permitido, caminho não vazio, sem credenciais/porta/fragmento. */
-export function assertCimdUrl(clientId: string, allowedHosts: string[]): URL {
+export type LookupImpl = (host: string) => Promise<Array<{ address: string }>>;
+
+let dnsLookup: LookupImpl = (host) => lookup(host, { all: true });
+/** Só para testes: troca a resolução de DNS (a suíte não acessa a rede). */
+export function setCimdDnsLookup(fn: LookupImpl | null) {
+  dnsLookup = fn ?? ((host) => lookup(host, { all: true }));
+}
+
+/** Endereço que um cliente CIMD nunca pode ter: loopback, privado, link-local, 0/8, CGNAT, multicast. */
+export function isPrivateAddress(addr: string): boolean {
+  const v = isIP(addr);
+  if (v === 4) {
+    const [a = 0, b = 0] = addr.split(".").map(Number);
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      a >= 224
+    );
+  }
+  if (v === 6) {
+    const x = addr.toLowerCase();
+    if (x === "::" || x === "::1") return true;
+    if (x.startsWith("::ffff:")) return isPrivateAddress(x.slice(7));
+    return /^f[cd]/.test(x) || /^fe[89ab]/.test(x) || x.startsWith("ff");
+  }
+  return true; // não é IP válido: recusa
+}
+
+/**
+ * SEC-010 (SDD-028 §3.2): valida a URL do `client_id` sem rede. Forma canônica, https, sem credenciais,
+ * porta, query ou fragmento, host não-IP, e IGUALDADE EXATA com a lista de URLs permitidas.
+ */
+export function assertCimdUrl(clientId: string, allowedClientIds: readonly string[]): URL {
+  if (clientId.length > 512 || !/^[\x21-\x7e]+$/.test(clientId)) throw new CimdError("url");
   let u: URL;
   try {
     u = new URL(clientId);
@@ -56,19 +84,75 @@ export function assertCimdUrl(clientId: string, allowedHosts: string[]): URL {
     throw new CimdError("url");
   }
   if (u.protocol !== "https:") throw new CimdError("scheme");
-  if (u.username || u.password || u.hash || u.port) throw new CimdError("url");
-  if (!allowedHosts.includes(u.hostname.toLowerCase())) throw new CimdError("host");
-  if (u.pathname === "" || u.pathname === "/") throw new CimdError("path");
+  if (u.username || u.password || u.hash || u.port || u.search) throw new CimdError("url");
+  if (u.href !== clientId) throw new CimdError("not_canonical");
+  if (isIP(u.hostname.replace(/^\[|\]$/g, "")) !== 0 || u.hostname.endsWith(".")) {
+    throw new CimdError("ip_host");
+  }
+  if (!allowedClientIds.includes(clientId)) throw new CimdError("not_allowed");
   return u;
+}
+
+/** `redirect_uri` de cliente CIMD: https, sem credenciais nem fragmento, no MESMO host do `client_id`. Loopback não vale. */
+export function isCimdRedirectUri(raw: string, clientHost: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return false;
+  }
+  return (
+    u.protocol === "https:" &&
+    !u.username &&
+    !u.password &&
+    !u.hash &&
+    u.hostname === clientHost &&
+    u.href === raw
+  );
+}
+
+/** Lê o corpo em stream com teto de bytes; cancela o leitor ao passar (mesmo com content-length mentindo). */
+async function readCapped(res: Response, max: number): Promise<Uint8Array> {
+  if (!res.body) throw new CimdError("json");
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      await reader.cancel().catch(() => undefined);
+      throw new CimdError("size");
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) {
+    out.set(c, off);
+    off += c.byteLength;
+  }
+  return out;
 }
 
 export async function fetchCimd(
   clientId: string,
-  allowedHosts: string[],
+  allowedClientIds: readonly string[],
   fetchImpl: FetchImpl = fetch,
 ): Promise<CimdClient> {
-  const url = assertCimdUrl(clientId, allowedHosts);
+  const url = assertCimdUrl(clientId, allowedClientIds);
+  try {
+    const addrs = await dnsLookup(url.hostname);
+    if (addrs.length === 0 || addrs.some((a) => isPrivateAddress(a.address))) {
+      throw new CimdError("ssrf");
+    }
+  } catch (e) {
+    if (e instanceof CimdError) throw e;
+    throw new CimdError("fetch");
+  }
   let res: Response;
+  let buf: Uint8Array;
   try {
     res = await fetchImpl(url.toString(), {
       method: "GET",
@@ -76,18 +160,18 @@ export async function fetchCimd(
       headers: { accept: "application/json" },
       signal: AbortSignal.timeout(CIMD_TIMEOUT_MS),
     });
-  } catch {
+    if (res.status !== 200) {
+      throw new CimdError(res.status >= 300 && res.status < 400 ? "redirect" : "status");
+    }
+    const type = (res.headers.get("content-type") ?? "").split(";")[0]?.trim().toLowerCase();
+    if (type !== "application/json") throw new CimdError("content-type");
+    const declared = Number(res.headers.get("content-length") ?? "0");
+    if (declared > CIMD_MAX_BYTES) throw new CimdError("size");
+    buf = await readCapped(res, CIMD_MAX_BYTES);
+  } catch (e) {
+    if (e instanceof CimdError) throw e;
     throw new CimdError("fetch");
   }
-  if (res.status !== 200)
-    throw new CimdError(res.status >= 300 && res.status < 400 ? "redirect" : "status");
-  if (!(res.headers.get("content-type") ?? "").toLowerCase().includes("json")) {
-    throw new CimdError("content-type");
-  }
-  const declared = Number(res.headers.get("content-length") ?? "0");
-  if (declared > CIMD_MAX_BYTES) throw new CimdError("size");
-  const buf = new Uint8Array(await res.arrayBuffer());
-  if (buf.byteLength > CIMD_MAX_BYTES) throw new CimdError("size");
   let json: unknown;
   try {
     json = JSON.parse(new TextDecoder().decode(buf));
@@ -99,7 +183,10 @@ export async function fetchCimd(
   if (doc.data.client_id !== clientId) throw new CimdError("client_id");
   const method = doc.data.token_endpoint_auth_method;
   if (method !== undefined && method !== "none") throw new CimdError("auth_method");
-  if (!doc.data.redirect_uris.every(isAcceptableRedirectUri)) throw new CimdError("redirect_uris");
+  if (doc.data.redirect_uris.length > 5) throw new CimdError("redirect_uris");
+  if (!doc.data.redirect_uris.every((r) => isCimdRedirectUri(r, url.hostname))) {
+    throw new CimdError("redirect_uris");
+  }
   return {
     clientId,
     clientName: sanitizeClientName(doc.data.client_name),

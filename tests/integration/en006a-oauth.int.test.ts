@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { withClock } from "@/lib/clock";
+import { cimdAllowedClientIds } from "@/modules/mcp/config";
 import { setAssistantAccess } from "@/modules/mcp/grants";
+import { revalidateMcpClients } from "@/modules/mcp/revalidate";
 import { call } from "../support/call";
 import { resetDb, testDb } from "../support/db";
 import { type FamilyFixture, makeAccount, makeFamily } from "../support/factories";
@@ -231,16 +233,71 @@ describe("/oauth/authorize", () => {
     expect(await db.mcpAuthorizationRequest.count()).toBe(0);
   });
 
-  it("loopback ignora a porta (Claude Code)", async () => {
+  it("SEC-010: loopback não vale para cliente CIMD (redirect_uri só https no host do client_id)", async () => {
     const { challenge } = pkcePair();
-    const r = await getAuthorize(
+    const loop = await getAuthorize(
       authorizeUrl({ member: lucas(), redirectUri: "http://localhost:3118/callback" }, challenge),
     );
-    expect(r.location).toContain("/oauth/consent?request=");
-    const bad = await getAuthorize(
-      authorizeUrl({ member: lucas(), redirectUri: "http://127.0.0.1:3118/callback" }, challenge),
+    expect(loop.location).toContain("error=bad_redirect");
+    // documento que declara loopback é recusado por inteiro
+    await db.mcpClient.deleteMany();
+    stubCimd({ redirect_uris: [REDIRECT_URI, "http://localhost/callback"] });
+    const doc = await getAuthorize(authorizeUrl({ member: lucas() }, challenge));
+    expect(doc.location).toContain("error=unknown_client");
+  });
+
+  it("SEC-010: cliente gravado com redirect de outro host é revalidado a cada uso (invalid_client)", async () => {
+    stubCimd();
+    const { challenge } = pkcePair();
+    const first = await getAuthorize(authorizeUrl({ member: lucas() }, challenge));
+    expect(first.location).toContain("/oauth/consent?request=");
+    await db.mcpClient.update({
+      where: { clientId: CIMD_URL },
+      data: { redirectUris: [REDIRECT_URI, "https://evil.example/cb"] },
+    });
+    const again = await getAuthorize(authorizeUrl({ member: lucas() }, challenge));
+    expect(again.location).toContain("error=unknown_client");
+  });
+
+  it("SEC-010: o script de revalidação revoga as conexões de cliente CIMD fora da regra", async () => {
+    stubCimd();
+    const dance = await oauthDance({ member: lucas() });
+    expect(dance.accessToken).toBeTruthy();
+    const ok = await db.$transaction((tx) =>
+      revalidateMcpClients(tx, cimdAllowedClientIds(process.env), new Date()),
     );
-    expect(bad.location).toContain("error=bad_redirect");
+    expect(ok).toEqual({ invalidClients: 0, revokedGrants: 0 });
+    await db.mcpClient.update({
+      where: { clientId: CIMD_URL },
+      data: { redirectUris: ["https://evil.example/cb"] },
+    });
+    const r = await db.$transaction((tx) =>
+      revalidateMcpClients(tx, cimdAllowedClientIds(process.env), new Date()),
+    );
+    expect(r).toEqual({ invalidClients: 1, revokedGrants: 1 });
+    expect(await db.mcpGrant.findFirstOrThrow()).toMatchObject({
+      status: "REVOKED",
+      revokedReason: "CLIENT",
+    });
+    // idempotente
+    expect(
+      await db.$transaction((tx) =>
+        revalidateMcpClients(tx, cimdAllowedClientIds(process.env), new Date()),
+      ),
+    ).toEqual({ invalidClients: 1, revokedGrants: 0 });
+  });
+
+  it("SEC-010: URL do client_id fora da lista exata não vira cliente (nem busca)", async () => {
+    const other = "https://claude.ai/qualquer/caminho";
+    const stub = stubCimd((url) => {
+      if (url === other)
+        return new Response("{}", { headers: { "content-type": "application/json" } });
+      throw new Error("bloqueado");
+    });
+    const { challenge } = pkcePair();
+    const r = await getAuthorize(authorizeUrl({ member: lucas(), clientId: other }, challenge));
+    expect(r.location).toContain("error=unknown_client");
+    expect(stub.calls).toEqual([]);
   });
 
   it("CIMD é buscado uma vez e cacheado por 24 h", async () => {

@@ -2,14 +2,21 @@ import { createHash } from "node:crypto";
 // @ts-expect-error o Next não publica tipos do path-to-regexp compilado
 import { pathToRegexp } from "next/dist/compiled/path-to-regexp";
 import pino from "pino";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getEnv } from "@/lib/env";
 import { LOG_REDACT_PATHS } from "@/lib/logger";
 import { AUDIT_PARAM_KEYS, sanitizeAuditParams } from "@/modules/mcp/audit";
-import { assertCimdUrl, CimdError, fetchCimd, sanitizeClientName } from "@/modules/mcp/cimd";
+import {
+  assertCimdUrl,
+  CimdError,
+  fetchCimd,
+  isCimdRedirectUri,
+  sanitizeClientName,
+  setCimdDnsLookup,
+} from "@/modules/mcp/cimd";
 import {
   canonicalResource,
-  cimdAllowedHosts,
+  cimdAllowedClientIds,
   issuerOf,
   mcpEnabled,
   prmUrl,
@@ -73,8 +80,9 @@ describe("EN-006a redirect_uri (SDD-024 §4.9)", () => {
   });
 });
 
-describe("EN-006a CIMD / SSRF (fetch injetado, sem rede)", () => {
+describe("EN-006a/SEC-010 CIMD por URL exata e SSRF (fetch e DNS injetados, sem rede)", () => {
   const URL_OK = "https://claude.ai/oauth/client.json";
+  const ALLOW = [URL_OK];
   const doc = {
     client_id: URL_OK,
     client_name: "Claude",
@@ -87,9 +95,19 @@ describe("EN-006a CIMD / SSRF (fetch injetado, sem rede)", () => {
       headers: { "content-type": "application/json" },
       ...init,
     });
+  const reason = async (p: Promise<unknown> | (() => unknown)) => {
+    try {
+      await (typeof p === "function" ? p() : p);
+    } catch (e) {
+      return (e as CimdError).reason;
+    }
+    return "ok";
+  };
+  beforeEach(() => setCimdDnsLookup(async () => [{ address: "160.79.104.10" }]));
+  afterEach(() => setCimdDnsLookup(null));
 
   it("documento válido", async () => {
-    const c = await fetchCimd(URL_OK, ["claude.ai"], async () => ok());
+    const c = await fetchCimd(URL_OK, ALLOW, async () => ok());
     expect(c).toMatchObject({
       clientId: URL_OK,
       clientName: "Claude",
@@ -97,65 +115,197 @@ describe("EN-006a CIMD / SSRF (fetch injetado, sem rede)", () => {
     });
   });
 
-  it("host fora da lista, http, porta, credenciais e caminho vazio: recusa SEM chamar fetch", async () => {
+  it("reprodução do relatório: qualquer outro caminho em claude.ai deixa de valer (not_allowed)", async () => {
+    expect(await reason(() => assertCimdUrl("https://claude.ai/qualquer/caminho", ALLOW))).toBe(
+      "not_allowed",
+    );
+  });
+
+  it("assertCimdUrl: aceita a URL exata e recusa variações, SEM chamar fetch", async () => {
+    expect(() => assertCimdUrl(URL_OK, ALLOW)).not.toThrow();
     let calls = 0;
     const f = async () => {
       calls++;
       return ok();
     };
-    for (const u of [
-      "https://evil.example/client.json",
-      "http://claude.ai/client.json",
-      "https://claude.ai:8443/client.json",
-      "https://user:pw@claude.ai/client.json",
-      "https://claude.ai/",
-      "https://claude.ai.evil.example/client.json",
-      "https://169.254.169.254/latest/meta-data",
-      "ftp://claude.ai/x",
-      "nao-url",
-    ]) {
-      await expect(fetchCimd(u, ["claude.ai"], f)).rejects.toBeInstanceOf(CimdError);
-    }
+    const cases: Array<[string, string]> = [
+      ["https://claude.ai/x?y=1", "url"],
+      ["https://CLAUDE.ai/oauth/client.json", "not_canonical"],
+      ["https://claude.ai/a/../b", "not_canonical"],
+      ["https://claude.ai/%2e%2e/x", "not_canonical"],
+      ["https://claude.ai:443/oauth/client.json", "not_canonical"],
+      ["https://127.0.0.1/oauth/client.json", "ip_host"],
+      ["https://[::1]/x", "ip_host"],
+      ["https://claude.ai./oauth/client.json", "ip_host"],
+      [`https://claude.ai/${"a".repeat(513)}`, "url"],
+      ["http://claude.ai/oauth/client.json", "scheme"],
+      ["https://user:pw@claude.ai/oauth/client.json", "url"],
+      ["https://claude.ai/oauth/client.json#f", "url"],
+      ["https://claude.ai.evil.example/oauth/client.json", "not_allowed"],
+      ["ftp://claude.ai/x", "scheme"],
+      ["nao-url", "url"],
+    ];
+    for (const [u, why] of cases) expect(await reason(fetchCimd(u, ALLOW, f)), u).toBe(why);
     expect(calls).toBe(0);
-    expect(() => assertCimdUrl(URL_OK, ["claude.ai"])).not.toThrow();
   });
 
-  it("redirecionamento 3xx, status != 200, content-type errado, corpo > 5 KB, JSON/esquema inválido", async () => {
-    const cases: Array<[string, () => Response | Promise<Response>]> = [
+  it("lista vazia: nenhum cliente CIMD é aceito", async () => {
+    expect(await reason(() => assertCimdUrl(URL_OK, []))).toBe("not_allowed");
+  });
+
+  it("falhas de busca: 3xx, status, content-type, tamanho, JSON, esquema, client_id, método, redirect_uris", async () => {
+    const cases: Array<[string, string, () => Response | Promise<Response>]> = [
       [
+        "redirect",
         "3xx",
         () => new Response(null, { status: 302, headers: { location: "http://169.254.169.254/" } }),
       ],
-      ["404", () => new Response("x", { status: 404 })],
+      ["status", "404", () => new Response("x", { status: 404 })],
       [
         "content-type",
+        "text/html",
         () => new Response(JSON.stringify(doc), { headers: { "content-type": "text/html" } }),
       ],
-      ["6 KB", () => ok({ ...doc, client_name: "a".repeat(6000) })],
-      ["json", () => new Response("{nao", { headers: { "content-type": "application/json" } })],
-      ["schema", () => ok({ client_id: URL_OK })],
-      ["client_id diferente", () => ok({ ...doc, client_id: "https://claude.ai/outro.json" })],
-      ["private_key_jwt", () => ok({ ...doc, token_endpoint_auth_method: "private_key_jwt" })],
-      ["redirect http público", () => ok({ ...doc, redirect_uris: ["http://evil.com/cb"] })],
+      ["size", "6 KB", () => ok({ ...doc, client_name: "a".repeat(6000) })],
+      [
+        "json",
+        "json",
+        () => new Response("{nao", { headers: { "content-type": "application/json" } }),
+      ],
+      ["schema", "schema", () => ok({ client_id: URL_OK })],
+      [
+        "client_id",
+        "client_id diferente",
+        () => ok({ ...doc, client_id: "https://claude.ai/outro.json" }),
+      ],
+      [
+        "auth_method",
+        "private_key_jwt",
+        () => ok({ ...doc, token_endpoint_auth_method: "private_key_jwt" }),
+      ],
+      [
+        "redirect_uris",
+        "outro host",
+        () => ok({ ...doc, redirect_uris: ["https://evil.example/cb"] }),
+      ],
+      [
+        "redirect_uris",
+        "loopback",
+        () => ok({ ...doc, redirect_uris: ["http://127.0.0.1:5000/cb"] }),
+      ],
+      ["redirect_uris", "http", () => ok({ ...doc, redirect_uris: ["http://claude.ai/cb"] })],
     ];
-    for (const [name, make] of cases) {
-      await expect(
-        fetchCimd(URL_OK, ["claude.ai"], async () => make()),
-        name,
-      ).rejects.toBeInstanceOf(CimdError);
+    for (const [why, name, make] of cases) {
+      expect(await reason(fetchCimd(URL_OK, ALLOW, async () => make())), name).toBe(why);
     }
   });
 
-  it("falha de rede e timeout viram CimdError e a chamada leva redirect manual + sinal de timeout", async () => {
+  it("corpo de 6 KB em chunks sem content-length => size e o leitor é cancelado", async () => {
+    let cancelled = false;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(c) {
+        c.enqueue(new Uint8Array(1024).fill(32));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const res = new Response(stream, {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+    expect(await reason(fetchCimd(URL_OK, ALLOW, async () => res))).toBe("size");
+    expect(cancelled).toBe(true);
+  });
+
+  it("content-length mentindo (10) com corpo de 6 KB => size", async () => {
+    const body = JSON.stringify({ ...doc, client_name: "a".repeat(6000) });
+    const res = new Response(body, {
+      status: 200,
+      headers: { "content-type": "application/json", "content-length": "10" },
+    });
+    expect(await reason(fetchCimd(URL_OK, ALLOW, async () => res))).toBe("size");
+  });
+
+  it("content-type com charset é aceito (tipo base application/json)", async () => {
+    const res = new Response(JSON.stringify(doc), {
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+    await expect(fetchCimd(URL_OK, ALLOW, async () => res)).resolves.toBeTruthy();
+  });
+
+  it("DNS resolvendo para endereço privado/loopback/link-local => ssrf, sem chamar fetch", async () => {
+    let calls = 0;
+    for (const addr of [
+      "10.0.0.5",
+      "127.0.0.1",
+      "169.254.169.254",
+      "192.168.1.1",
+      "172.16.0.9",
+      "100.64.0.1",
+      "0.0.0.0",
+      "::1",
+      "fd00::1",
+      "fe80::1",
+      "::ffff:10.0.0.1",
+    ]) {
+      setCimdDnsLookup(async () => [{ address: addr }]);
+      expect(
+        await reason(
+          fetchCimd(URL_OK, ALLOW, async () => {
+            calls++;
+            return ok();
+          }),
+        ),
+        addr,
+      ).toBe("ssrf");
+    }
+    expect(calls).toBe(0);
+  });
+
+  it("atraso acima de 5 s => fetch (timeout cobre o pedido)", async () => {
+    const f = (_u: string, init: RequestInit) =>
+      new Promise<Response>((_res, rej) => {
+        if (init.signal?.aborted) rej(new Error("abort"));
+        init.signal?.addEventListener("abort", () => rej(new Error("abort")));
+      });
+    // o relógio interno de AbortSignal.timeout não é simulável: força o sinal já disparado
+    const spy = vi.spyOn(AbortSignal, "timeout").mockImplementation(() => AbortSignal.abort());
+    try {
+      expect(await reason(fetchCimd(URL_OK, ALLOW, f))).toBe("fetch");
+      expect(spy).toHaveBeenCalledWith(5000);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("falha de rede vira CimdError e a chamada leva redirect manual + sinal de timeout", async () => {
     let init: RequestInit | undefined;
     await expect(
-      fetchCimd(URL_OK, ["claude.ai"], async (_u, i) => {
+      fetchCimd(URL_OK, ALLOW, async (_u, i) => {
         init = i;
-        throw new Error("timeout");
+        throw new Error("falhou");
       }),
     ).rejects.toBeInstanceOf(CimdError);
     expect(init?.redirect).toBe("manual");
     expect(init?.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("isCimdRedirectUri: https no mesmo host; recusa outro host, loopback, credenciais, fragmento", () => {
+    expect(isCimdRedirectUri("https://claude.ai/api/mcp/auth_callback", "claude.ai")).toBe(true);
+    expect(isCimdRedirectUri("https://evil.example/cb", "claude.ai")).toBe(false);
+    expect(isCimdRedirectUri("http://localhost/callback", "claude.ai")).toBe(false);
+    expect(isCimdRedirectUri("https://u:p@claude.ai/cb", "claude.ai")).toBe(false);
+    expect(isCimdRedirectUri("https://claude.ai/cb#x", "claude.ai")).toBe(false);
+  });
+
+  it("lista de URLs permitidas vem de MCP_CIMD_ALLOWED_CLIENT_IDS (vazia por padrão)", () => {
+    expect(cimdAllowedClientIds({})).toEqual([]);
+    expect(
+      cimdAllowedClientIds({
+        MCP_CIMD_ALLOWED_CLIENT_IDS: " https://a.test/x.json , https://b.test/y.json ",
+      }),
+    ).toEqual(["https://a.test/x.json", "https://b.test/y.json"]);
   });
 
   it("nome do cliente é saneado (NFKC, controles e direção removidos, ≤ 80)", () => {
@@ -206,13 +356,6 @@ describe("EN-006a configuração e metadados", () => {
     expect(mcpEnabled({ MCP_ENABLED: "true" })).toBe(true);
     expect(mcpEnabled({ MCP_ENABLED: "true", VERCEL_ENV: "preview" })).toBe(false);
     expect(mcpEnabled({ MCP_ENABLED: "true", VERCEL_ENV: "production" })).toBe(true);
-  });
-  it("hosts do CIMD: padrão claude.ai", () => {
-    expect(cimdAllowedHosts({})).toEqual(["claude.ai"]);
-    expect(cimdAllowedHosts({ MCP_CIMD_ALLOWED_HOSTS: "Claude.ai, chatgpt.com" })).toEqual([
-      "claude.ai",
-      "chatgpt.com",
-    ]);
   });
   it("produção com MCP_ENABLED e APP_URL http => o boot falha (matriz)", () => {
     const base = { DATABASE_URL: "postgresql://x", AUTH_SECRET: "s", NODE_ENV: "production" };

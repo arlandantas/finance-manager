@@ -8,6 +8,7 @@ import { POST as decisionPOST } from "@/app/api/oauth/authorize/decision/route";
 import { POST as revokePOST } from "@/app/api/oauth/revoke/route";
 import { POST as tokenPOST } from "@/app/api/oauth/token/route";
 import { GET as authorizeGET } from "@/app/oauth/authorize/route";
+import { setCimdDnsLookup } from "@/modules/mcp/cimd";
 import type { Caller } from "./call";
 
 // SDD-024 §8: cliente MCP de TESTE. Roda o fluxo OAuth inteiro EM PROCESSO (Route Handlers reais, `Request`
@@ -20,7 +21,8 @@ export const REDIRECT_URI = "https://claude.ai/api/mcp/auth_callback";
 
 export function useMcpEnv() {
   process.env.MCP_ENABLED = "true";
-  process.env.MCP_CIMD_ALLOWED_HOSTS = "claude.ai";
+  process.env.MCP_CIMD_ALLOWED_CLIENT_IDS = CIMD_URL;
+  setCimdDnsLookup(async () => [{ address: "160.79.104.10" }]);
   process.env.APP_URL = ORIGIN;
   delete process.env.VERCEL_ENV;
 }
@@ -39,7 +41,7 @@ export function stubCimd(
       JSON.stringify({
         client_id: CIMD_URL,
         client_name: "Claude (teste)",
-        redirect_uris: [REDIRECT_URI, "http://localhost/callback"],
+        redirect_uris: [REDIRECT_URI],
         token_endpoint_auth_method: "none",
         ...doc,
       }),

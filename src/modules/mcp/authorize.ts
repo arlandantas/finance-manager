@@ -5,13 +5,19 @@ import type { Clock } from "@/lib/clock";
 import { sha256Hex } from "@/lib/ids";
 import { uuidSchema } from "@/lib/schemas";
 import { recordAudit } from "@/modules/mcp/audit";
-import { CimdError, type FetchImpl, fetchCimd } from "@/modules/mcp/cimd";
+import {
+  assertCimdUrl,
+  CimdError,
+  type FetchImpl,
+  fetchCimd,
+  isCimdRedirectUri,
+} from "@/modules/mcp/cimd";
 import {
   AUTH_REQUEST_TTL_S,
   CIMD_CACHE_MS,
   CODE_TTL_S,
   canonicalResource,
-  cimdAllowedHosts,
+  cimdAllowedClientIds,
   issuerOf,
   RATE,
   SUPPORTED_SCOPES,
@@ -62,6 +68,15 @@ function normalizeResource(r: string): string {
   return r.replace(/\/+$/, "");
 }
 
+function cimdStillValid(c: { clientId: string; redirectUris: string[] }, allowed: string[]) {
+  try {
+    const host = assertCimdUrl(c.clientId, allowed).hostname;
+    return c.redirectUris.length > 0 && c.redirectUris.every((r) => isCimdRedirectUri(r, host));
+  } catch {
+    return false;
+  }
+}
+
 /** Resolve o cliente: CIMD (URL https) com cache de 24 h em `mcp_clients`, senão DCR já registrado. */
 export async function resolveClient(
   db: Pick<PrismaClient, "mcpClient">,
@@ -72,15 +87,17 @@ export async function resolveClient(
   const env = opts.env ?? process.env;
   if (/^https?:\/\//i.test(clientId)) {
     const cached = await db.mcpClient.findUnique({ where: { clientId } });
+    const allowed = cimdAllowedClientIds(env);
     if (
       cached?.kind === "CIMD" &&
       cached.metadataFetchedAt &&
       now.getTime() - cached.metadataFetchedAt.getTime() < CIMD_CACHE_MS
     ) {
-      return cached;
+      // SEC-010: o cliente gravado é revalidado contra as regras atuais a cada uso (inclusive o cache)
+      return cimdStillValid(cached, allowed) ? cached : null;
     }
     try {
-      const doc = await fetchCimd(clientId, cimdAllowedHosts(env), opts.fetchImpl);
+      const doc = await fetchCimd(clientId, allowed, opts.fetchImpl);
       return await db.mcpClient.upsert({
         where: { clientId },
         create: {
@@ -132,7 +149,12 @@ export async function validateAuthorize(
   // 1) cliente e redirect_uri primeiro; falha => página de erro, nunca redirecionamento
   const client = await resolveClient(db, q.client_id, now, opts);
   if (!client) return { kind: "error-page", reason: "unknown_client" };
-  if (!client.redirectUris.some((r) => redirectUriMatches(r, q.redirect_uri))) {
+  // CIMD: igualdade exata de string (sem exceção de loopback); DCR segue redirectUriMatches
+  const redirectOk =
+    client.kind === "CIMD"
+      ? client.redirectUris.includes(q.redirect_uri)
+      : client.redirectUris.some((r) => redirectUriMatches(r, q.redirect_uri));
+  if (!redirectOk) {
     return { kind: "error-page", reason: "bad_redirect" };
   }
   const fail = (error: string, description: string): AuthorizeOutcome => ({
