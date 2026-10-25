@@ -72,7 +72,10 @@ export async function deleteFamily(tx: Tx, ctx: RequestContext, body: DeleteFami
   });
   await tx.$executeRaw`DELETE FROM idempotency_records
     WHERE "userId" = ANY(${members.map((m) => m.userId)}::uuid[]) AND "responseStatus" <> 0`; // 0 = a reserva desta requisição
-  await scrubIdempotencyMentioning(tx, [ctx.familyId, family.name, ...members.map((m) => m.id)]);
+  // SEC-039: só ids únicos (família e membros); o nome da família é texto livre e não é procurado em outras famílias
+  await scrubIdempotencyMentioning(tx, {
+    identifiers: [ctx.familyId, ...members.map((m) => m.id)],
+  });
 
   // Liga a exceção controlada às travas SÓ para esta família e só nesta transação (set_config local).
   await tx.$executeRaw`SELECT set_config('app.purge_family', ${ctx.familyId}, true)`;

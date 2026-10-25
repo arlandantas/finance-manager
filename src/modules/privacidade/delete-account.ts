@@ -24,23 +24,56 @@ export const DeleteAccountBodySchema = RemoveMemberSchema.extend({
 export type DeleteAccountBody = z.output<typeof DeleteAccountBodySchema>;
 
 /**
- * Apaga os registros de idempotência do titular (guardam hash do corpo de requisições dele) E os de OUTRAS pessoas
- * cuja resposta guardada cita o titular (ids, e-mail ou nome). SEC-031: a janela de 24 h não vale para PII de excluídos.
+ * Apaga os registros de idempotência do titular (guardam hash do corpo de requisições dele) E as respostas guardadas
+ * de OUTRAS pessoas que citam o titular. SEC-031: a janela de 24 h não vale para PII de excluídos.
+ * SEC-039: o alcance é decidido por colunas próprias, nunca por trecho de texto em toda a tabela:
+ * - identificadores únicos (UUIDs do titular/membros e e-mail completo) valem em qualquer linha;
+ * - o NOME (texto livre, pode colidir com "Mariana", "banana") só é procurado nas linhas de quem compartilhou
+ *   alguma família com o titular (`userId` dos co-membros), nunca nas de outras famílias.
  */
-export async function scrubIdempotency(tx: Tx, userId: string, mentions: string[] = []) {
+export async function scrubIdempotency(
+  tx: Tx,
+  userId: string,
+  mentions: { identifiers?: string[]; names?: string[] } = {},
+) {
   await tx.$executeRaw`DELETE FROM idempotency_records WHERE "userId" = ${userId}::uuid`;
-  await scrubIdempotencyMentioning(tx, mentions);
+  const coMembers = await tx.$queryRaw<Array<{ userId: string }>>`
+    SELECT DISTINCT "userId"::text AS "userId" FROM members
+    WHERE "familyId" IN (SELECT "familyId" FROM members WHERE "userId" = ${userId}::uuid)
+      AND "userId" <> ${userId}::uuid`;
+  await scrubIdempotencyMentioning(tx, {
+    identifiers: mentions.identifiers,
+    names: mentions.names,
+    scopeUserIds: coMembers.map((m) => m.userId),
+  });
 }
 
-/** Apaga respostas guardadas (de qualquer usuário) que contenham algum dos trechos, sem diferenciar caixa. */
-export async function scrubIdempotencyMentioning(tx: Tx, needles: string[]) {
-  const list = [
-    ...new Set(needles.map((n) => n.trim().toLowerCase()).filter((n) => n.length >= 3)),
-  ];
-  if (list.length === 0) return;
-  await tx.$executeRaw`DELETE FROM idempotency_records
-    WHERE "responseStatus" <> 0 AND EXISTS (SELECT 1 FROM unnest(${list}::text[]) AS t(needle)
-                  WHERE position(t.needle in lower("responseBody"::text)) > 0)`;
+const normalizeNeedles = (list: string[] | undefined, min: number) => [
+  ...new Set((list ?? []).map((n) => n.trim().toLowerCase()).filter((n) => n.length >= min)),
+];
+
+/**
+ * Apaga respostas guardadas que citam identificadores (UUID/e-mail completos; qualquer usuário) ou nomes (só nas
+ * linhas de `scopeUserIds`), sem diferenciar caixa. Sem escopo, nome nenhum é procurado.
+ */
+export async function scrubIdempotencyMentioning(
+  tx: Tx,
+  opts: { identifiers?: string[]; names?: string[]; scopeUserIds?: string[] },
+) {
+  const ids = normalizeNeedles(opts.identifiers, 8);
+  if (ids.length > 0) {
+    await tx.$executeRaw`DELETE FROM idempotency_records
+      WHERE "responseStatus" <> 0 AND EXISTS (SELECT 1 FROM unnest(${ids}::text[]) AS t(needle)
+                    WHERE position(t.needle in lower("responseBody"::text)) > 0)`;
+  }
+  const names = normalizeNeedles(opts.names, 3);
+  const scope = opts.scopeUserIds ?? [];
+  if (names.length > 0 && scope.length > 0) {
+    await tx.$executeRaw`DELETE FROM idempotency_records
+      WHERE "responseStatus" <> 0 AND "userId" = ANY(${scope}::uuid[])
+        AND EXISTS (SELECT 1 FROM unnest(${names}::text[]) AS t(needle)
+                    WHERE position(t.needle in lower("responseBody"::text)) > 0)`;
+  }
 }
 
 /** Desliga o consentimento de IA que este titular deu e ainda está em vigor (um evento DISABLED por finalidade). */
@@ -143,7 +176,10 @@ export async function deleteAccount(tx: Tx, ctx: UserContext, body: DeleteAccoun
   await tx.session.deleteMany({ where: { userId: user.id } });
   await tx.account.deleteMany({ where: { userId: user.id } });
   await tx.verificationToken.deleteMany({ where: { identifier: user.email } });
-  await scrubIdempotency(tx, user.id, [user.id, user.email, user.name ?? "", ...memberIds]);
+  await scrubIdempotency(tx, user.id, {
+    identifiers: [user.id, user.email, ...memberIds],
+    names: [user.name ?? ""],
+  });
 
   // (4) o e-mail antigo some de convites encerrados e dos eventos de reenvio; convites PENDENTES ficam
   // (valem para a conta nova que a pessoa criar com o mesmo e-mail)
