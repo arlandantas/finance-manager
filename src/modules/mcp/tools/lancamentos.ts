@@ -11,6 +11,7 @@ import {
   READ_ANNOTATIONS,
   TEXT_IS_DATA,
 } from "@/modules/mcp/tools/common";
+import { UserTextSchema, userText } from "@/modules/mcp/tools/user-text";
 import { ListTransactionsQuerySchema } from "@/modules/transacoes/schemas";
 import { listTransactions } from "@/modules/transacoes/service";
 
@@ -61,11 +62,11 @@ const Output = z
             amount: MoneySchema,
             occurredOn: z.string(),
             competenceOn: z.string(),
-            description: z.string(),
-            category: z.string().nullable(),
-            account: z.string().nullable(),
-            card: z.string().nullable(),
-            payer: z.string().nullable(),
+            description: UserTextSchema,
+            category: UserTextSchema.nullable(),
+            account: UserTextSchema.nullable(),
+            card: UserTextSchema.nullable(),
+            payer: UserTextSchema.nullable(),
             isShared: z.boolean(),
             origin: z.enum(["APP", "ASSISTANT"]),
             installment: z
@@ -142,7 +143,7 @@ export const listarLancamentos: AnyTool = {
         amount: money(t.amountInCents),
         occurredOn: t.occurredOn,
         competenceOn: t.competenceOn,
-        description: t.description.slice(0, 100),
+        description: userText(t.description, 100),
         category: t.category ? name60(t.category.name) : null,
         account: t.account ? name60(t.account.name) : null,
         card: t.card ? name60(t.card.name) : null,

@@ -14,6 +14,7 @@ import {
   READ_ANNOTATIONS,
   TEXT_IS_DATA,
 } from "@/modules/mcp/tools/common";
+import { UserTextSchema } from "@/modules/mcp/tools/user-text";
 import { ensureRecurrenceHorizonStandalone } from "@/modules/previstas/recurring-service";
 import { expenseByCategory } from "@/modules/transacoes/category-totals";
 
@@ -27,7 +28,7 @@ const Output = z
       z
         .object({
           id: z.string(),
-          name: z.string(),
+          name: UserTextSchema,
           total: MoneySchema,
           count: z.number().int(),
           shareOfTotalPct: z.number(),
@@ -82,7 +83,11 @@ export const gastosPorCategoria: AnyTool = {
         count: 0,
       });
     }
-    rows.sort((a, b) => b.totalInCents - a.totalInCents || a.name.localeCompare(b.name, "pt-BR"));
+    rows.sort(
+      (a, b) =>
+        b.totalInCents - a.totalInCents ||
+        a.name.untrusted_text.localeCompare(b.name.untrusted_text, "pt-BR"),
+    );
     return {
       period: periodOut(summary.period),
       currency: "BRL" as const,

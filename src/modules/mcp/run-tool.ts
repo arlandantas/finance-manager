@@ -7,6 +7,7 @@ import { type AuditParams, recordAudit } from "@/modules/mcp/audit";
 import type { McpScope } from "@/modules/mcp/config";
 import type { McpContext } from "@/modules/mcp/context";
 import { hit } from "@/modules/mcp/rate-limit";
+import { attentionLine, DATA_PREAMBLE, scanUserText } from "@/modules/mcp/tools/user-text";
 
 // SDD-024 §5.3: execução de ferramenta. Escopo -> entrada -> limite próprio -> transação -> saída validada
 // (allowlist) -> auditoria ANTES de devolver. Nenhum erro interno vaza para o assistente.
@@ -154,10 +155,23 @@ export async function runTool(
       await audit("ERROR", { errorCode: "INTERNAL", params });
       return internal();
     }
+    // SEC-009: texto de pessoas vai marcado; o bloco lido pela LLM abre com o aviso de DADOS (+ linha de atenção)
+    const scan = scanUserText(output);
+    const text =
+      scan.total > 0
+        ? [
+            DATA_PREAMBLE,
+            ...(scan.flagged > 0 ? [attentionLine(scan.flagged)] : []),
+            JSON.stringify(output),
+          ].join("\n")
+        : JSON.stringify(output);
     // auditoria antes de devolver: se não for possível registrar, nada é devolvido
-    await audit("OK", { params, transactionId: def.transactionIdOf?.(output) ?? null });
+    await audit("OK", {
+      params: scan.total > 0 ? { ...params, flaggedCount: scan.flagged } : params,
+      transactionId: def.transactionIdOf?.(output) ?? null,
+    });
     return {
-      content: [{ type: "text", text: JSON.stringify(output) }],
+      content: [{ type: "text", text }],
       structuredContent: output as Record<string, unknown>,
     };
   } catch (e) {

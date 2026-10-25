@@ -11,6 +11,7 @@ import {
   READ_ANNOTATIONS,
   TEXT_IS_DATA,
 } from "@/modules/mcp/tools/common";
+import { UserTextSchema } from "@/modules/mcp/tools/user-text";
 import { listPayables } from "@/modules/previstas/payables";
 import { ensureRecurrenceHorizonStandalone } from "@/modules/previstas/recurring-service";
 
@@ -27,13 +28,13 @@ const Output = z
         z
           .object({
             kind: z.enum(["PLANNED", "INVOICE"]),
-            title: z.string(),
+            title: UserTextSchema,
             dueOn: z.string(),
             amount: MoneySchema,
             isOverdue: z.boolean(),
-            responsible: z.string().nullable(),
+            responsible: UserTextSchema.nullable(),
             isRecurring: z.boolean(),
-            payWith: z.string().nullable(),
+            payWith: UserTextSchema.nullable(),
           })
           .strict(),
       )

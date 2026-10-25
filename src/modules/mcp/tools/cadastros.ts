@@ -4,6 +4,7 @@ import { listCategories } from "@/modules/categorias/service";
 import { listAccounts } from "@/modules/contas/service";
 import type { AnyTool } from "@/modules/mcp/run-tool";
 import { memberName, name60, READ_ANNOTATIONS, TEXT_IS_DATA } from "@/modules/mcp/tools/common";
+import { UserTextSchema } from "@/modules/mcp/tools/user-text";
 
 // SDD-026 §2.1: para a LLM resolver "Nubank" e "Mercado" em ids.
 const Output = z
@@ -12,20 +13,27 @@ const Output = z
       z
         .object({
           id: z.string(),
-          name: z.string(),
-          institution: z.string(),
-          owner: z.string(),
+          name: UserTextSchema,
+          institution: UserTextSchema,
+          owner: UserTextSchema,
           isReserve: z.boolean(),
         })
         .strict(),
     ),
     cards: z.array(
       z
-        .object({ id: z.string(), name: z.string(), institution: z.string(), owner: z.string() })
+        .object({
+          id: z.string(),
+          name: UserTextSchema,
+          institution: UserTextSchema,
+          owner: UserTextSchema,
+        })
         .strict(),
     ),
     categories: z.array(
-      z.object({ id: z.string(), name: z.string(), kind: z.enum(["EXPENSE", "INCOME"]) }).strict(),
+      z
+        .object({ id: z.string(), name: UserTextSchema, kind: z.enum(["EXPENSE", "INCOME"]) })
+        .strict(),
     ),
   })
   .strict();

@@ -20,6 +20,7 @@ import {
 import { type McpContext, publicAuthMessage, resolveMcpContext } from "@/modules/mcp/context";
 import { hit } from "@/modules/mcp/rate-limit";
 import { type AnyTool, runTool, scopeAllows, scopeDeniedResult } from "@/modules/mcp/run-tool";
+import { TEXT_IS_DATA_INSTRUCTIONS } from "@/modules/mcp/tools/user-text";
 
 // SDD-024 §5.1 (+ §11): POST /api/mcp, stateless, nas duas eras do protocolo (2025-11-25 e 2026-07-28).
 type Env = Record<string, string | undefined>;
@@ -157,7 +158,10 @@ export async function handleMcp(req: Request, deps: McpDeps): Promise<Response> 
 
   const www = wwwAuth(env, `error="insufficient_scope", `);
   const factory = () => {
-    const server = new McpServer({ name: "financas-familia", version: "0.1.0" });
+    const server = new McpServer(
+      { name: "financas-familia", version: "0.1.0" },
+      { instructions: TEXT_IS_DATA_INSTRUCTIONS },
+    );
     for (const def of deps.tools) {
       if (!scopeAllows(ctx, def.scope)) continue; // tools/list só mostra o que a conexão pode chamar
       server.registerTool(

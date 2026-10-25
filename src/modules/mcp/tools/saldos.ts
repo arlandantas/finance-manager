@@ -10,6 +10,7 @@ import {
   READ_ANNOTATIONS,
   TEXT_IS_DATA,
 } from "@/modules/mcp/tools/common";
+import { UserTextSchema } from "@/modules/mcp/tools/user-text";
 
 // SDD-026 §2.2: mesmo serviço da tela Contas e da Home (saldo disponível x reservas).
 const Output = z
@@ -20,9 +21,9 @@ const Output = z
       z
         .object({
           id: z.string(),
-          name: z.string(),
-          institution: z.string(),
-          owner: z.string(),
+          name: UserTextSchema,
+          institution: UserTextSchema,
+          owner: UserTextSchema,
           type: z.string(),
           balance: MoneySchema,
           isReserve: z.boolean(),

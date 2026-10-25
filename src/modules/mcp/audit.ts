@@ -14,6 +14,7 @@ export const AUDIT_PARAM_KEYS = [
   "limit",
   "cardId",
   "origin",
+  "flaggedCount", // SEC-009: só o número de textos marcados, nunca o texto
   "proposalId",
   // alteração de limites (LIMITS_CHANGED): campo e valores (configuração do membro; "none" = sem limite)
   "field",

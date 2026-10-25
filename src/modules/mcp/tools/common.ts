@@ -2,6 +2,7 @@ import { z } from "zod";
 import { formatBRL } from "@/lib/money";
 import { periodKeySchema } from "@/lib/schemas";
 import { shortMonthLabel } from "@/modules/analise-ia/labels";
+import { type UserText, userText } from "@/modules/mcp/tools/user-text";
 
 // SDD-026 §1: regras transversais das ferramentas de leitura. Nada aqui acessa o banco: as ferramentas
 // chamam os MESMOS serviços das telas (RN-025.7) e só TRADUZEM o DTO interno para uma saída fechada.
@@ -42,9 +43,9 @@ export const READ_ANNOTATIONS = {
   openWorldHint: false,
 } as const;
 
-/** Nomes curtos e previsíveis na saída (tamanho máximo por construção, SDD-026 §1). */
-export const name60 = (s: string) => (s.length > 60 ? `${s.slice(0, 59)}…` : s);
+/** Nome curto (≤ 60) como DADO não confiável: envelope `{ untrusted_text, flagged }` (SEC-009). */
+export const name60 = (s: string): UserText => userText(s, 60);
 
-/** Nome curto do membro; ex-membro: "ex-membro {nome}" (ADR-019), como nas telas. */
-export const memberName = (m: { name: string; removed?: true | undefined }) =>
-  name60(m.removed ? `ex-membro ${m.name}` : m.name);
+/** Nome curto do membro; ex-membro: "ex-membro {nome}" (ADR-019), como nas telas. Também é texto não confiável. */
+export const memberName = (m: { name: string; removed?: true | undefined }): UserText =>
+  userText(m.removed ? `ex-membro ${m.name}` : m.name, 60);

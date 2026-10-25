@@ -10,6 +10,7 @@ import {
   READ_ANNOTATIONS,
   TEXT_IS_DATA,
 } from "@/modules/mcp/tools/common";
+import { UserTextSchema } from "@/modules/mcp/tools/user-text";
 
 // SDD-026 §2.5: fatura aberta, vencimento e limite (mesmo serviço da tela Cartões).
 const Output = z
@@ -19,9 +20,9 @@ const Output = z
       z
         .object({
           id: z.string(),
-          name: z.string(),
-          institution: z.string(),
-          owner: z.string(),
+          name: UserTextSchema,
+          institution: UserTextSchema,
+          owner: UserTextSchema,
           limit: MoneySchema,
           used: MoneySchema,
           available: MoneySchema,
