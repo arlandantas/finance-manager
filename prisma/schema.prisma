@@ -25,6 +25,7 @@ enum InvitationStatus {
   ACCEPTED
   CANCELED
   EXPIRED
+  DECLINED // SEC-004: o convidado recusou
 }
 
 enum EmailStatus {
@@ -216,6 +217,7 @@ enum FamilyEventType {
   INVITATION_RESENT
   AI_CONSENT_CHANGED // EN-005
   ASSISTANT_ACCESS_CHANGED // US-074
+  MEMBER_JOINED // SEC-004: entrou por convite (aceite explícito)
 }
 
 // Trilha append-only de eventos da família (trigger forbid_mutation em SQL cru)
@@ -293,6 +295,8 @@ model Invitation {
   acceptedAt        DateTime?        @db.Timestamptz(3)
   acceptedByUserId  String?          @db.Uuid
   canceledAt        DateTime?        @db.Timestamptz(3)
+  declinedAt        DateTime?        @db.Timestamptz(3) // SEC-004
+  declinedByUserId  String?          @db.Uuid
   resendCount       Int              @default(0) // 0..3 (CHECK em SQL cru)
   lastSentAt        DateTime?        @db.Timestamptz(3)
 

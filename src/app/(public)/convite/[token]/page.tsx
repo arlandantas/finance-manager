@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { switchAccountAction } from "@/app/actions";
+import { InvitationCard } from "@/components/invitation-card";
+import { Providers } from "@/components/providers";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/require-session";
 import { getClock } from "@/lib/clock";
-import { acceptPendingInvitation, previewInvitation } from "@/modules/familia/invitations/service";
+import { previewInvitation } from "@/modules/familia/invitations/service";
 import { LoginOptions } from "../../login-options";
 
 export const dynamic = "force-dynamic";
@@ -41,14 +42,6 @@ export default async function ConvitePage({ params }: { params: Promise<{ token:
   const clock = getClock();
   const preview = await previewInvitation(token, session ? { email: session.email } : null, clock);
 
-  if (preview.state === "READY" && session) {
-    const result = await acceptPendingInvitation(
-      { id: session.userId, email: session.email, emailVerified: session.emailVerified },
-      clock,
-    );
-    redirect(result.status === "JOINED" ? "/?joined=1" : "/");
-  }
-
   switch (preview.state) {
     case "INVALID":
       return (
@@ -66,6 +59,26 @@ export default async function ConvitePage({ params }: { params: Promise<{ token:
       return (
         <Shell title="Este convite já foi usado.">
           <HomeLink />
+        </Shell>
+      );
+    case "READY":
+      // SEC-004: abrir o link NÃO vincula. Mostra o cartão e o vínculo só ocorre ao tocar em Entrar.
+      return (
+        <Shell title="Você foi convidado">
+          <Providers>
+            <ul className="flex flex-col gap-3">
+              <InvitationCard
+                token={token}
+                invitation={{
+                  id: preview.id,
+                  familyName: preview.familyName,
+                  inviterName: preview.inviterName,
+                  role: preview.role,
+                  expiresAt: preview.expiresAt,
+                }}
+              />
+            </ul>
+          </Providers>
         </Shell>
       );
     case "NEEDS_LOGIN":

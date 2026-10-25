@@ -4,6 +4,7 @@ import { call } from "../support/call";
 import { resetDb, testDb } from "../support/db";
 import {
   type AccountFixture,
+  asUser,
   type FamilyFixture,
   makeAccount,
   makeFamily,
@@ -233,16 +234,12 @@ describe("US-035a remover membro", () => {
       }),
     );
     expect(inv.status).toBe(201);
-    const { acceptPendingInvitation } = await import("@/modules/familia/invitations/service");
-    const { getClock } = await import("@/lib/clock");
     const user = await db.user.findUniqueOrThrow({ where: { email: "lucas@exemplo.com" } });
-    const res = await withClock(NOW, () =>
-      acceptPendingInvitation(
-        { id: user.id, email: user.email, emailVerified: new Date(NOW) },
-        getClock(),
-      ),
+    const lucasAs = await asUser("lucas@exemplo.com", { name: "Lucas Silva" });
+    const res = await at(() =>
+      call(lucasAs, "POST", `/api/v1/me/invitations/${inv.body.invitation.id}/accept`, {}),
     );
-    expect(res.status).toBe("JOINED");
+    expect(res.status).toBe(200);
     const members = await db.member.findMany({
       where: { userId: user.id },
       orderBy: { joinedAt: "asc" },

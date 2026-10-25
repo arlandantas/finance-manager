@@ -87,6 +87,113 @@ When("Lucas entra com o Google usando {string}", async ({ page }, email: string)
   await gotoReady(page, "/");
 });
 
+Given("que Lucas entrou com o Google e vê o convite", async ({ page }) => {
+  await loginAs(page, { email: "lucas@exemplo.com", name: "Lucas Silva" });
+  await gotoReady(page, "/");
+  await expect(page).toHaveURL(/\/convites$/);
+});
+
+Then("vê os botões {string} e {string}", async ({ page }, a: string, b: string) => {
+  await expect(page.getByRole("button", { name: a })).toBeVisible();
+  await expect(page.getByRole("button", { name: b, exact: true })).toBeVisible();
+});
+
+Then("não é vinculado a nenhuma família ainda", async () => {
+  const user = await db.user.findUniqueOrThrow({ where: { email: "lucas@exemplo.com" } });
+  expect(await db.member.count({ where: { userId: user.id } })).toBe(0);
+});
+
+Given("que o convite foi cancelado por Mariana", async () => {
+  await db.invitation.updateMany({ data: { status: "CANCELED", canceledAt: new Date() } });
+});
+
+When("Lucas aciona {string}", async ({ page }, botao: string) => {
+  const done = page.waitForResponse((r) =>
+    /\/me\/invitations\/.+\/(accept|decline)$/.test(r.url()),
+  );
+  await page.getByRole("button", { name: botao, exact: true }).click();
+  await done;
+});
+
+When("Lucas recusa pelo botão {string}", async ({ page }, botao: string) => {
+  await page.getByRole("button", { name: botao, exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("Quem convidou verá que você recusou.");
+  const done = page.waitForResponse((r) => r.url().endsWith("/decline"));
+  await dialog.getByRole("button", { name: "Recusar convite" }).click();
+  await done;
+});
+
+Then("Lucas não é vinculado a nenhuma família", async () => {
+  const user = await db.user.findUniqueOrThrow({ where: { email: "lucas@exemplo.com" } });
+  expect(await db.member.count({ where: { userId: user.id } })).toBe(0);
+});
+
+Then("Lucas segue para criar a própria família", async ({ page }) => {
+  await expect(page).toHaveURL(/\/onboarding/);
+  await expect(page.getByRole("heading", { name: "Crie sua família" })).toBeVisible();
+});
+
+Given(
+  "que existem convites pendentes para {string} da {string} e da {string}",
+  async ({ world }, email: string, a: string, b: string) => {
+    world.family = await makeFamily({ name: a, members: ADMIN_ONLY });
+    await makeInvitation(world.family, { email });
+    const other = await makeFamily({
+      name: b,
+      members: [{ email: "carlos@exemplo.com", name: "Carlos Souza", role: "ADMIN" }],
+    });
+    await makeInvitation(other, { email });
+  },
+);
+
+Then(
+  "vê um cartão para a {string} e outro para a {string}",
+  async ({ page }, a: string, b: string) => {
+    await expect(page.getByTestId("invitation-card")).toHaveCount(2);
+    await expect(page.getByTestId("invitation-card").filter({ hasText: a })).toHaveCount(1);
+    await expect(page.getByTestId("invitation-card").filter({ hasText: b })).toHaveCount(1);
+  },
+);
+
+Given(
+  "que Lucas já faz parte da {string} e tem um convite da {string}",
+  async ({ world }, souza: string, silva: string) => {
+    world.family = await makeFamily({ name: silva, members: ADMIN_ONLY });
+    const inv = await makeInvitation(world.family, { email: "lucas@exemplo.com" });
+    world.data.token = inv.token;
+    await makeFamily({
+      name: souza,
+      members: [
+        { email: "carlos@exemplo.com", name: "Carlos Souza", role: "ADMIN" },
+        { email: "lucas@exemplo.com", name: "Lucas Silva", role: "MEMBER" },
+      ],
+    });
+  },
+);
+
+When("Lucas abre o link do convite e toca em {string}", async ({ page, world }, botao: string) => {
+  await loginAs(page, { email: "lucas@exemplo.com", name: "Lucas Silva" });
+  await gotoReady(page, `/convite/${world.data.token as string}`);
+  const done = page.waitForResponse((r) => r.url().endsWith("/accept"));
+  await page.getByRole("button", { name: botao, exact: true }).click();
+  await done;
+});
+
+Then("o convite da {string} continua pendente", async ({ world }, nome: string) => {
+  const inv = await db.invitation.findFirstOrThrow({ where: { family: { name: nome } } });
+  expect(inv.status).toBe("PENDING");
+  void world;
+});
+
+When(
+  "Lucas abre o link do convite com a conta Google de {string}",
+  async ({ page, world }, email: string) => {
+    await loginAs(page, { email, name: "Lucas Silva" });
+    await gotoReady(page, `/convite/${world.data.token as string}`);
+  },
+);
+
 Then("ele é vinculado à {string} com o papel do convite", async ({}, nome: string) => {
   const user = await db.user.findUniqueOrThrow({ where: { email: "lucas@exemplo.com" } });
   const member = await db.member.findFirstOrThrow({
@@ -98,9 +205,16 @@ Then("ele é vinculado à {string} com o papel do convite", async ({}, nome: str
 });
 
 Then("o convite passa a {string}", async ({}, estado: string) => {
-  const inv = await db.invitation.findFirstOrThrow();
-  expect(inv.status).toBe(estado === "aceito" ? "ACCEPTED" : estado);
-  expect(inv.acceptedAt).not.toBeNull();
+  const inv = await db.invitation.findFirstOrThrow({
+    where: { family: { name: "Família Silva" } },
+  });
+  if (estado === "aceito") {
+    expect(inv.status).toBe("ACCEPTED");
+    expect(inv.acceptedAt).not.toBeNull();
+  } else {
+    expect(inv.status).toBe("DECLINED");
+    expect(inv.declinedAt).not.toBeNull();
+  }
 });
 
 Then("ele vê a mensagem {string}", async ({ page }, mensagem: string) => {

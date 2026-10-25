@@ -87,7 +87,7 @@ export type InvitationDTO = {
   id: string;
   email: string;
   role: Role;
-  status: "PENDING" | "ACCEPTED" | "CANCELED" | "EXPIRED";
+  status: "PENDING" | "ACCEPTED" | "CANCELED" | "EXPIRED" | "DECLINED";
   expiresAt: string;
   isExpired: boolean;
   createdAt: string;
@@ -111,7 +111,8 @@ export type FamilyEventDTO = {
     | "MEMBER_LEFT"
     | "INVITATION_RESENT"
     | "AI_CONSENT_CHANGED"
-    | "ASSISTANT_ACCESS_CHANGED";
+    | "ASSISTANT_ACCESS_CHANGED"
+    | "MEMBER_JOINED";
   actor: { id: string; name: string };
   target: { id: string; name: string } | null;
   changes: Record<string, unknown>;
@@ -126,6 +127,7 @@ export type FamilyDTO = {
   exMembers: Array<{ id: string; name: string; image: string | null; removedAt: string }>; // histórico (sem e-mail)
   events: FamilyEventDTO[]; // últimos 20 (trilha simples: autor e data)
   pendingInvitations: InvitationDTO[]; // [] para quem não é ADMIN
+  declinedInvitations: InvitationDTO[]; // SEC-004: recusas dos últimos 30 dias ([] para quem não é ADMIN)
 };
 
 export type CreateFamilyResponse = {

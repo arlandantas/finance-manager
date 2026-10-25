@@ -292,6 +292,8 @@ describe("EN-006 proxy: matcher (SDD-024 §8)", () => {
     ["/contas", true],
     ["/", true],
     ["/login", false],
+    ["/convites", true],
+    ["/convite/abc123", false],
   ])("%s intercepta=%s", (path, intercepted) => {
     expect(re.test(path)).toBe(intercepted);
   });

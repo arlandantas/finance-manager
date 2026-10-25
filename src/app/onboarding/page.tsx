@@ -11,12 +11,12 @@ export const dynamic = "force-dynamic";
 export default async function OnboardingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ notice?: string; left?: string }>;
+  searchParams: Promise<{ notice?: string; left?: string; skip_invites?: string }>;
 }) {
   const user = await requireSession();
   const entry = await resolveOnboardingEntry(user);
   if (entry.redirectTo) redirect(entry.redirectTo);
-  const { notice, left } = await searchParams;
+  const { notice, left, skip_invites: skipInvites } = await searchParams;
   const displayName = user.name ?? user.email.split("@")[0] ?? user.email;
   return (
     <Providers>
@@ -24,6 +24,7 @@ export default async function OnboardingPage({
         userName={displayName}
         userImage={user.image}
         suggestedName={suggestFamilyName(user.name)}
+        pendingInvites={skipInvites === "1" ? 0 : entry.pendingInvites}
         notice={
           notice === "invite_expired" || entry.expiredInvite
             ? "Convite expirado. Peça um novo convite."

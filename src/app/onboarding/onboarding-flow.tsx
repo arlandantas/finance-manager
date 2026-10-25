@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -21,9 +22,17 @@ type Props = {
   userImage: string | null;
   suggestedName: string;
   notice: string | null;
+  /** SEC-004: convites válidos para o e-mail (a pessoa os vê em /convites; nada vincula sozinho). */
+  pendingInvites?: number;
 };
 
-export function OnboardingFlow({ userName, userImage, suggestedName, notice }: Props) {
+export function OnboardingFlow({
+  userName,
+  userImage,
+  suggestedName,
+  notice,
+  pendingInvites = 0,
+}: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [created, setCreated] = useState<CreateFamilyResponse | null>(null);
@@ -118,6 +127,19 @@ export function OnboardingFlow({ userName, userImage, suggestedName, notice }: P
       <h1 className="mb-1 text-2xl font-bold text-slate-900">Crie sua família</h1>
       <p className="mb-6 text-slate-600">Só precisamos de um nome para começar.</p>
 
+      {pendingInvites > 0 ? (
+        <p
+          role="status"
+          data-testid="pending-invites-card"
+          className="mb-4 rounded-lg border border-brand-100 bg-brand-50 p-3 text-sm text-brand-800 dark:text-emerald-300"
+        >
+          Você tem {pendingInvites}{" "}
+          {pendingInvites === 1 ? "convite pendente" : "convites pendentes"}.{" "}
+          <Link href="/convites" className="font-semibold underline">
+            Ver convites
+          </Link>
+        </p>
+      ) : null}
       {notice ? (
         <p
           role="status"

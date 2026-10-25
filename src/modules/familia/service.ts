@@ -6,7 +6,8 @@ import { localPart } from "@/lib/auth/dev-login-guard";
 import type { SessionUser } from "@/lib/auth/session";
 import { getClock } from "@/lib/clock";
 import {
-  acceptPendingInvitation,
+  invitationGateState,
+  listDeclinedInvitations,
   listPendingInvitations,
 } from "@/modules/familia/invitations/service";
 import {
@@ -29,36 +30,35 @@ export type AppEntry =
   | { redirectTo?: undefined; membership: Membership };
 
 /**
- * Gate de entrada (SDD-003 §5.6). Quem tem `Member` segue; senão tenta vincular por convite:
- * `JOINED` => Home com o aviso; `EXPIRED` => onboarding com aviso; `NONE` => onboarding.
+ * Gate de entrada (SDD-003 §5.6, SDD-028 §1.1). Quem tem `Member` segue. Sem família, NADA vincula aqui
+ * (SEC-004): convite válido para o e-mail verificado leva a `/convites`; senão aviso de remoção,
+ * convite expirado ou onboarding.
  */
 export async function resolveAppEntry(user: SessionUser): Promise<AppEntry> {
   const membership = await findMembershipByUserId(user.userId);
   if (membership) return { membership };
-  const accepted = await acceptPendingInvitation(
-    { id: user.userId, email: user.email, emailVerified: user.emailVerified },
-    getClock(),
-  );
-  if (accepted.status === "JOINED") return { redirectTo: "/?joined=1", membership: null };
-  if (accepted.status === "EXPIRED")
-    return { redirectTo: "/onboarding?notice=invite_expired", membership: null };
+  const invites = await invitationGateState(user, getClock());
+  if (invites.valid > 0) return { redirectTo: "/convites", membership: null };
+  if (invites.expired) return { redirectTo: "/onboarding?notice=invite_expired", membership: null };
   // ADR-019 §4: removido e ainda não avisado => aviso único de acesso encerrado
   const removed = await findPendingRemovalNotice(user.userId);
   if (removed) return { redirectTo: "/api/auth/membership-ended", membership: null };
   return { redirectTo: "/onboarding", membership: null };
 }
 
-export type OnboardingEntry = { redirectTo: string | null; expiredInvite: boolean };
+export type OnboardingEntry = {
+  redirectTo: string | null;
+  expiredInvite: boolean;
+  pendingInvites: number;
+};
 
 /** Entrada da própria tela de onboarding (evita laço de redirecionamento do gate). */
 export async function resolveOnboardingEntry(user: SessionUser): Promise<OnboardingEntry> {
-  if (await findMembershipByUserId(user.userId)) return { redirectTo: "/", expiredInvite: false };
-  const accepted = await acceptPendingInvitation(
-    { id: user.userId, email: user.email, emailVerified: user.emailVerified },
-    getClock(),
-  );
-  if (accepted.status === "JOINED") return { redirectTo: "/?joined=1", expiredInvite: false };
-  return { redirectTo: null, expiredInvite: accepted.status === "EXPIRED" };
+  if (await findMembershipByUserId(user.userId)) {
+    return { redirectTo: "/", expiredInvite: false, pendingInvites: 0 };
+  }
+  const invites = await invitationGateState(user, getClock());
+  return { redirectTo: null, expiredInvite: invites.expired, pendingInvites: invites.valid };
 }
 
 export async function getMe(
@@ -171,5 +171,6 @@ export async function getFamily(tx: Tx, ctx: RequestContext): Promise<FamilyDTO>
     })),
     events: await listFamilyEvents(tx, ctx),
     pendingInvitations: ctx.role === "ADMIN" ? await listPendingInvitations(tx, ctx) : [],
+    declinedInvitations: ctx.role === "ADMIN" ? await listDeclinedInvitations(tx, ctx) : [],
   };
 }

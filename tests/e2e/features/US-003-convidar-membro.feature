@@ -8,12 +8,55 @@ Funcionalidade: Convite de membros
     E um e-mail com o link de acesso é enviado para "lucas@exemplo.com"
     E o convite aparece em "Convites pendentes"
 
-  Cenário: Convidado entra e é vinculado automaticamente
+  Cenário: Convidado vê o convite e escolhe Entrar
     Dado que existe um convite pendente para "lucas@exemplo.com"
     Quando Lucas entra com o Google usando "Lucas@Exemplo.com"
+    Então vê "Mariana Silva convidou você para a Família Silva"
+    E vê os botões "Entrar na Família Silva" e "Recusar"
+    E não é vinculado a nenhuma família ainda
+
+  Cenário: Aceitar o convite vincula ao clicar em Entrar
+    Dado que existe um convite pendente para "lucas@exemplo.com"
+    E que Lucas entrou com o Google e vê o convite
+    Quando Lucas aciona "Entrar na Família Silva"
     Então ele é vinculado à "Família Silva" com o papel do convite
     E o convite passa a "aceito"
     E ele vê a mensagem "Você entrou na Família Silva"
+
+  Cenário: Recusar convite
+    Dado que existe um convite pendente para "lucas@exemplo.com"
+    E que Lucas entrou com o Google e vê o convite
+    Quando Lucas recusa pelo botão "Recusar"
+    Então o convite passa a "recusado"
+    E Lucas não é vinculado a nenhuma família
+    E Lucas segue para criar a própria família
+
+  Cenário: Dois convites pendentes
+    Dado que existem convites pendentes para "lucas@exemplo.com" da "Família Silva" e da "Família Souza"
+    Quando Lucas entra com o Google usando "lucas@exemplo.com"
+    Então vê um cartão para a "Família Silva" e outro para a "Família Souza"
+    E não é vinculado a nenhuma família ainda
+
+  Cenário: Quem já tem família não troca pelo convite
+    Dado que Lucas já faz parte da "Família Souza" e tem um convite da "Família Silva"
+    Quando Lucas abre o link do convite e toca em "Entrar na Família Silva"
+    Então vê "Você já faz parte de uma família. Para entrar em outra, saia da atual em Família."
+    E o convite da "Família Silva" continua pendente
+
+  Cenário: Link do e-mail mostra o cartão de aceite e não vincula
+    Dado que existe um convite pendente para "lucas@exemplo.com"
+    Quando Lucas abre o link do convite com a conta Google de "lucas@exemplo.com"
+    Então vê "Mariana Silva convidou você para a Família Silva"
+    E vê os botões "Entrar na Família Silva" e "Recusar"
+    E não é vinculado a nenhuma família ainda
+
+  Cenário: Convite que não está mais disponível
+    Dado que existe um convite pendente para "lucas@exemplo.com"
+    E que Lucas entrou com o Google e vê o convite
+    E que o convite foi cancelado por Mariana
+    Quando Lucas aciona "Entrar na Família Silva"
+    Então vê "Este convite não está mais disponível"
+    E não é vinculado a nenhuma família ainda
 
   Cenário: Convite aberto com outra conta Google
     Dado que existe um convite pendente para "lucas@exemplo.com"

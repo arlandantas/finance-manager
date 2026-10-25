@@ -149,6 +149,7 @@ const EVENT_TEXT: Record<FamilyDTO["events"][number]["type"], string> = {
   INVITATION_RESENT: "reenviou um convite",
   AI_CONSENT_CHANGED: "alterou o uso de IA",
   ASSISTANT_ACCESS_CHANGED: "alterou o acesso por assistente",
+  MEMBER_JOINED: "entrou na família",
 };
 
 function RenameDialog({
@@ -565,6 +566,30 @@ export function FamiliaScreen() {
                     {e.actor.name.split(" ")[0]} {EVENT_TEXT[e.type]}
                     {e.target ? ` ${e.target.name.split(" ")[0]}` : ""} ·{" "}
                     {new Date(e.at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {isAdmin && data.declinedInvitations.length > 0 ? (
+            <section aria-labelledby="declined-title" className="flex flex-col gap-3">
+              <h2 id="declined-title" className="text-lg font-semibold text-slate-900">
+                Convites recusados
+              </h2>
+              <ul className="flex flex-col gap-2">
+                {data.declinedInvitations.map((inv) => (
+                  <li
+                    key={inv.id}
+                    data-testid="invitation-declined-row"
+                    className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:bg-slate-100"
+                  >
+                    <p className="min-w-0 flex-1 truncate font-medium text-slate-900">
+                      {inv.email}
+                    </p>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                      Recusado
+                    </span>
                   </li>
                 ))}
               </ul>

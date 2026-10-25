@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getClock, withClock } from "@/lib/clock";
 import { InMemoryMailer, setMailer } from "@/lib/mail";
-import { acceptPendingInvitation, previewInvitation } from "@/modules/familia/invitations/service";
+import { previewInvitation } from "@/modules/familia/invitations/service";
 import { resolveAppEntry } from "@/modules/familia/service";
 import { call } from "../support/call";
 import { resetDb, testDb } from "../support/db";
@@ -55,8 +55,26 @@ async function lucasUser(email = "Lucas@Exemplo.com") {
   return { as, user };
 }
 
-const accept = (user: { id: string; email: string; emailVerified: Date | null }, at = NOW) =>
-  withClock(at, () => acceptPendingInvitation(user, getClock()));
+type Who = Awaited<ReturnType<typeof lucasUser>>["as"];
+const accept = (as: Who | null, id: string, body: Record<string, unknown> = {}, at = NOW) =>
+  withClock(at, () => call(as, "POST", `/api/v1/me/invitations/${id}/accept`, body));
+const decline = (as: Who | null, id: string, at = NOW) =>
+  withClock(at, () => call(as, "POST", `/api/v1/me/invitations/${id}/decline`, {}));
+const myList = (as: Who | null, at = NOW) =>
+  withClock(at, () => call(as, "GET", "/api/v1/me/invitations"));
+const entryOf = (
+  user: { id: string; email: string; name: string | null; emailVerified: Date | null },
+  at = NOW,
+) =>
+  withClock(at, () =>
+    resolveAppEntry({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      image: null,
+      emailVerified: user.emailVerified,
+    }),
+  );
 
 describe("US-003 Enviar convite com sucesso", () => {
   it("201: papel padrão MEMBER, validade 7 dias, token só em hash, e-mail com o link", async () => {
@@ -110,54 +128,233 @@ describe("US-003 Enviar convite com sucesso", () => {
   });
 });
 
-describe("US-003 Convidado entra e é vinculado automaticamente", () => {
-  it("login com Lucas@Exemplo.com: Member com o papel do convite e convite aceito", async () => {
+describe("SEC-004 Convidado precisa aceitar (sem vínculo automático)", () => {
+  it("reprodução do relatório: login sem família + convite => gate manda a /convites e NÃO cria Member", async () => {
     await invite({ email: "lucas@exemplo.com", role: "ADMIN" });
-    const { user } = await lucasUser("Lucas@Exemplo.com");
+    const { user, as } = await lucasUser("Lucas@Exemplo.com");
     expect(user.email).toBe("lucas@exemplo.com");
-    const result = await accept(user);
-    expect(result).toEqual({ status: "JOINED", familyName: "Família Silva" });
+    expect(await entryOf(user)).toEqual({ redirectTo: "/convites", membership: null });
+    expect(await db.member.count({ where: { userId: user.id } })).toBe(0);
+    const me = await call(as, "GET", "/api/v1/me");
+    expect(me.body.membership).toBeNull();
+    // só no aceite
+    const inv = await db.invitation.findFirstOrThrow();
+    const res = await accept(as, inv.id);
+    expect(res.status).toBe(200);
+    expect(res.body.membership).toEqual({
+      familyId: fx.family.id,
+      familyName: "Família Silva",
+      role: "ADMIN",
+    });
     const member = await db.member.findFirstOrThrow({
       where: { userId: user.id, removedAt: null },
     });
     expect(member).toMatchObject({ familyId: fx.family.id, role: "ADMIN" });
-    const inv = await db.invitation.findFirstOrThrow();
-    expect(inv).toMatchObject({ status: "ACCEPTED", acceptedByUserId: user.id });
-    expect(inv.acceptedAt).not.toBeNull();
-    // idempotente: segunda chamada não faz nada
-    expect(await accept(user)).toEqual({ status: "NONE" });
-    expect(await db.member.count({ where: { userId: user.id } })).toBe(1);
+    expect(await db.invitation.findFirstOrThrow()).toMatchObject({
+      status: "ACCEPTED",
+      acceptedByUserId: user.id,
+    });
+    const ev = await db.familyEvent.findFirstOrThrow({ where: { type: "MEMBER_JOINED" } });
+    expect(ev).toMatchObject({ actorMemberId: member.id });
+    expect(ev.changes).toEqual({ invitationId: inv.id, role: "ADMIN" });
   });
 
-  it("o gate do app (resolveAppEntry) vincula e manda para /?joined=1", async () => {
-    await invite({ email: "lucas@exemplo.com" });
+  it("GET do link /convite/[token] com o e-mail certo não vincula (preview READY)", async () => {
+    const created = await invite({ email: "lucas@exemplo.com" });
     const { user } = await lucasUser();
-    const entry = await withClock(NOW, () =>
-      resolveAppEntry({
-        userId: user.id,
-        email: user.email,
-        name: user.name,
-        image: null,
-        emailVerified: user.emailVerified,
+    const preview = await withClock(NOW, () =>
+      previewInvitation(tokenOf(created.body.inviteUrl), { email: user.email }, getClock()),
+    );
+    expect(preview).toMatchObject({ state: "READY", familyName: "Família Silva" });
+    expect(await db.member.count({ where: { userId: user.id } })).toBe(0);
+  });
+
+  it("aceite com o token do link: token certo vale; divergente => 422", async () => {
+    const created = await invite({ email: "lucas@exemplo.com" });
+    const { as } = await lucasUser();
+    const id = created.body.invitation.id as string;
+    const bad = await accept(as, id, { token: "x".repeat(43) });
+    expect(bad.status).toBe(422);
+    expect(bad.body.error.code).toBe("INVITATION_TOKEN_MISMATCH");
+    const ok = await accept(as, id, { token: tokenOf(created.body.inviteUrl) });
+    expect(ok.status).toBe(200);
+  });
+
+  it("outro e-mail => 404 (sem distinguir de inexistente)", async () => {
+    const created = await invite({ email: "lucas@exemplo.com" });
+    const other = await asUser("outra@exemplo.com");
+    const res = await accept(other, created.body.invitation.id);
+    expect(res.status).toBe(404);
+    expect((await decline(other, created.body.invitation.id)).status).toBe(404);
+    expect((await accept(other, randomUUID())).status).toBe(404);
+    expect((await myList(other)).body.invitations).toEqual([]);
+    expect(await db.member.count({ where: { userId: other.userId } })).toBe(0);
+  });
+
+  it("e-mail não verificado => 403 EMAIL_NOT_VERIFIED e lista vazia", async () => {
+    const created = await invite({ email: "lucas@exemplo.com" });
+    const { as, user } = await lucasUser();
+    await db.user.update({ where: { id: user.id }, data: { emailVerified: null } });
+    const res = await accept(as, created.body.invitation.id);
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe("EMAIL_NOT_VERIFIED");
+    expect((await myList(as)).body.invitations).toEqual([]);
+    expect(await entryOf({ ...user, emailVerified: null })).toEqual({
+      redirectTo: "/onboarding",
+      membership: null,
+    });
+  });
+
+  it("quem já tem família: 409 ALREADY_IN_FAMILY, convite segue PENDING e a família fica intacta", async () => {
+    const created = await invite({ email: "lucas@exemplo.com" });
+    const souza = await makeFamily({ name: "Família Souza", uniqueEmails: true });
+    const { user } = await lucasUser();
+    const lucasInSouza = await db.member.create({
+      data: { familyId: souza.family.id, userId: user.id, role: "MEMBER" },
+    });
+    const res = await accept(souza.members[0]?.as ?? null, created.body.invitation.id);
+    expect(res.status).toBe(404); // outra pessoa
+    const asLucas = { ...(souza.members[0]?.as as NonNullable<Who>), userId: user.id };
+    void asLucas;
+    const lucasAs = await asUser("lucas@exemplo.com", { name: "Lucas Silva" });
+    const again = await accept(lucasAs, created.body.invitation.id);
+    expect(again.status).toBe(409);
+    expect(again.body.error.code).toBe("ALREADY_IN_FAMILY");
+    expect((await db.invitation.findFirstOrThrow()).status).toBe("PENDING");
+    expect(await db.member.findMany({ where: { userId: user.id, removedAt: null } })).toEqual([
+      expect.objectContaining({ id: lucasInSouza.id, familyId: souza.family.id }),
+    ]);
+  });
+
+  it("dois convites: a lista mostra os dois; aceitar um deixa o outro PENDING e fora da lista", async () => {
+    await invite({ email: "lucas@exemplo.com" });
+    const souza = await makeFamily({ name: "Família Souza", uniqueEmails: true });
+    const invSouza = await withClock(NOW, () =>
+      call(souza.members[0]?.as ?? null, "POST", "/api/v1/invitations", {
+        email: "lucas@exemplo.com",
       }),
     );
-    expect(entry).toEqual({ redirectTo: "/?joined=1", membership: null });
+    const { as, user } = await lucasUser();
+    const list = await myList(as);
+    expect(list.body.invitations).toHaveLength(2);
+    expect(await entryOf(user)).toEqual({ redirectTo: "/convites", membership: null });
+    const ok = await accept(as, invSouza.body.invitation.id);
+    expect(ok.status).toBe(200);
+    expect(ok.body.membership.familyName).toBe("Família Souza");
+    expect((await myList(as)).body.invitations).toHaveLength(1);
+    expect(await db.member.count({ where: { userId: user.id } })).toBe(1);
+    const silva = await db.invitation.findFirstOrThrow({ where: { familyId: fx.family.id } });
+    expect(silva.status).toBe("PENDING");
+  });
+
+  it("Promise.all: aceite de dois convites diferentes => exatamente 1 Member e o outro 409", async () => {
+    const a = await invite({ email: "lucas@exemplo.com" });
+    const souza = await makeFamily({ name: "Família Souza", uniqueEmails: true });
+    const b = await withClock(NOW, () =>
+      call(souza.members[0]?.as ?? null, "POST", "/api/v1/invitations", {
+        email: "lucas@exemplo.com",
+      }),
+    );
+    const { as, user } = await lucasUser();
+    const res = await Promise.all([
+      accept(as, a.body.invitation.id),
+      accept(as, b.body.invitation.id),
+    ]);
+    expect(res.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(await db.member.count({ where: { userId: user.id, removedAt: null } })).toBe(1);
+  });
+
+  it("Promise.all: mesmo aceite com a mesma chave => mesma resposta e 1 Member", async () => {
+    const created = await invite({ email: "lucas@exemplo.com" });
+    const { as, user } = await lucasUser();
+    const key = randomUUID();
+    const run = () =>
+      withClock(NOW, () =>
+        call(
+          as,
+          "POST",
+          `/api/v1/me/invitations/${created.body.invitation.id}/accept`,
+          {},
+          {
+            idempotencyKey: key,
+          },
+        ),
+      );
+    const [x, y] = await Promise.all([run(), run()]);
+    expect(x.status).toBe(200);
+    expect(y.status).toBe(200);
+    expect(y.body).toEqual(x.body);
     expect(await db.member.count({ where: { userId: user.id } })).toBe(1);
   });
 
-  it("duas tentativas simultâneas: um único vínculo", async () => {
-    await invite({ email: "lucas@exemplo.com" });
-    const { user } = await lucasUser();
-    const results = await Promise.all([accept(user), accept(user)]);
-    expect(results.filter((r) => r.status === "JOINED")).toHaveLength(1);
+  it("Promise.all: mesmo convite sem chave igual => 1 Member (o outro 409)", async () => {
+    const created = await invite({ email: "lucas@exemplo.com" });
+    const { as, user } = await lucasUser();
+    const res = await Promise.all([
+      accept(as, created.body.invitation.id),
+      accept(as, created.body.invitation.id),
+    ]);
+    expect(res.map((r) => r.status).sort()).toEqual([200, 409]);
     expect(await db.member.count({ where: { userId: user.id } })).toBe(1);
   });
 
-  it("e-mail não verificado não vincula", async () => {
-    await invite({ email: "lucas@exemplo.com" });
-    const { user } = await lucasUser();
-    expect(await accept({ ...user, emailVerified: null })).toEqual({ status: "NONE" });
+  it("recusar: DECLINED, sem Member; o Administrador vê Recusado e convida de novo", async () => {
+    const created = await invite({ email: "lucas@exemplo.com" });
+    const { as, user } = await lucasUser();
+    const res = await decline(as, created.body.invitation.id);
+    expect(res.status).toBe(200);
+    expect(res.body.invitation).toEqual({ id: created.body.invitation.id, status: "DECLINED" });
     expect(await db.member.count({ where: { userId: user.id } })).toBe(0);
+    const row = await db.invitation.findFirstOrThrow();
+    expect(row).toMatchObject({ status: "DECLINED", declinedByUserId: user.id });
+    expect(row.declinedAt).not.toBeNull();
+    const family = await withClock(NOW, () => call(mariana(), "GET", "/api/v1/family"));
+    expect(family.body.declinedInvitations).toHaveLength(1);
+    expect(family.body.declinedInvitations[0]).toMatchObject({
+      email: "lucas@exemplo.com",
+      status: "DECLINED",
+    });
+    expect(family.body.pendingInvitations).toHaveLength(0);
+    // recusar de novo => 409; aceitar o recusado => 409
+    expect((await decline(as, created.body.invitation.id)).status).toBe(409);
+    expect((await accept(as, created.body.invitation.id)).status).toBe(409);
+    // convidar de novo funciona (índice parcial só vale para PENDING)
+    expect((await invite({ email: "lucas@exemplo.com" })).status).toBe(201);
+  });
+
+  it("vencido => 410 INVITATION_EXPIRED e some da lista", async () => {
+    const created = await invite({ email: "lucas@exemplo.com" });
+    const { as } = await lucasUser();
+    const late = "2026-10-11T15:00:01Z";
+    expect((await myList(as, late)).body.invitations).toEqual([]);
+    const res = await accept(as, created.body.invitation.id, {}, late);
+    expect(res.status).toBe(410);
+    expect(res.body.error.code).toBe("INVITATION_EXPIRED");
+  });
+
+  it("cancelado depois de exibido => 409 INVITATION_NOT_PENDING", async () => {
+    const created = await invite({ email: "lucas@exemplo.com" });
+    const { as } = await lucasUser();
+    await call(mariana(), "POST", `/api/v1/invitations/${created.body.invitation.id}/cancel`, {});
+    const res = await accept(as, created.body.invitation.id);
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("INVITATION_NOT_PENDING");
+  });
+
+  it("limite de 20 decisões por hora por usuário (429)", async () => {
+    const { as } = await lucasUser();
+    for (let i = 0; i < 20; i++) expect((await decline(as, randomUUID())).status).toBe(404);
+    expect((await decline(as, randomUUID())).status).toBe(429);
+  });
+
+  it("sem convite válido o gate segue a regra antiga (onboarding)", async () => {
+    const { user } = await lucasUser();
+    expect(await entryOf(user)).toEqual({ redirectTo: "/onboarding", membership: null });
+  });
+
+  it("sem sessão => 401", async () => {
+    expect((await myList(null)).status).toBe(401);
+    expect((await accept(null, randomUUID())).status).toBe(401);
   });
 });
 
@@ -173,8 +370,7 @@ describe("US-003 Convite aberto com outra conta Google", () => {
       email: "lucas@exemplo.com",
       familyName: "Família Silva",
     });
-    const user = await db.user.findUniqueOrThrow({ where: { id: other.userId } });
-    expect(await accept(user)).toEqual({ status: "NONE" });
+    expect((await accept(other, created.body.invitation.id)).status).toBe(404);
     expect(await db.member.count({ where: { userId: other.userId } })).toBe(0);
     expect((await db.invitation.findFirstOrThrow()).status).toBe("PENDING");
   });
@@ -187,8 +383,8 @@ describe("US-003 Convite aberto com outra conta Google", () => {
     expect(await at(null)).toMatchObject({ state: "NEEDS_LOGIN", inviterName: "Mariana Silva" });
     expect(await at({ email: "LUCAS@exemplo.com" })).toMatchObject({ state: "READY" });
     expect(await at(null, "token-que-nao-existe")).toEqual({ state: "INVALID" });
-    const { user } = await lucasUser();
-    await accept(user);
+    const { as } = await lucasUser();
+    await accept(as, created.body.invitation.id);
     expect(await at({ email: "lucas@exemplo.com" })).toEqual({ state: "ACCEPTED" });
   });
 });
@@ -247,8 +443,9 @@ describe("US-003 Cancelar convite", () => {
     expect(again.body.error.code).toBe("INVITATION_NOT_PENDING");
     expect((await call(mariana(), "GET", "/api/v1/invitations")).body.items).toHaveLength(0);
 
-    const { user } = await lucasUser();
-    expect(await accept(user)).toEqual({ status: "NONE" });
+    const { as, user } = await lucasUser();
+    expect((await accept(as, id)).status).toBe(409);
+    expect(await entryOf(user)).toEqual({ redirectTo: "/onboarding", membership: null });
     const preview = await withClock(NOW, () =>
       previewInvitation(tokenOf(created.body.inviteUrl), null, getClock()),
     );
@@ -266,16 +463,23 @@ describe("US-003 Cancelar convite", () => {
 describe("US-003 Convite expirado", () => {
   it("após 7 dias + 1 s: sem vínculo e aviso de expirado; no instante exato também expira", async () => {
     const created = await invite({ email: "lucas@exemplo.com" });
-    const { user } = await lucasUser();
-    expect(await accept(user, "2026-10-11T15:00:00Z")).toEqual({ status: "EXPIRED" });
-    expect(await accept(user, "2026-10-11T15:00:01Z")).toEqual({ status: "EXPIRED" });
+    const { as, user } = await lucasUser();
+    expect(await entryOf(user, "2026-10-11T15:00:00Z")).toEqual({
+      redirectTo: "/onboarding?notice=invite_expired",
+      membership: null,
+    });
+    expect((await accept(as, created.body.invitation.id, {}, "2026-10-11T15:00:01Z")).status).toBe(
+      410,
+    );
     expect(await db.member.count({ where: { userId: user.id } })).toBe(0);
     const preview = await withClock("2026-10-11T15:00:01Z", () =>
       previewInvitation(tokenOf(created.body.inviteUrl), null, getClock()),
     );
     expect(preview).toEqual({ state: "EXPIRED" });
     // um segundo antes do vencimento ainda vale
-    expect((await accept(user, "2026-10-11T14:59:59Z")).status).toBe("JOINED");
+    expect((await accept(as, created.body.invitation.id, {}, "2026-10-11T14:59:59Z")).status).toBe(
+      200,
+    );
   });
 
   it("reconvite após vencer: o antigo vira EXPIRED e o novo é criado", async () => {

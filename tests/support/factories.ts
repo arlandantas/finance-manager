@@ -554,7 +554,7 @@ export async function makeInvitation(
     invitedBy?: string;
     createdAt?: Date;
     expiresAt?: Date;
-    status?: "PENDING" | "ACCEPTED" | "CANCELED" | "EXPIRED";
+    status?: "PENDING" | "ACCEPTED" | "CANCELED" | "EXPIRED" | "DECLINED";
   },
 ) {
   const { randomBytes, createHash } = await import("node:crypto");

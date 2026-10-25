@@ -8,3 +8,13 @@ export const API_RATE_PER_MIN = 300;
 export function hitApiRate(db: Pick<PrismaClient, "$queryRaw">, userId: string, now: Date) {
   return hit(db, `api:${userId}:min`, API_RATE_PER_MIN, 60, now);
 }
+
+/** SEC-004: 20 aceites ou recusas de convite por usuário por hora. */
+export const INVITATION_DECISIONS_PER_HOUR = 20;
+export function hitInvitationDecisionRate(
+  db: Pick<PrismaClient, "$queryRaw">,
+  userId: string,
+  now: Date,
+) {
+  return hit(db, `invdec:${userId}:hour`, INVITATION_DECISIONS_PER_HOUR, 3600, now);
+}

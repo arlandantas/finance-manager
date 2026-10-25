@@ -1,6 +1,6 @@
 import { isUniqueViolation } from "@/lib/api/db-errors";
 import { ApiError, conflict, notFound, unprocessable } from "@/lib/api/errors";
-import type { RequestContext, Tx } from "@/lib/api/types";
+import type { RequestContext, Tx, UserContext } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import { normalizeEmail } from "@/lib/auth/email";
 import type { Clock } from "@/lib/clock";
@@ -18,8 +18,12 @@ import {
   loginInvitations,
   readDb,
   setEmailStatus,
-  withDbTransaction,
 } from "@/modules/familia/invitations/repo";
+import type {
+  AcceptInvitationResponse,
+  MyInvitationDTO,
+  MyInvitationsResponse,
+} from "@/modules/familia/invitations/schemas";
 import { findActiveMembership } from "@/modules/familia/repo";
 import { toRole } from "@/modules/familia/roles";
 import type {
@@ -32,7 +36,7 @@ type InvitationRow = {
   id: string;
   email: string;
   role: string;
-  status: "PENDING" | "ACCEPTED" | "CANCELED" | "EXPIRED";
+  status: "PENDING" | "ACCEPTED" | "CANCELED" | "EXPIRED" | "DECLINED";
   expiresAt: Date;
   createdAt: Date;
   invitedByMemberId: string;
@@ -76,6 +80,17 @@ export async function listPendingInvitations(
   ctx: Pick<RequestContext, "familyId" | "clock">,
 ): Promise<InvitationDTO[]> {
   const rows = await convitesRepo(tx, ctx.familyId).listPending();
+  const name = await memberNames(tx, ctx.familyId);
+  return rows.map((r) => toInvitationDTO(r, name, ctx.clock.now()));
+}
+
+/** SEC-004: recusas recentes (30 dias) para o Administrador ver "Recusado" (e poder convidar de novo). */
+export async function listDeclinedInvitations(
+  tx: Tx,
+  ctx: Pick<RequestContext, "familyId" | "clock">,
+): Promise<InvitationDTO[]> {
+  const since = new Date(ctx.clock.now().getTime() - 30 * DAY_MS);
+  const rows = await convitesRepo(tx, ctx.familyId).listDeclined(since);
   const name = await memberNames(tx, ctx.familyId);
   return rows.map((r) => toInvitationDTO(r, name, ctx.clock.now()));
 }
@@ -285,47 +300,144 @@ export async function cancelInvitation(
   return { invitation: toInvitationDTO(updated, name, ctx.clock.now()) };
 }
 
-// ── Vínculo no login (SDD-003 §5.4) ──
-export type AcceptResult =
-  | { status: "JOINED"; familyName: string }
-  | { status: "NONE" }
-  | { status: "EXPIRED" };
+// ── Aceite explícito (SEC-004, SDD-028 §1) ──
+// O vínculo NUNCA acontece no login, no gate ou ao abrir o link: só em `acceptInvitation` (mutação).
 
-/**
- * Vincula o usuário ao convite pendente do seu e-mail verificado. Idempotente: roda no gate do app
- * e cobre os dois caminhos (com ou sem clicar no link). Convite cancelado cai em `NONE`.
- */
-export async function acceptPendingInvitation(
-  user: { id: string; email: string; emailVerified: Date | null },
+/** Estado do convite para o gate de entrada (só leitura, sem efeito colateral). */
+export async function invitationGateState(
+  user: { email: string; emailVerified: Date | null },
   clock: Clock,
-): Promise<AcceptResult> {
-  if (!user.emailVerified) return { status: "NONE" };
+): Promise<{ valid: number; expired: boolean }> {
+  if (!user.emailVerified) return { valid: 0, expired: false };
+  const db = readDb();
   const email = normalizeEmail(user.email);
   const now = clock.now();
+  const valid = await loginInvitations.countValid(db, email, now);
+  if (valid > 0) return { valid, expired: false };
+  const windowStart = new Date(now.getTime() - EXPIRED_NOTICE_DAYS * DAY_MS);
+  return { valid: 0, expired: await loginInvitations.hasExpired(db, email, now, windowStart) };
+}
+
+const MAX_NAME = 60;
+const clip = (s: string) => (s.length > MAX_NAME ? `${s.slice(0, MAX_NAME - 1)}…` : s);
+
+/** GET /me/invitations: só convites PENDING e não vencidos do e-mail verificado (vazio se não verificado). */
+export async function listMyInvitations(
+  tx: Tx,
+  ctx: Pick<UserContext, "userId" | "email" | "clock">,
+): Promise<MyInvitationsResponse> {
+  const user = await tx.user.findUnique({
+    where: { id: ctx.userId },
+    select: { emailVerified: true },
+  });
+  if (!user?.emailVerified) return { invitations: [] };
+  const rows = await loginInvitations.listValid(tx, normalizeEmail(ctx.email), ctx.clock.now());
+  const out: MyInvitationDTO[] = [];
+  for (const r of rows) {
+    out.push({
+      id: r.id,
+      familyName: clip(r.family.name),
+      inviterName: clip(await loginInvitations.memberName(tx, r.invitedByMemberId)),
+      role: toRole(r.role),
+      expiresAt: r.expiresAt.toISOString(),
+    });
+  }
+  return { invitations: out };
+}
+
+type MyInvitationRow = NonNullable<Awaited<ReturnType<typeof loginInvitations.findOwn>>>;
+
+/** Convite do e-mail da sessão; de outro e-mail ou inexistente => 404 uniforme. */
+async function ownInvitation(
+  tx: Tx,
+  ctx: Pick<UserContext, "email">,
+  id: string,
+): Promise<MyInvitationRow> {
+  const inv = await loginInvitations.findOwn(tx, id, normalizeEmail(ctx.email));
+  if (!inv) throw notFound("Convite não encontrado.");
+  return inv;
+}
+
+function assertStillPending(inv: MyInvitationRow, now: Date) {
+  if (inv.status !== "PENDING") {
+    throw conflict("INVITATION_NOT_PENDING", "Este convite não está mais disponível");
+  }
+  if (inv.expiresAt.getTime() <= now.getTime()) {
+    throw new ApiError(410, "INVITATION_EXPIRED", "Convite expirado. Peça um novo convite.");
+  }
+}
+
+const ALREADY_IN_FAMILY = "Você já faz parte de uma família.";
+
+/** POST /me/invitations/{id}/accept. Sem sobrescrita: quem já tem família recebe 409 e o convite segue pendente. */
+export async function acceptInvitation(
+  tx: Tx,
+  ctx: Pick<UserContext, "userId" | "email" | "clock">,
+  id: string,
+  input: { token?: string | undefined },
+): Promise<AcceptInvitationResponse> {
+  const now = ctx.clock.now();
+  const user = await tx.user.findUnique({
+    where: { id: ctx.userId },
+    select: { emailVerified: true },
+  });
+  if (!user?.emailVerified) {
+    throw new ApiError(403, "EMAIL_NOT_VERIFIED", "Confirme seu e-mail Google para aceitar.");
+  }
+  const inv = await ownInvitation(tx, ctx, id);
+  if (input.token && sha256Hex(input.token) !== inv.tokenHash) {
+    throw unprocessable("INVITATION_TOKEN_MISMATCH", "O link não corresponde a este convite.");
+  }
+  assertStillPending(inv, now);
+  if (await findActiveMembership(ctx.userId, tx)) {
+    throw conflict("ALREADY_IN_FAMILY", ALREADY_IN_FAMILY);
+  }
+  // Concorrência no mesmo convite: UPDATE condicional, contagem 1 vence
+  const claimed = await loginInvitations.claim(tx, { id, userId: ctx.userId, now });
+  if (claimed === 0) {
+    const fresh = await loginInvitations.findOwn(tx, id, normalizeEmail(ctx.email));
+    if (fresh) assertStillPending(fresh, now);
+    throw conflict("INVITATION_NOT_PENDING", "Este convite não está mais disponível");
+  }
+  let member: { id: string };
   try {
-    return await withDbTransaction(async (tx): Promise<AcceptResult> => {
-      if (await findActiveMembership(user.id, tx)) return { status: "NONE" };
-      const invitation = await loginInvitations.findValid(tx, email, now);
-      if (invitation) {
-        await loginInvitations.insertMember(tx, {
-          familyId: invitation.familyId,
-          userId: user.id,
-          role: invitation.role,
-          joinedAt: now,
-        });
-        await loginInvitations.accept(tx, { id: invitation.id, userId: user.id, now });
-        return { status: "JOINED", familyName: invitation.family.name };
-      }
-      const windowStart = new Date(now.getTime() - EXPIRED_NOTICE_DAYS * DAY_MS);
-      return (await loginInvitations.hasExpired(tx, email, now, windowStart))
-        ? { status: "EXPIRED" }
-        : { status: "NONE" };
+    member = await loginInvitations.insertMember(tx, {
+      familyId: inv.familyId,
+      userId: ctx.userId,
+      role: inv.role,
+      joinedAt: now,
     });
   } catch (e) {
-    // Corrida: outra aba já vinculou este usuário (UNIQUE Member.userId).
-    if (isUniqueViolation(e)) return { status: "NONE" };
+    if (isUniqueViolation(e)) throw conflict("ALREADY_IN_FAMILY", ALREADY_IN_FAMILY);
     throw e;
   }
+  await tx.familyEvent.create({
+    data: {
+      familyId: inv.familyId,
+      type: "MEMBER_JOINED",
+      actorMemberId: member.id,
+      changes: { invitationId: inv.id, role: inv.role },
+    },
+  });
+  return {
+    membership: { familyId: inv.familyId, familyName: inv.family.name, role: toRole(inv.role) },
+  };
+}
+
+/** POST /me/invitations/{id}/decline: sem vínculo; o Administrador passa a ver "Recusado". */
+export async function declineInvitation(
+  tx: Tx,
+  ctx: Pick<UserContext, "userId" | "email" | "clock">,
+  id: string,
+): Promise<{ invitation: { id: string; status: "DECLINED" } }> {
+  const now = ctx.clock.now();
+  const inv = await ownInvitation(tx, ctx, id);
+  if (inv.status !== "PENDING") {
+    throw conflict("INVITATION_NOT_PENDING", "Este convite não está mais disponível");
+  }
+  const res = await loginInvitations.decline(tx, { id, userId: ctx.userId, now });
+  if (res === 0) throw conflict("INVITATION_NOT_PENDING", "Este convite não está mais disponível");
+  return { invitation: { id, status: "DECLINED" } };
 }
 
 // ── Página /convite/[token] (SDD-003 §5.5) ──
@@ -335,7 +447,15 @@ export type InvitePreview =
   | { state: "ACCEPTED" }
   | { state: "NEEDS_LOGIN"; familyName: string; inviterName: string; email: string }
   | { state: "WRONG_EMAIL"; familyName: string; inviterName: string; email: string }
-  | { state: "READY"; familyName: string; inviterName: string; email: string };
+  | {
+      state: "READY";
+      id: string;
+      role: "ADMIN" | "MEMBER";
+      expiresAt: string;
+      familyName: string;
+      inviterName: string;
+      email: string;
+    };
 
 export async function previewInvitation(
   token: string,
@@ -344,18 +464,26 @@ export async function previewInvitation(
 ): Promise<InvitePreview> {
   const db = readDb();
   const invitation = await loginInvitations.findByTokenHash(db, sha256Hex(token));
-  if (!invitation || invitation.status === "CANCELED") return { state: "INVALID" };
+  if (!invitation || invitation.status === "CANCELED" || invitation.status === "DECLINED") {
+    return { state: "INVALID" };
+  }
   if (invitation.status === "ACCEPTED") return { state: "ACCEPTED" };
   const expired =
     invitation.status === "EXPIRED" || invitation.expiresAt.getTime() <= clock.now().getTime();
   if (expired) return { state: "EXPIRED" };
   const info = {
-    familyName: invitation.family.name,
-    inviterName: await loginInvitations.memberName(db, invitation.invitedByMemberId),
+    familyName: clip(invitation.family.name),
+    inviterName: clip(await loginInvitations.memberName(db, invitation.invitedByMemberId)),
     email: invitation.email,
   };
   if (!sessionUser) return { state: "NEEDS_LOGIN", ...info };
   return normalizeEmail(sessionUser.email) === invitation.email
-    ? { state: "READY", ...info }
+    ? {
+        state: "READY",
+        id: invitation.id,
+        role: toRole(invitation.role),
+        expiresAt: invitation.expiresAt.toISOString(),
+        ...info,
+      }
     : { state: "WRONG_EMAIL", ...info };
 }
