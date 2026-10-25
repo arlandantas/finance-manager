@@ -53,7 +53,7 @@ async function loadTransactions(tx: Tx, familyId: string, mine: string[] | null)
   return rows.map((r) => ({ ...r, splits: splitsBy.get(r.id) ?? [] }));
 }
 
-const mapTransaction = (t: TxRow) => ({
+const mapTransaction = (t: TxRow, hideNote = false) => ({
   id: t.id,
   tipo: t.kind,
   direcao: t.direction,
@@ -65,7 +65,7 @@ const mapTransaction = (t: TxRow) => ({
   competencia: fromDbDate(t.competenceOn),
   categoriaId: t.categoryId,
   descricao: t.description,
-  observacao: t.note,
+  observacao: hideNote ? null : t.note,
   pagadorId: t.payerMemberId,
   autorId: t.authorMemberId,
   dividida: t.isSharedExpense,
@@ -97,6 +97,18 @@ async function currentFamily(tx: Tx, familyId: string, memberId: string, myIds: 
   // meu arquivo, embora as telas ainda a mostrem (DEV-101).
   const mine = new Set(myIds);
   const visibleToMe = (t: TxRow) => !isPersonalExpense(t) || mine.has(personalOwnerId(t));
+  // SEC-050 (D-GES-57): a observação de um "Só meu" de ex-membro que o Administrador tornou dividido não vai para o
+  // arquivo dos demais (a descrição vai, é necessária ao acerto). Ex-membro = saiu e o usuário não tem vínculo ativo
+  // na família (quem voltou é o próprio dono, SEC-049).
+  const activeUsers = new Set(members.filter((m) => m.removedAt === null).map((m) => m.userId));
+  const gone = new Set(
+    members.filter((m) => m.removedAt !== null && !activeUsers.has(m.userId)).map((m) => m.id),
+  );
+  const foreignGone = (memberId: string | null, authorId: string | null) =>
+    memberId !== null &&
+    gone.has(memberId) &&
+    !mine.has(memberId) &&
+    !(authorId && mine.has(authorId));
   const [accounts, cards, categories, txs, planned, recurring, groups] = await Promise.all([
     tx.bankAccount.findMany({
       where: { familyId },
@@ -155,7 +167,16 @@ async function currentFamily(tx: Tx, familyId: string, memberId: string, myIds: 
       icone: c.icon,
       arquivadaEm: tsOrNull(c.archivedAt),
     })),
-    lancamentos: txs.filter(visibleToMe).map(mapTransaction),
+    lancamentos: txs
+      .filter(visibleToMe)
+      .map((t) =>
+        mapTransaction(
+          t,
+          t.kind === "EXPENSE" &&
+            t.isSharedExpense &&
+            foreignGone(t.payerMemberId, t.authorMemberId),
+        ),
+      ),
     previstas: planned
       .filter((p) => p.isSharedExpense || mine.has(p.responsibleMemberId))
       .map((p) => ({
@@ -166,7 +187,8 @@ async function currentFamily(tx: Tx, familyId: string, memberId: string, myIds: 
         categoriaId: p.categoryId,
         responsavelId: p.responsibleMemberId,
         dividida: p.isSharedExpense,
-        observacao: p.note,
+        observacao:
+          p.isSharedExpense && foreignGone(p.responsibleMemberId, p.authorMemberId) ? null : p.note,
         situacao: p.status,
         lancamentoPagoId: p.paidTransactionId,
         recorrenciaId: p.seriesId,
@@ -227,7 +249,7 @@ async function formerFamily(tx: Tx, familyId: string, mine: string[]) {
     nome: family.name,
     meuMembroId: mine[0] as string,
     membros: members.filter((m) => seen.has(m.id)).map((m) => ({ id: m.id, nome: displayName(m) })),
-    lancamentos: txs.map(mapTransaction),
+    lancamentos: txs.map((t) => mapTransaction(t)),
   };
 }
 

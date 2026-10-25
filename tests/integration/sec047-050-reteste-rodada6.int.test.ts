@@ -445,3 +445,70 @@ describe("SEC-049 quem volta à família recupera o controle do próprio 'Só me
     ).not.toContain("Terapia");
   });
 });
+
+// ---------------------------------------------------------------------------------------------------------------
+describe("SEC-050 a observação do ex-membro não vai para a exportação dos demais", () => {
+  type Exp = {
+    familiaAtual: {
+      lancamentos: Array<{ id: string; descricao: string; observacao: string | null }>;
+      previstas: Array<{ id: string; descricao: string; observacao: string | null }>;
+    };
+  };
+  const exportOf = async (who: string): Promise<Exp> => {
+    const res = await at(() => call(as(who), "GET", "/api/v1/me/export"));
+    expect(res.status).toBe(200);
+    return res.body as Exp;
+  };
+
+  it("prova do relatório: ao dividir, a descrição sai para Carla e Bia, mas a observação não", async () => {
+    const t = await mk(30000, "Farmácia");
+    await db.transaction.update({ where: { id: t.id }, data: { note: "remédio controlado" } });
+    await removeLucas();
+    expect((await patch("Mariana", t.id, 1, { isSharedExpense: true })).status).toBe(200);
+    for (const who of ["Carla", "Bia", "Mariana"]) {
+      const line = (await exportOf(who)).familiaAtual.lancamentos.find((l) => l.id === t.id);
+      expect(line?.descricao, who).toBe("Farmácia");
+      expect(line?.observacao, who).toBeNull();
+    }
+    // o banco guarda a observação (ninguém a apaga); só o arquivo dos demais não a leva
+    expect((await txRow(t.id)).note).toBe("remédio controlado");
+  });
+
+  it("não afeta o que é de verdade compartilhado: observação de dividida ativa e de quem voltou", async () => {
+    const shared = await makeTransaction(fx, {
+      account: accCarla,
+      category: "Supermercado",
+      amountInCents: 1000,
+      occurredOn: "2026-10-02",
+      payer: "Carla",
+      author: "Carla",
+      shared: true,
+      description: "Mercado",
+    });
+    await db.transaction.update({ where: { id: shared.id }, data: { note: "feira" } });
+    const line = (await exportOf("Bia")).familiaAtual.lancamentos.find((l) => l.id === shared.id);
+    expect(line?.observacao).toBe("feira");
+  });
+
+  it("previstas divididas de ex-membro também não levam a observação", async () => {
+    const p = await makePlannedExpense(fx, {
+      description: "Escola",
+      amountInCents: 10000,
+      dueOn: "2026-10-20",
+      responsible: "Lucas",
+      shared: false,
+      note: "mensalidade atrasada",
+    });
+    await removeLucas();
+    const ok = await at(() =>
+      call(as("Mariana"), "PATCH", `/api/v1/planned-expenses/${p.id}`, {
+        version: 1,
+        isSharedExpense: true,
+      }),
+    );
+    expect(ok.status, JSON.stringify(ok.body)).toBe(200);
+    const row = (await exportOf("Carla")).familiaAtual.previstas.find((x) => x.id === p.id);
+    expect(row?.descricao).toBe("Escola");
+    expect(row?.observacao).toBeNull();
+  });
+});
