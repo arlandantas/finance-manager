@@ -94,7 +94,7 @@ Atualizado: 2026-10-26. Fonte de verdade: código + testes (§f). Mudou a regra?
 | SEC-011 | Consent phishing | Mitigado (cliente verificado por URL exata, nome do servidor, aviso de nova conexão); só confirmável na homologação real com o claude.ai |
 | TL-26 | Retenção da Anthropic fora do nosso controle | Texto do opt-in não promete retenção zero |
 | CSP | CSP de scripts só em Report-Only (D-GES-41) | Pendente de validação em navegador real |
-| Agregados | Totais e recorrentes da análise incluem despesas "Só meu" de outros membros (`expenseByCategory` e a query de descrição não filtram `isSharedExpense`), sem identificar quem lançou | Respondida aqui a dúvida do estado "Só meu" §e: agregados vão à IA com "Só meu" incluso. Risco baixo (rótulo + total), mas é decisão implícita; confirmar com o usuário se o opt-in deve cobrir isso |
+| Agregados | Totais e recorrentes da análise incluem despesas "Só meu" de outros membros (`expenseByCategory` e a query de descrição não filtram `isSharedExpense`), sem identificar quem lançou | Confirmado no código: agregados vão à IA com "Só meu" alheio incluso (dúvida do [so-meu.md](so-meu.md) §e). Risco baixo (rótulo + total), mas é decisão implícita. PERGUNTA PENDENTE AO USUÁRIO; recomendação: excluir "Só meu" alheio dos agregados |
 | US-076c / US-074b | Sem modo "exigir confirmação" nem token pessoal | Fora do POC por decisão do usuário (backlog) |
 | Clientes | Só Claude (CIMD) no POC; ChatGPT/Gemini/DCR dependem de ampliação | Backlog (9 pts) |
 | R5 | Importação de fatura por IA adiada (D-GES-28/33) | `INVOICE_IMPORT` sem texto de consentimento |

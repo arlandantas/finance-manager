@@ -67,7 +67,7 @@ Todos sujeitos a veto do usuário.
 - Verificação no navegador da UI (seletor "Quem pagou?" fixo para ex-membro, campos desabilitados, `pay-drawer` de quem só controla): NUNCA feita (D-GES-54/56/58/60).
 - Polimento citado em D-GES-54/56 (seletor vazio para Admin-ex; `pay-drawer` de quem só controla enviava pagador próprio e levava 403): não confirmado como resolvido.
 - Usuário: veto aos aceites; SEC-037 (reautenticação).
-- Não verificado: se agregados enviados à IA (D-GES-29) incluem "Só meu" alheio.
+- Pergunta ao usuário (pendente): os agregados enviados à IA (D-GES-29) INCLUEM despesas "Só meu" de outros membros (as consultas não filtram `isSharedExpense`; vai só rótulo de categoria e total, sem identificar quem lançou). Recomendação: excluir "Só meu" alheio dos agregados. Detalhe em [ia-assistente-mcp.md](ia-assistente-mcp.md) §d.
 
 ## f) Mapa de fontes
 Código (`src/modules/`): `transacoes/ownership.ts` (regra única: `canWriteTransaction`, `assertCanWriteTransaction`, `assertCanMakePersonal`, `ownerStanding`, `isAdminOverRemovedOwner`, `canChangeStructure`, `violatesGonePayerLock`, `effectiveOwner`, planned*); `transacoes/{service,mutations,installment-manage,installment-create}.ts`; `previstas/{service,recurring-service}.ts`; `cartoes/service.ts` (`CARD_OWNER_ONLY`); `privacidade/export.ts`; `mcp/assistant-write.ts`; `analise-ia/suggestions.ts`; UI: `app/(app)/extrato/{edit-transaction-form,transaction-detail-drawer}.tsx`, `previstas/{planned-drawer,pay-drawer}.tsx`.
