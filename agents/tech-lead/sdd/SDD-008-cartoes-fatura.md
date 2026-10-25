@@ -1,5 +1,7 @@
 # SDD-008: Cartões de Crédito, Compra à Vista, Fatura e Pagamento (US-015, US-016a/b, US-017a/b)
 
+> Estado vigente consolidado em agents/estado/cartoes-faturas.md
+
 - **Histórias**: [US-015](../../product-owner/backlog/stories/US-015-cadastrar-cartao-de-credito.md) · [US-016a](../../product-owner/backlog/stories/US-016-compra-a-vista-no-cartao.md) · [US-016b](../../product-owner/backlog/stories/US-016b-corrigir-compra-no-cartao-e-filtro.md) · [US-017a](../../product-owner/backlog/stories/US-017-ver-fatura-do-cartao.md) · [US-017b](../../product-owner/backlog/stories/US-017b-pagar-a-fatura.md)
 - **Fluxos**: [FLUXO-004](../../product-owner/flows/FLUXO-004-cartao-e-fatura.md), [FLUXO-001 rev. 3](../../product-owner/flows/FLUXO-001-lancamento-rapido.md)
 - **Rastreabilidade**: NEED-003 (RN-003.1..3) · NEED-001 (RN-001.1/3) · NEED-002 (RN-002.2/3) · NEED-007 · **ADR-014 (cartão e fatura no ledger)**, ADR-007, ADR-009, ADR-010, ADR-013 · D-PO-01, D-PO-02, D-PO-05..D-PO-10

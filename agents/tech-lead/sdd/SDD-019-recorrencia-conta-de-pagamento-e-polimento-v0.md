@@ -1,5 +1,7 @@
 # SDD-019: Recorrência mensal, conta de pagamento e polimento da v0 (US-056..064)
 
+> Estado vigente consolidado em agents/estado/previstas-series.md
+
 - **Histórias**: US-056, US-057, **US-058 + US-059** (domínio crítico), US-061, US-062, US-063; resumidas: US-064, US-060 — em [`stories/`](../../product-owner/backlog/stories/)
 - **Release**: v0 alpha ([`release-v0-alpha.md`](../../product-owner/backlog/release-v0-alpha.md) §4) · **Status**: Aprovado para Desenvolvimento · **Autor**: Agente Tech Lead
 - **Decisões**: [ADR-025](../adrs/ADR-025-recorrencia-mensal-materializada.md) (recorrência), [ADR-026](../adrs/ADR-026-producao-do-alpha.md) (produção). Base: SDD-009 (previstas/baixa), SDD-010 (Resumo/`prefs`), SDD-012 (contas), SDD-013 (sugestão de conta), SDD-018 (fonte única do A pagar)

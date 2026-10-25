@@ -1,5 +1,7 @@
 # SDD-009: Despesas Previstas e Baixa (US-018, US-019)
 
+> Estado vigente consolidado em agents/estado/previstas-series.md
+
 - **Histórias**: [US-018](../../product-owner/backlog/stories/US-018-despesa-prevista-pontual.md) · [US-019](../../product-owner/backlog/stories/US-019-dar-baixa-em-despesa-prevista.md)
 - **Fluxo**: [FLUXO-005](../../product-owner/flows/FLUXO-005-despesas-previstas.md)
 - **Rastreabilidade**: NEED-004 (RN-004.1..4) · NEED-001 (RN-001.2, RN-001.3) · NEED-002 (RN-002.2) · NEED-007 · **ADR-015 (previsão como entidade própria)**, ADR-007, ADR-009, ADR-010, ADR-013 · D-PO-01, D-PO-02, D-PO-11
