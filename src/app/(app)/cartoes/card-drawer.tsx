@@ -227,13 +227,8 @@ export function CardDrawer({
               id="card-owner"
               className={inputClass}
               value={ownerId}
-              // SEC-042: só o titular atual ou o Administrador trocam o titular
-              disabled={
-                !!card &&
-                !!family.data &&
-                card.owner.id !== family.data.currentMemberId &&
-                family.data.currentRole !== "ADMIN"
-              }
+              // SEC-042/047: só o titular atual troca o titular (o Administrador só na remoção de membro)
+              disabled={!!card && !!family.data && card.owner.id !== family.data.currentMemberId}
               onChange={(e) => setOwnerId(e.target.value)}
             >
               {(family.data?.members ?? []).map((m) => (

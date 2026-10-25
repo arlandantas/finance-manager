@@ -26,8 +26,7 @@ type CardRow = NonNullable<Awaited<ReturnType<ReturnType<typeof cartoesRepo>["fi
 const NOT_FOUND = "Cartão não encontrado.";
 const DUPLICATE_NAME = "Já existe um cartão com este nome";
 export const CARD_OWNER_ONLY_CODE = "CARD_OWNER_ONLY";
-export const CARD_OWNER_ONLY_MESSAGE =
-  "Só o titular do cartão ou o Administrador podem trocar o titular.";
+export const CARD_OWNER_ONLY_MESSAGE = "Só o titular do cartão pode trocar o titular.";
 export const CYCLE_LOCKED_MESSAGE =
   "Os dias de fechamento e vencimento não podem ser alterados porque já há compras neste cartão";
 
@@ -165,12 +164,12 @@ export async function updateCard(
   await repo.lockForUpdate(id);
   const row = (await repo.findById(id)) as CardRow;
 
-  // SEC-042: o titular do cartão virou papel de autorização ("Só meu"); só o titular atual (ou o Administrador) o troca
+  // SEC-042/047 (D-GES-57): o titular do cartão virou papel de autorização ("Só meu"); só o titular ATUAL o troca.
+  // O Administrador só reatribui na remoção/saída de membro (familia/removal.ts), que não passa por aqui.
   if (
     input.ownerMemberId !== undefined &&
     input.ownerMemberId !== row.ownerMemberId &&
-    row.ownerMemberId !== ctx.memberId &&
-    ctx.role !== "ADMIN"
+    row.ownerMemberId !== ctx.memberId
   ) {
     throw forbidden(CARD_OWNER_ONLY_MESSAGE, CARD_OWNER_ONLY_CODE);
   }

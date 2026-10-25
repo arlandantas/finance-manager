@@ -99,9 +99,7 @@ describe("SEC-042 titular do cartão", () => {
     const swap = await patchCard("Bia", c.id, { ownerMemberId: idOf("Bia") }); // passo 2
     expect(swap.status).toBe(403);
     expect(swap.body.error.code).toBe("CARD_OWNER_ONLY");
-    expect(swap.body.error.message).toBe(
-      "Só o titular do cartão ou o Administrador podem trocar o titular.",
-    );
+    expect(swap.body.error.message).toBe("Só o titular do cartão pode trocar o titular.");
     expect((await del()).status).toBe(403); // passo 3: nada mudou
     const row = await db.creditCard.findUniqueOrThrow({ where: { id: c.id } });
     expect(row.ownerMemberId).toBe(idOf("Carla"));
@@ -136,14 +134,47 @@ describe("SEC-042 titular do cartão", () => {
     );
   });
 
-  it("o Administrador também troca o titular, com registro; o antigo titular perde a vez", async () => {
+  it("SEC-047: o novo titular, depois da troca, é o único que troca de novo (o antigo perde a vez)", async () => {
     const c = await card();
-    const res = await patchCard("Mariana", c.id, { ownerMemberId: idOf("Mariana") });
-    expect(res.status, JSON.stringify(res.body)).toBe(200);
-    const ev = await db.familyEvent.findFirstOrThrow({ where: { type: "CARD_OWNER_CHANGED" } });
-    expect(ev.actorMemberId).toBe(idOf("Mariana"));
+    expect((await patchCard("Carla", c.id, { ownerMemberId: idOf("Lucas") })).status).toBe(200);
     const back = await patchCard("Carla", c.id, { version: 2, ownerMemberId: idOf("Carla") });
     expect(back.status).toBe(403);
+    expect(
+      (await patchCard("Lucas", c.id, { version: 2, ownerMemberId: idOf("Bia") })).status,
+    ).toBe(200);
+  });
+
+  it("SEC-047 (prova do reteste da rodada 6): o Administrador não vira titular para controlar o 'Só meu' de membro ativo", async () => {
+    const c = await card();
+    const plan = (
+      await makeInstallmentPurchase(fx, {
+        card: c,
+        total: 70000,
+        count: 2,
+        purchaseOn: "2026-10-02",
+        author: "Lucas",
+      })
+    ).plan;
+    const del = () =>
+      post("Mariana", `/api/v1/installment-plans/${plan.id}/delete`, { version: 1 });
+    expect((await del()).status).toBe(403); // passo 1: Mariana não controla
+    const swap = await patchCard("Mariana", c.id, { ownerMemberId: idOf("Mariana") }); // passo 2
+    expect(swap.status).toBe(403);
+    expect(swap.body.error.code).toBe("CARD_OWNER_ONLY");
+    expect((await del()).status).toBe(403); // passo 3: continua sem controle
+    const row = await db.creditCard.findUniqueOrThrow({ where: { id: c.id } });
+    expect(row.ownerMemberId).toBe(idOf("Carla"));
+    expect(row.version).toBe(1);
+    expect(await db.familyEvent.count({ where: { type: "CARD_OWNER_CHANGED" } })).toBe(0);
+    // mesmo com outros campos no mesmo PATCH, a troca de titular continua barrada e nada é gravado
+    const mixed = await patchCard("Mariana", c.id, {
+      ownerMemberId: idOf("Mariana"),
+      limitInCents: 600000,
+    });
+    expect(mixed.status).toBe(403);
+    expect((await db.creditCard.findUniqueOrThrow({ where: { id: c.id } })).limitInCents).toBe(
+      500000n,
+    );
   });
 
   it("conta bancária não aceita troca de titular pela API", async () => {
@@ -443,6 +474,26 @@ describe("SEC-046 remoção de membro avisa quem passa a controlar", () => {
       call(as("Mariana"), "GET", `/api/v1/members/${idOf("Lucas")}/removal-review`),
     );
     expect(none.body.reassignNotice).toBeNull();
+  });
+
+  it("SEC-047: o Administrador reatribui o cartão dentro da remoção do titular, com o evento no histórico", async () => {
+    const c = await makeCard(fx, {
+      name: "Cartão da Carla",
+      owner: "Carla",
+      limitInCents: 500000,
+      closingDay: 25,
+      dueDay: 5,
+    });
+    const rm = await post("Mariana", `/api/v1/members/${idOf("Carla")}/remove`, {
+      reassign: {
+        accounts: { [accCarla.id]: idOf("Mariana") },
+        cards: { [c.id]: idOf("Mariana") },
+      },
+    });
+    expect(rm.status, JSON.stringify(rm.body)).toBe(200);
+    expect((await db.creditCard.findUniqueOrThrow({ where: { id: c.id } })).ownerMemberId).toBe(
+      idOf("Mariana"),
+    );
   });
 
   it("depois de reatribuir a conta, Mariana passa a controlar o 'Só meu' lançado nela (comportamento avisado)", async () => {
