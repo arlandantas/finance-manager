@@ -27,6 +27,8 @@ export const PERSONAL_CAPTURE_MESSAGE = 'Só quem pagou pode tornar este lançam
 /** SEC-043/044: quem só controla não muda divisão, pagador, conta nem "Pagar com" (nem assume o pagamento). */
 export const PERSONAL_STRUCTURE_MESSAGE =
   "Só quem pagou pode alterar a divisão, o pagador e a conta deste lançamento.";
+/** SEC-048 (D-GES-57): ao dividir o "Só meu" de ex-membro, o pagador/responsável continua sendo quem pagou. */
+export const KEEP_GONE_PAYER_MESSAGE = "Ao dividir, o pagador continua sendo quem pagou.";
 
 export type OwnershipRow = {
   kind: string;
@@ -193,6 +195,17 @@ export function assertCanMakePersonal(
 ): void {
   if (current.kind !== "EXPENSE") return;
   const currentOwner = personalOwnerId(current);
+  // SEC-048 (D-GES-57): o Administrador que divide o "Só meu" de ex-membro não escolhe novo pagador: quem pagou
+  // continua sendo o ex-membro (o Admin só vira pagador enquanto o lançamento segue "Só meu", DEV-129).
+  if (
+    opts.fullPower &&
+    !current.isSharedExpense &&
+    next.isSharedExpense === true &&
+    next.payerMemberId !== undefined &&
+    next.payerMemberId !== currentOwner
+  ) {
+    throw forbidden(KEEP_GONE_PAYER_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
+  }
   // SEC-043/044: num "Só meu" que NÃO é seu, quem só controla altera valor, data, descrição, categoria e
   // observação, mas não a divisão, o pagador (nem "assume" o pagamento) nem a conta. Exceção (D-GES-55): o
   // Administrador atual sobre o "Só meu" de ex-membro (`fullPower`).
@@ -353,7 +366,18 @@ export function assertPlannedControllerLimits(
   },
   opts: { fullPower?: boolean } = {},
 ): void {
-  if (opts.fullPower) return; // D-GES-55
+  if (opts.fullPower) {
+    // D-GES-55; SEC-048 (D-GES-57): ao dividir, o responsável continua sendo o ex-membro
+    if (
+      current.isSharedExpense === false &&
+      next.isSharedExpense === true &&
+      next.responsibleMemberId !== undefined &&
+      next.responsibleMemberId !== current.responsibleMemberId
+    ) {
+      throw forbidden(KEEP_GONE_PAYER_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
+    }
+    return;
+  }
   if (current.isSharedExpense || current.responsibleMemberId === ctx.memberId) return;
   const changes =
     next.isSharedExpense === true ||

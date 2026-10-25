@@ -190,11 +190,15 @@ export function PlannedDrawer({
     !!me && !!existing && !existing.isSharedExpense && existing.responsible.id !== me && !fullPower;
   const goneResponsible =
     fullPower && existing?.responsible.removed === true ? existing.responsible : null;
+  // SEC-048: ao dividir o "Só meu" de ex-membro, o responsável continua sendo o ex-membro (a API também recusa outro)
+  const lockGoneResponsible = !!goneResponsible && !existing?.isSharedExpense && !personalPlanned;
   const effectiveResponsibleId = controllerOnly
     ? existing?.responsible.id
-    : personalPlanned && me && !(goneResponsible && responsibleId === goneResponsible.id)
-      ? me
-      : responsibleId;
+    : lockGoneResponsible
+      ? goneResponsible?.id
+      : personalPlanned && me && !(goneResponsible && responsibleId === goneResponsible.id)
+        ? me
+        : responsibleId;
   // SEC-038: numa dividida de outro, não dá para virar "Só meu" nem se pôr como responsável (a API também recusa)
   const capture = (next: { isSharedExpense?: boolean; responsibleMemberId?: string }) =>
     !!me &&
@@ -210,7 +214,7 @@ export function PlannedDrawer({
     );
   const cannotBePersonal = capture({ isSharedExpense: false });
   const cannotTakeOver = (memberId: string) =>
-    controllerOnly || capture({ responsibleMemberId: memberId });
+    controllerOnly || lockGoneResponsible || capture({ responsibleMemberId: memberId });
   useEffect(() => {
     if (open && !planned && me) setResponsibleId((cur) => cur || me);
   }, [open, planned, me]);

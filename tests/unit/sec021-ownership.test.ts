@@ -215,7 +215,7 @@ describe("D-GES-55 poderes plenos do Administrador sobre o 'Só meu' de ex-membr
   it("com fullPower o Admin muda divisão, pagador e conta; sem ele, 403", () => {
     for (const next of [
       { isSharedExpense: true },
-      { payerMemberId: "m3", isSharedExpense: true },
+      { isSharedExpense: true, payerMemberId: "m1" }, // reenviar o ex-membro como pagador vale
       { accountId: "acc2" },
       { payerMemberId: "m2" },
     ]) {
@@ -225,6 +225,18 @@ describe("D-GES-55 poderes plenos do Administrador sobre o 'Só meu' de ex-membr
       expect(() => assertCanMakePersonal(admin, expense(), next)).toThrow();
     }
   });
+  it("SEC-048: ao dividir, outro pagador (o Admin ou um ativo) é recusado, com ou sem fullPower", () => {
+    for (const payer of ["m2", "m3"]) {
+      expect(() =>
+        assertCanMakePersonal(
+          admin,
+          expense(),
+          { isSharedExpense: true, payerMemberId: payer },
+          { fullPower: true },
+        ),
+      ).toThrow(/pagador continua sendo quem pagou/);
+    }
+  });
   it("fullPower não permite entregar o 'Só meu' em nome de terceiro", () => {
     expect(() =>
       assertCanMakePersonal(admin, expense(), { payerMemberId: "m3" }, { fullPower: true }),
@@ -232,10 +244,40 @@ describe("D-GES-55 poderes plenos do Administrador sobre o 'Só meu' de ex-membr
   });
   it("na prevista, fullPower dispensa os limites de responsável, divisão e 'Pagar com'", () => {
     const planned = { isSharedExpense: false, responsibleMemberId: "m1", paymentAccountId: "a1" };
-    const next = { responsibleMemberId: "m3", isSharedExpense: true, paymentAccountId: "a2" };
+    const next = { isSharedExpense: true, paymentAccountId: "a2" };
     expect(() =>
       assertPlannedControllerLimits(admin, planned, next, { fullPower: true }),
     ).not.toThrow();
     expect(() => assertPlannedControllerLimits(admin, planned, next)).toThrow();
+    // trocar só o responsável (ainda "Só meu"), com fullPower, segue permitido (a trava de terceiro é outra)
+    expect(() =>
+      assertPlannedControllerLimits(
+        admin,
+        planned,
+        { responsibleMemberId: "m2" },
+        { fullPower: true },
+      ),
+    ).not.toThrow();
+  });
+  it("SEC-048 na prevista: ao dividir, outro responsável é recusado com fullPower", () => {
+    const planned = { isSharedExpense: false, responsibleMemberId: "m1", paymentAccountId: "a1" };
+    for (const responsibleMemberId of ["m2", "m3"]) {
+      expect(() =>
+        assertPlannedControllerLimits(
+          admin,
+          planned,
+          { isSharedExpense: true, responsibleMemberId },
+          { fullPower: true },
+        ),
+      ).toThrow(/pagador continua sendo quem pagou/);
+    }
+    expect(() =>
+      assertPlannedControllerLimits(
+        admin,
+        planned,
+        { isSharedExpense: true, responsibleMemberId: "m1" },
+        { fullPower: true },
+      ),
+    ).not.toThrow();
   });
 });

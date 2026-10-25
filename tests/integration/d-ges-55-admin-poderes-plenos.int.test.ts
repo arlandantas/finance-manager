@@ -70,18 +70,17 @@ const patch = (who: string, id: string, version: number, body: Record<string, un
 const txRow = (id: string) => db.transaction.findUniqueOrThrow({ where: { id } });
 
 describe("D-GES-55 lançamento 'Só meu' de ex-membro", () => {
-  it("Admin torna dividido, troca pagador e conta; o histórico guarda o Admin", async () => {
+  it("Admin torna dividido e troca a conta (o pagador continua o ex-membro, SEC-048); o histórico guarda o Admin", async () => {
     const t = await mk(accLucas, "Lucas");
     await removeLucas();
     const res = await patch("Mariana", t.id, 1, {
       isSharedExpense: true,
-      payerMemberId: idOf("Carla"),
       accountId: accMariana.id,
     });
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     const row = await txRow(t.id);
     expect(row.isSharedExpense).toBe(true);
-    expect(row.payerMemberId).toBe(idOf("Carla"));
+    expect(row.payerMemberId).toBe(idOf("Lucas"));
     expect(row.accountId).toBe(accMariana.id);
     const hist = await at(() => call(as("Bia"), "GET", `/api/v1/transactions/${t.id}/history`));
     const actors = (hist.body.items as Array<{ action: string; actor: { id: string } }>)
@@ -122,10 +121,11 @@ describe("D-GES-55 lançamento 'Só meu' de ex-membro", () => {
       { isSharedExpense: true, payerMemberId: otherMember },
       { isSharedExpense: true, payerMemberId: idOf("Bia") }, // ex-membro
       { isSharedExpense: true, payerMemberId: "00000000-0000-4000-8000-000000000000" },
+      { payerMemberId: otherMember },
       { accountId: otherAcc.id },
     ]) {
       const res = await patch("Mariana", t.id, 1, body);
-      expect([404, 422], JSON.stringify(body)).toContain(res.status);
+      expect([403, 404, 422], JSON.stringify(body)).toContain(res.status);
     }
     const row = await txRow(t.id);
     expect(row.payerMemberId).toBe(idOf("Lucas"));
@@ -198,11 +198,7 @@ describe("D-GES-55 prevista e série 'Só meu' de ex-membro", () => {
     });
     await removeLucas();
     const url = `/api/v1/planned-expenses/${p.id}`;
-    const body = {
-      isSharedExpense: true,
-      responsibleMemberId: idOf("Bia"),
-      paymentAccountId: accMariana.id,
-    };
+    const body = { isSharedExpense: true, paymentAccountId: accMariana.id };
     for (const who of ["Carla", "Bia"]) {
       expect((await at(() => call(as(who), "PATCH", url, { version: 1, ...body }))).status).toBe(
         403,
@@ -212,7 +208,7 @@ describe("D-GES-55 prevista e série 'Só meu' de ex-membro", () => {
     expect(ok.status, JSON.stringify(ok.body)).toBe(200);
     const row = await db.plannedExpense.findUniqueOrThrow({ where: { id: p.id } });
     expect(row.isSharedExpense).toBe(true);
-    expect(row.responsibleMemberId).toBe(idOf("Bia"));
+    expect(row.responsibleMemberId).toBe(idOf("Lucas")); // SEC-048: continua o ex-membro
     expect(row.paymentAccountId).toBe(accMariana.id);
   });
 
@@ -240,7 +236,7 @@ describe("D-GES-55 prevista e série 'Só meu' de ex-membro", () => {
         responsibleMemberId: other.byName.Estranho?.memberId,
       }),
     );
-    expect([404, 422]).toContain(stranger.status);
+    expect([403, 404, 422]).toContain(stranger.status); // SEC-048: ao dividir, o responsável não troca
     const row = await db.plannedExpense.findUniqueOrThrow({ where: { id: p.id } });
     expect(row.responsibleMemberId).toBe(idOf("Lucas"));
     expect(row.isSharedExpense).toBe(false);
@@ -322,12 +318,12 @@ describe("D-GES-55 prevista e série 'Só meu' de ex-membro", () => {
     const s = created.body.series as { id: string; version: number };
     await removeLucas();
     const url = `/api/v1/recurring-expenses/${s.id}`;
-    const body = { version: s.version, isSharedExpense: true, responsibleMemberId: idOf("Bia") };
+    const body = { version: s.version, isSharedExpense: true };
     expect((await at(() => call(as("Bia"), "PATCH", url, body))).status).toBe(403);
     const ok = await at(() => call(as("Mariana"), "PATCH", url, body));
     expect(ok.status, JSON.stringify(ok.body)).toBe(200);
     const row = await db.recurringExpense.findUniqueOrThrow({ where: { id: s.id } });
     expect(row.isSharedExpense).toBe(true);
-    expect(row.responsibleMemberId).toBe(idOf("Bia"));
+    expect(row.responsibleMemberId).toBe(idOf("Lucas")); // SEC-048: continua o ex-membro
   });
 });

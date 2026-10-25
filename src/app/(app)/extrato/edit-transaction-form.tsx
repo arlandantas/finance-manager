@@ -75,11 +75,15 @@ export function EditTransactionForm({
   const personalExpense = kind === "EXPENSE" && !shared && myMemberId !== "";
   // "Só meu" do ex-membro sob poderes plenos: o pagador só muda se o Administrador escolher (ele mesmo, se continuar "Só meu")
   const keepGonePayer = personalExpense && ownerGone && fullPower && payerId === ownerId;
-  const effectivePayerId = controllerOnly
-    ? ownerId
-    : personalExpense && !keepGonePayer
-      ? myMemberId
-      : payerId;
+  // SEC-048: ao dividir o "Só meu" de ex-membro, o pagador continua sendo o ex-membro (a API também recusa outro)
+  const lockGonePayer =
+    kind === "EXPENSE" && ownerGone && fullPower && !t.isSharedExpense && shared;
+  const effectivePayerId =
+    controllerOnly || lockGonePayer
+      ? ownerId
+      : personalExpense && !keepGonePayer
+        ? myMemberId
+        : payerId;
 
   function payload(confirmSettledPeriod?: boolean) {
     return {
@@ -256,7 +260,7 @@ export function EditTransactionForm({
         [
           ...(family.data?.members ?? [])
             .filter((m) =>
-              controllerOnly
+              controllerOnly || lockGonePayer
                 ? m.memberId === ownerId
                 : !personalExpense || m.memberId === myMemberId,
             )
@@ -277,7 +281,7 @@ export function EditTransactionForm({
             : []),
         ],
         errors.payerMemberId,
-        controllerOnly,
+        controllerOnly || lockGonePayer,
       )}
       {kind === "EXPENSE" ? (
         <div className="flex min-h-11 items-center justify-between gap-3">
