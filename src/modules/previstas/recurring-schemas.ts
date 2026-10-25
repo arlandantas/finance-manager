@@ -76,6 +76,7 @@ export type RecurringExpenseDTO = {
   amountInCents: number;
   category: { id: string; name: string; icon: string; archived: boolean };
   responsible: MemberRef;
+  author: MemberRef;
   isSharedExpense: boolean;
   paymentAccount: { id: string; name: string; archived: boolean } | null;
   dayOfMonth: number;

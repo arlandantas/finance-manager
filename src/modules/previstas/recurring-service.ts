@@ -22,7 +22,11 @@ import type {
 import { previstasRepo } from "@/modules/previstas/repo";
 import { checkCategory, checkPaymentAccount, memberMap } from "@/modules/previstas/service";
 import { assertCanShare } from "@/modules/split/guard";
-import { assertCanWritePlanned, assertPlannedResultAllowed } from "@/modules/transacoes/ownership";
+import {
+  assertCanWritePlanned,
+  assertPlannedNoCapture,
+  assertPlannedResultAllowed,
+} from "@/modules/transacoes/ownership";
 
 // ADR-025 / SDD-019 §3.3 e §3.5.
 const HORIZON = 12;
@@ -48,6 +52,7 @@ export function toSeriesDTO(row: SeriesRow, members: Map<string, MemberRef>): Re
       archived: row.category.archivedAt !== null,
     },
     responsible: members.get(row.responsibleMemberId) ?? unknownMember(row.responsibleMemberId),
+    author: members.get(row.authorMemberId) ?? unknownMember(row.authorMemberId),
     isSharedExpense: row.isSharedExpense,
     paymentAccount: row.paymentAccount
       ? {
@@ -247,6 +252,7 @@ export async function updateSeries(
   if (row.endedAt) throw seriesEnded();
   if (row.version !== input.version) throw await versionConflict(repo, tx, ctx, id);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026: série "Só meu" é só do responsável
+  assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
   assertPlannedResultAllowed(ctx, {
     isSharedExpense: input.isSharedExpense ?? row.isSharedExpense,
     responsibleMemberId: input.responsibleMemberId ?? row.responsibleMemberId,

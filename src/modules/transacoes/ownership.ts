@@ -105,6 +105,36 @@ export function assertPersonalForSelf(
 
 export type PlannedOwnershipRow = { isSharedExpense: boolean; responsibleMemberId: string };
 
+/**
+ * SEC-038 (D-GES-48): a mesma regra das despesas (`assertCanMakePersonal`) para previstas e séries. Numa prevista
+ * DIVIDIDA, só o responsável atual a torna "Só meu"; quem não é o responsável nem o autor também não se coloca
+ * como responsável (segundo caminho: trocar o responsável primeiro, "Só meu" depois). Regra pura (usada pela UI).
+ */
+export function violatesPlannedCapture(
+  viewer: { memberId: string },
+  current: PlannedOwnershipRow & { authorMemberId: string },
+  next: { isSharedExpense?: boolean | undefined; responsibleMemberId?: string | undefined },
+): boolean {
+  if (!current.isSharedExpense) return false; // "Só meu" já é só do responsável (assertCanWritePlanned)
+  const isOwner = current.responsibleMemberId === viewer.memberId;
+  if (next.isSharedExpense === false && !isOwner) return true;
+  return (
+    next.responsibleMemberId === viewer.memberId &&
+    !isOwner &&
+    current.authorMemberId !== viewer.memberId
+  );
+}
+
+export function assertPlannedNoCapture(
+  ctx: RequestContext,
+  current: PlannedOwnershipRow & { authorMemberId: string },
+  next: { isSharedExpense?: boolean | undefined; responsibleMemberId?: string | undefined },
+): void {
+  if (violatesPlannedCapture(ctx, current, next)) {
+    throw forbidden(PERSONAL_OWNER_ONLY_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
+  }
+}
+
 /** Regra pura (usada também pela UI) para editar, excluir ou dar baixa numa prevista. */
 export function canWritePlanned(
   row: PlannedOwnershipRow,

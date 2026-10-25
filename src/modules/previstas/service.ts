@@ -23,6 +23,7 @@ import { lockFamilySplit } from "@/modules/split/lock";
 import {
   assertCanWritePlanned,
   assertCanWriteTransaction,
+  assertPlannedNoCapture,
   assertPlannedResultAllowed,
 } from "@/modules/transacoes/ownership";
 import { createExpenseCore } from "@/modules/transacoes/service";
@@ -236,6 +237,7 @@ export async function updatePlannedExpense(
   const repo = previstasRepo(tx, ctx.familyId);
   const row = await loadForChange(tx, ctx, repo, id, input.version);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026a: "Só meu" é só do responsável
+  assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
   assertPlannedResultAllowed(ctx, {
     isSharedExpense: input.isSharedExpense ?? row.isSharedExpense,
     responsibleMemberId: input.responsibleMemberId ?? row.responsibleMemberId,

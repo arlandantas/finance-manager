@@ -34,6 +34,7 @@ import {
 } from "@/modules/previstas/schemas";
 import { splitSwitchLabel } from "@/modules/split/shares-label";
 import { useDefaults } from "@/modules/transacoes/hooks";
+import { violatesPlannedCapture } from "@/modules/transacoes/ownership";
 import { monthLabel } from "../extrato/filters";
 
 type FieldKey =
@@ -174,6 +175,22 @@ export function PlannedDrawer({
     ? !shared
     : !(planned?.isSharedExpense ?? series?.isSharedExpense ?? false);
   const effectiveResponsibleId = personalPlanned && me ? me : responsibleId;
+  // SEC-038: numa dividida de outro, não dá para virar "Só meu" nem se pôr como responsável (a API também recusa)
+  const existing = planned ?? series ?? null;
+  const capture = (next: { isSharedExpense?: boolean; responsibleMemberId?: string }) =>
+    !!me &&
+    !!existing &&
+    violatesPlannedCapture(
+      { memberId: me },
+      {
+        isSharedExpense: existing.isSharedExpense,
+        responsibleMemberId: existing.responsible.id,
+        authorMemberId: existing.author.id,
+      },
+      next,
+    );
+  const cannotBePersonal = capture({ isSharedExpense: false });
+  const cannotTakeOver = (memberId: string) => capture({ responsibleMemberId: memberId });
   useEffect(() => {
     if (open && !planned && me) setResponsibleId((cur) => cur || me);
   }, [open, planned, me]);
@@ -486,13 +503,19 @@ export function PlannedDrawer({
                   role="radio"
                   aria-checked={effectiveResponsibleId === m.memberId}
                   aria-label={m.name.split(" ")[0]}
-                  aria-disabled={personalPlanned && m.memberId !== me ? true : undefined}
+                  aria-disabled={
+                    (personalPlanned && m.memberId !== me) || cannotTakeOver(m.memberId)
+                      ? true
+                      : undefined
+                  }
                   onClick={() => {
+                    if (cannotTakeOver(m.memberId)) return;
                     if (!(personalPlanned && m.memberId !== me)) setResponsibleId(m.memberId);
                   }}
                   className={cn(
                     "flex min-h-11 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm font-medium",
-                    personalPlanned && m.memberId !== me && "opacity-50",
+                    ((personalPlanned && m.memberId !== me) || cannotTakeOver(m.memberId)) &&
+                      "opacity-50",
                     effectiveResponsibleId === m.memberId
                       ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
                       : "border-slate-200 bg-white dark:bg-slate-100 text-slate-700",
@@ -521,7 +544,11 @@ export function PlannedDrawer({
                 role="switch"
                 aria-checked={shared}
                 aria-labelledby="pl-shared-label"
-                onClick={() => setShared((v) => !v)}
+                aria-disabled={shared && cannotBePersonal ? true : undefined}
+                onClick={() => {
+                  if (shared && cannotBePersonal) return;
+                  setShared((v) => !v);
+                }}
                 className={cn(
                   "relative h-7 w-12 shrink-0 rounded-full transition-colors",
                   shared ? "bg-brand-700" : "bg-slate-300",
