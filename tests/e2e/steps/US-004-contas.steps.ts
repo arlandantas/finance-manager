@@ -196,9 +196,9 @@ Given("a conta {string}", async ({ page, world }, nome: string) => {
 
 When("altero o nome para {string}", async ({ page }, novo: string) => {
   await page.getByRole("button", { name: /^Ações da conta/ }).click();
-  await page.getByRole("menuitem", { name: "Renomear" }).click();
-  const dialog = page.getByRole("dialog", { name: "Renomear conta" });
-  await dialog.getByLabel("Novo nome").fill(novo);
+  await page.getByRole("menuitem", { name: "Editar" }).click();
+  const dialog = page.getByRole("dialog", { name: "Editar conta" });
+  await dialog.getByLabel("Nome").fill(novo);
   await dialog.getByRole("button", { name: "Salvar" }).click();
   await expect(dialog).toBeHidden();
 });
