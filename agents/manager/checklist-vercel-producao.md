@@ -1,6 +1,6 @@
 # Checklist de produção: Vercel, Prisma Postgres e GitHub
 
-*Para o dono do produto executar no painel. Extraído de [ADR-031](../tech-lead/adrs/ADR-031-producao-vercel-prisma-postgres.md), [producao.md](../tech-lead/architecture/producao.md) e [respostas-r4d-v2.md](../tech-lead/respostas-r4d-v2.md).*
+*Para o dono do produto executar no painel. Extraído de [ADR-031](../tech-lead/adrs/ADR-031-producao-vercel-prisma-postgres.md), [producao.md](../tech-lead/architecture/producao.md) e [respostas-r4d-v2.md](../_historico/tech-lead/respostas-r4d-v2.md).*
 
 **Domínio fixo:** `https://verbus-finance.vercel.app` (não mudar).
 **Banco:** Prisma Postgres, plano Free, usado só pelo dono.

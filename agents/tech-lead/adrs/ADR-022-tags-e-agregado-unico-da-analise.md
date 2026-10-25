@@ -1,7 +1,7 @@
 # ADR-022: Tags (normalização, N:N, mesclagem) e agregado único da Análise
 
 ## Status
-Aceito (Tech Lead, 2026-10-05). Responde às perguntas técnicas da PO sobre US-045..049 ([`pedidos-ao-tech-lead-r21-r3.md`](../../product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md)) e é a base do [SDD-016](../sdd/SDD-016-tags-e-visoes-sinteticas-esboco.md). Depende de [ADR-017](ADR-017-parcelamento-no-cartao-e-competencia.md) e [ADR-020](ADR-020-parcela-na-k-esima-fatura-e-competencia-no-banco.md) (competência) e do predicado único do [SDD-010](../sdd/SDD-010-resumo-do-mes-ocultar-valores-e-preferencias.md).
+Aceito (Tech Lead, 2026-10-05). Responde às perguntas técnicas da PO sobre US-045..049 ([`_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md`](../../_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md)) e é a base do [SDD-016](../sdd/SDD-016-tags-e-visoes-sinteticas-esboco.md). Depende de [ADR-017](ADR-017-parcelamento-no-cartao-e-competencia.md) e [ADR-020](ADR-020-parcela-na-k-esima-fatura-e-competencia-no-banco.md) (competência) e do predicado único do [SDD-010](../sdd/SDD-010-resumo-do-mes-ocultar-valores-e-preferencias.md).
 
 ## Contexto
 A R3 adiciona uma dimensão **transversal** (tags livres) e uma tela de **leitura agregada** (Análise). Os riscos técnicos são: (a) duplicar tags por caixa/acento ou por corrida; (b) um `JOIN` de tags que **multiplica linhas** e infla totais do Extrato; (c) a Análise divergir do Extrato e do Resumo do Mês (três "verdades" para o mesmo número); (d) editar tags em mês acertado ou em fatura paga sem efeito financeiro, mas bloqueado por regras feitas para dinheiro.

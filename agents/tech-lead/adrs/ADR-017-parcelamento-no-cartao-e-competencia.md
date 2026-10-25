@@ -1,7 +1,7 @@
 # ADR-017: Compra parcelada no cartão (N linhas no ledger) e competência da parcela
 
 ## Status
-Aceito (Tech Lead, 2026-10-04). **Estende o ADR-014** ("parcelamento reaproveita `CardInvoice`: N linhas `EXPENSE` com `installmentGroupId`, uma por fatura") e responde P1 de [`pedidos-ao-tech-lead-r21-r3.md`](../../product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md) (D-PO-25, D-PO-26, D-GES-16, D-GES-17). Implementação na **R3** (US-040..042); ver "Decisão sobre puxar para a R2.1".
+Aceito (Tech Lead, 2026-10-04). **Estende o ADR-014** ("parcelamento reaproveita `CardInvoice`: N linhas `EXPENSE` com `installmentGroupId`, uma por fatura") e responde P1 de [`_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md`](../../_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md) (D-PO-25, D-PO-26, D-GES-16, D-GES-17). Implementação na **R3** (US-040..042); ver "Decisão sobre puxar para a R2.1".
 
 ## Contexto
 US-040 pede compra parcelada (1x a 24x) com valor total, parcelas inteiras em centavos (sobra na 1ª), limite consumido pelo total e liberado a cada fatura paga, uma linha por parcela no Extrato e na fatura ("n/N") e **parcela contando como despesa no mês da fatura em que cai**, enquanto a compra à vista continua pela **data da compra** (D-PO-26). US-042 pede o acerto por parcela, com o percentual da regra vigente **na data da compra** fixo na série.

@@ -255,7 +255,7 @@ Nenhuma objeção bloqueante. As observações acima (D-PO-03, Q-13, Q-17) são 
 - Registro de que, no AP0, o acerto de contas cobre a dor vital; o desdobramento de compra (NEED-008) permanece no AP2.
 
 ### Entregas
-- [x] Atualização de [`cronograma-e-releases.md`](cronograma-e-releases.md): NEED-007 no AP0/R1, fatiamento R1/R2, AP1..AP3 coerentes.
+- [x] Atualização de [`cronograma-e-releases.md`](../../stakeholder/cronograma-e-releases.md): NEED-007 no AP0/R1, fatiamento R1/R2, AP1..AP3 coerentes.
 - [x] Esta entrada de validação.
 
 ---
@@ -299,7 +299,7 @@ Nenhuma objeção bloqueante. As observações acima (D-PO-03, Q-13, Q-17) são 
 - **Participantes:** Agente Stakeholder, em parceria com o Gestor (decisoes delegadas pelo usuario).
 - **Resultado:** v0 definida; 6 itens Must (bugs de modal e contraste, aviso do parcelado, conta fora do saldo, despesa recorrente mensal com conta de pagamento, faturas no A pagar, Inicio enxuta com filtros colapsados); 5 Should; pos-v0: transferencia agendada, US-053. Recorrente confirmado como inexistente no codigo.
 - **Producao:** bloqueantes = hospedagem, Postgres com backup, Google OAuth de producao, segredos e login de teste desligado; SMTP e Sentry fora da v0.
-- **Entrega:** [`escopo-v0-alpha.md`](escopo-v0-alpha.md).
+- **Entrega:** [`escopo-v0-alpha.md`](../../stakeholder/escopo-v0-alpha.md).
 
 
 ---
@@ -311,7 +311,7 @@ Nenhuma objeção bloqueante. As observações acima (D-PO-03, Q-13, Q-17) são 
 - **Resultado:** criados `NEED-024` (parcelas já pagas, Alta), `NEED-025` (MCP, Média), `NEED-026` (importação de fatura, Alta) e `NEED-027` (análise de gastos evitáveis, Média, concretiza `NEED-023`). `NEED-003` e `NEED-023` apontam para os novos. Encaixe proposto: 024, 026, 027, 025 (sem alterar releases homologadas).
 - **Princípios fixados:** IA nunca grava sozinha (revisão humana obrigatória), opt-in por família, minimização de dados enviados, anti-duplicidade na importação, MCP herda as permissões do membro.
 - **Perguntas abertas com o usuário (hipótese conservadora entre parênteses):** Q-U01 provedor externo (Anthropic, com opt-in); Q-U03 histórico de parcelas pagas (só o restante); Q-U04 MCP por membro (por membro); Q-U05 MCP só leitura inicialmente (sim); Q-U06 clientes de LLM (padrão aberto); Q-U07 enviar fatura inteira ao provedor (sim, com opt-in); Q-U08 chave da API do app vs. por usuário (uma do app com limite mensal); Q-U09 formatos (PDF e CSV); Q-U10 teto de custo; Q-U11 descrições na análise (só agregados no início); Q-U12 critério de "evitável" (método fixo).
-- **Entrega:** [`needs/NEED-024..027`](needs/), atualização de `needs-overview.md`, `requisitos-negocio.md` (RF42..45, RN15..16) e `cronograma-e-releases.md`.
+- **Entrega:** [`needs/NEED-024..027`](../../stakeholder/needs/), atualização de `needs-overview.md`, `requisitos-negocio.md` (RF42..45, RN15..16) e `cronograma-e-releases.md`.
 
 ---
 

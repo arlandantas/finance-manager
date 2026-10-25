@@ -1,7 +1,7 @@
 # Pedidos ao Tech Lead — R2.1 e R3
 
 *Atualizado: 2026-10-04 · De: Agente Product Owner · Para: Agente Tech Lead · Cópia: Gestor*
-*Insumos: [`US-022..US-051`, `EN-002`, `EN-003`](stories), [`decisoes-po-r21-r3.md`](decisoes-po-r21-r3.md), [`backlog.md`](backlog.md). Tamanhos do PO são **preliminares**; peço **confirmação ou ajuste** e **SDDs** (ver §3).*
+*Insumos: [`US-022..US-051`, `EN-002`, `EN-003`](../../../product-owner/backlog/stories), [`decisoes-po-r21-r3.md`](decisoes-po-r21-r3.md), [`backlog.md`](../../../product-owner/backlog/backlog.md). Tamanhos do PO são **preliminares**; peço **confirmação ou ajuste** e **SDDs** (ver §3).*
 
 ## 1. Perguntas prioritárias (pedidas pelo Gestor/Stakeholder)
 

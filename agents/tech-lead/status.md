@@ -17,7 +17,7 @@
 ---
 
 ## Ciclo R4-D v2 (D-GES-36 + refinamentos do Gestor): hospedagem revista, lançamento direto, POC com Claude
-Respostas, estimativas, ordem, decisões pendentes e ajustes de BDD: **[`respostas-r4d-v2.md`](respostas-r4d-v2.md)**.
+Respostas, estimativas, ordem, decisões pendentes e ajustes de BDD: **[`_historico/tech-lead/respostas-r4d-v2.md`](../_historico/tech-lead/respostas-r4d-v2.md)**.
 
 | Artefato | Mudança |
 | :--- | :--- |
@@ -36,7 +36,7 @@ Respostas, estimativas, ordem, decisões pendentes e ajustes de BDD: **[`respost
 ---
 
 ## Ciclo R4-D (D-GES-35): EN-006 e US-074..077 **Especificadas** (MCP por membro, OAuth próprio, leitura e lançamento em duas etapas)
-Respostas completas, verificação de cada cliente com fontes, ordem técnica, rastreabilidade e pendências: **[`respostas-r4d.md`](respostas-r4d.md)**. Resolve o TL-33.
+Respostas completas, verificação de cada cliente com fontes, ordem técnica, rastreabilidade e pendências: **[`_historico/tech-lead/respostas-r4d.md`](../_historico/tech-lead/respostas-r4d.md)**. Resolve o TL-33.
 
 | Artefato | Cobre | Observação |
 | :--- | :--- | :--- |
@@ -52,7 +52,7 @@ Respostas completas, verificação de cada cliente com fontes, ordem técnica, r
 ---
 
 ## Ciclo R4 (D-GES-27..30): US-065, EN-004, EN-005 e US-070..073 **Especificadas**; importação (R5) com parecer; MCP especificado no ciclo R4-D
-Respostas completas, ordem técnica, rastreabilidade e pendências: **[`respostas-r4.md`](respostas-r4.md)**.
+Respostas completas, ordem técnica, rastreabilidade e pendências: **[`_historico/tech-lead/respostas-r4.md`](../_historico/tech-lead/respostas-r4.md)**.
 
 | Artefato | Cobre | Observação |
 | :--- | :--- | :--- |
@@ -71,7 +71,7 @@ Respostas completas, ordem técnica, rastreabilidade e pendências: **[`resposta
 ---
 
 ## Ciclo R2.1 e R3 (pós-homologação): R2.1 **Especificada** (SDD-010..013); **R3 Especificada** (SDD-014..017, 2026-10-05); EN-003 **concluída** (ADR-018)
-Respostas completas, estimativas por história, ordem técnica, riscos e ajustes pedidos ao PO: **[`respostas-r21-r3.md`](respostas-r21-r3.md)**.
+Respostas completas, estimativas por história, ordem técnica, riscos e ajustes pedidos ao PO: **[`_historico/tech-lead/respostas-r21-r3.md`](../_historico/tech-lead/respostas-r21-r3.md)**.
 
 | Artefato | Cobre | Observação |
 | :--- | :--- | :--- |
@@ -112,7 +112,7 @@ Respostas completas, estimativas por história, ordem técnica, riscos e ajustes
 ### Riscos técnicos (R2.1/R3)
 | Risco | Mitigação |
 | :-- | :-- |
-| Corrida arquivar × postar; acerto com ex-membro; default `isSharedExpense`; vazamento com "ocultar"; migração do acerto (1 centavo); `competenceOn` esquecido | Ver [`respostas-r21-r3.md` §6](respostas-r21-r3.md) |
+| Corrida arquivar × postar; acerto com ex-membro; default `isSharedExpense`; vazamento com "ocultar"; migração do acerto (1 centavo); `competenceOn` esquecido | Ver [`_historico/tech-lead/respostas-r21-r3.md` §6](../_historico/tech-lead/respostas-r21-r3.md) |
 | **Migração do acerto** (R3, o maior risco do produto) | ADR-021: pesos exatos + prova, `READ COMMITTED` com trava de família, *gate* por período (inclui rótulo), "teste do teste" (+1 centavo tem de falhar), harness ≥ 200 famílias, `--dry-run` em dados reais, `--verify`, reversão em 2 níveis, **janela de reversão** (TL-11) |
 | Parcela na fatura errada em borda; competência esquecida | ADR-020 (ref consecutiva, gatilho `tx_sync_competence`, `CHECK`s); predicado único + `check:imports` (`occurredOn` **e** `competenceOn`); propriedade de reconciliação Extrato = Resumo = Acerto = Análise |
 | Escrita concorrente na migração | `lockFamilySplit` em **toda** escrita relevante (varredura estática + `Promise.all`) |
@@ -121,7 +121,7 @@ Respostas completas, estimativas por história, ordem técnica, riscos e ajustes
 | Cor ilegível no tema escuro | Teste de contraste lê os tokens reais do `globals.css` (≥ 3:1) |
 
 ### Pendências com outros agentes (R2.1/R3)
-- **PO** (feito em 2026-10-04/05): os ajustes de [`respostas-r21-r3.md` §8](respostas-r21-r3.md) foram aplicados. **Novos pedidos (SDD-014..017)**, todos não bloqueantes: marcar US-040..051 e EN-002 como **Especificadas**; no BDD da US-040 informar o **intervalo** do Extrato nos cenários "uma linha por parcela" e "Ver compra"; confirmar TL-12 (parcela trava em fatura **fechada**), TL-13 (revisão sem parcelas), TL-14/15/19/20 (tags e Análise: `untagged`, caracteres, "Quem pagou", edição não financeira), TL-16 (rótulo "Parcelas futuras"), TL-21 (`kind` imutável); acrescentar à US-043 o cenário "Previsão com divisão própria: a baixa herda"; mensagem "A tag só pode ter letras, números, hífen, ponto e sublinhado" na US-045.
+- **PO** (feito em 2026-10-04/05): os ajustes de [`_historico/tech-lead/respostas-r21-r3.md` §8](../_historico/tech-lead/respostas-r21-r3.md) foram aplicados. **Novos pedidos (SDD-014..017)**, todos não bloqueantes: marcar US-040..051 e EN-002 como **Especificadas**; no BDD da US-040 informar o **intervalo** do Extrato nos cenários "uma linha por parcela" e "Ver compra"; confirmar TL-12 (parcela trava em fatura **fechada**), TL-13 (revisão sem parcelas), TL-14/15/19/20 (tags e Análise: `untagged`, caracteres, "Quem pagou", edição não financeira), TL-16 (rótulo "Parcelas futuras"), TL-21 (`kind` imutável); acrescentar à US-043 o cenário "Previsão com divisão própria: a baixa herda"; mensagem "A tag só pode ter letras, números, hífen, ponto e sublinhado" na US-045.
 - **Gestor:** itens **TL-02..TL-09** (R2.1) e **TL-10..TL-22** (R3) em [`../manager/pedidos-ao-gestor.md`](../manager/pedidos-ao-gestor.md), todos com hipótese conservadora e **nenhum bloqueante**. **Decisão pedida:** TL-11 (US-042 só depois da janela de reversão da EN-002, ou antecipada com reversão limitada).
 - **Dev & QA:** (R2.1 em andamento) rodar a linha de base E2E completa (D-GES-19) antes da US-022; seguir a ordem técnica; SDD-011 §9 e SDD-010 §9 listam o que muda em R1/R2. **Preparação barata na R2.1** (evita retrabalho na R3): manter `ledger-where.ts` como **único** ponto de período; fábricas aceitando `split?`/`tags?`/`color?` (ignorados até a história); `explainByRules` recebendo o `SettlementResult` (já é o contrato). **R3** (contratos prontos): ordem US-040a ➜ 040b ➜ EN-002a ➜ 002b ➜ (release R3-A) ➜ US-042 ➜ US-043 ➜ US-041 ➜ US-044 ➜ US-045 ➜ 047 ➜ 046 ➜ 048 ➜ 049 ➜ 050 ➜ 051; **a EN-002 só começa com os vetores S1..S16 e os dados homologados verdes** e a refatoração `computeSettlementLegacy` num *commit* à parte.
 - **Stakeholder:** validar a assimetria D-PO-26 (parcela por mês da fatura × à vista por data) na homologação da R3.

@@ -1,7 +1,7 @@
 # ADR-018: Spike de modelo — uma pessoa em mais de um grupo e conta privada dentro do grupo (EN-003)
 
 ## Status
-Aceito como **diagnóstico e recomendação** (Tech Lead, 2026-10-04). **Sem implementação e sem mudança de comportamento** (aceite da EN-003). Responde P2 de [`pedidos-ao-tech-lead-r21-r3.md`](../../product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md) (NEED-021, Q-F08, D-PO-02, D-PO-32). Evidência: leitura de `prisma/schema.prisma`, `src/lib/api/with-api.ts`, `src/modules/familia/**`, `src/lib/auth/session.ts`, SDD-000..009 e ADR-012/013, em 2026-10-04.
+Aceito como **diagnóstico e recomendação** (Tech Lead, 2026-10-04). **Sem implementação e sem mudança de comportamento** (aceite da EN-003). Responde P2 de [`_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md`](../../_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md) (NEED-021, Q-F08, D-PO-02, D-PO-32). Evidência: leitura de `prisma/schema.prisma`, `src/lib/api/with-api.ts`, `src/modules/familia/**`, `src/lib/auth/session.ts`, SDD-000..009 e ADR-012/013, em 2026-10-04.
 
 ## 1. Diagnóstico: o vínculo usuário↔família é N:N?
 **Estruturalmente sim; por regra, 1:1.** `Member` já é a **tabela de junção** `(userId, familyId, role, joinedAt)`, com identidade própria (`Member.id`) e todas as FKs do domínio apontando para `(familyId, memberId)` (autoria, pagador, titular, responsável). O que impõe "uma família por usuário" é **uma única restrição** e o código que a usa:

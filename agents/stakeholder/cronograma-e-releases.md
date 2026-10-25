@@ -88,7 +88,7 @@ Do ponto de vista de negócio, o AP0 só se considera concluído com a R2; a R1 
 
 ## 🔁 Revisão pós-homologação R1+R2 — R2.1 e R3 (2026-10-04)
 
-Após a homologação com ressalvas e o feedback do usuário (detalhes em [`parecer-feedback-usuario.md`](parecer-feedback-usuario.md)), o fatiamento passa a ser:
+Após a homologação com ressalvas e o feedback do usuário (detalhes em [`_historico/stakeholder/parecer-feedback-usuario.md`](../_historico/stakeholder/parecer-feedback-usuario.md)), o fatiamento passa a ser:
 
 | Entrega | Conteúdo | Prioridade |
 | :--- | :--- | :--- |

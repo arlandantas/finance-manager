@@ -1,7 +1,7 @@
 # ADR-016: Percentual de divisão gravado por lançamento (rateio por membro) e migração sem mudar números
 
 ## Status
-Aceito (Tech Lead, 2026-10-04). **Emenda o ADR-011** (a regra versionada deixa de *calcular* o acerto e passa a *sugerir* o percentual inicial). Responde P3 e P4 de [`pedidos-ao-tech-lead-r21-r3.md`](../../product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md). Implementa a **EN-002** e habilita US-042, US-043 e US-044 (**R3**). **Nada neste ADR é implementado na R2.1**; a R2.1 só deixa as costuras descritas na seção "Preparação na R2.1".
+Aceito (Tech Lead, 2026-10-04). **Emenda o ADR-011** (a regra versionada deixa de *calcular* o acerto e passa a *sugerir* o percentual inicial). Responde P3 e P4 de [`_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md`](../../_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md). Implementa a **EN-002** e habilita US-042, US-043 e US-044 (**R3**). **Nada neste ADR é implementado na R2.1**; a R2.1 só deixa as costuras descritas na seção "Preparação na R2.1".
 
 ## Contexto
 Hoje o acerto usa a **regra vigente na data de cada despesa** (ADR-011): `computeSettlement` agrupa as despesas comuns por versão de regra, aplica o **maior resto sobre o total do grupo** e soma. O Stakeholder (Q-F02b, item 9b) quer o percentual **definido no lançamento**, gravado, com os modos "Só meu / Pela regra / De outro jeito", reembolso (0%/100%), parcelas que herdam o percentual da compra e, no futuro, N > 2 membros e ex-membros. Os números homologados não podem mudar nem 1 centavo (outubro: R$ 3.169,90 / cota R$ 1.584,95 / diferença R$ 1.149,95; setembro: R$ 717,00 / R$ 358,50 / R$ 260,50; mês com troca 50/50 ➔ 58/42: cotas R$ 780,00 e R$ 620,00).

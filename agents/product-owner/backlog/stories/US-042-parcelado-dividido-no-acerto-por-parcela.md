@@ -92,7 +92,7 @@ Funcionalidade: Parcelado dividido no acerto
 Percentual diferente por parcela; acelerar o acerto das parcelas futuras; ajuste por juros.
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- Assimetria declarada: compra **à vista** divide pela **data da compra** (US-016a) e a **parcela** pelo **mês da fatura**. Se uma compra à vista feita em 28/11 cai na fatura de dez, ela conta em novembro, mas a parcela 1 de uma compra parcelada no mesmo dia conta em dezembro. Confirmar com o TL/Stakeholder (ver D-PO-26 e `pedidos-ao-tech-lead-r21-r3.md`).
+- Assimetria declarada: compra **à vista** divide pela **data da compra** (US-016a) e a **parcela** pelo **mês da fatura**. Se uma compra à vista feita em 28/11 cai na fatura de dez, ela conta em novembro, mas a parcela 1 de uma compra parcelada no mesmo dia conta em dezembro. Confirmar com o TL/Stakeholder (ver D-PO-26 e `_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md`).
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (Q-F05, RN-003.8).

@@ -6,7 +6,7 @@
 ## 1. Resumo (uma tela)
 | Item | Resposta |
 | :-- | :-- |
-| **Entregue** | [ADR-027](adrs/ADR-027-parcelas-anteriores-ao-app.md) + [SDD-020](sdd/SDD-020-parcelas-ja-pagas-na-entrada.md) (US-065) · [ADR-028](adrs/ADR-028-integracao-llm-cliente-unico-e-teto-de-custo.md) + [SDD-021](sdd/SDD-021-infra-llm-en-004.md) (EN-004) · [ADR-029](adrs/ADR-029-privacidade-e-anonimizacao-para-llm.md) + [SDD-022](sdd/SDD-022-opt-in-privacidade-en-005.md) (EN-005) · [SDD-023](sdd/SDD-023-analise-de-gastos-evitaveis.md) (US-070..073) · [parecer R5](parecer-r5-importacao-local.md) (importação). Todos **Aprovados para Desenvolvimento**, exceto o parecer (só parecer). |
+| **Entregue** | [ADR-027](../../tech-lead/adrs/ADR-027-parcelas-anteriores-ao-app.md) + [SDD-020](../../tech-lead/sdd/SDD-020-parcelas-ja-pagas-na-entrada.md) (US-065) · [ADR-028](../../tech-lead/adrs/ADR-028-integracao-llm-cliente-unico-e-teto-de-custo.md) + [SDD-021](../../tech-lead/sdd/SDD-021-infra-llm-en-004.md) (EN-004) · [ADR-029](../../tech-lead/adrs/ADR-029-privacidade-e-anonimizacao-para-llm.md) + [SDD-022](../../tech-lead/sdd/SDD-022-opt-in-privacidade-en-005.md) (EN-005) · [SDD-023](../../tech-lead/sdd/SDD-023-analise-de-gastos-evitaveis.md) (US-070..073) · [parecer R5](../../tech-lead/parecer-r5-importacao-local.md) (importação). Todos **Aprovados para Desenvolvimento**, exceto o parecer (só parecer). |
 | **Pontos (R4 revista)** | **34** = US-065 5 · EN-004 8 · EN-005 5 · US-070 8 (070a 5 + 070b 3) · US-071 3 · US-072 3 · US-073 2. **Igual ao PO** nessas histórias. Importação (21) e MCP (26) fora desta rodada. |
 | **Maior risco** | Vazamento de dado pessoal para a LLM ⇒ *allowlist* construída + schema `.strict()` + teste de propriedade com nomes/CPF/instruções maliciosas + "enviado = exibido" byte a byte (ADR-029 §5). |
 | **Achado 1 (conflito com D-GES-29)** | A US-070 pressupunha enviar o **nome do recorrente** ("Streaming X") e a US-072 a **descrição** ("Droga Raia"). Resolvido: recorrente vai como **referência opaca** `R1` (o nome só aparece na tela, resolvido localmente) e a US-072 vira **regra local sem IA** (consistência do histórico). |
@@ -28,7 +28,7 @@
 | 2.4 | Termos do provedor / texto do opt-in | O texto **não** promete retenção zero nem "sem treino" até o Gestor confirmar os termos da conta (TL-26). Texto seguro proposto em ADR-029 §7. |
 | 2.5 | Payload mínimo da análise; "recorrente" sem texto livre; normalização para o descarte | Contrato exato `AnalysisPayloadSchema` (SDD-023 §2.1); recorrência detectada **localmente** (`descriptionKey` normalizada, ≥ 3 meses, variação ≤ 1,5×) + séries `RecurringExpense`; descarte por `(categoria, descriptionKey)` ou `recurringExpenseId`. |
 | 2.6 | LGPD | Consentimento registrado e revogável, apagar análises (`DELETE` físico), registro sem conteúdo, menção de transferência internacional no texto (ADR-029 §8). |
-| 3 | ADR do MCP | Feito no ciclo R4-D: [ADR-030](adrs/ADR-030-servidor-mcp-oauth-proprio-e-hospedagem.md) e SDD-024..027; ver [`respostas-r4d.md`](respostas-r4d.md). |
+| 3 | ADR do MCP | Feito no ciclo R4-D: [ADR-030](../../tech-lead/adrs/ADR-030-servidor-mcp-oauth-proprio-e-hospedagem.md) e SDD-024..027; ver [`respostas-r4d.md`](respostas-r4d.md). |
 | 4 | Controle de custo | Micro-reais `BigInt`; **reserva antes / acerto depois** sob `FOR UPDATE` (dois pedidos simultâneos não estouram o teto); mês civil em São Paulo; teto por env + sobrescrita por família via *script*; sem teto configurado em produção ⇒ IA indisponível (SDD-021 §4.3). |
 | 5 | Testes sem API real | `FakeLlmAdapter` por cenário, fixtures, teste de contrato do *adapter* com HTTP simulado, trava que falha a suíte se o provedor real for configurado, teste de ouro manual `pnpm ai:golden` (ADR-028 §7, SDD-021 §8, SDD-023 §8). |
 
@@ -57,7 +57,7 @@
 | NEED-027 | US-071 | FLUXO-017 | SDD-023 | ADR-029 | Aprovado p/ Dev |
 | NEED-027 | US-072 | FLUXO-017 | SDD-023 §4.6 | ADR-029 §4 | Aprovado p/ Dev **se TL-24 aceita** |
 | NEED-027 | US-073 | FLUXO-017 | SDD-023 | ADR-029 §6 | Aprovado p/ Dev |
-| NEED-026 | US-066..069 | FLUXO-015 | — | — | **R5**; [parecer](parecer-r5-importacao-local.md) |
+| NEED-026 | US-066..069 | FLUXO-015 | — | — | **R5**; [parecer](../../tech-lead/parecer-r5-importacao-local.md) |
 | NEED-025 | EN-006, US-074..077 | FLUXO-016 §3 | SDD-024..027 | ADR-030 | Especificado no ciclo R4-D ([`respostas-r4d.md`](respostas-r4d.md)) |
 
 ## 5. Pendências — ⚠ = **EXIGE decisão do usuário**

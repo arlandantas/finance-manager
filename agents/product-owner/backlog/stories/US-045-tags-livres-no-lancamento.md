@@ -128,7 +128,7 @@ Funcionalidade: Tags livres no lançamento
 Hierarquia, cor ou orçamento por tag (RN-013.6); tags automáticas; tags em transferência/acerto; limite rígido.
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- Normalização (caixa e acentos) e unicidade por família; tabela `Tag` e N:N; índice para filtro (ver `pedidos-ao-tech-lead-r21-r3.md`).
+- Normalização (caixa e acentos) e unicidade por família; tabela `Tag` e N:N; índice para filtro (ver `_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md`).
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 1, Q-F09). Correção de redação: acentos e caixa são normalizados; variações ortográficas ("viajem") **não** são unificadas (só sugestão ao digitar).

@@ -34,7 +34,7 @@
 ## Ratificações (R2.1 e R3)
 | ID | Decisão |
 | :-- | :-- |
-| D-GES-14 | **Ratificadas D-PO-12..32** (`product-owner/backlog/decisoes-po-r21-r3.md`) e o parecer do Stakeholder (Q-F01..Q-F14). O usuário delegou as decisões ao time. |
+| D-GES-14 | **Ratificadas D-PO-12..32** (`_historico/product-owner/backlog/decisoes-po-r21-r3.md`) e o parecer do Stakeholder (Q-F01..Q-F14). O usuário delegou as decisões ao time. |
 | D-GES-15 | **D-PO-16 aceita:** despesas previstas também nascem "Só meu" (revisa Q-22). O fechamento do mês avisa as não divididas. |
 | D-GES-16 | **D-PO-26 aceita:** parcela conta no mês da fatura; à vista segue pela data da compra. O Tech Lead avalia no SDD e sinaliza se a assimetria gerar inconsistência no Extrato/Resumo. |
 | D-GES-17 | **Parcelamento (US-040/042):** puxado para o fim dos Must da R2.1 se o Tech Lead estimar US-040 ≤ 5 e US-042 ≤ 3 e não depender da EN-002; senão fica como 1º item da R3. |

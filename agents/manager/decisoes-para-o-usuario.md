@@ -19,7 +19,7 @@
 - **Estimativa:** R1 = 70 pontos; R2 = 32 pontos (Tech Lead e PO concordam).
 
 ## C. Validação prática (só você pode dar)
-Usar o app com login de teste e dizer se o fluxo *lançar → acertar → ver a home* resolve a dor de fechar o mês em casal. Relatório de QA da R1: `agents/developer/tasks/qa-r1.md` (quando pronto).
+Usar o app com login de teste e dizer se o fluxo *lançar → acertar → ver a home* resolve a dor de fechar o mês em casal. Relatório de QA da R1: `agents/_historico/developer/tasks/qa-r1.md` (quando pronto).
 
 ## D. Contas e serviços externos
 Ver [`pendencias-externas.md`](pendencias-externas.md) (Google OAuth, SMTP/domínio, hospedagem, Sentry, CI, `AUTH_SECRET`).
@@ -28,7 +28,7 @@ Ver [`pendencias-externas.md`](pendencias-externas.md) (Google OAuth, SMTP/domí
 Ver `pendencias-externas.md`, item EXT-10.
 
 ## F. R4 proposta: parcelas pagas, importação de fatura, análise por IA e MCP (2026-10-24)
-Origem: NEED-024..027, backlog R4 (US-065..077, EN-004..006, 81 pts PO prelim.) e [`decisoes-po-ia-e-parcelas.md`](../product-owner/backlog/decisoes-po-ia-e-parcelas.md). Hipóteses valem até o usuário responder.
+Origem: NEED-024..027, backlog R4 (US-065..077, EN-004..006, 81 pts PO prelim.) e [`_historico/product-owner/backlog/decisoes-po-ia-e-parcelas.md`](../_historico/product-owner/backlog/decisoes-po-ia-e-parcelas.md). Hipóteses valem até o usuário responder.
 
 | ID | Decisão | Hipótese adotada | Bloqueia |
 | :-- | :-- | :-- | :-- |
@@ -42,4 +42,4 @@ Origem: NEED-024..027, backlog R4 (US-065..077, EN-004..006, 81 pts PO prelim.) 
 
 **Atualização (2026-10-24):** Q-U01 respondida (opt-in por família + anonimização máxima); Q-U08 respondida (chave única do app); Q-U10 **em análise** pelo usuário; importação de fatura (Q-U07/Q-U09) **adiada para a R5** (D-GES-28). Ver D-GES-27..30.
 
-**Pendentes após o Tech Lead (2026-10-24):** TL-23 (enviar o rótulo saneado da categoria, único texto livre do payload; hipótese: sim), TL-24 (US-072 como regra local, sem IA; hipótese: sim), TL-25 (retenção das análises, expurgo em 24 meses), TL-26 (retenção da Anthropic: o opt-in não promete retenção zero por ora), TL-27 (**teto mensal**; sugestão R$ 5,00 por família, ≈ R$ 0,01 por análise), TL-29 (R5 de importação sem IA, extração local de CSV/OFX/PDF-texto; hipótese: sim). Detalhes em `tech-lead/respostas-r4.md`.
+**Pendentes após o Tech Lead (2026-10-24):** TL-23 (enviar o rótulo saneado da categoria, único texto livre do payload; hipótese: sim), TL-24 (US-072 como regra local, sem IA; hipótese: sim), TL-25 (retenção das análises, expurgo em 24 meses), TL-26 (retenção da Anthropic: o opt-in não promete retenção zero por ora), TL-27 (**teto mensal**; sugestão R$ 5,00 por família, ≈ R$ 0,01 por análise), TL-29 (R5 de importação sem IA, extração local de CSV/OFX/PDF-texto; hipótese: sim). Detalhes em `_historico/tech-lead/respostas-r4.md`.

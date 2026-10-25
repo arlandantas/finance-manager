@@ -50,7 +50,7 @@ Funcionalidade: Spike de modelo de múltiplos grupos
 Qualquer interface ou migração de dados; grupos não familiares (necessidade c); permissões granulares (US-020).
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- Ver `pedidos-ao-tech-lead-r21-r3.md` (item "spike de múltiplos grupos").
+- Ver `_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md` (item "spike de múltiplos grupos").
 
 ## Histórico
 - 2026-10-04 — Criado a partir do parecer (item 16, Q-F08).

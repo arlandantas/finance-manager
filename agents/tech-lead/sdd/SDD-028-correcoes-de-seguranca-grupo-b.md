@@ -2,7 +2,7 @@
 
 Estado vigente consolidado em agents/estado/seguranca.md
 
-- **Decisão**: [ADR-032](../adrs/ADR-032-correcoes-de-seguranca-grupo-b.md) · **Origem**: D-GES-40 · [relatório SEC 2026-10-24](../../security/relatorios/levantamento-2026-10-24.md)
+- **Decisão**: [ADR-032](../adrs/ADR-032-correcoes-de-seguranca-grupo-b.md) · **Origem**: D-GES-40 · [relatório SEC 2026-10-24](../../_historico/security/relatorios/levantamento-2026-10-24.md)
 - **Toca**: SDD-003 §5.4–5.6 (convite e gate), SDD-021 §4.3 (teto de LLM), SDD-024 §4.3–4.9 (authorize, consentimento, CIMD), SDD-025 §4.1/§8.1 (tela de consentimento), SDD-026 §1 (saída das ferramentas), ADR-002/RN-012.3 (sessão), ADR-019 (ex-membro), ADR-031 §8 (*cron*)
 - **Status**: **Aprovado para Desenvolvimento** com recomendações do TL nos pontos [U] (§9). Uma decisão diferente do usuário muda só parâmetros, não a estrutura.
 - **Executor**: Dev & QA. Modelo **Sonnet** para SEC-004/009/010/011/013/017a/017b. **Opus** para SEC-018 (migração de sessão), 017c e 017d (apagamento e anonimização).

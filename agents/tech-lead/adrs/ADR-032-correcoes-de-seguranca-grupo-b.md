@@ -2,7 +2,7 @@
 
 ## Status
 Proposto (Tech Lead), 2026-10-24. Aceito para especificação. Os itens marcados **[U]** dependem de decisão do usuário (§9); até lá vale a recomendação do TL descrita aqui.
-Rastreabilidade: **D-GES-40** (Grupo B, desenho antes, TL) · relatório [`levantamento-2026-10-24.md`](../../security/relatorios/levantamento-2026-10-24.md) · especificação: **[SDD-028](../sdd/SDD-028-correcoes-de-seguranca-grupo-b.md)**.
+Rastreabilidade: **D-GES-40** (Grupo B, desenho antes, TL) · relatório [`_historico/security/relatorios/levantamento-2026-10-24.md`](../../_historico/security/relatorios/levantamento-2026-10-24.md) · especificação: **[SDD-028](../sdd/SDD-028-correcoes-de-seguranca-grupo-b.md)**.
 **Fora deste ADR:** SEC-021 (regra de negócio, pergunta ao usuário), SEC-001/015/016/008 (risco aceito, D-GES-40) e o Grupo A (correção direta pelo Dev).
 
 ## Contexto

@@ -47,7 +47,7 @@ Preciso de **SDD (contratos, estados de UI, mapeamento Gherkin ➔ testes)** e *
 8. **Fonte única do "A pagar" (US-055/061/063):** Início, A pagar e Resumo consomem a mesma consulta; propriedade de teste "totais iguais".
 9. **Diálogos (US-056):** camada única (portal/z-index/pilha de foco) e como testar contraste nos dois temas de forma automatizada.
 
-Restrições: nenhum cálculo existente muda (valores homologados 3.169,90 / 1.584,95 / 1.149,95 e S1..S16 verdes); notas de Gherkin conforme [`pedidos-ao-tech-lead-r21-r3.md`](pedidos-ao-tech-lead-r21-r3.md) §4. Entrega pedida: SDD-019, estimativas e dependências que alterem a ordem acima.
+Restrições: nenhum cálculo existente muda (valores homologados 3.169,90 / 1.584,95 / 1.149,95 e S1..S16 verdes); notas de Gherkin conforme [`_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md`](../../_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md) §4. Entrega pedida: SDD-019, estimativas e dependências que alterem a ordem acima.
 
 ## 5. Histórico
 - 2026-10-05 — Criado a partir do `escopo-v0-alpha.md` (IDs US-056..064).

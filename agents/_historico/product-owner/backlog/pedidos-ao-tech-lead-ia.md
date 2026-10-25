@@ -1,7 +1,7 @@
 # Pedidos ao Tech Lead — R4: parcelas já pagas, LLM (fatura e análise) e MCP
 
 *Atualizado: 2026-10-24 · De: Agente Product Owner · Para: Agente Tech Lead · Cópia: Gestor*
-*Insumos: [`US-065..US-077`](stories), [`EN-004..EN-006`](stories), [`decisoes-po-ia-e-parcelas.md`](decisoes-po-ia-e-parcelas.md) (D-PO-53..69, Q-U01..Q-U12), fluxos 015..017. Os pontos do PO são **preliminares**; peço confirmação ou reestimativa e SDD/ADR.*
+*Insumos: [`US-065..US-077`](../../../product-owner/backlog/stories), [`EN-004..EN-006`](../../../product-owner/backlog/stories), [`decisoes-po-ia-e-parcelas.md`](decisoes-po-ia-e-parcelas.md) (D-PO-53..69, Q-U01..Q-U12), fluxos 015..017. Os pontos do PO são **preliminares**; peço confirmação ou reestimativa e SDD/ADR.*
 
 ## 0. Resumo do pedido
 
@@ -70,4 +70,4 @@
 | EN-006 MCP | 8 | ADR de autenticação |
 | US-074 / 075 / 076 / 077 | 5 / 5 / 5 / 3 | Confirmação da escrita |
 
-**Ordem de execução e corte** em [`backlog.md`](backlog.md) (seção R4). Restrição: nada nesta rodada altera o motor do acerto nem a EN-002.
+**Ordem de execução e corte** em [`backlog.md`](../../../product-owner/backlog/backlog.md) (seção R4). Restrição: nada nesta rodada altera o motor do acerto nem a EN-002.

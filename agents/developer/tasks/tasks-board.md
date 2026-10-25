@@ -306,7 +306,7 @@ EN-001 (complemento), US-001, US-002, US-004, US-005, US-006, US-007 e US-003 **
 ---
 
 ## 📌 Estado do Incremento 2
-US-008, US-009a, US-010, US-011, US-012, US-009b, US-013a e US-013b **concluídas e commitadas**, com todos os portões verdes. Pendente: passada de regressão completa do R1 e relatório `qa-r1.md`.
+US-008, US-009a, US-010, US-011, US-012, US-009b, US-013a e US-013b **concluídas e commitadas**, com todos os portões verdes. Pendente: passada de regressão completa do R1 e relatório `_historico/developer/tasks/qa-r1.md`.
 
 
 ---
@@ -494,7 +494,7 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 
 ## R4-C
 ### [TASK-059..063] Análise de gastos evitáveis (US-070a, 070b, 071, 073, 072)
-- **Especificação**: [SDD-023](../../tech-lead/sdd/SDD-023-analise-de-gastos-evitaveis.md), [respostas-r4](../../tech-lead/respostas-r4.md) · FLUXO-017 · D-GES-27..33
+- **Especificação**: [SDD-023](../../tech-lead/sdd/SDD-023-analise-de-gastos-evitaveis.md), [respostas-r4](../../_historico/tech-lead/respostas-r4.md) · FLUXO-017 · D-GES-27..33
 - **Status**: Concluído (aguardando validação do Gestor). Ordem entregue: 070a, 070b, 071, 073, 072.
 - **Arquivos**: `src/modules/analise-ia/{aggregates,recurring,output,prompt,fake-fixtures,fake-register,build-dto,readable,dismissals,suggestions,rules-category-suggestion,service,schemas,labels,dto,hooks}.ts`; rotas `src/app/api/v1/ai/{spending-analysis/preview,spending-analyses,avoidable-dismissals}` e `src/app/api/v1/category-suggestions`; telas `src/app/(app)/analise/gastos-evitaveis/*`; `runLlm.beforeReserve`, `withApi.timeoutMs`; migrações `us070_analise_ia`, `us071_descartes`, `us072_sugestoes`; `scripts/ai-admin.ts purge-analyses`.
 - **Garantias**: só agregados vão à LLM (payload `.strict()` + `assertNoIdentifiers`; descartes e motivo nunca no payload); enviado = exibido byte a byte e `PREVIEW_STALE`; saída da IA sem campos numéricos (texto com número/pessoa vira texto local); análise nunca altera domínio (checksum); US-072 é regra local sem IA; provedor sempre simulado (suíte bloqueia `anthropic.com`); teste de ouro `pnpm ai:golden` **não** implementado (manual, fora do CI, SDD §8.4).
@@ -584,7 +584,7 @@ Ver o relatório de entrega ao Gestor e DEV-81..86 em [pedidos-ao-gestor.md](../
 
 ### [TASK-074] Correções de segurança do Grupo A (D-GES-40) — SEC-002/003/005/006/007/012/014/019/020/022/023/024
 - **Status**: Concluído (aguardando validação do Gestor e reteste do Agente de Segurança). Um commit por achado, cada um com teste de regressão.
-- **Status por achado** (coluna Status do levantamento `levantamento-2026-10-24.md`, que não foi editado):
+- **Status por achado** (coluna Status do levantamento `_historico/security/relatorios/levantamento-2026-10-24.md`, que não foi editado):
   - SEC-002 **Corrigido**: `next` 16.4.3 (sem breaking changes nas notas 16.4.x), `images.unoptimized`; teste de piso de versão.
   - SEC-003 **Corrigido**: `safeCallbackUrl` por lista de permissão + `new URL`; unit com TAB/LF/CR/espaço/`%09`/`/\`.
   - SEC-005 **Corrigido**: `/token` e `/authorize` limitados por IP+client_id (+ freio por código/refresh); sem balde global por `client_id`. IP vem de `x-real-ip`/`x-forwarded-for` (confiável na Vercel).

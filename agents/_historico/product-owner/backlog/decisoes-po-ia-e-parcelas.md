@@ -1,6 +1,6 @@
 # Decisões do Product Owner — parcelas já pagas, importação de fatura, análise por IA e MCP (D-PO-53..D-PO-68) e perguntas ao usuário (Q-U01..Q-U12)
 
-*Atualizado: 2026-10-24 · Responsável: Agente Product Owner · Insumos: NEED-024..027, [`cronograma-e-releases.md`](../../stakeholder/cronograma-e-releases.md) (proposta de encaixe), RF42..RF45, RN15, RN16.*
+*Atualizado: 2026-10-24 · Responsável: Agente Product Owner · Insumos: NEED-024..027, [`cronograma-e-releases.md`](../../../stakeholder/cronograma-e-releases.md) (proposta de encaixe), RF42..RF45, RN15, RN16.*
 
 > **Premissa:** as decisões D-PO abaixo aguardam **ratificação do Gestor**. As perguntas Q-U dependem do **usuário (dono do produto)**; para nenhuma delas o PO espera: cada uma tem uma **hipótese conservadora adotada**, já refletida nas histórias, e a resposta do usuário só **confirma ou ajusta** o escopo.
 

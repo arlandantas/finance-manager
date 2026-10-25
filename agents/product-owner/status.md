@@ -4,14 +4,14 @@
 
 
 ## Atualização (2026-10-24): R4-S — ajustes de BDD e histórias novas do SDD-028 §10 (SEC)
-- **Origem:** D-GES-40..42, SDD-028 §10, ADR-032. Decisões **D-PO-79..93**: [`backlog/decisoes-po-seguranca-sec.md`](backlog/decisoes-po-seguranca-sec.md).
+- **Origem:** D-GES-40..42, SDD-028 §10, ADR-032. Decisões **D-PO-79..93**: [`_historico/product-owner/backlog/decisoes-po-seguranca-sec.md`](../_historico/product-owner/backlog/decisoes-po-seguranca-sec.md).
 - **Histórias ajustadas:** [US-003](backlog/stories/US-003-convidar-membro.md) (aceite explícito: ver convite, Entrar, Recusar, dois convites, já tem família sem troca, link do e-mail sem efeito, convite indisponível) · US-039 e FLUXO-002 rev. 3 (convidado aceita em /convites) · US-035 (remoção e troca de papel encerram as sessões) · US-074 (consentimento no mesmo navegador, selo, aviso fixo, cartão e e-mail de conexão nova) · US-075 (texto marcado como dado) · US-070 (teto global) · **US-012** (corrigido: "últimos 10 lançamentos" e card "Resumo do mês" fechado, conforme US-061/063) · US-005/007/013a/013b/030/036 ("Só meu" só pelo dono).
 - **Histórias novas (20 pts PO):** [US-078](backlog/stories/US-078-encerrar-as-outras-sessoes.md) encerrar outras sessões (2) · [US-079](backlog/stories/US-079-baixar-meus-dados.md) baixar meus dados (3) · [US-080](backlog/stories/US-080-excluir-minha-conta.md) excluir minha conta (5) · [US-081](backlog/stories/US-081-excluir-a-familia.md) excluir a família (5) · [US-082](backlog/stories/US-082-pagina-de-privacidade.md) página Privacidade (1, com rascunho do texto) · [US-083](backlog/stories/US-083-cadastro-por-lista-de-emails-permitidos.md) lista de e-mails permitidos (1) · [US-084](backlog/stories/US-084-lancamento-so-meu-so-o-dono-altera.md) "Só meu" só pelo dono (3). Épico novo **EPIC-25**, release **R4-S**; tabela e linha de corte em [`backlog/backlog.md`](backlog/backlog.md).
 - **Pendências:** **Stakeholder valida** D-PO-85 (RN-012.3: 30/90 dias), D-PO-88 (RN-020.6: excluir família) e D-PO-91 (regra do "Só meu"); **usuário** aprova o texto da US-082, define o e-mail de contato, faz a validação jurídica de prazos/retenção (D-PO-87) e define `ALLOWED_SIGNUP_EMAILS` na Vercel; **TL** responde as 4 perguntas da decisão (dono do "Só meu", hipóteses da US-083, revisão de pendências na exclusão de conta, escopo do apagamento da família) e estima US-083/084; **Gestor** ratifica D-PO-79..93.
 
 
 ## Atualização (2026-10-24, rev. 2): MCP no POC com Claude, lançamento direto e hospedagem
-- **Origem:** D-GES-35..37 e [`respostas-r4d-v2.md`](../tech-lead/respostas-r4d-v2.md) §4; ADR-030/031, SDD-024..027 (rev. 2). Decisões **D-PO-70..78**: [`backlog/decisoes-po-mcp-poc.md`](backlog/decisoes-po-mcp-poc.md).
+- **Origem:** D-GES-35..37 e [`_historico/tech-lead/respostas-r4d-v2.md`](../_historico/tech-lead/respostas-r4d-v2.md) §4; ADR-030/031, SDD-024..027 (rev. 2). Decisões **D-PO-70..78**: [`_historico/product-owner/backlog/decisoes-po-mcp-poc.md`](../_historico/product-owner/backlog/decisoes-po-mcp-poc.md).
 - **Ordem do POC (38 pts):** [EN-007](backlog/stories/EN-007-hospedagem-vercel-prisma-postgres.md) 5 > EN-006a 7 > EN-006b 5 > [US-074](backlog/stories/US-074-conceder-e-revogar-acesso-do-assistente.md) 5 > [US-075](backlog/stories/US-075-consultar-pelo-assistente-somente-leitura.md) 5 > [US-077](backlog/stories/US-077-auditoria-do-assistente.md) 3 > [US-076a](backlog/stories/US-076a-lancar-despesa-direto-pelo-assistente.md) 5 + [US-076b](backlog/stories/US-076b-limites-de-lancamento-no-perfil.md) 3. **Ampliação (9 pts):** EN-006c ChatGPT/DCR 2, [US-074b](backlog/stories/US-074b-token-pessoal-do-assistente.md) 3, [US-076c](backlog/stories/US-076c-modo-exigir-confirmacao.md) 3, Gemini 1.
 - **Mudanças de BDD:** US-076 virou história-mãe (076a/b/c); lançamento **direto** (sem proposta/confirmação) com selo "via assistente", filtro Origem, cartão de conferência na Home (Excluir/Desfazer), duplicata natural em 10 min, janela de 60 dias; limites padrão R$ 500 / 10 por dia / 5 por hora, configuráveis no perfil, "sem limite" com aviso de risco e lembrete de que o app não movimenta dinheiro real; US-074 com opt-in de escrita (2ª ciência), só Claude, sem credencial exibida; US-077 com um registro por lançamento. FLUXO-008 (§5) e FLUXO-016 (§3) atualizados.
 - **Pendências:** **Stakeholder valida a troca da RN-025.4** (D-PO-77); Gestor ratifica D-PO-70..78; ações do usuário do item 0 do TL antes da EN-007; TL/Dev criam as TASKs.
@@ -31,14 +31,14 @@
 
 - **Corte (de baixo para cima):** 076 ➔ 077 ➔ 075 ➔ 074 ➔ EN-006 ➔ 073 ➔ 072 ➔ 071 ➔ 070 ➔ 069; os 36 pts de Must não se cortam.
 - **Fluxos novos:** [FLUXO-015](flows/FLUXO-015-importar-fatura-por-arquivo.md) importação de fatura · [FLUXO-016](flows/FLUXO-016-privacidade-e-consentimento-ia.md) privacidade/consentimento (inclui MCP) · [FLUXO-017](flows/FLUXO-017-analise-de-gastos-evitaveis.md) análise.
-- **Decisões D-PO-53..69 e Q-U01..Q-U12 (cada uma com hipótese conservadora):** [`backlog/decisoes-po-ia-e-parcelas.md`](backlog/decisoes-po-ia-e-parcelas.md). **Pedido ao TL:** [`backlog/pedidos-ao-tech-lead-ia.md`](backlog/pedidos-ao-tech-lead-ia.md) (ADR de LLM, privacidade/retenção, MCP, custo, testes sem API real).
+- **Decisões D-PO-53..69 e Q-U01..Q-U12 (cada uma com hipótese conservadora):** [`_historico/product-owner/backlog/decisoes-po-ia-e-parcelas.md`](../_historico/product-owner/backlog/decisoes-po-ia-e-parcelas.md). **Pedido ao TL:** [`_historico/product-owner/backlog/pedidos-ao-tech-lead-ia.md`](../_historico/product-owner/backlog/pedidos-ao-tech-lead-ia.md) (ADR de LLM, privacidade/retenção, MCP, custo, testes sem API real).
 - **Pendências:** Gestor (ratificar D-PO-53..69; encaminhar as Q-U ao usuário; **Q-U01, Q-U08 e Q-U10 bloqueiam o início da R4-B**, Q-U03 não bloqueia a R4-A); TL (ADRs, SDD curto da US-065, estimativas); Stakeholder (conferir textos de privacidade da EN-005).
 
 
 ## Atualização (2026-10-05): pacote v0 alpha (US-056..064)
 - Histórias novas refinadas a partir do [`escopo-v0-alpha.md`](../stakeholder/escopo-v0-alpha.md): US-056, 057, 058, 059, 060, 061, 062, 063, 064 (**41 pts PO prelim. com US-052/055/042/054 existentes; Must 30**). Plano, corte e pedido ao TL (SDD-019, recorrência): [`release-v0-alpha.md`](backlog/release-v0-alpha.md).
 ## Atualização (2026-10-05): triagem da homologação da R2.1 — pacote R2.2 (US-052..055)
-- **Origem:** [`homologacao-r21.md`](../stakeholder/homologacao-r21.md) (HOMOLOGA COM RESSALVAS: 1 Importante + Melhorias). Decisão do Gestor: o Importante é tratado **com aviso visível agora**, sem antecipar a US-042. Lentidão do servidor (achado 8) é do TL.
+- **Origem:** [`_historico/stakeholder/homologacao-r21.md`](../_historico/stakeholder/homologacao-r21.md) (HOMOLOGA COM RESSALVAS: 1 Importante + Melhorias). Decisão do Gestor: o Importante é tratado **com aviso visível agora**, sem antecipar a US-042. Lentidão do servidor (achado 8) é do TL.
 - **Histórias novas (refinadas, 11 pts PO prelim.)**, em [`backlog.md`](backlog/backlog.md) (seção R2.2) e [`backlog/stories/`](backlog/stories):
 
 | Ordem | História | Achados | MoSCoW | Pts |
@@ -50,11 +50,11 @@
 
 - **Ordem de corte:** 053 ➔ 055 ➔ 054; US-052 não se corta. Executa **antes da R3-B**, sem tocar no motor do acerto.
 - **Achado 6 (valores ocultos ao trocar de usuário): MANTIDO** (D-PO-50), padrão intencional da US-027/Q-F04; só o texto da dica do olho muda (US-053).
-- **Decisões novas D-PO-48..52** (aguardam ratificação do Gestor). Pedido ao TL: [`backlog/pedidos-ao-tech-lead-r22.md`](backlog/pedidos-ao-tech-lead-r22.md) (SDD-018 e estimativas).
+- **Decisões novas D-PO-48..52** (aguardam ratificação do Gestor). Pedido ao TL: [`_historico/product-owner/backlog/pedidos-ao-tech-lead-r22.md`](../_historico/product-owner/backlog/pedidos-ao-tech-lead-r22.md) (SDD-018 e estimativas).
 - **Pendências:** TL (SDD-018/estimativa); Gestor (ratificar D-PO-48..52 e confirmar a inclusão da US-055, antes "fora do escopo"); Stakeholder (conferir o texto do aviso da US-052).
 
 ## Atualização (pós-TL): backlog alinhado à resposta do Tech Lead — R2.1 Especificada, R3 Esboçada
-- **Origem:** [`respostas-r21-r3.md`](../tech-lead/respostas-r21-r3.md) (SDD-010..017, ADR-016..019), D-GES-14..20 e TL-02..TL-09. Decisões novas **D-PO-33..42** em [`backlog/decisoes-po-r21-r3.md`](backlog/decisoes-po-r21-r3.md) §2b, **aguardando ratificação do Gestor**.
+- **Origem:** [`_historico/tech-lead/respostas-r21-r3.md`](../_historico/tech-lead/respostas-r21-r3.md) (SDD-010..017, ADR-016..019), D-GES-14..20 e TL-02..TL-09. Decisões novas **D-PO-33..42** em [`_historico/product-owner/backlog/decisoes-po-r21-r3.md`](../_historico/product-owner/backlog/decisoes-po-r21-r3.md) §2b, **aguardando ratificação do Gestor**.
 - **Pontos do TL:** **R2.1 = 67** (Must 40 · Should 17 · Could 10; PO: 60) e **R3 = 67** (Must 24 · Should 35 · Could 8; PO: 56; EN-003 já entregue, **65 pendentes**). Re-estimadas: US-024 (3), US-032 (5), US-033 (3), US-035 (8), US-040 (8), EN-002 (13).
 - **Status:** US-022..039 **Especificadas** (SDD-010..013, prontas para o Dev); US-040..051 e EN-002 **Esboçadas** (SDD-014..017); **EN-003 concluída** (ADR-018).
 
@@ -91,7 +91,7 @@ US-024 (busca `q` e mensagem única) · US-028/029 (todos os meses ao desligar �
 ---
 
 ## (Histórico, superado pela seção acima) R2.1 e R3 refinadas após a homologação, antes da resposta do Tech Lead
-- **Origem:** homologação de R1+R2 com ressalvas e feedback do usuário (16 sugestões), tratados pelo Stakeholder em [`parecer-feedback-usuario.md`](../stakeholder/parecer-feedback-usuario.md) (Q-F01..Q-F14, aprovadas pelo Gestor). O usuário delegou as decisões; nada novo foi perguntado a ele (só Q-U01/Q-U02 continuam com ele e não bloqueiam).
+- **Origem:** homologação de R1+R2 com ressalvas e feedback do usuário (16 sugestões), tratados pelo Stakeholder em [`_historico/stakeholder/parecer-feedback-usuario.md`](../_historico/stakeholder/parecer-feedback-usuario.md) (Q-F01..Q-F14, aprovadas pelo Gestor). O usuário delegou as decisões; nada novo foi perguntado a ele (só Q-U01/Q-U02 continuam com ele e não bloqueiam).
 - **Entregue pelo PO:** 30 histórias novas e 2 enablers, todas com rastreio NEED➔US, Gherkin (pt, sem os padrões que o parser recusa: DEV-06/11/15/25), MoSCoW, WSJF, dependências e marca de corte; 9 fluxos novos; MVP/roadmap revisados; decisões D-PO-12..32; pedidos ao TL.
 
 | Release | Histórias | Pts (PO, **prelim.**) | Composição |
@@ -103,10 +103,10 @@ US-024 (busca `q` e mensagem única) · US-028/029 (todos os meses ao desligar �
 - **Ordem de execução R3:** EN-003 (paralelo, TL) · US-040 ➔ 042 ➔ 041 ➔ EN-002 ➔ 043 ➔ 044 ➔ 045 ➔ 047 ➔ 046 ➔ 048 ➔ 049 ➔ 050 ➔ 051. **Corte:** 051 ➔ 050 ➔ 049 ➔ 046 ➔ 044 ➔ 041 ➔ EN-002 + 043.
 - **Parcelamento (Q-F14):** US-040 (5) + US-042 (3). Se o TL estimar ≤ 5 e ≤ 3, o Gestor pode puxá-las para o fim dos Must da R2.1 (68 pts); senão 1ª entrega da R3.
 - **Fluxos novos** em [`flows/`](flows): FLUXO-006 Home e Resumo do Mês · 007 Ocultar valores · 008 Lançar despesa (descrição, dividir, parcelas, tags) · 009 Acerto opcional · 010 Arquivar conta/cartão · 011 Família e membros · 012 Conta de origem padrão · 013 Preferências, desktop e detalhe · 014 Parcelamento, tags e análise (R3). FLUXO-001/002/003 receberam revisão apontando para eles.
-- **Decisões do PO (D-PO-12..32):** [`backlog/decisoes-po-r21-r3.md`](backlog/decisoes-po-r21-r3.md). **Pedem atenção do Gestor:** D-PO-16 (revisa Q-22: previstas também "Só meu") e D-PO-26 (parcela conta no mês da fatura; à vista pela data da compra: assimetria).
+- **Decisões do PO (D-PO-12..32):** [`_historico/product-owner/backlog/decisoes-po-r21-r3.md`](../_historico/product-owner/backlog/decisoes-po-r21-r3.md). **Pedem atenção do Gestor:** D-PO-16 (revisa Q-22: previstas também "Só meu") e D-PO-26 (parcela conta no mês da fatura; à vista pela data da compra: assimetria).
 - **Histórias antigas anotadas** (Histórico): US-002, 005, 008, 009, 012, 017b, 018, 019. Os cenários da R1/R2 que mudam de padrão (ex.: "Dividir" ligado por padrão na US-005) serão atualizados pelo Dev com a US-030.
 
-### Pedidos ao Tech Lead — [`backlog/pedidos-ao-tech-lead-r21-r3.md`](backlog/pedidos-ao-tech-lead-r21-r3.md)
+### Pedidos ao Tech Lead — [`_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md`](../_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md)
 1. **Estimar o parcelamento básico** (US-040/042) e dizer se cabe na R2.1; avaliar a assimetria de competência (D-PO-26).
 2. **Spike de múltiplos grupos** (EN-003): vínculo usuário↔família N:N? custo de "pessoa em dois grupos" e de "conta privada"; ADR.
 3. **Migração do cálculo do acerto** (EN-002) com **regressão** sobre 3.169,90 / cota 1.584,95 / diferença 1.149,95 (e setembro 717,00 / 358,50 / 260,50).

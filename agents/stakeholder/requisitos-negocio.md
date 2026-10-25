@@ -217,7 +217,7 @@ erDiagram
 
 ## 6. Revisão pós-homologação R1+R2 (2026-10-04) — feedback do usuário
 
-Novos requisitos de negócio, detalhados em [`needs/`](needs/) e priorizados em [`parecer-feedback-usuario.md`](parecer-feedback-usuario.md):
+Novos requisitos de negócio, detalhados em [`needs/`](needs/) e priorizados em [`_historico/stakeholder/parecer-feedback-usuario.md`](../_historico/stakeholder/parecer-feedback-usuario.md):
 
 - **RF33 - Tags livres** em lançamentos, complementares às categorias (NEED-013).
 - **RF34 - Ocultar valores** na tela, por dispositivo (NEED-014).

@@ -70,7 +70,7 @@ Funcionalidade: Infra comum de LLM
 Chave por família (alternativa da Q-U08); cobrança do consumo à família; painel de custos detalhado.
 
 ## Pontos para o Tech Lead
-Ver [`pedidos-ao-tech-lead-ia.md`](../pedidos-ao-tech-lead-ia.md) §1 e §4.
+Ver [`_historico/product-owner/backlog/pedidos-ao-tech-lead-ia.md`](../../../_historico/product-owner/backlog/pedidos-ao-tech-lead-ia.md) §1 e §4.
 
 ## Histórico
 - 2026-10-24 — Criada (D-PO-57).

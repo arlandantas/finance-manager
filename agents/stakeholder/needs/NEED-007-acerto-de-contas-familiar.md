@@ -47,7 +47,7 @@ O sistema deve calcular de forma automatizada o **Balanço de Despesas Comuns e 
 
 ## Revisão do Stakeholder — 2026-10-04 (homologação R1+R2 e feedback do usuário)
 
-**Ressalvas da homologação (`../homologacao-r1-r2.md`) incorporadas como regras:**
+**Ressalvas da homologação (`_historico/stakeholder/homologacao-r1-r2.md`) incorporadas como regras:**
 - **RN-007.4 (ressalva 1, rótulo):** a tela de Acerto **nunca** exibe uma regra que não corresponda ao cálculo. Deve mostrar o percentual **efetivamente aplicado** no mês (ex.: "50% até 03/10 e 58/42 a partir de 04/10", ou o percentual médio ponderado). Ver NEED-018, que torna isso estrutural gravando o percentual no lançamento.
 - **RN-007.5 (ressalva 2, dívida antiga):** com o acerto ligado, **meses anteriores com saldo em aberto** geram um aviso discreto e neutro (no Resumo do Mês e no Acerto), sem poluir a Início.
 - **RN-007.6 (ressalva 4, prévia):** ao salvar uma nova regra, mostrar a **prévia do impacto** (quanto muda no acerto do mês, a partir de que data) e, opcionalmente, **sugerir a proporção pelas rendas** informadas; todo membro vê a regra e o histórico (transparência). O Administrador continua sendo quem altera.

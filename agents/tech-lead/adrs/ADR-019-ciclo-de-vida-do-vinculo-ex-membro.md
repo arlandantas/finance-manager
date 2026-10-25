@@ -1,7 +1,7 @@
 # ADR-019: Ciclo de vida do vínculo (`Member`): ex-membro, saída da família e reconvite
 
 ## Status
-Aceito (Tech Lead, 2026-10-04). **Emenda o ADR-012 §2** (`Member.userId UNIQUE`) e o SDD-003 §5.4/§5.6. Implementa D-PO-18 (US-034, US-035) e prepara o ADR-018 (múltiplos grupos). Resposta às perguntas de US-034/035 de [`pedidos-ao-tech-lead-r21-r3.md`](../../product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md).
+Aceito (Tech Lead, 2026-10-04). **Emenda o ADR-012 §2** (`Member.userId UNIQUE`) e o SDD-003 §5.4/§5.6. Implementa D-PO-18 (US-034, US-035) e prepara o ADR-018 (múltiplos grupos). Resposta às perguntas de US-034/035 de [`_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md`](../../_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md).
 
 ## Contexto
 Remover um membro não pode apagar histórico: `Transaction`, `PlannedExpense`, `BankAccount`, `CreditCard` e `TransactionRevision` apontam para `(familyId, memberId)` com `ON DELETE RESTRICT`. `Member.userId` é `UNIQUE` (R1: 1 família por usuário), o que impediria reconvidar o e-mail de um ex-membro e uma futura 2ª família.

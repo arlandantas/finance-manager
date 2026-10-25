@@ -88,7 +88,7 @@ Painel "Prévia" abaixo dos campos, atualizado ao digitar (sem chamada de grava�
 Alterar lançamentos passados; guardar a renda dos membros; simulação de vários meses; percentual por lançamento (EN-002/US-043).
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- Cálculo da prévia: reaproveitar `computeSettlement` em modo "o que-se" sem gravar; custo e contrato (ver `pedidos-ao-tech-lead-r21-r3.md`).
+- Cálculo da prévia: reaproveitar `computeSettlement` em modo "o que-se" sem gravar; custo e contrato (ver `_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md`).
 
 ## Histórico
 - 2026-10-04 — Criada a partir da ressalva 4 e dos achados 4 e 13 da homologação.

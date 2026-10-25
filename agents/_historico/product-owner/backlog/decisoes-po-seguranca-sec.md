@@ -1,6 +1,6 @@
 # Decisões do Product Owner — Correções de segurança do Grupo B, LGPD e "Só meu" (D-PO-79..D-PO-94)
 
-*Atualizado: 2026-10-24 · Responsável: Agente Product Owner · Insumos: D-GES-40..42, [SDD-028](../../tech-lead/sdd/SDD-028-correcoes-de-seguranca-grupo-b.md) §10, [ADR-032](../../tech-lead/adrs/ADR-032-correcoes-de-seguranca-grupo-b.md), [levantamento SEC 2026-10-24](../../security/relatorios/levantamento-2026-10-24.md).*
+*Atualizado: 2026-10-24 · Responsável: Agente Product Owner · Insumos: D-GES-40..42, [SDD-028](../../../tech-lead/sdd/SDD-028-correcoes-de-seguranca-grupo-b.md) §10, [ADR-032](../../../tech-lead/adrs/ADR-032-correcoes-de-seguranca-grupo-b.md), [levantamento SEC 2026-10-24](../../security/relatorios/levantamento-2026-10-24.md).*
 
 > As decisões abaixo aguardam **ratificação do Gestor**. As marcadas **[STK]** alteram regra de negócio e exigem **validação do Stakeholder** (o PO não edita as NEEDs). As marcadas **[USR]** dependem de aprovação do usuário (texto ou jurídico).
 

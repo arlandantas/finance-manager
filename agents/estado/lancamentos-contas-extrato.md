@@ -63,7 +63,7 @@ Atualizado: 2026-10-26. Fonte de verdade: código + testes (§f). Mudou a regra?
 ## e) Em andamento / pendências
 - Nada em implementação nesta área.
 - E2E completo: havia falhas preexistentes (12 determinísticas alinhadas em DEV-100; 19 falhas na rodada DEV-96); estado atual da suíte E2E completa NÃO verificado neste consolidado. Últimos números registrados: 718 unit, 1106 int verdes (D-GES-60).
-- Homologação visual pendente de achados da R2.1 (`stakeholder/homologacao-r21.md`): selo "Comum" com acerto desligado, FAB cobrindo ações no mobile; não confirmados como resolvidos.
+- Homologação visual pendente de achados da R2.1 (`_historico/stakeholder/homologacao-r21.md`): selo "Comum" com acerto desligado, FAB cobrindo ações no mobile; não confirmados como resolvidos.
 - Divergência de produto a validar: assimetria à vista x parcela (competência) e limitação de acento na busca (D-GES-22).
 - Não há tela de configuração do dia de corte nem de orçamento.
 

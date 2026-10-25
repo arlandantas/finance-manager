@@ -123,7 +123,7 @@ Funcionalidade: Ocultar valores
 Bloqueio por PIN/biometria; ocultar dados no servidor; ocultar nomes ou descrições; preferência sincronizada entre dispositivos.
 
 ## Perguntas em aberto / pontos para o Tech Lead
-- Armazenamento por dispositivo (localStorage por usuário) e o comportamento "sessão nova"; renderizar oculto no SSR para evitar flash (ver `pedidos-ao-tech-lead-r21-r3.md`).
+- Armazenamento por dispositivo (localStorage por usuário) e o comportamento "sessão nova"; renderizar oculto no SSR para evitar flash (ver `_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md`).
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 3, Q-F04) e da NEED-014.

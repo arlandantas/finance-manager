@@ -1,6 +1,6 @@
 # Escopo da v0 (primeiro alpha tester) — Stakeholder + Gestor
 
-*2026-10-05 · Fontes: `feedback-usuario-v0.md` (11 itens), `homologacao-r21.md`, backlog R2.2/R3, `pendencias-externas.md`. Decisões delegadas ao time pelo usuário (sem Q-U novas). Sem desenho de tela: o "como" é do PO.*
+*2026-10-05 · Fontes: `feedback-usuario-v0.md` (11 itens), `_historico/stakeholder/homologacao-r21.md`, backlog R2.2/R3, `pendencias-externas.md`. Decisões delegadas ao time pelo usuário (sem Q-U novas). Sem desenho de tela: o "como" é do PO.*
 
 ## 1. Definição da v0
 

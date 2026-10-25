@@ -16,7 +16,7 @@ Corrigir sem enfraquecer a trava de produção do login de teste (ADR-008) e cob
 - [ ] Roteiro ponta a ponta (login → família → convite → contas → lançamentos → acerto → cartão → fatura → previstas → home), mobile 375px e desktop, **pela URL do túnel**.
 - [ ] Banco dev com dados de demonstração coerentes (família de exemplo; sem lixo de testes).
 - [ ] Sem erros no console e nas requisições de rede durante o roteiro.
-- [ ] Relatório curto em `agents/developer/tasks/qa-pre-liberacao.md` com o link vigente do túnel e a senha da página de aviso.
+- [ ] Relatório curto em `agents/_historico/developer/tasks/qa-pre-liberacao.md` com o link vigente do túnel e a senha da página de aviso.
 
 ## Procedimento do túnel
 `npx --yes localtunnel --port 3100`; senha da página de aviso = IP público (`curl https://loca.lt/mytunnelpassword`). Encerrar pelo PID exato do processo `lt` (nunca `pkill -f`).

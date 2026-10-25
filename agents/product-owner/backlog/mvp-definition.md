@@ -89,7 +89,7 @@ timeline
 
 ## 🔁 Revisão 3 — pós-homologação: R2.1 e R3 (2026-10-04)
 
-R1 e R2 foram **homologadas com ressalvas** e o usuário enviou 16 sugestões. O Stakeholder decidiu os pontos em aberto (Q-F01..Q-F14, aprovadas pelo Gestor). O PO fatiou assim (histórias e pontos em [`backlog.md`](backlog.md); decisões D-PO-12..32 em [`decisoes-po-r21-r3.md`](decisoes-po-r21-r3.md); perguntas ao TL em [`pedidos-ao-tech-lead-r21-r3.md`](pedidos-ao-tech-lead-r21-r3.md)):
+R1 e R2 foram **homologadas com ressalvas** e o usuário enviou 16 sugestões. O Stakeholder decidiu os pontos em aberto (Q-F01..Q-F14, aprovadas pelo Gestor). O PO fatiou assim (histórias e pontos em [`backlog.md`](backlog.md); decisões D-PO-12..32 em [`_historico/product-owner/backlog/decisoes-po-r21-r3.md`](../../_historico/product-owner/backlog/decisoes-po-r21-r3.md); perguntas ao TL em [`_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md`](../../_historico/product-owner/backlog/pedidos-ao-tech-lead-r21-r3.md)):
 
 | Release | Incremento | O que entrega | Pontos (**TL**) | Promessa |
 | :-- | :-- | :-- | :-: | :-- |

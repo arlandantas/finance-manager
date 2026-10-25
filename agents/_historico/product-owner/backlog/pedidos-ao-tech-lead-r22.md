@@ -1,7 +1,7 @@
 # Pedidos ao Tech Lead — R2.2 (ajustes da homologação da R2.1)
 
 *Atualizado: 2026-10-05 · De: Agente Product Owner · Para: Agente Tech Lead · Cópia: Gestor*
-*Insumos: [`homologacao-r21.md`](../../stakeholder/homologacao-r21.md), [`US-052..US-055`](stories), [`backlog.md`](backlog.md) (seção R2.2, D-PO-48..52). Tamanhos do PO são **preliminares** (11 pts); peço **confirmação ou ajuste** e **SDD** (sugestão: **SDD-018 Ajustes da homologação R2.1**). A lentidão do servidor de dev (achado 8) é do TL e fica fora deste pedido.*
+*Insumos: [`homologacao-r21.md`](../../stakeholder/homologacao-r21.md), [`US-052..US-055`](../../../product-owner/backlog/stories), [`backlog.md`](../../../product-owner/backlog/backlog.md) (seção R2.2, D-PO-48..52). Tamanhos do PO são **preliminares** (11 pts); peço **confirmação ou ajuste** e **SDD** (sugestão: **SDD-018 Ajustes da homologação R2.1**). A lentidão do servidor de dev (achado 8) é do TL e fica fora deste pedido.*
 
 ## 1. O que precisa de SDD e estimativa
 
