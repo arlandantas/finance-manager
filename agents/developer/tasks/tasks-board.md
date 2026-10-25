@@ -613,3 +613,11 @@ Ver o relatório de entrega ao Gestor e DEV-81..86 em [pedidos-ao-gestor.md](../
 - **Migrações novas** (aplicar na ordem; `migrate deploy` roda no `vercel-build`): `20261025020000_sec004_enum_values`, `20261025020100_sec004_aceite_explicito_convite`, `20261025030000_sec011_consent_binding`, `20261025040000_sec018_session_token_hash`, `20261025040100_sec018_session_idle_cap`, `20261025050000_sec013_llm_global_budget`.
 - **QA**: ver DEV-96 (lint, typecheck, unit 689, integração 934, build ok; E2E completo com 19 falhas a triar).
 
+### [TASK-076] Grupo B, rodada 2 (parte 1): E2E alinhados, DEV-91, SEC-018b (fase 2 preparada) e SEC-017a
+- **Especificação**: SDD-028 §6 e §7.2 / ADR-032 · **Histórias PO**: US-035, US-078 · **Status**: Concluído (aguardando validação do Gestor e reteste do Agente de Segurança). Um commit por item. **Não feitos**: SEC-017b..e (próxima rodada); fase 2 **não aplicada** (pendente em `prisma/pending`).
+- **1. E2E**: `tests/e2e/steps/US-004*`, `US-016a*`, `US-017b*`, `US-018*`, `US-015*`, `US-040a*`, features US-016a/017b/018 e `tests/support/nav.ts` (`reloadIfOpen`). Nenhum código de produção. DEV-100.
+- **2. DEV-91**: `sessions.endedAt` (migração `20261026000000_dev91_session_ended_at`), `endUserSessions`, `findSessionUser`/adaptador ignoram sessão encerrada, aviso único por aparelho no `/login`. Testes: `sec018-sessao` (3 novos) e `us-035`. DEV-98.
+- **3. SEC-018b fase 2**: SQL em `prisma/pending/…_sec018_drop_plain_session_token` e `scripts/sec018-phase2-check.ts` (somente leitura). DEV-97.
+- **4. SEC-017a**: `src/modules/cron/retention.ts` (4 tarefas no cron), `noProviderTokensAdapter`, migração `20261026010000_sec017_strip_google_tokens`; `sec017a-retencao.int.test.ts` (10 testes). DEV-99.
+- **QA**: biome e `tsc` limpos; unit 689; integração 944 (+1 skip); `pnpm build` ok; E2E desktop+mobile de US-001/003/004/015/016a/017b/018/034/035/040a/078: 268 passando (servidor aquecido). Suíte E2E completa **não** rodada nesta parte.
+
