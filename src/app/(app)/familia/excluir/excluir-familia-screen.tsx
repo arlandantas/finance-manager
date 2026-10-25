@@ -49,7 +49,7 @@ export function ExcluirFamiliaScreen() {
         body: { confirmFamilyName: typed.trim() },
       }),
     onSuccess: (r) => {
-      router.replace(`/onboarding?deleted=${encodeURIComponent(r.familyName)}`);
+      router.replace("/onboarding?deleted=1");
     },
     onError: (e) => {
       keyRef.current = newIdempotencyKey();

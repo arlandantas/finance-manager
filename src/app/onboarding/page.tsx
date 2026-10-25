@@ -33,10 +33,11 @@ export default async function OnboardingPage({
         notice={
           notice === "invite_expired" || entry.expiredInvite
             ? "Convite expirado. Peça um novo convite."
-            : deleted
-              ? `${deleted.slice(0, 60)} excluída`
-              : left
-                ? `Você saiu da ${left.slice(0, 60)}`
+            : // SEC-034: texto FIXO; o link só leva um sinalizador (`=1`), nunca texto livre nem o nome da família
+              deleted === "1"
+              ? "Família excluída"
+              : left === "1"
+                ? "Você saiu da família"
                 : null
         }
       />

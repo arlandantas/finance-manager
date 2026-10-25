@@ -35,7 +35,7 @@ Funcionalidade: Remover membro e sair da família
 
   Cenário: Membro sai da família e perde o acesso
     Quando Lucas sai da família escolhendo "Mariana" para as previstas
-    Então vê o aviso na entrada "Você saiu da Família Silva"
+    Então vê o aviso na entrada "Você saiu da família"
     E Lucas não consegue mais abrir a Home da família
 
   Cenário: Membro não remove outros

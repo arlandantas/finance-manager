@@ -85,7 +85,7 @@ export function RemoveMemberDialog({
         onSuccess: () => {
           keyRef.current = newIdempotencyKey();
           if (target.self) {
-            router.replace(`/onboarding?left=${encodeURIComponent(familyName)}`);
+            router.replace("/onboarding?left=1");
           } else {
             toast.success(`${first} foi removido da família`);
             router.refresh();

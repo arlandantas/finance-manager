@@ -26,7 +26,7 @@ Funcionalidade: Excluir a família
     Quando Mariana abre Família e toca em "Excluir família"
     E Mariana digita o nome "Família Silva" para excluir a família
     E Mariana confirma a exclusão tocando em "Excluir a família"
-    Então vê o aviso "Família Silva excluída" e a tela de criar família
+    Então vê o aviso "Família excluída" e a tela de criar família
     E nada da "Família Silva" existe mais no banco
     E a conta de Mariana continua ativa
 
@@ -36,7 +36,7 @@ Funcionalidade: Excluir a família
     Quando Mariana abre Família e toca em "Excluir família"
     E Mariana digita o nome "Família Silva" para excluir a família
     E Mariana confirma a exclusão tocando em "Excluir a família"
-    Então vê o aviso "Família Silva excluída" e a tela de criar família
+    Então vê o aviso "Família excluída" e a tela de criar família
     E os dados da "Família Souza" permanecem iguais
 
   Cenário: Duplo clique exclui uma única vez
@@ -44,7 +44,7 @@ Funcionalidade: Excluir a família
     Quando Mariana abre Família e toca em "Excluir família"
     E Mariana digita o nome "Família Silva" para excluir a família
     E Mariana confirma a exclusão tocando duas vezes em "Excluir a família"
-    Então vê o aviso "Família Silva excluída" e a tela de criar família
+    Então vê o aviso "Família excluída" e a tela de criar família
     E nada da "Família Silva" existe mais no banco
 
   Cenário: Com outros membros ativos a exclusão é bloqueada
