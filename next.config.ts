@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { allowedDevOriginsFor } from "./src/lib/dev-origins";
+import { securityHeaders } from "./src/lib/security-headers";
 
 // Origens de dev além de localhost (o Next bloqueia /_next/* de origem não permitida e a página nunca
 // hidrata): APP_PUBLIC_ORIGIN (túnel), APP_DEV_ORIGINS (lista) e, por padrão, IPs privados RFC1918 e *.local.
@@ -12,6 +13,7 @@ const nextConfig: NextConfig = {
   // SDD-024 §4.3: a tela de consentimento OAuth não pode ser embutida (clickjacking).
   async headers() {
     return [
+      { source: "/:path*", headers: securityHeaders(process.env.NODE_ENV === "production") },
       {
         source: "/oauth/consent",
         headers: [
