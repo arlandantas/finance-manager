@@ -464,6 +464,43 @@ describe("/token: PKCE, replay e expiração", () => {
     expect((await grantsOf("Lucas"))[0]?.status).toBe("ACTIVE");
   });
 
+  it("SEC-028: quem interceptou o código não força 429 na troca legítima (nem de outro IP, nem do mesmo)", async () => {
+    const { verifier, challenge } = pkcePair();
+    const auth = await getAuthorize(authorizeUrl({ member: lucas() }, challenge));
+    const requestId = new URL(auth.location).searchParams.get("request");
+    const dec = await postDecision(lucas(), {
+      requestId,
+      decision: "allow",
+      privacyAcknowledged: true,
+    });
+    const code = new URL(dec.body.redirectTo).searchParams.get("code") as string;
+    const exchange = (v: string, ip: string) =>
+      postToken(
+        {
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: REDIRECT_URI,
+          client_id: CIMD_URL,
+          code_verifier: v,
+        },
+        { "x-real-ip": ip },
+      );
+    // atacante: 12 trocas erradas de IPs distintos e mais 12 de um mesmo IP
+    for (let i = 0; i < 12; i++) {
+      expect((await exchange("A".repeat(43), `198.51.100.${i + 1}`)).status).toBe(400);
+    }
+    const sameIp: number[] = [];
+    for (let i = 0; i < 12; i++)
+      sameIp.push((await exchange("B".repeat(43), "203.0.113.50")).status);
+    // o freio às falhas continua valendo para o mesmo IP (a partir da 11ª)...
+    expect(sameIp.slice(0, 10).every((s) => s === 400)).toBe(true);
+    expect(sameIp.slice(10)).toEqual([429, 429]);
+    // ...mas a troca legítima, de outro IP ou do próprio IP do atacante, nunca é barrada por ele
+    const good = await exchange(verifier, "192.0.2.77");
+    expect(good.status).toBe(200);
+    expect((await grantsOf("Lucas"))[0]?.status).toBe("ACTIVE");
+  });
+
   it("código usado duas vezes => 2ª invalid_grant e a conexão é revogada (CODE_REUSE); o acesso da 1ª deixa de valer", async () => {
     const { verifier, challenge } = pkcePair();
     const auth = await getAuthorize(authorizeUrl({ member: lucas() }, challenge));
@@ -630,16 +667,29 @@ describe("SEC-005 limite do /token não depende só do client_id público", () =
     });
   });
 
-  it("o mesmo refresh token inválido repetido (mesmo vindo de IPs distintos) é freado: 10/min", async () => {
-    let last: Awaited<ReturnType<typeof postToken>> | undefined;
+  it("o mesmo refresh token inválido repetido: freado em 10 falhas/min por IP; IPs distintos não se afetam (SEC-028)", async () => {
+    const statuses: number[] = [];
     await at(0, async () => {
       for (let i = 0; i < 11; i++)
-        last = await postToken(
-          { grant_type: "refresh_token", client_id: CIMD_URL, refresh_token: "mesmo-token" },
-          { "x-real-ip": `192.0.2.${i + 1}` },
+        statuses.push(
+          (
+            await postToken(
+              { grant_type: "refresh_token", client_id: CIMD_URL, refresh_token: "mesmo-token" },
+              { "x-real-ip": "192.0.2.10" },
+            )
+          ).status,
         );
+      // outro IP com o mesmo segredo não herda o bloqueio
+      statuses.push(
+        (
+          await postToken(
+            { grant_type: "refresh_token", client_id: CIMD_URL, refresh_token: "mesmo-token" },
+            { "x-real-ip": "192.0.2.11" },
+          )
+        ).status,
+      );
     });
-    expect(last?.status).toBe(429);
+    expect(statuses).toEqual([...Array(10).fill(400), 429, 400]);
   });
 });
 

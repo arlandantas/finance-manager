@@ -17,7 +17,7 @@ export const RATE = {
   grantPerDay: 1000,
   /** /token: por IP + client_id (o client_id do Claude é público, não pode ser a única chave: SEC-005). */
   tokenPerMin: 30,
-  /** /token: por código/refresh apresentado (freia adivinhação sem afetar os demais usuários). */
+  /** /token: FALHAS por (IP, client_id, código/refresh) por minuto; troca correta nunca é barrada (SEC-028). */
   tokenPerSecretPerMin: 10,
   registerPerHour: 10,
   authorizePerMin: 20,

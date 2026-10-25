@@ -49,22 +49,11 @@ export async function handleTokenRequest(
     60,
     now,
   );
-  const secret = str(form.refresh_token) ?? str(form.code);
-  const limitedSecret =
-    limited.ok && secret
-      ? await hit(
-          db,
-          `tokensecret:${sha256Hex(secret).slice(0, 16)}:min`,
-          RATE.tokenPerSecretPerMin,
-          60,
-          now,
-        )
-      : limited;
-  if (!limitedSecret.ok) {
+  if (!limited.ok) {
     return {
       status: 429,
       body: { error: "slow_down", error_description: "Muitas requisições." },
-      headers: { ...NO_STORE, "Retry-After": String(limitedSecret.retryAfterS) },
+      headers: { ...NO_STORE, "Retry-After": String(limited.retryAfterS) },
     };
   }
   const grantType = str(form.grant_type, 50);
@@ -72,9 +61,43 @@ export async function handleTokenRequest(
   if (resource && resource.replace(/\/+$/, "") !== canonicalResource(env)) {
     return err(400, "invalid_target", "resource inválido.");
   }
-  if (grantType === "authorization_code") return exchangeCode(db, form, clientId, now);
-  if (grantType === "refresh_token") return exchangeRefresh(db, form, clientId, now);
-  return err(400, "unsupported_grant_type", "grant_type não suportado.");
+  const result =
+    grantType === "authorization_code"
+      ? await exchangeCode(db, form, clientId, now)
+      : grantType === "refresh_token"
+        ? await exchangeRefresh(db, form, clientId, now)
+        : err(400, "unsupported_grant_type", "grant_type não suportado.");
+  return result.status === 200 ? result : throttleFailure(db, form, clientId, ip, now, result);
+}
+
+/**
+ * SEC-005/023/028: freio à adivinhação de código/refresh SEM deixar um terceiro que o interceptou
+ * impedir a troca legítima. Só as FALHAS contam, por (IP, client_id, segredo), e só depois de validar:
+ * uma troca correta nunca é barrada por esse balde, e falhas vindas de outro IP não o consomem.
+ */
+async function throttleFailure(
+  db: PrismaClient,
+  form: Record<string, unknown>,
+  clientId: string,
+  ip: string,
+  now: Date,
+  failure: OAuthResult,
+): Promise<OAuthResult> {
+  const secret = str(form.refresh_token) ?? str(form.code);
+  if (!secret) return failure;
+  const counted = await hit(
+    db,
+    `tokenfail:${sha256Hex(`${ip}|${clientId}|${secret}`).slice(0, 16)}:min`,
+    RATE.tokenPerSecretPerMin,
+    60,
+    now,
+  );
+  if (counted.ok) return failure;
+  return {
+    status: 429,
+    body: { error: "slow_down", error_description: "Muitas requisições." },
+    headers: { ...NO_STORE, "Retry-After": String(counted.retryAfterS) },
+  };
 }
 
 async function issuePair(
