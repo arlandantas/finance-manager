@@ -14,7 +14,8 @@ export const iaDb = (): PrismaClient => getDb();
 
 export type ReserveResult =
   | { ok: true; eventId: string; month: string }
-  | { ok: false; reason: "exceeded" | "estimate_exceeds"; resetsOn: string };
+  | { ok: false; reason: "exceeded" | "estimate_exceeds"; resetsOn: string }
+  | { ok: false; reason: "global_exceeded"; resetsOn: string };
 
 async function lockMonth(tx: Tx, familyId: string, month: string, now: Date) {
   await tx.$executeRaw`INSERT INTO llm_budget_months ("familyId", month, "updatedAt")
@@ -22,6 +23,17 @@ async function lockMonth(tx: Tx, familyId: string, month: string, now: Date) {
   const rows = await tx.$queryRaw<Array<{ spent: bigint; reserved: bigint }>>`
     SELECT "spentMicroBrl" AS spent, "reservedMicroBrl" AS reserved FROM llm_budget_months
     WHERE "familyId" = ${familyId}::uuid AND month = ${month} FOR UPDATE`;
+  const row = rows[0] as { spent: bigint; reserved: bigint };
+  return { spent: row.spent, reserved: row.reserved };
+}
+
+/** SEC-013: linha global do mês, SEMPRE travada depois da linha da família (sem deadlock). */
+async function lockGlobalMonth(tx: Tx, month: string, now: Date) {
+  await tx.$executeRaw`INSERT INTO llm_global_budget_months (month, "updatedAt")
+    VALUES (${month}, ${now}) ON CONFLICT DO NOTHING`;
+  const rows = await tx.$queryRaw<Array<{ spent: bigint; reserved: bigint }>>`
+    SELECT "spentMicroBrl" AS spent, "reservedMicroBrl" AS reserved FROM llm_global_budget_months
+    WHERE month = ${month} FOR UPDATE`;
   const row = rows[0] as { spent: bigint; reserved: bigint };
   return { spent: row.spent, reserved: row.reserved };
 }
@@ -46,11 +58,15 @@ export async function reserveBudget(
     model: string;
     estimateMicro: bigint;
     capCents: number;
+    /** SEC-013: teto global do mês (centavos); ausente = não aplica (testes de unidade da família). */
+    globalCapCents?: number;
     now: Date;
   },
 ): Promise<ReserveResult> {
   const month = aiMonthKey(i.now);
   let { spent, reserved } = await lockMonth(tx, i.familyId, month, i.now);
+  // ordem de trava: família -> global
+  const glob = i.globalCapCents !== undefined ? await lockGlobalMonth(tx, month, i.now) : null;
 
   // Limpeza preguiçosa: reservas vencidas viram ABANDONED com custo = reserva (contam como gastas).
   const expired = await tx.$queryRaw<Array<{ reserved: bigint }>>`
@@ -60,6 +76,21 @@ export async function reserveBudget(
   const expiredSum = expired.reduce((s, r) => s + r.reserved, 0n);
   spent += expiredSum;
   reserved -= expiredSum;
+  // a limpeza também devolve a reserva vencida ao global (passa a contar como gasta)
+  if (glob) {
+    glob.spent += expiredSum;
+    glob.reserved -= expiredSum;
+  }
+  const persistCleanup = async () => {
+    if (expiredSum > 0n) {
+      await tx.$executeRaw`UPDATE llm_budget_months SET "spentMicroBrl" = ${spent}, "reservedMicroBrl" = ${reserved}, "updatedAt" = ${i.now}
+        WHERE "familyId" = ${i.familyId}::uuid AND month = ${month}`;
+      if (glob) {
+        await tx.$executeRaw`UPDATE llm_global_budget_months SET "spentMicroBrl" = ${glob.spent}, "reservedMicroBrl" = ${glob.reserved}, "updatedAt" = ${i.now}
+          WHERE month = ${month}`;
+      }
+    }
+  };
 
   const decision = decideBudget({
     spentMicro: spent,
@@ -68,15 +99,24 @@ export async function reserveBudget(
     capCents: i.capCents,
   });
   if (decision !== "ok") {
-    if (expiredSum > 0n) {
-      await tx.$executeRaw`UPDATE llm_budget_months SET "spentMicroBrl" = ${spent}, "reservedMicroBrl" = ${reserved}, "updatedAt" = ${i.now}
-        WHERE "familyId" = ${i.familyId}::uuid AND month = ${month}`;
-    }
+    await persistCleanup();
     return {
       ok: false,
       reason: decision === "exceeded" ? "exceeded" : "estimate_exceeds",
       resetsOn: resetsOn(month),
     };
+  }
+  if (glob && i.globalCapCents !== undefined) {
+    const g = decideBudget({
+      spentMicro: glob.spent,
+      reservedMicro: glob.reserved,
+      estimateMicro: i.estimateMicro,
+      capCents: i.globalCapCents,
+    });
+    if (g !== "ok") {
+      await persistCleanup();
+      return { ok: false, reason: "global_exceeded", resetsOn: resetsOn(month) };
+    }
   }
   const eventId = newId();
   const expiresAt = new Date(i.now.getTime() + RESERVATION_TTL_MS);
@@ -87,6 +127,10 @@ export async function reserveBudget(
   await tx.$executeRaw`UPDATE llm_budget_months SET "spentMicroBrl" = ${spent},
     "reservedMicroBrl" = ${reserved + i.estimateMicro}, "updatedAt" = ${i.now}
     WHERE "familyId" = ${i.familyId}::uuid AND month = ${month}`;
+  if (glob) {
+    await tx.$executeRaw`UPDATE llm_global_budget_months SET "spentMicroBrl" = ${glob.spent},
+      "reservedMicroBrl" = ${glob.reserved + i.estimateMicro}, "updatedAt" = ${i.now} WHERE month = ${month}`;
+  }
   return { ok: true, eventId, month };
 }
 
@@ -103,21 +147,31 @@ export type SettleInput = {
   latencyMs: number;
   attempts: number | null;
   now: Date;
+  /** SEC-013: teto global (centavos) para calcular o alarme; ausente = não mexe no global. */
+  globalCapCents?: number;
 };
 
+/** Limiares do alarme do teto global (SDD-028 §5.2). */
+export const GLOBAL_ALERT_THRESHOLDS = [50, 80, 100] as const;
+
 /** Acerto: troca a reserva pelo custo real. Evento já ABANDONED (reserva vencida) só ganha os tokens. */
-export async function settleEvent(tx: Tx, s: SettleInput): Promise<void> {
+export async function settleEvent(
+  tx: Tx,
+  s: SettleInput,
+): Promise<{ alert: { pct: number; spentMicro: bigint } | null }> {
   await lockMonth(tx, s.familyId, s.month, s.now);
+  // ordem de trava: família -> global (também no acerto)
+  if (s.globalCapCents !== undefined) await lockGlobalMonth(tx, s.month, s.now);
   const ev = await tx.$queryRaw<Array<{ status: string; reserved: bigint }>>`
     SELECT status::text AS status, "reservedMicroBrl" AS reserved FROM llm_usage_events
     WHERE id = ${s.eventId}::uuid AND "familyId" = ${s.familyId}::uuid FOR UPDATE`;
   const row = ev[0];
-  if (!row) return;
+  if (!row) return { alert: null };
   if (row.status !== "RESERVED") {
     await tx.$executeRaw`UPDATE llm_usage_events SET outcome = ${s.outcome}, "inputTokens" = ${s.inputTokens},
       "outputTokens" = ${s.outputTokens}, "latencyMs" = ${s.latencyMs}, attempts = ${s.attempts}
       WHERE id = ${s.eventId}::uuid`;
-    return;
+    return { alert: null };
   }
   await tx.$executeRaw`UPDATE llm_usage_events SET status = ${s.status}::"LlmUsageStatus", outcome = ${s.outcome},
     "costMicroBrl" = ${s.costMicro}, "inputTokens" = ${s.inputTokens}, "outputTokens" = ${s.outputTokens},
@@ -126,6 +180,20 @@ export async function settleEvent(tx: Tx, s: SettleInput): Promise<void> {
   await tx.$executeRaw`UPDATE llm_budget_months SET "spentMicroBrl" = "spentMicroBrl" + ${s.costMicro},
     "reservedMicroBrl" = "reservedMicroBrl" - ${row.reserved}, "updatedAt" = ${s.now}
     WHERE "familyId" = ${s.familyId}::uuid AND month = ${s.month}`;
+  if (s.globalCapCents === undefined) return { alert: null };
+  const g = await tx.$queryRaw<Array<{ spent: bigint }>>`
+    UPDATE llm_global_budget_months SET "spentMicroBrl" = "spentMicroBrl" + ${s.costMicro},
+      "reservedMicroBrl" = "reservedMicroBrl" - ${row.reserved}, "updatedAt" = ${s.now}
+    WHERE month = ${s.month} RETURNING "spentMicroBrl" AS spent`;
+  const spent = g[0]?.spent ?? 0n;
+  const cap = centsToMicro(s.globalCapCents);
+  const pct = cap > 0n ? Number((spent * 100n) / cap) : 100;
+  const crossed = GLOBAL_ALERT_THRESHOLDS.filter((t) => pct >= t).at(-1);
+  if (crossed === undefined) return { alert: null };
+  // alerta único por limiar e mês, mesmo com liquidações simultâneas (contagem 1 vence)
+  const won = await tx.$executeRaw`UPDATE llm_global_budget_months SET "alertedPct" = ${crossed}
+    WHERE month = ${s.month} AND "alertedPct" < ${crossed}`;
+  return { alert: won === 1 ? { pct: crossed, spentMicro: spent } : null };
 }
 
 export type UsageSnapshot = {

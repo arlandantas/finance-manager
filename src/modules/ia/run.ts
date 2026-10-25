@@ -6,6 +6,7 @@ import { logger } from "@/lib/logger";
 import { getLlmConfig, type LlmConfig } from "@/modules/ia/config";
 import { assertConsentEffective } from "@/modules/ia/consent";
 import {
+  aiGloballyUnavailable,
   aiUnavailable,
   budgetExceeded,
   estimateExceedsBudget,
@@ -14,6 +15,7 @@ import {
   purposeNotAvailable,
   toApiError,
 } from "@/modules/ia/errors";
+import { notifyGlobalBudget } from "@/modules/ia/global-alert";
 import { LlmError, type LlmPort, type LlmPurpose, type LlmUsage } from "@/modules/ia/port";
 import { costMicroBrl, estimateInputTokens } from "@/modules/ia/pricing";
 import { getLlmPort } from "@/modules/ia/provider";
@@ -104,6 +106,7 @@ export async function runLlm<P, T>(
       model,
       estimateMicro,
       capCents,
+      globalCapCents: cfg.globalCapCents,
       now: startedAt,
     });
   });
@@ -115,6 +118,7 @@ export async function runLlm<P, T>(
   };
   if (!reservation.ok) {
     log.warn({ ...base, outcome: "budget" satisfies LlmOutcome, costMicroBrl: 0 }, "llm_call");
+    if (reservation.reason === "global_exceeded") throw aiGloballyUnavailable();
     throw reservation.reason === "exceeded"
       ? budgetExceeded(reservation.resetsOn)
       : estimateExceedsBudget(reservation.resetsOn);
@@ -157,7 +161,7 @@ export async function runLlm<P, T>(
   const outcome: LlmOutcome = failure ? outcomeOf(failure.code) : "ok";
   const attempts = result?.attempts ?? null;
   try {
-    await db.$transaction((tx) =>
+    const settled = await db.$transaction((tx) =>
       settleEvent(tx, {
         eventId: reservation.eventId,
         familyId: ctx.familyId,
@@ -170,8 +174,13 @@ export async function runLlm<P, T>(
         latencyMs,
         attempts,
         now: ctx.clock.now(),
+        globalCapCents: cfg.globalCapCents,
       }),
     );
+    // SEC-013: alarme depois do commit (log estruturado + e-mail ao dono; melhor esforço)
+    if (settled.alert) {
+      await notifyGlobalBudget(cfg, reservation.month, settled.alert.pct, log);
+    }
   } catch (e) {
     // A reserva expira em 10 min e passa a contar como gasta (conservador).
     log.error(

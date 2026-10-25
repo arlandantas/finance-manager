@@ -750,6 +750,17 @@ model LlmBudgetMonth {
   @@map("llm_budget_months")
 }
 
+// SEC-013: teto global mensal (soma de todas as famílias) com alarme em 50/80/100 %
+model LlmGlobalBudgetMonth {
+  month            String   @id // "YYYY-MM" America/Sao_Paulo
+  spentMicroBrl    BigInt   @default(0)
+  reservedMicroBrl BigInt   @default(0)
+  alertedPct       Int      @default(0) // 0 | 50 | 80 | 100: maior limiar já alertado
+  updatedAt        DateTime @default(now()) @updatedAt @db.Timestamptz(3)
+
+  @@map("llm_global_budget_months")
+}
+
 model LlmUsageEvent {
   id               String         @id @default(uuid()) @db.Uuid
   familyId         String         @db.Uuid

@@ -5,6 +5,8 @@ import { DEFAULT_PRICES, type Price, parsePricesJson } from "@/modules/ia/pricin
 // SDD-021 §2 / ADR-028 §3: configuração do LLM, lida uma vez do ambiente do servidor.
 // Teto inicial R$ 5,00 por família/mês (D-GES-32, TL-27): padrão 500 centavos, configurável.
 export const DEFAULT_MONTHLY_CAP_CENTS = 500;
+/** SEC-013 (SDD-028 §5.2): em dev/teste o teto global não atrapalha; em produção é obrigatório (sem padrão). */
+export const DEFAULT_GLOBAL_CAP_CENTS_NON_PROD = 100_000;
 
 export const LlmEnvSchema = z.object({
   LLM_PROVIDER: z.enum(["fake", "anthropic"]).default("fake"),
@@ -19,11 +21,17 @@ export const LlmEnvSchema = z.object({
   LLM_USD_BRL_RATE: z.coerce.number().positive().default(6),
   LLM_MONTHLY_CAP_CENTS: z.coerce.number().int().min(0).default(DEFAULT_MONTHLY_CAP_CENTS),
   LLM_PRICES_JSON: z.string().optional(),
+  /** SEC-013: teto global mensal (todas as famílias), em centavos. Recomendação do alpha: 5000 (R$ 50). */
+  LLM_GLOBAL_MONTHLY_CAP_CENTS: z.coerce.number().int().min(0).optional(),
+  /** SEC-013: destino do alarme de 50/80/100 % do teto global. */
+  OPS_ALERT_EMAIL: z.email().optional(),
 });
 
 export type LlmConfig = z.infer<typeof LlmEnvSchema> & {
   prices: Record<string, Price>;
   featuresEnabled: boolean;
+  /** Teto global efetivo (centavos): o configurado ou o padrão de dev/teste. */
+  globalCapCents: number;
 };
 
 type Env = Record<string, string | undefined>;
@@ -59,6 +67,15 @@ export function assertLlmConfig(source: Env = process.env): LlmConfig {
   if (isProd && featuresEnabled && cfg.LLM_PROVIDER === "fake") {
     throw new Error("Em produção, AI_FEATURES_ENABLED=true exige LLM_PROVIDER=anthropic");
   }
+  if (
+    isProd &&
+    featuresEnabled &&
+    (cfg.LLM_GLOBAL_MONTHLY_CAP_CENTS === undefined || !cfg.OPS_ALERT_EMAIL)
+  ) {
+    throw new Error(
+      "Em produção, AI_FEATURES_ENABLED=true exige LLM_GLOBAL_MONTHLY_CAP_CENTS e OPS_ALERT_EMAIL",
+    );
+  }
   let custom: Record<string, Price>;
   try {
     custom = parsePricesJson(cfg.LLM_PRICES_JSON);
@@ -71,7 +88,12 @@ export function assertLlmConfig(source: Env = process.env): LlmConfig {
       `Modelo sem preço conhecido: ${cfg.LLM_MODEL_ANALYSIS} (defina LLM_PRICES_JSON)`,
     );
   }
-  return { ...cfg, prices, featuresEnabled };
+  return {
+    ...cfg,
+    prices,
+    featuresEnabled,
+    globalCapCents: cfg.LLM_GLOBAL_MONTHLY_CAP_CENTS ?? DEFAULT_GLOBAL_CAP_CENTS_NON_PROD,
+  };
 }
 
 let cached: LlmConfig | undefined;

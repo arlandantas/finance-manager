@@ -13,6 +13,14 @@ export function brDate(iso: string): string {
 export const aiUnavailable = () =>
   new ApiError(503, "AI_UNAVAILABLE", "A IA ainda não está disponível");
 
+/** SEC-013: teto GLOBAL atingido. Não revela que é o teto agregado nem quanto foi gasto. */
+export const aiGloballyUnavailable = () =>
+  new ApiError(
+    503,
+    "AI_UNAVAILABLE",
+    "A análise com IA está indisponível no momento. Tente de novo mais tarde.",
+  );
+
 export const aiDisabled = (
   message = "A análise por IA está desligada nesta família",
   details?: Record<string, unknown>,
