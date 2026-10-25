@@ -666,3 +666,12 @@ Ver o relatório de entrega ao Gestor e DEV-81..86 em [pedidos-ao-gestor.md](../
 - **Mensagens**: 403 `PERSONAL_OWNER_ONLY` agora lista os nomes ("Só Lucas e Carla podem alterar este lançamento."); recusa de conversão usa "Só quem pagou pode tornar este lançamento "Só meu"." DEV-122.
 - **UI**: DTOs ganharam `accountOwnerId` (lançamento), `paymentAccount.ownerId` e `paid.authorId/accountOwnerId` (prevista), `authorId/paymentAccountOwnerId` (a pagar); detalhe do Extrato e Previstas mostram "Só X, Y e Z podem alterar este lançamento (Só meu)"; aviso do formulário diz quem poderá alterar.
 - **Testes**: unit `sec021-ownership` ampliado (matriz, mensagens, previstas); integração nova `us084-so-meu-controle` (dono da conta, lançador, cartão/plano, prevista com baixa e estorno, travas, ex-membro); `sec021-so-meu-dono` ajustado (o autor agora altera).
+
+### [TASK-082] Rodada 6 do "Só meu": reteste SEC-042..046 + Administrador sobre ex-membro (D-GES-52/53, US-084, SDD-028 §11)
+- **Especificação**: US-084 (D-PO-95), SDD-028 §11 (revisado), D-GES-52, D-GES-53, `reteste-so-meu-2026-10-25` · **Status**: Concluído (aguardando validação do Gestor e novo reteste da Segurança). Sem deploy; uma migração nova (enum de evento).
+- **D-GES-52** (`ownership.ts`): `canWriteTransaction`/`canWritePlanned`/`assertCanWriteTransaction`/`plannedWriteDecision` liberam o Administrador atual quando o dono saiu; o Admin age com os limites de quem só controla (DEV-123). O histórico já grava o ator.
+- **SEC-042** (`cartoes/service.ts`, migração `sec042_card_owner_event`): só o titular atual ou o Admin troca o titular; evento `CARD_OWNER_CHANGED` no histórico da família (DEV-124).
+- **SEC-043/044** (`assertCanMakePersonal`, `assertPlannedControllerLimits`, `previstas/service.ts`, `recurring-service.ts`): quem só controla não muda divisão, pagador/responsável, conta nem "Pagar com" e não assume o pagamento; baixa só com conta do responsável ou do ator; estorno checa a prevista (DEV-125). UI: campos desabilitados no editor do Extrato e no de previstas.
+- **SEC-045** (`endSeries`): preserva as ocorrências "Só meu" que o ator não controla (DEV-126).
+- **SEC-046** (`familia/removal.ts`, diálogo de remoção): `reassignNotice` (DEV-127).
+- **Testes**: unit `sec021-ownership` (Admin/ex-membro, limites de controlador) ajustado e ampliado; integração nova `sec042-046-so-meu-reteste` (provas do relatório como regressão, Admin sobre ex-membro, histórico); `us084-so-meu-controle` ajustado (assumir passou a ser 403; Admin altera ex-membro).
