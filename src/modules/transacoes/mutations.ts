@@ -18,7 +18,13 @@ import {
   resolveRuleSplit,
   rewriteSplitAmounts,
 } from "@/modules/split/write";
-import { assertCanMakePersonal, assertCanWriteTransaction } from "@/modules/transacoes/ownership";
+import {
+  assertCanMakePersonal,
+  assertCanWriteTransaction,
+  isAdminOverRemovedOwner,
+  isPersonalExpense,
+  personalOwnerId,
+} from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
   RevisionDTO,
@@ -167,7 +173,10 @@ export async function updateTransaction(
   const engine = await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: primeira trava
   const repo = transacoesRepo(tx, ctx.familyId);
   const row = await loadMutable(tx, ctx, repo, id);
-  assertCanMakePersonal(ctx, row, input);
+  // D-GES-55: Administrador atual sobre o "Só meu" de ex-membro tem poderes plenos
+  const fullPower =
+    isPersonalExpense(row) && (await isAdminOverRemovedOwner(tx, ctx, personalOwnerId(row)));
+  assertCanMakePersonal(ctx, row, input, { fullPower });
   if (row.deletedAt) {
     throw unprocessable(
       "TRANSACTION_DELETED",

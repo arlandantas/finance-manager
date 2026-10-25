@@ -11,7 +11,8 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 //  - controladores = (1) dono = quem PAGOU (`payerMemberId`; sem pagador, o autor); (2) dono da conta onde
 //    o lançamento está (conta de débito ou, na compra no cartão, o dono do cartão); (3) lançador (autor).
 //  - dono que saiu da família ⇒ lançamento somente leitura, EXCETO para o Administrador atual (D-GES-52), que
-//    age como quem só controla (sem mudar divisão, pagador, conta nem "Pagar com").
+//    tem PODERES PLENOS (D-GES-55): também muda divisão, pagador/responsável, conta e "Pagar com". Só ele e só
+//    quando o dono é ex-membro (`isAdminOverRemovedOwner`); o novo pagador/conta são validados como ativos/da família.
 //  - quem só controla (não é o dono) NÃO muda divisão, pagador/responsável, conta nem "Pagar com" e não
 //    assume o pagamento (D-GES-53, SEC-043/044).
 //  - torná-lo "Só meu" (SEC-025/026/038) continua sendo só do pagador/responsável ATUAL
@@ -50,6 +51,32 @@ export function personalControllerIds(
 ): string[] {
   const ids = [personalOwnerId(row), row.accountOwnerMemberId ?? null, row.authorMemberId];
   return [...new Set(ids.filter((id): id is string => id !== null))];
+}
+
+/** D-GES-55: pode alterar divisão, pagador/responsável, conta e "Pagar com"? (regra pura, usada também pela UI) */
+export function canChangeStructure(
+  ownerId: string,
+  viewer: { memberId: string; role?: "ADMIN" | "MEMBER" },
+  ownerRemoved: boolean,
+): boolean {
+  return ownerId === viewer.memberId || (ownerRemoved && viewer.role === "ADMIN");
+}
+
+/**
+ * D-GES-55: o Administrador ATUAL, quando o dono (pagador/responsável) do "Só meu" é ex-membro, tem poderes plenos.
+ * Lido na transação; o ator que já é o dono não precisa disso.
+ */
+export async function isAdminOverRemovedOwner(
+  tx: Tx,
+  ctx: RequestContext,
+  ownerId: string,
+): Promise<boolean> {
+  if (ctx.role !== "ADMIN" || ownerId === ctx.memberId) return false;
+  const owner = await tx.member.findFirst({
+    where: { id: ownerId, familyId: ctx.familyId },
+    select: { removedAt: true },
+  });
+  return owner?.removedAt != null;
 }
 
 /** Regra pura (usada também pela UI): `ownerRemoved` = o dono já saiu da família (somente leitura). */
@@ -162,12 +189,14 @@ export function assertCanMakePersonal(
     payerMemberId?: string | undefined;
     accountId?: string | undefined;
   },
+  opts: { fullPower?: boolean } = {},
 ): void {
   if (current.kind !== "EXPENSE") return;
   const currentOwner = personalOwnerId(current);
-  // SEC-043/044: num "Só meu" que NÃO é seu, quem só controla (ou o Admin sobre ex-membro) altera valor, data,
-  // descrição, categoria e observação, mas não a divisão, o pagador (nem "assume" o pagamento) nem a conta.
-  if (!current.isSharedExpense && currentOwner !== ctx.memberId) {
+  // SEC-043/044: num "Só meu" que NÃO é seu, quem só controla altera valor, data, descrição, categoria e
+  // observação, mas não a divisão, o pagador (nem "assume" o pagamento) nem a conta. Exceção (D-GES-55): o
+  // Administrador atual sobre o "Só meu" de ex-membro (`fullPower`).
+  if (!current.isSharedExpense && currentOwner !== ctx.memberId && !opts.fullPower) {
     const changesDivision = next.isSharedExpense === true;
     const changesPayer = next.payerMemberId !== undefined && next.payerMemberId !== currentOwner;
     const changesAccount =
@@ -322,7 +351,9 @@ export function assertPlannedControllerLimits(
     responsibleMemberId?: string | undefined;
     paymentAccountId?: string | null | undefined;
   },
+  opts: { fullPower?: boolean } = {},
 ): void {
+  if (opts.fullPower) return; // D-GES-55
   if (current.isSharedExpense || current.responsibleMemberId === ctx.memberId) return;
   const changes =
     next.isSharedExpense === true ||

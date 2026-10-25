@@ -11,6 +11,7 @@ import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
 import { useUpdateTransaction } from "@/modules/transacoes/hooks";
+import { canChangeStructure } from "@/modules/transacoes/ownership";
 import { type TransactionDetailDTO, UpdateTransactionSchema } from "@/modules/transacoes/schemas";
 
 type FieldKey =
@@ -58,10 +59,27 @@ export function EditTransactionForm({
   const myMemberId = family.data?.currentMemberId ?? "";
   // SEC-043/044: quem só controla o "Só meu" de outro não muda divisão, pagador nem conta (nem assume o pagamento)
   const ownerId = t.payer?.id ?? t.author.id;
+  // D-GES-55: o Administrador atual sobre o "Só meu" de ex-membro tem poderes plenos (altera tudo)
+  const ownerGone = t.payer?.removed === true;
+  const fullPower = canChangeStructure(
+    ownerId,
+    { memberId: myMemberId, role: family.data?.currentRole },
+    ownerGone,
+  );
   const controllerOnly =
-    kind === "EXPENSE" && !t.isSharedExpense && myMemberId !== "" && ownerId !== myMemberId;
+    kind === "EXPENSE" &&
+    !t.isSharedExpense &&
+    myMemberId !== "" &&
+    ownerId !== myMemberId &&
+    !fullPower;
   const personalExpense = kind === "EXPENSE" && !shared && myMemberId !== "";
-  const effectivePayerId = controllerOnly ? ownerId : personalExpense ? myMemberId : payerId;
+  // "Só meu" do ex-membro sob poderes plenos: o pagador só muda se o Administrador escolher (ele mesmo, se continuar "Só meu")
+  const keepGonePayer = personalExpense && ownerGone && fullPower && payerId === ownerId;
+  const effectivePayerId = controllerOnly
+    ? ownerId
+    : personalExpense && !keepGonePayer
+      ? myMemberId
+      : payerId;
 
   function payload(confirmSettledPeriod?: boolean) {
     return {
@@ -235,14 +253,29 @@ export function EditTransactionForm({
         kind === "INCOME" ? "Quem recebeu?" : "Quem pagou?",
         effectivePayerId,
         setPayerId,
-        (family.data?.members ?? [])
-          .filter((m) =>
-            controllerOnly ? m.memberId === ownerId : !personalExpense || m.memberId === myMemberId,
-          )
-          .map((m) => ({
-            id: m.memberId,
-            name: m.name.split(" ")[0] ?? m.name,
-          })),
+        [
+          ...(family.data?.members ?? [])
+            .filter((m) =>
+              controllerOnly
+                ? m.memberId === ownerId
+                : !personalExpense || m.memberId === myMemberId,
+            )
+            .map((m) => ({
+              id: m.memberId,
+              name: m.name.split(" ")[0] ?? m.name,
+            })),
+          // o pagador atual que saiu da família continua visível como opção atual (rotulada)
+          ...(ownerGone &&
+          t.payer &&
+          !(family.data?.members ?? []).some((m) => m.memberId === ownerId)
+            ? [
+                {
+                  id: t.payer.id,
+                  name: `${t.payer.name.split(" ")[0] ?? t.payer.name} (ex-membro)`,
+                },
+              ]
+            : []),
+        ],
         errors.payerMemberId,
         controllerOnly,
       )}

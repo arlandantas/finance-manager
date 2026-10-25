@@ -34,7 +34,7 @@ import {
 } from "@/modules/previstas/schemas";
 import { splitSwitchLabel } from "@/modules/split/shares-label";
 import { useDefaults } from "@/modules/transacoes/hooks";
-import { violatesPlannedCapture } from "@/modules/transacoes/ownership";
+import { canChangeStructure, violatesPlannedCapture } from "@/modules/transacoes/ownership";
 import { monthLabel } from "../extrato/filters";
 
 type FieldKey =
@@ -177,11 +177,22 @@ export function PlannedDrawer({
   const existing = planned ?? series ?? null;
   // SEC-043/044: quem só controla o "Só meu" de outro altera valor, data, descrição, categoria e observação, mas não
   // a divisão, o responsável nem o "Pagar com" (a API também recusa)
+  // D-GES-55: o Administrador atual sobre o "Só meu" de ex-membro tem poderes plenos (altera tudo)
+  const fullPower =
+    !!me &&
+    !!existing &&
+    canChangeStructure(
+      existing.responsible.id,
+      { memberId: me, role: family.data?.currentRole },
+      existing.responsible.removed === true,
+    );
   const controllerOnly =
-    !!me && !!existing && !existing.isSharedExpense && existing.responsible.id !== me;
+    !!me && !!existing && !existing.isSharedExpense && existing.responsible.id !== me && !fullPower;
+  const goneResponsible =
+    fullPower && existing?.responsible.removed === true ? existing.responsible : null;
   const effectiveResponsibleId = controllerOnly
     ? existing?.responsible.id
-    : personalPlanned && me
+    : personalPlanned && me && !(goneResponsible && responsibleId === goneResponsible.id)
       ? me
       : responsibleId;
   // SEC-038: numa dividida de outro, não dá para virar "Só meu" nem se pôr como responsável (a API também recusa)
@@ -534,6 +545,23 @@ export function PlannedDrawer({
                   {m.name.split(" ")[0]}
                 </button>
               ))}
+              {goneResponsible && !members.some((m) => m.memberId === goneResponsible.id) ? (
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={effectiveResponsibleId === goneResponsible.id}
+                  aria-disabled
+                  aria-label={`${goneResponsible.name.split(" ")[0]} (ex-membro)`}
+                  className={cn(
+                    "flex min-h-11 items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium opacity-50",
+                    effectiveResponsibleId === goneResponsible.id
+                      ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
+                      : "border-slate-200 bg-white dark:bg-slate-100 text-slate-700",
+                  )}
+                >
+                  {goneResponsible.name.split(" ")[0]} (ex-membro)
+                </button>
+              ) : null}
             </div>
           </div>
 

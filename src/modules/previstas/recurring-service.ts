@@ -27,6 +27,7 @@ import {
   assertPlannedControllerLimits,
   assertPlannedNoCapture,
   assertPlannedResultAllowed,
+  isAdminOverRemovedOwner,
   plannedWriteDecision,
 } from "@/modules/transacoes/ownership";
 
@@ -255,7 +256,9 @@ export async function updateSeries(
   if (row.version !== input.version) throw await versionConflict(repo, tx, ctx, id);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026: série "Só meu" é só do responsável
   assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
-  assertPlannedControllerLimits(ctx, row, input); // SEC-043/044
+  const fullPower =
+    !row.isSharedExpense && (await isAdminOverRemovedOwner(tx, ctx, row.responsibleMemberId)); // D-GES-55
+  assertPlannedControllerLimits(ctx, row, input, { fullPower }); // SEC-043/044
   assertPlannedResultAllowed(
     ctx,
     {

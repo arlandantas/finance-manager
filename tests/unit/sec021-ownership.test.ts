@@ -3,6 +3,7 @@ import type { RequestContext } from "@/lib/api/types";
 import {
   assertCanMakePersonal,
   assertPlannedControllerLimits,
+  canChangeStructure,
   canWritePlanned,
   canWriteTransaction,
   controllerNames,
@@ -199,5 +200,42 @@ describe("SEC-043/044 quem só controla não muda divisão, pagador nem conta", 
         { isSharedExpense: true },
       ),
     ).not.toThrow();
+  });
+});
+
+describe("D-GES-55 poderes plenos do Administrador sobre o 'Só meu' de ex-membro", () => {
+  const admin = { ...ctx("m2"), role: "ADMIN" } as RequestContext;
+  it("canChangeStructure: dono; Admin só com dono ex-membro; Membro, dono da conta e lançador não", () => {
+    expect(canChangeStructure("m1", member("m1"), false)).toBe(true);
+    expect(canChangeStructure("m1", member("m2", "ADMIN"), true)).toBe(true);
+    expect(canChangeStructure("m1", member("m2", "ADMIN"), false)).toBe(false); // dono ativo
+    expect(canChangeStructure("m1", member("m2"), true)).toBe(false);
+    expect(canChangeStructure("m1", member("m3"), false)).toBe(false);
+  });
+  it("com fullPower o Admin muda divisão, pagador e conta; sem ele, 403", () => {
+    for (const next of [
+      { isSharedExpense: true },
+      { payerMemberId: "m3", isSharedExpense: true },
+      { accountId: "acc2" },
+      { payerMemberId: "m2" },
+    ]) {
+      expect(() =>
+        assertCanMakePersonal(admin, expense(), next, { fullPower: true }),
+      ).not.toThrow();
+      expect(() => assertCanMakePersonal(admin, expense(), next)).toThrow();
+    }
+  });
+  it("fullPower não permite entregar o 'Só meu' em nome de terceiro", () => {
+    expect(() =>
+      assertCanMakePersonal(admin, expense(), { payerMemberId: "m3" }, { fullPower: true }),
+    ).toThrow(/Só meu/);
+  });
+  it("na prevista, fullPower dispensa os limites de responsável, divisão e 'Pagar com'", () => {
+    const planned = { isSharedExpense: false, responsibleMemberId: "m1", paymentAccountId: "a1" };
+    const next = { responsibleMemberId: "m3", isSharedExpense: true, paymentAccountId: "a2" };
+    expect(() =>
+      assertPlannedControllerLimits(admin, planned, next, { fullPower: true }),
+    ).not.toThrow();
+    expect(() => assertPlannedControllerLimits(admin, planned, next)).toThrow();
   });
 });

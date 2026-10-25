@@ -481,15 +481,7 @@ describe("D-GES-52 Administrador altera o 'Só meu' de ex-membro", () => {
       (await post("Mariana", `/api/v1/transactions/${t.id}/restore`, { version: 3 })).status,
     ).toBe(200);
     expect(Number((await txRow(t.id)).amountInCents)).toBe(8500);
-    // o Admin age como quem só controla: não muda divisão, pagador nem conta
-    for (const body of [
-      { isSharedExpense: true },
-      { payerMemberId: idOf("Mariana") },
-      { accountId: accMariana.id },
-    ]) {
-      const res = await patch("Mariana", t.id, 4, body);
-      expect(res.status, JSON.stringify(body)).toBe(403);
-    }
+    // poderes plenos sobre divisão, pagador e conta (D-GES-55): ver d-ges-55-admin-poderes-plenos.int.test.ts
   });
 
   it("estorna a baixa e edita a prevista 'Só meu' de ex-membro; o membro comum não", async () => {
@@ -527,13 +519,6 @@ describe("D-GES-52 Administrador altera o 'Só meu' de ex-membro", () => {
       (await at(() => call(as("Mariana"), "PATCH", url, { version: nv, amountInCents: 12000 })))
         .status,
     ).toBe(200);
-    expect(
-      (
-        await at(() =>
-          call(as("Mariana"), "PATCH", url, { version: nv + 1, isSharedExpense: true }),
-        )
-      ).status,
-    ).toBe(403);
   });
 
   it("compra parcelada 'Só meu' de ex-membro: Admin exclui; membro comum não", async () => {

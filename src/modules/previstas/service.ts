@@ -27,6 +27,7 @@ import {
   assertPlannedControllerLimits,
   assertPlannedNoCapture,
   assertPlannedResultAllowed,
+  isAdminOverRemovedOwner,
   PERSONAL_OWNER_ONLY_CODE,
   PERSONAL_STRUCTURE_MESSAGE,
 } from "@/modules/transacoes/ownership";
@@ -245,7 +246,10 @@ export async function updatePlannedExpense(
   const row = await loadForChange(tx, ctx, repo, id, input.version);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026a: "Só meu" é só do responsável
   assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
-  assertPlannedControllerLimits(ctx, row, input); // SEC-043/044: quem só controla não muda divisão, responsável nem conta
+  // SEC-043/044: quem só controla não muda divisão, responsável nem conta; D-GES-55: Admin sobre ex-membro pode
+  const fullPower =
+    !row.isSharedExpense && (await isAdminOverRemovedOwner(tx, ctx, row.responsibleMemberId));
+  assertPlannedControllerLimits(ctx, row, input, { fullPower });
   assertPlannedResultAllowed(
     ctx,
     {
@@ -375,7 +379,9 @@ export async function payPlannedExpense(
   }
   if (!(await repo.findMember(payerMemberId))) throw invalidRef("payerMemberId", "Membro inválido");
   // SEC-044d: quem só controla (não é o responsável) só dá baixa com conta do responsável ou a sua
-  if (!row.isSharedExpense && row.responsibleMemberId !== ctx.memberId) {
+  const fullPower =
+    !row.isSharedExpense && (await isAdminOverRemovedOwner(tx, ctx, row.responsibleMemberId));
+  if (!row.isSharedExpense && row.responsibleMemberId !== ctx.memberId && !fullPower) {
     const acc = await tx.bankAccount.findFirst({
       where: { id: input.accountId, familyId: ctx.familyId },
       select: { ownerMemberId: true },
@@ -392,7 +398,7 @@ export async function payPlannedExpense(
   // sem virar o pagador, mas ninguém entrega a baixa em nome de um terceiro.
   if (!row.isSharedExpense && payerMemberId !== row.responsibleMemberId) {
     // SEC-043: quem só controla não assume o pagamento (a baixa mantém o pagador original)
-    if (row.responsibleMemberId !== ctx.memberId) {
+    if (row.responsibleMemberId !== ctx.memberId && !fullPower) {
       throw forbidden(PERSONAL_STRUCTURE_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
     }
     assertPersonalForSelf(ctx, { isSharedExpense: false, payerMemberId });
