@@ -20,7 +20,7 @@ Estes itens fecham os riscos 1 a 3 do ADR-031 §12 e são o "item 0" da ordem de
 - [ ] **1.1 Definir `APP_DEPLOY_ENV=production`** na Vercel, escopo **Production**. Sem isso, as travas contra login de teste ficam desligadas (ADR-031 §12, risco 1, severidade alta).
   - *Verificar:* na lista de variáveis do projeto, a variável existe e o escopo mostra só Production.
 - [ ] **1.2 Confirmar que não existem** `AUTH_DEV_LOGIN`, `APP_HOMOLOG_MODE` e `APP_NOW_OVERRIDE` em nenhum escopo. Se alguma existir, remova-a. Essas três nunca podem estar em produção (ADR-031 §9).
-  - *Verificar:* `curl -i https://verbus-finance.vercel.app/api/health` não retorna `503` com `unsafe_config`. A tela de login oferece só Google (ADR-031 §1).
+  - *Verificar:* `curl -i https://verbus-finance.vercel.app/api/health` responde `ok` (se vier `degraded`, há configuração insegura: o detalhe só aparece com `Authorization: Bearer <CRON_SECRET>`; SEC-022). A tela de login oferece só Google (ADR-031 §1).
 - [ ] **1.3 Confirmar o escopo das variáveis sensíveis.** `DATABASE_URL`, `DIRECT_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_SECRET`, `ANTHROPIC_API_KEY` e demais segredos devem estar **só em Production**, não em "All Environments" nem em Preview (ADR-031 §6 e §12, risco 5).
   - *Verificar:* em cada variável, o escopo mostra apenas Production.
 - [ ] **1.4 Anotar no Console do Prisma o plano e a região** do banco (ADR-031 §12; respostas-r4d-v2 TL-49). Guarde a informação fora do repositório.
@@ -168,7 +168,7 @@ Não ligue `MCP_ENABLED=true` antes destes itens (respostas-r4d-v2 §2, regra de
 
 Rodar após cada deploy de produção.
 
-- [ ] **8.1 `/api/health`** responde sem `503 unsafe_config`: `curl -i https://verbus-finance.vercel.app/api/health` (ADR-031 §4 e §5). O status esperado de sucesso deve ser confirmado no ADR-031 ou no código da rota.
+- [ ] **8.1 `/api/health`** responde `ok` e não `degraded` (detalhe de `unsafe_config` só com `Bearer CRON_SECRET`, SEC-022): `curl -i https://verbus-finance.vercel.app/api/health` (ADR-031 §4 e §5). O status esperado de sucesso deve ser confirmado no ADR-031 ou no código da rota.
 - [ ] **8.2 Smoke:** `scripts/smoke-prod.sh https://verbus-finance.vercel.app`. Termina sem erro (ADR-031 §5). Confirmar a saída esperada no próprio script.
 - [ ] **8.3 Smoke do MCP** (só depois de `MCP_ENABLED=true`): `pnpm mcp:smoke` (ADR-031 §5).
 - [ ] **8.4 Correção de `/api/auth/session`** (ADR-026 §6, risco 8 do ADR-031 §12): conferir no smoke que a sessão não expõe o `sessionToken`.
