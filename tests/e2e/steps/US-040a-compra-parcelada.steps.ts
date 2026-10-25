@@ -4,7 +4,7 @@ import { parseBRL } from "@/lib/money";
 import { normalizeSpaces } from "../../support/constants";
 import { testDb } from "../../support/db";
 import { makeCard } from "../../support/factories";
-import { gotoReady } from "../../support/nav";
+import { gotoReady, reloadIfOpen } from "../../support/nav";
 import { buyOnCard, fillExpense, gotoInvoice } from "../support/cartoes";
 import { Given, Then, When, type World } from "../support/fixtures";
 import { drawer, waitSaved } from "../support/lancamento";
@@ -94,7 +94,7 @@ When(
 
 Given(
   "o cartão {string} com fechamento dia {int} e vencimento dia {int}",
-  async ({ world }, nome: string, fecha: number, vence: number) => {
+  async ({ world, page }, nome: string, fecha: number, vence: number) => {
     world.data.card2 = await makeCard(await setupFamily(world), {
       name: nome,
       owner: "Lucas",
@@ -102,6 +102,8 @@ Given(
       closingDay: fecha,
       dueDay: vence,
     });
+    // O Contexto já abriu a página: recarrega para o cache de cartões do drawer enxergar o novo cartão.
+    await reloadIfOpen(page);
   },
 );
 

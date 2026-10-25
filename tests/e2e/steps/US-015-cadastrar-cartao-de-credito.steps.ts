@@ -3,7 +3,7 @@ import { normalizeSpaces } from "../../support/constants";
 import { testDb } from "../../support/db";
 import { makeAccount, makeCard, makeCardPurchase, makeFamily } from "../../support/factories";
 import { loginAs } from "../../support/login";
-import { gotoReady } from "../../support/nav";
+import { gotoReady, reloadIfOpen } from "../../support/nav";
 import { enterAs } from "../support/acerto";
 import { cardItem, createCardViaUi, fillCard, openCartoes, openNewCard } from "../support/cartoes";
 import { dlg } from "../support/categorias";
@@ -222,11 +222,13 @@ When("Lucas tenta salvar outro limite", async ({ world }) => {
   await d.getByRole("button", { name: "Salvar cartão" }).click();
 });
 
-Given("que a família não tem cartões", async ({ world }) => {
+Given("que a família não tem cartões", async ({ world, page }) => {
   await setupFamily(world);
   // Remove os cartões que o contexto do cenário tenha criado (cartão sem faturas/compras não tem trava).
   await db.creditCard.deleteMany();
   expect(await db.creditCard.count()).toBe(0);
+  // O Contexto já abriu a Home: recarrega para o cache de cartões do drawer não trazer os apagados.
+  await reloadIfOpen(page);
 });
 
 When("Mariana abre {string}", async ({ page, world }, _tela: string) => {
