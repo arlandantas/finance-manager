@@ -4,9 +4,9 @@
 | :-- | :-- |
 | Épico / Release | EPIC-1 Núcleo Familiar & Membros · R1 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 6,3 · 3 |
-| Status | Refinada (PO) |
+| Status | Refinada (PO) · **revisada 2026-10-24 (aceite explícito, SEC-004)** |
 | Depende de | US-002 |
-| Rastreabilidade | NEED-012 (cenário do convite) · NEED-001 · RN-012.2 · FLUXO-002 · ADR-002 |
+| Rastreabilidade | NEED-012 (cenário do convite) · NEED-001 · RN-012.2 · FLUXO-002 · ADR-002 · SEC-004 · SDD-028 §1 · ADR-032 · D-GES-42 · D-PO-79 |
 
 ## História
 Como **Administrador da família**, quero **convidar meu cônjuge pelo e-mail Google dele(a)**, para que **ele(a) entre com 1 clique já dentro da nossa família**.
@@ -14,7 +14,11 @@ Como **Administrador da família**, quero **convidar meu cônjuge pelo e-mail Go
 ## Regras de negócio aplicáveis
 - Só **Administradores** convidam e cancelam convites.
 - O convite vale para **um e-mail**; a comparação ignora maiúsculas/minúsculas.
-- O vínculo ocorre **no login** com o e-mail convidado; clicar no link sozinho não concede acesso.
+- **O vínculo só ocorre com o aceite explícito do convidado** (SEC-004, D-GES-42 U1, D-PO-79): ao entrar com o Google no e-mail convidado, a pessoa vê o convite em **"Você foi convidado"** e só é vinculada ao tocar em **"Entrar na Família X"**. Entrar no app, abrir o link do e-mail ou fazer login **nunca** vinculam sozinhos.
+- O convidado pode **Recusar** (o Administrador passa a ver "Recusado" e pode convidar de novo) ou **ignorar** o convite e criar a própria família.
+- **Vários convites pendentes** para o mesmo e-mail: a pessoa vê **todos**, um cartão por convite, e escolhe; o app não escolhe nenhum sozinho.
+- **Quem já faz parte de uma família não troca de família pelo convite**: para entrar em outra, precisa antes sair da atual (US-035). O convite continua pendente.
+- O aceite exige o **e-mail Google verificado** igual ao do convite; o link do e-mail só mostra o cartão de aceite (abrir o link não tem efeito).
 - Convite **expira em 7 dias** (proposta do PO, ver pergunta Q-03).
 - Papel do convidado: *Membro* (padrão) ou *Administrador*, escolhido por quem convida.
 - E-mail já membro da família ou com convite pendente não pode ser convidado de novo.
@@ -32,12 +36,65 @@ Funcionalidade: Convite de membros
     E um e-mail com o link de acesso é enviado para "lucas@exemplo.com"
     E o convite aparece em "Convites pendentes"
 
-  Cenário: Convidado entra e é vinculado automaticamente
-    Dado que existe um convite pendente para "lucas@exemplo.com"
+  Cenário: Convidado vê o convite e escolhe Entrar
+    Dado que existe um convite pendente para "lucas@exemplo.com" da "Família Silva" enviado por Mariana
     Quando Lucas entra com o Google usando "Lucas@Exemplo.com"
-    Então ele é vinculado à "Família Silva" com o papel do convite
+    Então vê "Mariana convidou você para a Família Silva"
+    E vê os botões "Entrar na Família Silva" e "Recusar"
+    E não é vinculado a nenhuma família ainda
+
+  Cenário: Aceitar o convite vincula ao clicar em Entrar
+    Dado que Lucas vê o convite da "Família Silva" com papel "Membro"
+    Quando Lucas toca em "Entrar na Família Silva"
+    Então é vinculado à "Família Silva" com o papel do convite
     E o convite passa a "aceito"
     E ele vê a mensagem "Você entrou na Família Silva"
+
+  Cenário: Recusar convite
+    Dado que Lucas vê o convite da "Família Silva"
+    Quando Lucas toca em "Recusar" e confirma "Recusar o convite da Família Silva?"
+    Então o convite passa a "recusado"
+    E Lucas não é vinculado à "Família Silva"
+    E Lucas segue para criar a própria família
+    E Mariana vê o convite como "Recusado" em "Convites"
+
+  Cenário: Administrador pode convidar de novo quem recusou
+    Dado que Lucas recusou o convite da "Família Silva"
+    Quando Mariana convida "lucas@exemplo.com" novamente
+    Então o novo convite é criado sem erro de convite duplicado
+
+  Cenário: Dois convites pendentes
+    Dado que existem convites pendentes para "lucas@exemplo.com" da "Família Silva" e da "Família Souza"
+    Quando Lucas entra com o Google
+    Então vê um cartão para a "Família Silva" e outro para a "Família Souza"
+    E nenhuma das duas famílias é escolhida automaticamente
+
+  Cenário: Aceitar um dos dois convites
+    Dado que Lucas vê os convites da "Família Silva" e da "Família Souza"
+    Quando Lucas toca em "Entrar na Família Souza"
+    Então é vinculado à "Família Souza"
+    E não é vinculado à "Família Silva"
+
+  Cenário: Quem já tem família não troca pelo convite
+    Dado que Lucas já faz parte da "Família Souza"
+    E existe um convite pendente para Lucas da "Família Silva"
+    Quando Lucas tenta entrar na "Família Silva"
+    Então vê "Você já faz parte de uma família. Para entrar em outra, saia da atual em Família."
+    E continua na "Família Souza"
+    E o convite da "Família Silva" continua pendente
+
+  Cenário: Link do e-mail mostra o cartão de aceite e não vincula
+    Dado que existe um convite pendente para "lucas@exemplo.com"
+    Quando Lucas abre o link do convite com a conta Google de "lucas@exemplo.com"
+    Então vê o cartão "Mariana convidou você para a Família Silva" com "Entrar na Família Silva"
+    E não é vinculado à família só por abrir o link
+
+  Cenário: Convite que não está mais disponível
+    Dado que Lucas vê o cartão do convite da "Família Silva"
+    E Mariana cancela o convite
+    Quando Lucas toca em "Entrar na Família Silva"
+    Então vê "Este convite não está mais disponível"
+    E não é vinculado à família
 
   Cenário: Convite aberto com outra conta Google
     Dado que existe um convite pendente para "lucas@exemplo.com"
@@ -91,3 +148,4 @@ Reenvio automático, convite por link/QR genérico, remoção de membro, transfe
 
 ## Histórico
 - 2026-10-04 — **Nota pós-TL (US-039, D-PO-39):** "Copiar link" e "Reenviar e-mail" do convite pendente passam a **rotacionar o token** (o link anterior deixa de valer; validade de 7 dias mantida). Os cenários da US-003 não mudam; o teste de integração do convite deve cobrir o token antigo inválido.
+- 2026-10-24 — **Aceite explícito (SEC-004, SDD-028 §1, D-GES-42 U1, D-PO-79):** o vínculo automático no login/link foi **removido**. Substituído pelo cartão em "Você foi convidado" com **Entrar** e **Recusar**; novos cenários: aceitar, recusar, administrador convida de novo, dois convites, já tem família (sem troca), link do e-mail sem efeito, convite indisponível. "Convite expirado" e "Cancelar convite" não mudam. UI: tela `/convites` (SDD-028 §1.4). Estimativa do TL: 5 pts (SEC-004). Fluxo: FLUXO-002 rev. 3.

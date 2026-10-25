@@ -1,6 +1,13 @@
 # Status do Product Owner
 
-*Atualizado: 2026-10-24 (rev. 2 do MCP: EN-007, 076a/b/c, 074b; antes, R4 proposta: parcelas já pagas, importação de fatura, análise por IA e MCP; US-065..077)*
+*Atualizado: 2026-10-24 (**R4-S: correções de segurança do alpha, US-078..084**; antes, rev. 2 do MCP: EN-007, 076a/b/c, 074b; antes, R4 proposta: parcelas já pagas, importação de fatura, análise por IA e MCP; US-065..077)*
+
+
+## Atualização (2026-10-24): R4-S — ajustes de BDD e histórias novas do SDD-028 §10 (SEC)
+- **Origem:** D-GES-40..42, SDD-028 §10, ADR-032. Decisões **D-PO-79..93**: [`backlog/decisoes-po-seguranca-sec.md`](backlog/decisoes-po-seguranca-sec.md).
+- **Histórias ajustadas:** [US-003](backlog/stories/US-003-convidar-membro.md) (aceite explícito: ver convite, Entrar, Recusar, dois convites, já tem família sem troca, link do e-mail sem efeito, convite indisponível) · US-039 e FLUXO-002 rev. 3 (convidado aceita em /convites) · US-035 (remoção e troca de papel encerram as sessões) · US-074 (consentimento no mesmo navegador, selo, aviso fixo, cartão e e-mail de conexão nova) · US-075 (texto marcado como dado) · US-070 (teto global) · **US-012** (corrigido: "últimos 10 lançamentos" e card "Resumo do mês" fechado, conforme US-061/063) · US-005/007/013a/013b/030/036 ("Só meu" só pelo dono).
+- **Histórias novas (20 pts PO):** [US-078](backlog/stories/US-078-encerrar-as-outras-sessoes.md) encerrar outras sessões (2) · [US-079](backlog/stories/US-079-baixar-meus-dados.md) baixar meus dados (3) · [US-080](backlog/stories/US-080-excluir-minha-conta.md) excluir minha conta (5) · [US-081](backlog/stories/US-081-excluir-a-familia.md) excluir a família (5) · [US-082](backlog/stories/US-082-pagina-de-privacidade.md) página Privacidade (1, com rascunho do texto) · [US-083](backlog/stories/US-083-cadastro-por-lista-de-emails-permitidos.md) lista de e-mails permitidos (1) · [US-084](backlog/stories/US-084-lancamento-so-meu-so-o-dono-altera.md) "Só meu" só pelo dono (3). Épico novo **EPIC-25**, release **R4-S**; tabela e linha de corte em [`backlog/backlog.md`](backlog/backlog.md).
+- **Pendências:** **Stakeholder valida** D-PO-85 (RN-012.3: 30/90 dias), D-PO-88 (RN-020.6: excluir família) e D-PO-91 (regra do "Só meu"); **usuário** aprova o texto da US-082, define o e-mail de contato, faz a validação jurídica de prazos/retenção (D-PO-87) e define `ALLOWED_SIGNUP_EMAILS` na Vercel; **TL** responde as 4 perguntas da decisão (dono do "Só meu", hipóteses da US-083, revisão de pendências na exclusão de conta, escopo do apagamento da família) e estima US-083/084; **Gestor** ratifica D-PO-79..93.
 
 
 ## Atualização (2026-10-24, rev. 2): MCP no POC com Claude, lançamento direto e hospedagem

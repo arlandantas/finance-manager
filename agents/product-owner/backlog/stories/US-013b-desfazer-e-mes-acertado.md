@@ -14,7 +14,7 @@ Como **membro da família**, quero **desfazer uma transferência ou um acerto re
 ## Regras de negócio aplicáveis
 - Editar despesa de um mês **já acertado** exibe aviso antes de salvar.
 - Lançamentos de **transferência e acerto** não são editáveis; só podem ser **desfeitos** (estorno completo das duas pernas), com trilha de auditoria.
-- Demais regras: as da [US-013a](US-013-corrigir-ou-estornar-lancamento.md).
+- Demais regras: as da [US-013a](US-013-corrigir-ou-estornar-lancamento.md), inclusive a exceção do lançamento "Só meu", que só o dono altera ([US-084](US-084-lancamento-so-meu-so-o-dono-altera.md)). Transferências e acertos **não** são "Só meu": seguem a regra de desfazer desta história.
 
 ## Critérios de aceite (Gherkin)
 
@@ -48,3 +48,4 @@ Primeira fatia a ser cortada se o prazo apertar (ordem: 13b, 9b, 13a). Sem ela, 
 
 ## Histórico
 - 2026-10-04 — **Cenário atualizado (D-PO-41, SDD-011 §9, US-028):** "Desfazer um acerto" com o texto neutro do herói; valores inalterados.
+- 2026-10-24 — Nota (SEC-021, D-PO-91): sem mudança de cenário; a exceção "Só meu" é da US-013a/US-084.

@@ -17,7 +17,10 @@ flowchart TD
     LOGIN -->|Autoriza| HASFAM{Já pertence a uma família?}
     HASFAM -- Sim --> HOME
     HASFAM -- Não --> INV{Há convite pendente para este e-mail?}
-    INV -- Sim --> JOIN[Vincula à família automaticamente] --> WELCOME[Boas-vindas: você entrou na Família X] --> HOME
+    INV -- Sim --> CARD[Tela Você foi convidado: um cartão por convite] --> CHOICE{Escolhe}
+    CHOICE -- Entrar na Família X --> WELCOME[Boas-vindas: você entrou na Família X] --> HOME
+    CHOICE -- Recusar --> ONB
+    CHOICE -- Criar minha própria família --> ONB
     INV -- Não --> ONB[Onboarding: nome da família]
     ONB -->|Criar família| INVITE[Passo opcional: convidar membro por e-mail]
     INVITE -->|Enviar convite| HOME
@@ -50,6 +53,7 @@ flowchart TD
 - **Carregando**: skeleton na tela enquanto a sessão é resolvida (sem "flash" da tela de login).
 - **Vazio**: família com um só membro mostra convite destacado ("Convide quem divide as contas com você").
 - **Erro**: mensagens em português, sem jargão técnico, sempre com saída (tentar de novo / voltar).
+- **Você foi convidado (rev. 3, SEC-004)**: um cartão por convite ("Mariana convidou você para a Família Silva · Papel: Membro · Vence em 31/10") com **Entrar na Família Silva** (primário) e **Recusar** (secundário, com confirmação). Rodapé "Prefiro criar minha própria família". Quem já tem família vê o alerta "Você já faz parte de uma família. Para entrar em outra, saia da atual em Família.". O link do e-mail abre o mesmo cartão. Nada vincula sozinho.
 - **Convite aberto com outro e-mail**: tela explicando que o convite é para outro endereço, com ação *Entrar com outra conta*.
 - **Acessibilidade**: botão do Google com rótulo textual; foco visível; contraste AA.
 
@@ -57,3 +61,6 @@ flowchart TD
 - Novo **passo opcional** após criar a família: "Como vocês dividem as despesas?" (padrão: acerto ligado; opção "Só controlar, sem dividir"). Ver [FLUXO-009](FLUXO-009-acerto-opcional.md) e [US-028](../backlog/stories/US-028-acerto-de-contas-opcional.md).
 - Convite pendente ganha "Copiar link" e "Reenviar e-mail" ([US-039](../backlog/stories/US-039-polimento-da-homologacao.md)) e o aviso da conta Google do mesmo e-mail antes de enviar.
 - Editar a família, papéis, remover membro e sair: [FLUXO-011](FLUXO-011-familia-e-membros.md).
+
+## Revisão 3 (2026-10-24) — Aceite explícito do convite
+- O passo "vincula automaticamente" foi substituído pela tela **Você foi convidado** com Entrar/Recusar ([US-003](../backlog/stories/US-003-convidar-membro.md), SEC-004, D-PO-79). Cadastro restrito por lista de e-mails no alpha: [US-083](../backlog/stories/US-083-cadastro-por-lista-de-emails-permitidos.md). Página Privacidade no rodapé do login: [US-082](../backlog/stories/US-082-pagina-de-privacidade.md).

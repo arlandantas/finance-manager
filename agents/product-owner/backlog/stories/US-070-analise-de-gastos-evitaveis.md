@@ -19,6 +19,7 @@ Como **membro da família**, quero **pedir uma análise dos gastos de um mês fe
 - **Método fixo (Q-U12):** cada categoria é classificada em Essencial / Importante / Supérfluo, com o **porquê**; destaque para "gastos que parecem evitáveis" (assinaturas esquecidas, recorrentes inflados, picos pontuais) com valor mensal e anual estimados.
 - **Tom e limites:** sem ranquear ou culpar membros (RN-027.9): a análise fala de categorias e hábitos coletivos, não de "quem gastou"; aviso fixo de que **não substitui um profissional** e sem recomendação de investimento/crédito (RN-027.4).
 - Nunca grava nem altera dados (RN-027.3, RN15).
+- **Teto global de IA (SEC-013, SDD-028 §5, D-GES-42 U3, D-PO-83)**: além do limite da família, existe um **teto mensal do app inteiro**. Atingido, a análise fica indisponível para todas as famílias, e a mensagem **não revela** que é um teto global nem quanto foi gasto. O teto da família segue com a mensagem atual (com a data em que volta).
 - Estados: sem dados suficientes ("Precisa de pelo menos 2 meses com lançamentos"), IA desligada, teto atingido, erro do provedor.
 
 ## Critérios de aceite (Gherkin)
@@ -83,6 +84,14 @@ Funcionalidade: Análise de gastos evitáveis
     Quando Lucas abre "Gastos evitáveis"
     Então vê "A análise por IA está desligada nesta família"
 
+  Cenário: Teto global do app atingido
+    Dado que o teto mensal de IA do app inteiro foi atingido
+    E a família de Lucas ainda está abaixo do próprio limite
+    Quando Lucas toca em "Enviar para análise"
+    Então vê "A análise com IA está indisponível no momento. Tente de novo mais tarde."
+    E a mensagem não menciona teto, limite global nem valores gastos
+    E nenhuma análise é salva
+
   Cenário: Erro do provedor
     Dado que o provedor simulado responde com erro
     Quando Lucas toca em "Enviar para análise"
@@ -98,3 +107,4 @@ Metas/orçamento automático, comparação entre famílias, análise por membro,
 
 ## Histórico
 - 2026-10-24 — Criada (D-PO-64).
+- 2026-10-24 — **Teto global (SEC-013, D-PO-83):** cenário "Teto global do app atingido" com mensagem genérica que não revela o teto.

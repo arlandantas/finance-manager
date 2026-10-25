@@ -24,7 +24,8 @@ Como **Administrador**, quero **remover um membro que saiu da casa** (e como mem
 - **Sair da família**: qualquer membro, com as mesmas verificações; ao sair vê "Você saiu da Família Silva" e vai à tela de criar/entrar em família. Se o membro for o único restante, **não pode sair** (família sem membros é fora de escopo, RN-020.6).
 - **Convite posterior**: o e-mail de um ex-membro pode ser convidado de novo (RN-020.7) e volta como **novo membro** (não reassume o histórico automaticamente).
 - **Acesso encerrado** (ADR-019): o removido recebe `403` na **próxima** requisição e vê **uma única vez** o aviso "Seu acesso a esta família foi encerrado"; o histórico dele continua com o nome ("ex-membro").
-- Remoção e saída **não apagam nada**; excluir a família inteira é fora de escopo.
+- Remoção e saída **não apagam nada**; a **exclusão da família inteira** é a história própria [US-081](US-081-excluir-a-familia.md) (SEC-017d), só para o último membro.
+- **Sessões do removido (SEC-018, D-PO-80)**: a remoção e a troca de papel **encerram as sessões do usuário afetado** (menos a de quem age, quando é ele mesmo). O removido não precisa de nenhuma ação: na próxima vez que usar o app, vê o aviso de acesso encerrado.
 
 ## Critérios de aceite (Gherkin)
 
@@ -114,6 +115,18 @@ Funcionalidade: Remover membro e sair da família
     E Lucas atualiza a tela
     Então Lucas vê a tela de login com "Seu acesso a esta família foi encerrado"
 
+  Cenário: Removido não consegue usar o app em outro aparelho
+    Dado que Lucas estava conectado no celular e no computador
+    Quando Mariana remove "Lucas"
+    E Lucas tenta usar o app no celular ou no computador
+    Então vê "Seu acesso a esta família foi encerrado" nos dois aparelhos
+
+  Cenário: Troca de papel encerra as sessões do membro afetado
+    Dado que Lucas estava conectado em dois aparelhos como "Membro"
+    Quando Mariana muda o papel de Lucas para "Administrador"
+    Então Lucas precisa entrar com o Google de novo nos dois aparelhos
+    E Mariana continua conectada
+
   Cenário: Duplo clique remove uma única vez
     Quando Mariana toca duas vezes rapidamente em "Remover membro"
     Então apenas uma remoção é registrada
@@ -135,7 +148,7 @@ A 035b depende da 035a; ambas são cortáveis (6º na ordem de corte), mas a 035
 [FLUXO-011](../../flows/FLUXO-011-familia-e-membros.md): diálogo em duas etapas (1. Revisão de pendências com seletores de reatribuição; 2. Confirmação textual "Remover Lucas"). Botão destrutivo só habilita com pendências resolvidas.
 
 ## Fora de escopo
-Excluir a família (RN-020.6); política de retenção de dados de ex-membros (**Q-U02**, usuário); reassumir histórico ao reconvidar; transferência de titularidade em lote.
+Excluir a família (RN-020.6; hoje na [US-081](US-081-excluir-a-familia.md)); política de retenção de dados de ex-membros (**Q-U02**, usuário); reassumir histórico ao reconvidar; transferência de titularidade em lote.
 
 ## Perguntas em aberto / pontos para o Tech Lead
 - **Respondido pelo TL** (ADR-019, SDD-012): `Member` nunca é apagado (`removedAt`); unicidade só entre ativos; reconvite cria **novo** `Member`; último Administrador protegido por *advisory lock*; reatribuição em lote atômica.
@@ -143,3 +156,4 @@ Excluir a família (RN-020.6); política de retenção de dados de ex-membros (*
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 15, Q-F07).
 - 2026-10-04 — **Revisão pós-TL (D-PO-36):** TL = 8 (PO: 5), fatiada em 035a (5) e 035b (3); mensagens **neutras de gênero** ("única pessoa Administradora", "única pessoa na família"); acesso encerrado com aviso único.
+- 2026-10-24 — **Sessões encerradas (SEC-018, SDD-028 §6.2, D-PO-80):** a remoção/troca de papel encerra as sessões do afetado (em todos os aparelhos); 2 cenários novos. A exclusão da família saiu do "fora de escopo" e virou a US-081.

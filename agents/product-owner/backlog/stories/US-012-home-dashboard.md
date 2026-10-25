@@ -15,7 +15,7 @@ Como **membro da família**, quero **uma tela inicial que mostre saldos, o acert
 1. **Saldo consolidado** da família (soma das contas) e lista de contas com saldo.
 2. **Card "Acerto do mês"**: frase-herói do [FLUXO-003](../../flows/FLUXO-003-acerto-de-contas.md) (ou "Tudo certo neste mês"); toque abre o painel.
 3. **Resumo do mês**: total de receitas, total de despesas e quanto cada membro gastou (percentual de participação).
-4. **Últimos 5 lançamentos** com link "Ver extrato".
+4. **Últimos 10 lançamentos** ("Extrato recente") com link "Ver extrato" *(eram 5 na R1; passaram a 10 com a US-061)*.
 5. **Botão flutuante "+"** (lançamento rápido, US-005/US-006).
 
 ## Regras de negócio aplicáveis
@@ -33,10 +33,10 @@ Funcionalidade: Home da família
   Cenário: Home com dados
     Dado contas "Itaú Mariana" (R$ 6.500,00) e "Nubank Conjunta" (R$ 849,50)
     Quando abro a Home
-    Então vejo o Resumo do Mês
-    E o card "Saldos das contas" recolhido com o total "R$ 7.349,50"
-    E a linha "Acerto do mês" dentro do Resumo
-    E os últimos 5 lançamentos
+    Então vejo as ações rápidas, "Vence nos próximos dias" e "Extrato recente"
+    E o card "Resumo do mês" fechado por padrão
+    E, ao expandir o card, o total de saldos "R$ 7.349,50", a linha "Acerto do mês" e os valores do Resumo do Mês
+    E "Extrato recente" mostra os 10 lançamentos mais recentes
 
   Cenário: Resumo do mês exclui transferências e acertos
     Dado receitas de "R$ 5.000,00", despesas de "R$ 1.200,00" e uma transferência de "R$ 1.000,00"
@@ -81,3 +81,4 @@ Gráficos, orçamento/disponibilidade por categoria (AP1), termômetro de liquid
 ## Histórico
 - 2026-10-04 — **Revisão pós-homologação (R2.1):** o layout (saldo em destaque, card "Acerto do mês" e resumo simples) é **substituído** pelo Resumo do Mês (US-025), card de saldos recolhível (US-026), indicador neutro de acerto (US-029) e detalhe da transação (US-036). Ver FLUXO-006.
 - 2026-10-04 — **Cenários atualizados (D-PO-41, SDD-010 §9):** "Home com dados" e "Card de acerto abre o painel" refletem a Home reorganizada (Resumo do Mês, card de saldos recolhido e linha neutra de acerto; ver US-025, US-026, US-029). "Resumo do mês exclui transferências e acertos" e "Participação por membro" continuam válidos.
+- 2026-10-24 — **Textos atualizados (D-PO-84):** "últimos 5 lançamentos" passa a **10** (US-061, Extrato recente) e o "card Saldos das contas recolhido" é substituído pelo card **"Resumo do mês" fechado por padrão**, que contém saldos, acerto e o Resumo do Mês com o rótulo "Previstas" (US-061, US-063). Nenhum cálculo muda; a ordem vigente dos blocos é a da US-061.

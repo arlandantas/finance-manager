@@ -18,6 +18,7 @@ Como **membro da família**, quero **tocar num lançamento da Home e ver o detal
 - **Ações rotuladas e visíveis** (achado 7): **Editar**, **Excluir**, **Histórico**; nada escondido atrás de "…". As regras de edição/exclusão são as da US-013a/013b/016b (ex.: despesa gerada por baixa ⇒ "Use Desfazer pagamento").
 - "Ver no Extrato" é um link explícito (leva ao Extrato do mês do lançamento com ele em destaque); a aba Extrato continua existindo. O destaque é o parâmetro de interface **`highlight`** (D-PO-40): **só a tela do Extrato o lê** (rola e destaca o item); **não há contrato de API** para ele e a API o ignora. O detalhe abre por estado local e pode ser reaberto por `?tx=<id>`, sem rotas paralelas.
 - Transferências e acertos abrem o detalhe com as ações cabíveis (desfazer), sem "Editar" (US-013b).
+- **Lançamento "Só meu" de outra pessoa** (SEC-021, [US-084](US-084-lancamento-so-meu-so-o-dono-altera.md)): o detalhe mostra "Só <dono> pode alterar este lançamento (Só meu)" e **não exibe** Editar nem Excluir; "Histórico" e "Ver no Extrato" continuam disponíveis.
 - O mesmo detalhe também é usado no **Extrato** (um único componente), eliminando a divergência de comportamento.
 - Excluir mostra o aviso **"Desfazer"** por pelo menos 8 segundos (achado 7); restaurar continua em "Mostrar excluídos".
 - Respeita "ocultar valores".
@@ -52,6 +53,13 @@ Funcionalidade: Detalhe da transação na Home
     Quando Lucas abre o detalhe e confirma "Excluir"
     Então a despesa sai dos últimos lançamentos
     E vê o aviso "Despesa excluída" com o botão "Desfazer" por pelo menos 8 segundos
+
+  Cenário: "Só meu" de outro membro abre o detalhe sem Editar e Excluir
+    Dado uma despesa "Só meu" de "R$ 80,00" paga por Mariana
+    Quando Lucas abre o detalhe dessa despesa
+    Então vê "Só Mariana pode alterar este lançamento (Só meu)"
+    E não vê as ações "Editar" nem "Excluir"
+    E vê "Histórico" e "Ver no Extrato"
 
   Cenário: Histórico de alterações
     Dado que a despesa foi corrigida uma vez por Mariana
@@ -113,3 +121,4 @@ Anexos e comprovantes; comentários no lançamento; duplicar lançamento; corrig
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 12) e do achado 7 da homologação.
 - 2026-10-04 — **Revisão pós-TL (D-PO-40):** `highlight` é parâmetro de UI sem contrato de API; acrescentado o cenário de destaque inexistente. Tamanho 3 confirmado.
+- 2026-10-24 — **"Só meu" do dono (SEC-021, D-PO-91):** o detalhe omite Editar/Excluir para quem não é dono; 1 cenário novo.

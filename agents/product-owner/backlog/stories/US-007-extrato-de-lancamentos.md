@@ -53,6 +53,14 @@ Funcionalidade: Extrato de lançamentos
     Quando abro o detalhe do lançamento
     Então vejo "Registrado por Lucas" e "Pago por Mariana"
 
+  Cenário: Lançamento "Só meu" de outro membro aparece sem ações de alterar
+    Dado uma despesa "Só meu" de "R$ 80,00" paga por Mariana
+    E Lucas está autenticado
+    Quando Lucas abre o detalhe dessa despesa no Extrato
+    Então vê a despesa com o marcador "Só meu"
+    E vê "Só Mariana pode alterar este lançamento (Só meu)"
+    E não vê as ações "Editar" nem "Excluir"
+
   Cenário: Estado vazio com filtro
     Quando aplico um filtro sem resultados
     Então vejo "Nenhum lançamento encontrado" e a ação "Limpar filtros"
@@ -76,8 +84,11 @@ Funcionalidade: Extrato de lançamentos
 Lista em cards no mobile, tabela compacta no desktop; filtros em *drawer*/barra de chips; skeleton ao carregar; totais fixos no topo.
 
 ## Fora de escopo
-Exportação (V2), busca textual, gráficos, filtro por cartão e status Previsto/Pago (chegam com US-016..US-019), edição/exclusão (US-013).
+Exportação (V2), busca textual, gráficos, filtro por cartão e status Previsto/Pago (chegam com US-016..US-019), edição/exclusão (US-013; "Só meu" só pelo dono, US-084).
 
 ## Perguntas em aberto / pontos para o Tech Lead
 - Definir estratégia de paginação e índices por `familyId` + data.
 - Os filtros devem ser **refletidos na URL** (compartilhável/recarregável) — recomendação do PO.
+
+## Histórico
+- 2026-10-24 — **"Só meu" visível, alteração só do dono (SEC-021, US-084, D-PO-91):** o Extrato continua mostrando todos os lançamentos (a regra é de alteração, não de visibilidade); 1 cenário novo.

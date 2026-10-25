@@ -15,7 +15,8 @@ A US-013 original (TL: 8 pontos) foi fatiada. **Esta 13a é o núcleo Should (D-
 Como **membro da família**, quero **corrigir ou excluir um lançamento feito por engano**, para **manter saldos e acertos corretos sem perder o histórico**.
 
 ## Regras de negócio aplicáveis
-- Qualquer membro da família pode editar/excluir lançamentos da família; **toda alteração é auditada** (quem, quando, o quê).
+- Qualquer membro da família pode editar/excluir lançamentos **divididos** da família; **toda alteração é auditada** (quem, quando, o quê).
+- **Exceção — "Só meu" (SEC-021, [US-084](US-084-lancamento-so-meu-so-o-dono-altera.md), D-PO-91)**: lançamentos "Só meu" só podem ser **editados, excluídos, restaurados e estornados pelo dono** (quem pagou), inclusive para Administradores. Os demais membros veem o lançamento sem as ações de alterar.
 - **Editável**: valor, descrição, categoria, data, quem pagou, comum/pessoal e conta.
 - **Excluir** mantém o registro histórico: o lançamento sai dos saldos e totais, fica visível apenas com o filtro *Mostrar excluídos* e pode ser **restaurado**.
 - **Concorrência otimista**: se outra pessoa alterou o lançamento desde que a tela foi aberta, o salvamento é recusado com orientação (nunca sobrescrever em silêncio).
@@ -64,6 +65,17 @@ Funcionalidade: Correção e exclusão de lançamentos
 
 
 
+  Cenário: Outro membro não altera o "Só meu" do dono
+    Dado uma despesa "Só meu" de "R$ 80,00" paga por Mariana
+    Quando Lucas abre o detalhe dessa despesa
+    Então vê "Só Mariana pode alterar este lançamento (Só meu)"
+    E não vê as ações "Editar" nem "Excluir"
+
+  Cenário: Dono corrige o próprio "Só meu"
+    Dado uma despesa "Só meu" de "R$ 80,00" paga por Mariana
+    Quando Mariana altera o valor para "R$ 90,00"
+    Então a despesa mostra "R$ 90,00"
+
   Cenário: Validações da edição
     Quando altero o valor para "R$ 0,00"
     Então vejo "Informe um valor maior que zero" e a alteração não é salva
@@ -73,7 +85,7 @@ Funcionalidade: Correção e exclusão de lançamentos
 Ações *Editar* e *Excluir* no detalhe do lançamento (menu "⋯"); histórico em linha do tempo; confirmação em diálogo; *toast* com ação "Desfazer" por 5 s após excluir.
 
 ## Fora de escopo
-Aviso de mês acertado e desfazer transferência/acerto (US-013b), edição em lote, exclusão definitiva (hard delete é proibido), permissões diferenciadas por papel, anexos.
+Aviso de mês acertado e desfazer transferência/acerto (US-013b), edição em lote, exclusão definitiva (hard delete é proibido), permissões diferenciadas por papel (a única exceção é o "Só meu" do dono, US-084), anexos.
 
 ## Perguntas em aberto / pontos para o Tech Lead
 - Como mapear "editar" sobre o *ledger* imutável (estorno + novo lançamento vs. versionamento com histórico). **Comportamento observável acima é o contrato do PO.**
@@ -81,3 +93,4 @@ Aviso de mês acertado e desfazer transferência/acerto (US-013b), edição em l
 
 ## Histórico
 - 2026-10-04 — **Cenário atualizado (D-PO-41, SDD-011 §9, US-028):** "Acerto de contas recalculado" com o texto neutro do herói; valores inalterados.
+- 2026-10-24 — **Exceção "Só meu" (SEC-021, D-PO-91):** a regra "qualquer membro edita/exclui" vale só para lançamentos divididos; "Só meu" é do dono (quem pagou). 2 cenários novos aqui; regra completa na US-084.

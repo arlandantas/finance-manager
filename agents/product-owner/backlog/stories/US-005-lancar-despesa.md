@@ -44,6 +44,11 @@ Funcionalidade: Lançamento rápido de despesa
     Quando Lucas lança "R$ 350,00" em "Supermercado" e escolhe "Quem pagou: Mariana"
     Então o autor é "Lucas" e quem pagou é "Mariana"
 
+  Cenário: Registrar "Só meu" em nome de outro membro avisa sobre o dono
+    Dado que o interruptor "Dividir com a família" está desligado
+    Quando Lucas lança "R$ 80,00" em "Lazer e restaurantes" e escolhe "Quem pagou: Mariana"
+    Então vê "Depois de salvar, só Mariana poderá alterar este lançamento."
+
   Cenário: Despesa pessoal
     Dado que o interruptor "Dividir com a família" está desligado, que é o padrão
     Quando Lucas lança "R$ 80,00" em "Lazer e restaurantes" sem ligar "Dividir com a família"
@@ -107,3 +112,4 @@ Receita (US-006), despesa prevista (US-018), compra no cartão (US-016), parcela
 ## Histórico
 - 2026-10-04 — **Revisão pós-homologação (R2.1):** o padrão de "Dividir com a família" passa de **ligado** para **Só meu** (US-030, D-PO-16) e a descrição passa a ser **campo visível e opcional** (US-024). Os cenários com "Dividir" ligado por padrão desta história refletem a R1 e serão atualizados pelo Dev junto com a US-030.
 - 2026-10-04 — **Cenários atualizados (D-PO-41, SDD-011 §9):** "Despesa comum com sucesso" passa a **ligar** o interruptor e "Despesa pessoal" é o **padrão** "Só meu"; texto da regra de negócio ajustado. O Dev atualiza o `.feature` e o teste de integração com a US-030.
+- 2026-10-24 — **"Só meu" é do dono (SEC-021, US-084, D-PO-91/92):** ao registrar "Só meu" em nome de outro membro, o formulário avisa que, depois de salvar, só o pagador poderá alterar o lançamento; 1 cenário novo.

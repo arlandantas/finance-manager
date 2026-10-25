@@ -18,6 +18,7 @@ Como **membro da família**, quero que **o lançamento nasça como "Só meu" e e
 - O campo **não aparece** com o acerto desligado (US-028) nem em família com **um único membro**.
 - Lançamentos **já gravados não mudam**: `isSharedExpense` existente é preservado; só muda o padrão do formulário.
 - **Reembolso/"paguei tudo por você"** só com percentual por lançamento (US-043, R3). Na R2.1 ele não existe: não prometer.
+- **"Só meu" é do dono (SEC-021, [US-084](US-084-lancamento-so-meu-so-o-dono-altera.md), D-PO-91)**: o lançamento "Só meu" só pode ser alterado, excluído, restaurado ou estornado por quem pagou; os demais membros apenas o veem. A linha "N despesas Só meu" do Acerto continua levando ao Extrato filtrado.
 - **Transparência contra sub-registro** (risco C7): o painel de Acerto mostra "N despesas 'Só meu' neste mês (R$ X)" com link para o Extrato filtrado por "Só meu" (sem alterar o cálculo). A lembrança por categoria e a revisão no fechamento do mês são R3 (US-044).
 - Despesas em **receita** continuam sem o campo (receita não entra no rateio).
 
@@ -106,3 +107,4 @@ Três modos e percentual por lançamento (US-043), lembrar por categoria (US-044
 
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 9a, Q-F02). Revisa o padrão da US-005 ("ligado") e da US-018 (Q-22).
+- 2026-10-24 — Nota (SEC-021, D-PO-91): regra "Só meu só pelo dono" referenciada; nenhum cenário alterado.

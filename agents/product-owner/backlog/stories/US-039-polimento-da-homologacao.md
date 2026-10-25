@@ -16,6 +16,7 @@ Como **membro da família**, quero **pequenos ajustes de uso (erros que somem ao
 - **Achado 5 — validação reativa**: mensagem de erro de um campo **some assim que o campo fica válido**, sem esperar novo envio, e **sem saltar o layout** (espaço da mensagem reservado). Vale para Transferir, Nova despesa prevista e demais formulários.
 - **Achado 8 — Categorias**: item **"Categorias"** em "Configurações" no menu (além do link no formulário).
 - **Achado 11 — Convite**: convite pendente ganha **Copiar link** e **Reenviar e-mail**; a tela de convite avisa antes de enviar "A pessoa precisa entrar com a conta Google do mesmo e-mail". "Copiar link" e "Reenviar e-mail" **rotacionam o token do convite** (D-PO-39, TL-05; o sistema guarda só o *hash*, então o link original não pode ser recuperado): o **link anterior deixa de valer**, e a tela avisa **"O link anterior deixa de valer."**. A validade de 7 dias (D-GES-07) **não** é estendida. **Limite de 3 reenvios de e-mail por convite**; "Copiar link" não envia e-mail e não conta no limite. Convite vencido não é copiado nem reenviado.
+- **Convite e aceite explícito (SEC-004, D-PO-79)**: o link copiado/reenviado abre o **cartão de aceite** da US-003 ("Entrar na Família X"); abrir o link **não vincula**. O roteiro de homologação do convite passa de "o convidado entra direto na Home" para **"o convidado aceita em /convites e então chega à Home"**.
 - **Achado 12 — Filtros do Extrato**: botão **"Limpar filtros"** visível quando há filtro ativo; selects com **rótulo acessível** ("Membro: todos", "Cartão: todos").
 - **Achado 13 — Salvar regra**: ver US-031 (volta ao Acerto e FAB não cobre o botão); aqui só o FAB oculto em telas de formulário de página inteira.
 - Fora deste pacote: achados 6 (corrigir forma de pagamento), 9 (transferência em duas linhas), 10 (faturas em Contas a pagar), 14 (liquidez, AP2), 15 (ruído de console do túnel).
@@ -75,6 +76,17 @@ Funcionalidade: Polimento da homologação
     Quando Mariana toca em "Reenviar e-mail"
     Então vê "Limite de reenvios atingido. Cancele e crie um novo convite."
 
+  Cenário: Link copiado abre o cartão de aceite e não vincula
+    Dado um convite pendente para "vovo@example.com" com o link copiado por Mariana
+    Quando a vovó abre o link com a conta Google de "vovo@example.com"
+    Então vê "Mariana convidou você para a Família Silva" com "Entrar na Família Silva"
+    E não é vinculada à família só por abrir o link
+
+  Cenário: Convidado aceita em /convites e chega à Home
+    Dado um convite pendente para "vovo@example.com"
+    Quando a vovó entra com o Google e toca em "Entrar na Família Silva"
+    Então vê a Home da "Família Silva" com o aviso "Você entrou na Família Silva"
+
   Cenário: Convite vencido não é copiado nem reenviado
     Dado um convite pendente para "vovo@example.com" vencido
     Quando Mariana toca em "Copiar link" no convite
@@ -122,3 +134,4 @@ Achados 6, 9, 10, 14 e 15 (ver regras). O envio real de e-mail depende do SMTP j
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (§9 item 13) e dos achados 5, 8, 11, 12, 13 da homologação.
 - 2026-10-04 — **Revisão pós-TL (D-PO-39):** "Copiar link" e "Reenviar e-mail" **rotacionam o token** (o link anterior deixa de valer); aviso "O link anterior deixa de valer."; acrescentados 4 cenários (invalida o anterior, limite de 3 reenvios, convite vencido). Tamanho 5 confirmado.
+- 2026-10-24 — **Aceite explícito do convite (SEC-004, D-PO-79):** passo "convidado entra direto na Home" do roteiro de homologação vira "aceita em /convites"; 2 cenários novos (link abre o cartão sem vincular; aceitar em /convites e chegar à Home). Regras de rotação de token e limites inalteradas.

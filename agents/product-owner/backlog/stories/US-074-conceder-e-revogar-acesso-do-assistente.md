@@ -19,6 +19,9 @@ Como **membro da família**, quero **conectar, ver e revogar o acesso do meu ass
 - Ao conectar: aviso de que os **dados consultados vão ao provedor da IA que o membro usa**, fora do controle do app (marcar "Entendi"). Escolhe o nome do assistente e a validade (30 ou 90 dias); o acesso se renova sozinho a cada 60 minutos enquanto a conexão valer.
 - **Permissões separadas:** "Consultar meus dados" (marcada) e "**Lançar despesas em seu nome (sem confirmação)**" (**desmarcada**). Marcar a segunda exige uma **segunda ciência** ("Entendi que o assistente grava lançamentos direto, sem pedir minha confirmação, e que posso excluí-los depois"). A permissão de lançar também aparece na tela de autorização do Claude.
 - **Instruções de conexão só para o Claude** (web, Desktop e celular, e Claude Code); outros clientes entram na ampliação.
+- **Autorização amarrada ao aparelho (SEC-011, SDD-028 §4)**: a tela de autorização só vale no **mesmo navegador** em que o membro pediu a conexão no assistente. Sempre exibe o aviso fixo **"Só continue se você acabou de pedir esta conexão no seu assistente, neste aparelho. Se alguém te enviou este link, feche esta página: quem pediu pode ver suas finanças."** e a URL completa para onde o membro volta.
+- **Cliente verificado**: o Claude aparece com o selo **"Verificado"** e o domínio (claude.ai). Aplicativo desconhecido aparece como **"não verificado"**, com aviso forte, e exige marcar "Entendo o risco".
+- **Conexão nova avisa o membro (D-GES-42 U4, D-PO-81)**: assim que a conexão é criada, o membro vê um **cartão na Home** ("Nova conexão: Claude, em 24/10 às 14:32. Não foi você? Revogar") até dispensá-lo, e recebe um **e-mail** com o mesmo texto e o link para Perfil, Conexões. O e-mail não traz dados financeiros.
 - **Revogar** é imediato e visível; o histórico mostra "Revogada em …". Membro removido (US-035) perde as conexões na hora.
 
 ## Critérios de aceite (Gherkin)
@@ -65,6 +68,42 @@ Funcionalidade: Conectar e revogar acesso do assistente
     Dado que Lucas conectou "Meu Claude" com consulta e lançamento
     Então vê "Meu Claude · Consulta e lançamento · expira em 23/11/2026"
 
+  Cenário: Pedido aberto em outro navegador é recusado
+    Dado que Lucas pediu a conexão no Claude e copiou o endereço da tela de autorização
+    Quando Lucas abre esse endereço em outro navegador ou aparelho
+    Então vê "Este pedido de conexão foi iniciado em outro navegador ou aparelho. Volte ao seu assistente e peça a conexão de novo, por aqui."
+    E não vê botões para permitir ou negar
+
+  Cenário: Cliente verificado mostra selo e domínio
+    Dado que Lucas pediu a conexão pelo Claude
+    Quando abre a tela de autorização
+    Então vê "Claude (claude.ai)" com o selo "Verificado"
+    E vê a URL completa para onde voltará depois de autorizar
+
+  Cenário: Aplicativo desconhecido aparece como não verificado
+    Dado que um aplicativo desconhecido pediu a conexão
+    Quando Lucas abre a tela de autorização
+    Então vê "Aplicativo não verificado"
+    E o botão "Permitir" só habilita depois de marcar "Entendo o risco"
+
+  Cenário: Aviso fixo de só continuar se foi você quem pediu
+    Quando Lucas abre a tela de autorização
+    Então vê "Só continue se você acabou de pedir esta conexão no seu assistente, neste aparelho."
+    E o aviso aparece acima dos botões "Permitir" e "Negar"
+
+  Cenário: Conexão nova gera aviso no app e por e-mail
+    Dado que Lucas autorizou a conexão do assistente "Meu Claude"
+    Quando Lucas abre a Home
+    Então vê o cartão "Nova conexão: Claude" com a hora da conexão e a ação "Revogar"
+    E recebe um e-mail "Nova conexão do assistente" com o link para as conexões do perfil
+    E o e-mail não contém dados financeiros
+
+  Cenário: Dispensar o aviso de conexão nova
+    Dado que Lucas vê o cartão "Nova conexão: Claude" na Home
+    Quando Lucas toca em "Dispensar"
+    Então o cartão some da Home
+    E a conexão continua ativa e listada em "Assistente de IA"
+
   Cenário: Revogar na hora
     Dado que Lucas tem o assistente "Meu Claude" conectado
     Quando Lucas toca em "Revogar" e confirma
@@ -101,3 +140,4 @@ Acesso por família, escopo por conta/cartão (herda tudo que o membro vê), ins
 ## Histórico
 - 2026-10-24 — Criada (D-PO-66).
 - 2026-10-24 — Revisão 2 (D-PO-72, D-PO-73): OAuth sem credencial exibida; permissão de lançar à parte com segunda ciência; instruções só do Claude.
+- 2026-10-24 — **Segurança do consentimento (SEC-011, SDD-028 §4, D-GES-42 U4, D-PO-81):** tela de autorização presa ao navegador de origem, cliente verificado com selo e domínio, aviso fixo "só continue se você pediu", cartão na Home e e-mail a cada conexão nova; 6 cenários novos. Rastreabilidade acrescida: SEC-011, ADR-032.

@@ -1,6 +1,6 @@
 # 📑 Backlog do Produto (Product Owner)
 
-*Status: **R1 e R2 (Inc 3) Especificadas e homologadas com ressalvas** · **R2.1 (US-022..039): Especificada** (SDD-010..013, **67 pts** do TL) · **R3 (US-040..051, EN-002): Esboçada** (SDD-014..017, 65 pts pendentes) · **EN-003 concluída** (ADR-018) · Atualizado: 2026-10-24 (R4 proposta: US-065..077, EN-004..006, D-PO-53..69; antes, 2026-10-05: R2.2 US-052..055, D-PO-48..52)*
+*Status: **R1 e R2 (Inc 3) Especificadas e homologadas com ressalvas** · **R2.1 (US-022..039): Especificada** (SDD-010..013, **67 pts** do TL) · **R3 (US-040..051, EN-002): Esboçada** (SDD-014..017, 65 pts pendentes) · **EN-003 concluída** (ADR-018) · Atualizado: 2026-10-24 (**R4-S proposta: correções SEC do alpha, US-078..084 e revisões da US-003/012/035/039/070/074/075, D-PO-79..93**; antes, R4 proposta: US-065..077, EN-004..006, D-PO-53..69; antes, 2026-10-05: R2.2 US-052..055, D-PO-48..52)*
 *Responsável: Agente Product Owner (PO)*
 *Método e portões (DoR/DoD): [`working-agreement.md`](working-agreement.md) · Escopo: [`mvp-definition.md`](mvp-definition.md)*
 
@@ -52,6 +52,7 @@ Os épicos adotam a numeração do cronograma do Stakeholder ([`cronograma-e-rel
 | **EPIC-22** | Modelo de Grupos (spike) | NEED-021 | R3 (spike **concluído**, ADR-018) |
 | **EPIC-23** | Entrada de Dados e Análise por IA (importação de fatura, infra de LLM, análise de gastos evitáveis) | NEED-026, NEED-027 (NEED-023) | R4-B / R4-C (proposta) |
 | **EPIC-24** | Acesso por Assistente de IA (MCP) | NEED-025 | R4-D (proposta) |
+| **EPIC-25** | Segurança, Privacidade e Acesso (sessões, direitos do titular/LGPD, cadastro restrito, "Só meu" do dono) | NEED-012, NEED-001, NEED-020 (revisões a validar pelo Stakeholder) | R4-S (proposta) |
 
 ---
 
@@ -239,6 +240,25 @@ Origem: [NEED-024..027](../../stakeholder/needs) e a proposta de encaixe do Stak
 **Pontos acumulados (revisão 2, MCP/hospedagem pelo TL):** 5 ➔ 13 ➔ 18 ➔ 23 ➔ 31 ➔ 36 (Must) ➔ 39 ➔ 47 ➔ 50 ➔ 53 ➔ 55 ➔ EN-007 60 ➔ 006a 67 ➔ 006b 72 ➔ 074 77 ➔ 075 82 ➔ 077 85 ➔ 076a 90 ➔ 076b 93 (POC do MCP = 38 pts) ➔ ampliação +9 = **102**.
 **Ordem do POC do MCP (D-PO-78):** EN-007 > EN-006a > EN-006b > US-074 > US-075 > US-077 > US-076a/b. Liberação em produção só com EN-007 pronta, checklist de segurança e ensaio de restauração.
 **Linha de corte (de baixo para cima):** ampliação (US-076c ➔ US-074b ➔ EN-006c) ➔ US-076a/b ➔ US-077 ➔ US-075 ➔ US-074 ➔ EN-006a/b (todo o MCP, sem a EN-007, 33 pts; a EN-007 não se corta se o MCP for ligado) ➔ US-073 ➔ US-072 ➔ US-071 ➔ US-070 (toda a análise, 16 pts) ➔ US-069. Os 36 pts de Must **não se cortam**; o bloco MCP e o bloco de análise só entram **depois** de a importação estar homologada. A R4-C e a R4-D são invertíveis por escolha do usuário (cronograma do Stakeholder). **Dependências externas:** US-065 só depende da US-040a/b; a R4-B depende de **Q-U01, Q-U08 e Q-U10** respondidas e dos ADRs do TL.
+
+### R4-S (proposta) — "Correções de segurança do alpha" (2026-10-24) — **20 pts (PO, prelim.) + revisão da US-003 (5 pts do TL)**
+Origem: [levantamento SEC](../../security/relatorios/levantamento-2026-10-24.md), D-GES-40..42, [SDD-028](../../tech-lead/sdd/SDD-028-correcoes-de-seguranca-grupo-b.md) §10 e [ADR-032](../../tech-lead/adrs/ADR-032-correcoes-de-seguranca-grupo-b.md). Decisões **D-PO-79..93**: [`decisoes-po-seguranca-sec.md`](decisoes-po-seguranca-sec.md). Itens de SEC sem tela (009 parcial, 010, 013 parcial, 017a, 018a) ficam só no SDD; aqui entram os que mudam o que o usuário vê.
+
+| Ordem | História | Origem SEC | Release | Épico | MoSCoW | Pts | Depende de | NEED | Estado |
+| :-: | :-- | :-- | :-: | :-: | :-: | :-: | :-- | :-- | :-- |
+| 1 | [US-083](stories/US-083-cadastro-por-lista-de-emails-permitidos.md) Cadastro restrito por lista de e-mails (`ALLOWED_SIGNUP_EMAILS`) | U6 | R4-S | EPIC-25 | Should | 1 | — | NEED-012 | Refinada · sem SDD |
+| 2 | [US-003](stories/US-003-convidar-membro.md) **revisada**: aceite explícito, recusar, vários convites, já tem família (+US-039, FLUXO-002) | SEC-004 | R4-S | EPIC-1 | Must | 5 (TL) | — | NEED-012 | Revisada · SDD-028 §1 |
+| 3 | [US-084](stories/US-084-lancamento-so-meu-so-o-dono-altera.md) "Só meu" só pelo dono (+US-005/007/013/030/036) | SEC-021 | R4-S | EPIC-25 | Should | 3 | US-005, US-013 | NEED-001 **[STK]** | Refinada · sem SDD |
+| 4 | [US-074](stories/US-074-conceder-e-revogar-acesso-do-assistente.md) / [US-075](stories/US-075-consultar-pelo-assistente-somente-leitura.md) **revisadas**: consentimento no navegador, selo, aviso de conexão nova; texto como dado | SEC-009, 010, 011 | R4-S | EPIC-24 | Should | 3 + 3 + 3 (TL) | EN-006 | NEED-025 | Revisadas · SDD-028 §§2-4 |
+| 5 | [US-070](stories/US-070-analise-de-gastos-evitaveis.md) **revisada**: cenário do teto global | SEC-013 | R4-S | EPIC-23 | Should | 3 (TL) | EN-004 | NEED-027 | Revisada · SDD-028 §5 |
+| 6 | [US-078](stories/US-078-encerrar-as-outras-sessoes.md) Encerrar as outras sessões (+ validade 30/90 dias) | SEC-018b | R4-S | EPIC-25 | Should | 2 | SEC-018a | NEED-012 **[STK]** | Refinada · SDD-028 §6 |
+| 7 | [US-082](stories/US-082-pagina-de-privacidade.md) Página "Privacidade" | SEC-017e | R4-S | EPIC-25 | **Must** | 1 | tabela do TL | LGPD **[USR]** | Texto aguarda o usuário |
+| 8 | [US-079](stories/US-079-baixar-meus-dados.md) Baixar meus dados | SEC-017b | R4-S | EPIC-25 | Should | 3 | — | LGPD | Refinada · SDD-028 §7.3 |
+| 9 | [US-080](stories/US-080-excluir-minha-conta.md) Excluir minha conta | SEC-017c | R4-S | EPIC-25 | **Must** | 5 | US-078, US-079, US-035 | LGPD **[USR]** | Refinada · SDD-028 §7.4 |
+| 10 | [US-081](stories/US-081-excluir-a-familia.md) Excluir a família | SEC-017d | R4-S | EPIC-25 | Should | 5 | US-080 | NEED-020 **[STK]** | Refinada · SDD-028 §7.5 |
+| — | | **Histórias novas do PO (US-078..084)** | | | | **20** | | | |
+
+**Notas:** (1) a US-082 publica junto com a US-080, e a US-080 vem **antes de abrir o cadastro além do alpha**; (2) a ordem técnica do TL (SDD-028 §8) prevalece nas dependências (018a ➔ 017a ➔ 018b ➔ 017b ➔ 017c ➔ 017d); (3) **linha de corte** da R4-S, de baixo para cima: US-081 ➔ US-079 ➔ US-084 ➔ US-078; **não se cortam** US-003 revisada, US-082/080 (antes do cadastro público) e US-083; (4) correções de texto sem mudança de produto: US-012 (D-PO-84), US-035 (sessões do removido, D-PO-80), US-039 (roteiro do convite).
 
 ### Critério central das histórias novas
 | ID | Critério central |
