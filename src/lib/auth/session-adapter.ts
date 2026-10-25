@@ -33,6 +33,7 @@ export function hashedSessionAdapter(base: Adapter, db: Db): Adapter {
         await db.session.deleteMany({ where: { id: row.id } });
         return null;
       }
+      if (row.endedAt) return null; // DEV-91: membro removido
       const { user, ...session } = row;
       return {
         session: { sessionToken: token, userId: session.userId, expires: session.expires },

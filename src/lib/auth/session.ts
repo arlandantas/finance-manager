@@ -76,6 +76,8 @@ export async function findSessionUser(
     await db.session.deleteMany({ where: { id: session.id } });
     return null;
   }
+  // DEV-91: sessão encerrada (membro removido) não autentica; a linha fica só para o aviso único.
+  if (session.endedAt) return null;
   const next = slidingExpiry(session.createdAt, now);
   if (next.getTime() - session.expires.getTime() >= SESSION_UPDATE_AGE_SECONDS * 1000) {
     await db.session.update({ where: { id: session.id }, data: { expires: next } });
@@ -88,6 +90,22 @@ export async function findSessionUser(
     image: u.image,
     emailVerified: u.emailVerified,
   };
+}
+
+/**
+ * DEV-91 (US-035/SDD-028 §6.2): encerra, na hora, todas as sessões do usuário afetado (todos os aparelhos).
+ * A linha fica marcada para o aviso único de "acesso encerrado"; deixa de autenticar imediatamente.
+ */
+export async function endUserSessions(
+  db: Pick<PrismaClient, "session">,
+  userId: string,
+  now: Date,
+): Promise<number> {
+  const res = await db.session.updateMany({
+    where: { userId, endedAt: null },
+    data: { endedAt: now },
+  });
+  return res.count;
 }
 
 /**

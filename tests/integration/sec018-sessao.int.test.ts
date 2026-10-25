@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
+import { consumeMembershipEnded } from "@/lib/auth/membership-ended";
 import {
   findSessionUser,
   hashSessionToken,
@@ -140,6 +141,75 @@ describe("SEC-018 encerrar as outras sessões e rotação", () => {
     expect(await db.session.count({ where: { userId: fx.byName.Mariana?.userId as string } })).toBe(
       1,
     );
+  });
+});
+
+describe("DEV-91 remoção de membro encerra as sessões dele (US-035)", () => {
+  it("remover Lucas: as sessões dele (2 aparelhos) deixam de autenticar na hora; a de quem age e as de outros seguem", async () => {
+    const fx = await makeFamily();
+    const mariana = fx.byName.Mariana?.as ?? null;
+    const lucas1 = fx.byName.Lucas?.as as NonNullable<typeof mariana>;
+    const lucas2 = await asUser("lucas@exemplo.com"); // 2º aparelho
+    expect((await call(lucas2, "GET", "/api/v1/me")).status).toBe(200);
+
+    const res = await call(
+      mariana,
+      "POST",
+      `/api/v1/members/${fx.byName.Lucas?.memberId}/remove`,
+      {},
+    );
+    expect(res.status).toBe(200);
+
+    for (const c of [lucas1, lucas2]) {
+      expect((await call(c, "GET", "/api/v1/me")).status).toBe(401);
+      expect(await findSessionUser(db, tokenOf(c.cookie))).toBeNull();
+    }
+    expect((await call(mariana, "GET", "/api/v1/me")).status).toBe(200);
+    // o adaptador do Auth.js também não devolve a sessão encerrada
+    const adapter = hashedSessionAdapter({} as never, db);
+    expect(await adapter.getSessionAndUser?.(tokenOf(lucas1.cookie))).toBeNull();
+    const rows = await db.session.findMany({
+      where: { userId: fx.byName.Lucas?.userId as string },
+    });
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.endedAt !== null)).toBe(true);
+  });
+
+  it("aviso único por aparelho: cada sessão encerrada mostra o aviso uma vez e some; depois não resta sessão", async () => {
+    const fx = await makeFamily();
+    const lucas1 = fx.byName.Lucas?.as as { cookie: string };
+    const lucas2 = await asUser("lucas@exemplo.com");
+    await call(
+      fx.byName.Mariana?.as ?? null,
+      "POST",
+      `/api/v1/members/${fx.byName.Lucas?.memberId}/remove`,
+      {},
+    );
+    expect(await consumeMembershipEnded(lucas1.cookie)).toBe("NOTICED");
+    expect(await consumeMembershipEnded(lucas2.cookie)).toBe("NOTICED");
+    expect(await consumeMembershipEnded(lucas1.cookie)).toBe("NO_SESSION");
+    expect(await db.session.count({ where: { userId: fx.byName.Lucas?.userId as string } })).toBe(
+      0,
+    );
+    expect(
+      (await db.member.findUniqueOrThrow({ where: { id: fx.byName.Lucas?.memberId as string } }))
+        .removalNoticeAt,
+    ).not.toBeNull();
+  });
+
+  it("quem SAIU mantém a própria sessão (vê 'Você saiu da família')", async () => {
+    const fx = await makeFamily();
+    const lucas = fx.byName.Lucas?.as ?? null;
+    const res = await call(lucas, "POST", "/api/v1/family/leave", {
+      reassign: { plannedTo: fx.byName.Mariana?.memberId },
+    });
+    expect(res.status).toBe(200);
+    expect((await call(lucas, "GET", "/api/v1/me")).status).toBe(200);
+    expect(
+      await db.session.count({
+        where: { userId: fx.byName.Lucas?.userId as string, endedAt: { not: null } },
+      }),
+    ).toBe(0);
   });
 });
 

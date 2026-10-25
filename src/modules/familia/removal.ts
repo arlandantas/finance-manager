@@ -1,6 +1,7 @@
 import { forbidden, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
+import { endUserSessions } from "@/lib/auth/session";
 import { fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { formatBRL, toCents } from "@/lib/money";
 import { periodOf } from "@/lib/period";
@@ -293,6 +294,9 @@ export async function removeMember(
   });
   // EN-006 (ADR-030 §4): sem vínculo ativo não há acesso por assistente; revoga na mesma transação.
   await revokeMemberGrants(tx, ctx.familyId, target.id, "MEMBER_REMOVED", now, ctx.memberId);
+  // DEV-91 (US-035, SEC-018): quem foi removido perde a sessão em todos os aparelhos, na hora. Quem SAIU
+  // age sobre si mesmo e mantém a sessão atual para ver "Você saiu da família".
+  if (kind === "REMOVED") await endUserSessions(tx, target.userId, now);
   await tx.familyEvent.create({
     data: {
       familyId: ctx.familyId,

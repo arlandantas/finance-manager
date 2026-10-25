@@ -131,6 +131,9 @@ model Session {
   userId       String   @db.Uuid
   expires      DateTime @db.Timestamptz(3) // ociosidade (deslizante, 30 dias)
   createdAt    DateTime @default(now()) @db.Timestamptz(3) // base do prazo absoluto (90 dias)
+  // DEV-91/US-035: sessão de quem foi removido da família. Deixa de autenticar na hora; a linha só serve para
+  // mostrar o aviso único "acesso encerrado" no próximo acesso (e é apagada ali ou pelo expurgo).
+  endedAt      DateTime? @db.Timestamptz(3)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

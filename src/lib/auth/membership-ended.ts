@@ -1,4 +1,9 @@
-import { findSessionUser, parseCookieHeader, sessionTokenFromCookies } from "@/lib/auth/session";
+import {
+  findSessionUser,
+  hashSessionToken,
+  parseCookieHeader,
+  sessionTokenFromCookies,
+} from "@/lib/auth/session";
 import { endSessionFromCookies } from "@/lib/auth/sign-out";
 import { getClock } from "@/lib/clock";
 import { getDb } from "@/lib/db";
@@ -15,6 +20,17 @@ export async function consumeMembershipEnded(
 ): Promise<MembershipEndedResult> {
   const cookies = parseCookieHeader(cookieHeader);
   const db = getDb();
+  // DEV-91: sessão encerrada pela remoção não autentica, mas guarda o aviso único (um por aparelho).
+  const token = sessionTokenFromCookies(cookies);
+  if (token) {
+    const ended = await db.session.findUnique({ where: { tokenHash: hashSessionToken(token) } });
+    if (ended?.endedAt) {
+      const pendingNotice = await findPendingRemovalNotice(ended.userId, db);
+      if (pendingNotice) await markRemovalNoticed(pendingNotice.id, getClock().now(), db);
+      await db.session.deleteMany({ where: { id: ended.id } });
+      return "NOTICED";
+    }
+  }
   const user = await findSessionUser(db, sessionTokenFromCookies(cookies));
   if (!user) return "NO_SESSION";
   const pending = await findPendingRemovalNotice(user.userId, db);

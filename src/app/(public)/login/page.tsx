@@ -1,4 +1,6 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { consumeMembershipEnded } from "@/lib/auth/membership-ended";
 import { safeCallbackUrl } from "@/lib/auth/redirect";
 import { getCurrentUser } from "@/lib/auth/require-session";
 import { LoginOptions } from "../login-options";
@@ -14,7 +16,11 @@ export default async function LoginPage({
   const params = await searchParams;
   const callbackUrl = safeCallbackUrl(params.callbackUrl);
   if (await getCurrentUser()) redirect(callbackUrl);
-  const errorMessage = loginErrorMessage(params.error);
+  // DEV-91: sessão encerrada por remoção da família mostra o aviso único (por aparelho) e some.
+  const ended = params.error
+    ? null
+    : (await consumeMembershipEnded((await headers()).get("cookie"))) === "NOTICED";
+  const errorMessage = loginErrorMessage(ended ? "MembershipEnded" : params.error);
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-4 py-10">

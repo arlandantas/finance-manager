@@ -94,8 +94,12 @@ describe("US-035a remover membro", () => {
     expect((await db.plannedExpense.findFirstOrThrow()).responsibleMemberId).toBe(mid("Mariana"));
     expect(await db.familyEvent.count({ where: { type: "MEMBER_REMOVED" } })).toBe(1);
     const next = await at(() => call(lucas(), "GET", "/api/v1/accounts"));
-    expect(next.status).toBe(403);
-    expect(next.body.error.code).toBe("NO_FAMILY");
+    // DEV-91: a sessão do removido foi encerrada (401); quem entra de novo com o Google segue sem família (403).
+    expect(next.status).toBe(401);
+    const relogin = await asUser("lucas@exemplo.com");
+    const again = await at(() => call(relogin, "GET", "/api/v1/accounts"));
+    expect(again.status).toBe(403);
+    expect(again.body.error.code).toBe("NO_FAMILY");
     expect(await db.member.count({ where: { removedAt: null } })).toBe(1); // o Member NÃO foi apagado
     expect(await db.member.count()).toBe(2);
   });
