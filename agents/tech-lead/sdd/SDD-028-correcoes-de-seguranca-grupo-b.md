@@ -478,7 +478,7 @@ Ao fim de cada item, o Dev registra a TASK e pede o **reteste ao Agente de Segur
 
 ---
 
-## 11. "Só meu": alcance e matriz de quem pode o quê (SEC-021, revisado por D-GES-50 e D-GES-52/53, 2026-10-25)
+## 11. "Só meu": alcance e matriz de quem pode o quê (SEC-021, revisado por D-GES-50, D-GES-52/53 e D-GES-55, 2026-10-25)
 
 Origem: D-GES-42 (só o dono), D-GES-45/48 (travas anti-captura SEC-025/026/038) e **D-GES-50** (o usuário amplia o controle). Fonte única da regra: `src/modules/transacoes/ownership.ts`.
 
@@ -492,15 +492,15 @@ Origem: D-GES-42 (só o dono), D-GES-45/48 (travas anti-captura SEC-025/026/038)
 | **Controlador** | Dono, dono da conta ou lançador. |
 
 ### 11.2 Matriz (revista por D-GES-52/53, 2026-10-25)
-"Só controla" = dono da conta/cartão ou lançador **sem ser o dono**. **Admin sobre ex-membro** = o Administrador atual quando o dono saiu da família; age com os mesmos limites de "só controla" (D-PO-95).
+"Só controla" = dono da conta/cartão ou lançador **sem ser o dono**. **Admin sobre ex-membro** = o Administrador atual quando o dono saiu da família; tem **poderes plenos** (D-GES-55, D-PO-96): também muda divisão, pagador/responsável, conta e "Pagar com". O Admin sobre "Só meu" de membro **ativo** é "outro membro".
 
 | Ação em "Só meu" | Dono | Só controla (dono da conta / lançador) | Admin sobre "Só meu" de ex-membro | Outro membro (inclui Admin) | Ex-membro |
 | :-- | :-: | :-: | :-: | :-: | :-: |
 | Ver (detalhe, Extrato, totais, histórico) | sim | sim | sim | **sim** | n/a |
 | Editar **valor, data, descrição, categoria, observação**; excluir; restaurar | sim | sim | **sim** | não (403) | não |
-| Estornar a baixa (prevista) / dar baixa | sim | sim, **com conta do responsável ou do próprio ator** | sim, idem | não | não |
-| Alterar **divisão** (`isSharedExpense`), **pagador/responsável**, **conta** (`accountId`), **"Pagar com"** (`paymentAccountId`) | sim (pagador **atual**; não entrega a outro) | **não (403 `PERSONAL_OWNER_ONLY`)** | **não** | não | não |
-| **Assumir** o pagamento / virar responsável do "Só meu" de outro | n/a | **não** (SEC-043; revisa DEV-121) | não | não | não |
+| Estornar a baixa (prevista) / dar baixa | sim | sim, **com conta do responsável ou do próprio ator** | sim, com qualquer conta da família; pagador da baixa = responsável ou o Admin | não | não |
+| Alterar **divisão** (`isSharedExpense`), **pagador/responsável**, **conta** (`accountId`), **"Pagar com"** (`paymentAccountId`) | sim (pagador **atual**; não entrega a outro) | **não (403 `PERSONAL_OWNER_ONLY`)** | **sim (D-GES-55)**; pagador/conta novos ativos/da família; ainda "Só meu" ⇒ pagador novo só ele mesmo | não | não |
+| **Assumir** o pagamento / virar responsável do "Só meu" de outro | n/a | **não** (SEC-043; revisa DEV-121) | **sim** (Admin vira pagador/responsável de si mesmo) | não | não |
 | Criar "Só meu" em nome de outro / entregar a outro | não | não | não | não | não |
 | Exportar "Só meu" de outro (SEC-029) | — | **não** | **não** | não | — |
 | Trocar o titular de um **cartão** (`PATCH /cards/:id ownerMemberId`) | só o titular atual **ou o Administrador** (qualquer outro: 403) | — | — | — | — |
@@ -521,8 +521,11 @@ Receita, despesa dividida, transferência e acerto: inalterado (qualquer membro)
 10. **DTOs, texto do detalhe e aviso do formulário:** como em D-GES-50 (`Só {nomes} pode(m) alterar este lançamento (Só meu)`; o formulário só cria "Só meu" em nome próprio). Na UI, para quem só controla, ficam **desabilitados** o interruptor de divisão, "Quem pagou?", conta e "Pagar com".
 11. **Concorrência/idempotência:** sem mudança (as travas rodam dentro da transação, antes da mutação).
 
+12. **Poderes plenos do Admin sobre ex-membro (D-GES-55).** Helper `isAdminOverRemovedOwner(tx, ctx, ownerId)` (Admin atual, dono diferente do ator, dono com `removedAt`) e `assertCanWriteTransaction` passa a **retornar** esse booleano. `assertCanMakePersonal(ctx, current, next, { fullPower })`, `assertPlannedControllerLimits(ctx, current, next, { fullPower })` e a checagem de conta/pagador da baixa (`payPlannedExpense`) **dispensam** os limites SEC-043/044 quando `fullPower`. Mantidos mesmo com `fullPower`: (a) o novo pagador/responsável e a nova conta são validados por `findMember` (só ativos) e `findAccount`/`findActiveAccount` (escopo `familyId`), logo IDOR e ex-membro como destino continuam 422; (b) enquanto o lançamento permanecer "Só meu" o pagador novo só pode ser o próprio Admin (`PERSONAL_ON_BEHALF`), mas tornando-o dividido qualquer membro ativo pode ser o pagador; (c) tornar dividido exige `assertCanShare` como hoje; (d) o histórico grava o Admin como ator. Quem só controla, dono da conta/lançador e Admin sobre "Só meu" de membro ativo: nada muda (403 `PERSONAL_OWNER_ONLY`). UI: `canChangeStructure` (regra pura em `ownership.ts`) habilita divisão, "Quem pagou?", conta e "Pagar com"; o seletor "Quem pagou?" inclui o pagador atual ex-membro como opção "Nome (ex-membro)".
+
 ### 11.4 Guia de testes (Dev & QA)
 - **Unitários (`ownership`)**: matriz do §11.2 (dono, dono da conta, lançador, outro, Admin outro, dono ex-membro com Admin e com Membro, conta ausente); `personalControllerIds`; `canWritePlanned` com autor, conta e Admin; `assertControllerLimits` (campos estruturais, valor igual não conta).
 - **Integração**: dono da conta/lançador editam valor, data, descrição, categoria, observação, excluem e restauram "Só meu" de outro (compra no cartão e plano parcelado inclusos); terceiro sem relação 403; **SEC-043** dono da conta e lançador não assumem o pagamento nem viram responsável (403) e o dono continua com acesso; **SEC-044 a/b/c** não mudam divisão, pagador, conta nem "Pagar com" (403, item intacto); **SEC-044d** baixa com conta de terceiro 403 e estorno da baixa por quem não controla a prevista 403; **SEC-045** `endSeries` por terceiro preserva a ocorrência "Só meu" e remove as divididas; **SEC-042** membro sem relação troca titular ⇒ 403, titular e Admin ⇒ 200 com evento `CARD_OWNER_CHANGED`, contas sem troca de titular; **SEC-046** a prévia da remoção traz o aviso; **D-GES-52** Admin edita/exclui/restaura/estorna "Só meu" de ex-membro (e fica na revisão com o nome dele), Membro (inclusive dono da conta) 403, Admin não muda divisão/pagador; **histórico** mantém o ator para dono da conta, lançador e Admin; exportação continua sem o "Só meu" alheio.
+- **D-GES-55**: unitários de `isAdminOverRemovedOwner`/`canChangeStructure`; integração: Admin sobre ex-membro torna dividido, troca pagador e conta (lançamento, prevista, série, baixa), histórico com o Admin; negativos: Admin sobre membro **ativo**, Membro, dono da conta e lançador (403, item intacto), pagador ex-membro/inexistente/de outra família e conta de outra família (422/404), "Só meu" com pagador de terceiro (403 `PERSONAL_ON_BEHALF_FORBIDDEN`).
 - **Provas do reteste como regressão**: os cenários (a)-(d) e os passos 1-6 da SEC-042 do relatório `reteste-so-meu-2026-10-25`.
 - **Reteste do Agente de Segurança** depois da rodada.
