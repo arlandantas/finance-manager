@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
+import { memberLabel } from "@/lib/deleted-account";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import { useUndoInvoicePayment } from "@/modules/cartoes/hooks";
@@ -367,12 +368,11 @@ export function TransactionDetailDrawer({
             <div className="mt-3 flex flex-col gap-1 text-sm text-slate-700">
               {t.payer ? (
                 <p>
-                  {isIncome ? "Recebido por" : "Pago por"} <strong>{t.payer.name}</strong>
-                  {t.payer.removed ? " (ex-membro)" : ""}
+                  {isIncome ? "Recebido por" : "Pago por"} <strong>{memberLabel(t.payer)}</strong>
                 </p>
               ) : null}
               <p>
-                Registrado por <strong>{t.author.name}</strong>
+                Registrado por <strong>{memberLabel(t.author)}</strong>
               </p>
               {t.viaAssistant ? (
                 <p data-testid="detail-via-assistant">

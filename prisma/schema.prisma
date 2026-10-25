@@ -94,6 +94,9 @@ model User {
   emailVerified DateTime? @db.Timestamptz(3)
   image         String?
   createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  // SEC-017c (US-080): conta excluída = identidade anonimizada (nome "Conta excluída", e-mail inválido sem PII).
+  // A linha fica porque `members`/`transactions` a referenciam (ADR-019); ela nunca mais autentica.
+  deletedAt     DateTime? @db.Timestamptz(3)
 
   accounts    Account[]
   sessions    Session[]

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
+import { memberLabel } from "@/lib/deleted-account";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import type { AiFeatureStateDTO } from "@/modules/ia/dto";
 import { useDisableConsent, useEnableConsent } from "@/modules/ia/hooks";
@@ -132,7 +133,7 @@ export function ConsentSwitch({
       {last ? (
         <p data-testid="ai-last-change" className="text-xs text-slate-500">
           {last.action === "ENABLED" ? "Ligado" : "Desligado"} por{" "}
-          {last.by.former ? `${last.by.name} (ex-membro)` : last.by.name} em{" "}
+          {memberLabel({ name: last.by.name, removed: last.by.former ? true : undefined })} em{" "}
           {SP_DATE.format(new Date(last.at))}
         </p>
       ) : null}

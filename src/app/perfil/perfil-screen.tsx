@@ -105,6 +105,18 @@ export function PerfilScreen({ name, email }: { name: string; email: string }) {
             </Button>
           </div>
         ) : null}
+        <div className="mt-2 flex flex-col gap-1 border-t border-slate-200 pt-3">
+          <p className="text-sm text-slate-600">
+            Excluir a conta apaga seu nome, e-mail e foto e encerra todos os acessos. É definitivo.
+          </p>
+          <Link
+            href="/perfil/excluir-conta"
+            data-testid="excluir-minha-conta"
+            className="inline-flex min-h-11 items-center self-start text-sm font-semibold text-red-700 underline dark:text-red-300"
+          >
+            Excluir minha conta
+          </Link>
+        </div>
       </section>
 
       <p className="text-sm text-slate-600">

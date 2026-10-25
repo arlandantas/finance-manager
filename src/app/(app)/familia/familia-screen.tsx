@@ -22,6 +22,7 @@ import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { memberLabel } from "@/lib/deleted-account";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import {
   type SettlementPending,
@@ -548,7 +549,7 @@ export function FamiliaScreen() {
               <ul className="flex flex-col gap-1 text-sm text-slate-600">
                 {data.exMembers.map((x) => (
                   <li key={x.id} data-testid="ex-member">
-                    {x.name} (ex-membro)
+                    {memberLabel({ name: x.name, removed: true })}
                   </li>
                 ))}
               </ul>

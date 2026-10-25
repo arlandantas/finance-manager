@@ -30,6 +30,12 @@ export async function signOutAction() {
   redirect("/login");
 }
 
+/** US-080: depois de excluir a conta, apaga os cookies deste aparelho e mostra "Sua conta foi excluída". */
+export async function accountDeletedAction() {
+  await clearSession();
+  redirect("/conta-excluida");
+}
+
 export async function signInWithGoogleAction(formData: FormData) {
   const callbackUrl = safeCallbackUrl(String(formData.get("callbackUrl") ?? "/"));
   await signIn("google", { redirectTo: callbackUrl });
