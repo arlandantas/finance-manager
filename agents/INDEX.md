@@ -6,16 +6,17 @@ Regra de ouro: comece por `agents/estado/<área>.md` (estado vigente, denso). De
 | Área | Arquivo |
 | :-- | :-- |
 | "Só meu" (propriedade e controle) | [estado/so-meu.md](estado/so-meu.md) |
-| Cartões e faturas | a migrar |
-| Parcelamento | a migrar |
-| Previstas e séries | a migrar |
-| Acerto / divisão | a migrar |
-| IA e assistente (MCP) | a migrar |
-| Privacidade / LGPD | a migrar |
-| Segurança (achados, riscos aceitos) | a migrar |
-| Família, convites, sessões | a migrar |
+| Cartões e faturas | [estado/cartoes-faturas.md](estado/cartoes-faturas.md) |
+| Parcelamento | [estado/parcelamento.md](estado/parcelamento.md) |
+| Previstas e séries | [estado/previstas-series.md](estado/previstas-series.md) |
+| Acerto / divisão | [estado/acerto-divisao.md](estado/acerto-divisao.md) |
+| IA e assistente (MCP) | [estado/ia-assistente-mcp.md](estado/ia-assistente-mcp.md) |
+| Privacidade / LGPD | [estado/privacidade-lgpd.md](estado/privacidade-lgpd.md) |
+| Segurança (achados, riscos aceitos) | [estado/seguranca.md](estado/seguranca.md) |
+| Família, convites, sessões | [estado/familia-convites-sessoes.md](estado/familia-convites-sessoes.md) |
+| Lançamentos, contas, extrato e base | [estado/lancamentos-contas-extrato.md](estado/lancamentos-contas-extrato.md) |
 
-Área "a migrar" (exceção à regra de não ler histórico): leia o SDD/US/README do papel e as decisões em `manager/decisoes-do-gestor.md`; o código e os testes vencem os docs.
+Todas as áreas estão migradas. Divergência docs x código: o código e os testes vencem.
 
 ## Para tarefa X, leia Y
 | Papel | Tarefa | Leia |
@@ -26,10 +27,10 @@ Regra de ouro: comece por `agents/estado/<área>.md` (estado vigente, denso). De
 | PO | Escrever/ajustar história | `estado/<área>.md`, `product-owner/backlog/backlog.md`, a US em `backlog/stories/` |
 | TL | Especificar/ADR | `estado/<área>.md`, SDD da área em `tech-lead/sdd/`, `tech-lead/adrs/` |
 | Dev & QA | Implementar/corrigir | `estado/<área>.md` §b (Regras) e §f (Fontes: código e testes), depois o SDD indicado |
-| Segurança | Auditar/reteste | `estado/<área>.md` §c (Invariantes) e §d (Riscos aceitos), `security/README.md`, `security/relatorios/` |
+| Segurança | Auditar/reteste | `estado/<área>.md` §c (Invariantes) e §d (Riscos aceitos), `security/README.md`, `security/status.md`, `_historico/security/relatorios/` |
 
 ## Histórico (não ler por padrão)
-`manager/decisoes-do-gestor.md`, `developer/tasks/`, `security/relatorios/`, `product-owner/backlog/decisoes-*.md`, `tech-lead/respostas-*.md`, `stakeholder/historico-alinhamentos.md` e `homologacao-*`. Futuro: `agents/_historico/` (ainda não existe; nada foi movido).
+`_historico/` guarda o que está fechado (relatórios de segurança, QA, respostas do TL, decisões e pedidos do PO, homologações do Stakeholder), com a subestrutura original. IDs preservados. Também histórico: `manager/decisoes-do-gestor.md` (append) e `developer/tasks/` (exceto `tasks-board.md`).
 
 ## REGRA DE MANUTENÇÃO
 1. Toda mudança de regra atualiza `agents/estado/<área>.md` no MESMO commit (regra vigente, divergências, pendências).
