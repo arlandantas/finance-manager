@@ -1,5 +1,7 @@
 # SDD-027: Lançar pelo assistente — **lançamento direto com limites do membro** (rev. 2), modo opcional de confirmação e atividade do assistente (US-076a/b/c, US-077)
 
+> Estado vigente consolidado em agents/estado/ia-assistente-mcp.md
+
 - **Histórias**: [US-076](../../product-owner/backlog/stories/US-076-lancar-despesa-pelo-assistente-com-confirmacao.md) · [US-077](../../product-owner/backlog/stories/US-077-auditoria-do-assistente.md) · **Fluxos**: FLUXO-008 (lançar), FLUXO-016 §3
 - **Rastreabilidade**: NEED-025 (RN-025.3..6) · RF43 · RN15 · NEED-001 (autoria) · D-PO-66/67 · D-GES-35 (lançamento sempre em duas etapas, confirmado pelo próprio membro) · [ADR-030](../adrs/ADR-030-servidor-mcp-oauth-proprio-e-hospedagem.md) §6–§8 · ADR-009 (idempotência)
 - **Depende de**: SDD-024 (escopo `write`, `runTool`, auditoria, taxa), SDD-025 (lista de conexões), SDD-001/008 (`createExpenseCore`), SDD-026 (`listar_cadastros`)

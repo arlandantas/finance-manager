@@ -1,5 +1,7 @@
 # SDD-021: Infra de LLM — cliente único, teto de custo e registro de consumo (EN-004)
 
+> Estado vigente consolidado em agents/estado/ia-assistente-mcp.md
+
 - **História**: [EN-004](../../product-owner/backlog/stories/EN-004-infra-llm-chave-do-app-e-teto-de-custo.md) · **Fluxo**: [FLUXO-016](../../product-owner/flows/FLUXO-016-privacidade-e-consentimento-ia.md) §1 (bloco "Consumo do mês"), §4
 - **Rastreabilidade**: NEED-026 §4, NEED-027 (RN-027.7) · RF44, RF45 · RN15, RN16 · D-PO-57 · D-GES-27 (teto **configurável, valor pendente**) · **[ADR-028](../adrs/ADR-028-integracao-llm-cliente-unico-e-teto-de-custo.md)** (leitura obrigatória) · [ADR-029](../adrs/ADR-029-privacidade-e-anonimizacao-para-llm.md) · ADR-008/026 (travas de ambiente)
 - **Depende de**: SDD-000 (`withApi`, erros, relógio), SDD-003 (papéis), ADR-026 (variáveis em produção). A EN-005 (SDD-022) é pré-requisito do **primeiro envio**, não desta infra.

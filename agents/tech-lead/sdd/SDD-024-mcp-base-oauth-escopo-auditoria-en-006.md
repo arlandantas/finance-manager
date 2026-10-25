@@ -1,5 +1,7 @@
 # SDD-024: Servidor MCP — base OAuth 2.1, escopo, contexto do membro, limite de taxa e auditoria (EN-006)
 
+> Estado vigente consolidado em agents/estado/ia-assistente-mcp.md
+
 - **História**: [EN-006](../../product-owner/backlog/stories/EN-006-servidor-mcp-base.md) · **Fluxo**: [FLUXO-016](../../product-owner/flows/FLUXO-016-privacidade-e-consentimento-ia.md) §3
 - **Rastreabilidade**: NEED-025 (RN-025.1, 025.2, 025.5, 025.6, 025.7) · RF43 · D-PO-66 · D-GES-35 · **[ADR-030](../adrs/ADR-030-servidor-mcp-oauth-proprio-e-hospedagem.md)** (leitura obrigatória) · ADR-009, ADR-013, ADR-019, ADR-026
 - **Depende de**: SDD-000 (erros, `withApi`, CSRF), SDD-003 (sessão Auth.js, `findActiveMembership`), SDD-012 (papéis, ex-membro)
