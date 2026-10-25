@@ -965,6 +965,8 @@ model McpAuthorizationRequest {
   expiresAt       DateTime  @db.Timestamptz(3)
   consumedAt      DateTime? @db.Timestamptz(3)
   createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  // SEC-011: sha256(nonce) do cookie do navegador que iniciou o pedido; nulo só em pedidos anteriores à migração
+  browserNonceHash String?
 
   client McpClient @relation(fields: [clientId], references: [id])
 
@@ -990,6 +992,8 @@ model McpGrant {
   revokedByMemberId String?           @db.Uuid
   lastUsedAt        DateTime?         @db.Timestamptz(3)
   createdAt         DateTime          @default(now()) @db.Timestamptz(3)
+  // SEC-011: aviso "nova conexão" na Home até ser dispensado
+  noticeDismissedAt DateTime?         @db.Timestamptz(3)
 
   family Family     @relation(fields: [familyId], references: [id])
   member Member     @relation(fields: [familyId, memberId], references: [familyId, id])

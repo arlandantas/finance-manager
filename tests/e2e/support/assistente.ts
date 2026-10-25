@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { expect, type Page } from "@playwright/test";
 import { newTokenValue } from "@/modules/mcp/tokens";
 import { testDb } from "../../support/db";
@@ -62,11 +62,23 @@ export async function seedGrant(
 }
 
 /** Pedido de autorização válido (o que o /oauth/authorize gravaria), para abrir a tela de consentimento. */
-export async function seedAuthorizationRequest(wantsWrite: boolean) {
-  const client = await ensureClient();
-  return testDb().mcpAuthorizationRequest.create({
+export async function seedAuthorizationRequest(wantsWrite: boolean, o: { unknown?: boolean } = {}) {
+  const client = o.unknown
+    ? await testDb().mcpClient.create({
+        data: {
+          clientId: `dcr_${randomBytes(6).toString("hex")}`,
+          kind: "DCR",
+          clientName: "Banco Oficial",
+          redirectUris: ["https://claude.ai/api/mcp/auth_callback"],
+        },
+      })
+    : await ensureClient();
+  const id = randomUUID();
+  const nonce = randomBytes(24).toString("base64url");
+  const row = await testDb().mcpAuthorizationRequest.create({
     data: {
-      id: randomUUID(),
+      id,
+      browserNonceHash: createHash("sha256").update(nonce).digest("hex"), // SEC-011
       clientId: client.id,
       redirectUri: "https://claude.ai/api/mcp/auth_callback",
       codeChallenge: "x".repeat(43),
@@ -75,6 +87,8 @@ export async function seedAuthorizationRequest(wantsWrite: boolean) {
       expiresAt: new Date("2026-10-05T15:00:00Z"),
     },
   });
+  // cookie do navegador que iniciou o pedido (SEC-011)
+  return { ...row, consentCookie: `${id}.${nonce}` };
 }
 
 export async function loginAsWho(world: World, page: Page, who: Who) {

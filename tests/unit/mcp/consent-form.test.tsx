@@ -7,10 +7,13 @@ import { ConsentForm } from "@/app/oauth/consent/consent-form";
 afterEach(cleanup);
 const props = {
   requestId: "11111111-1111-4111-8111-111111111111",
-  clientName: "Claude",
-  redirectHost: "claude.ai",
-  redirectIsLoopback: false,
-  knownHost: true,
+  client: {
+    verified: true as const,
+    displayName: "Claude",
+    domain: "claude.ai",
+    redirectUrl: "https://claude.ai/api/mcp/auth_callback",
+  },
+  suggestedLabel: "Claude",
   wantsWrite: true,
   limitsText: "Até R$ 500,00 por lançamento · 10 por dia · 5 por hora",
 };
@@ -42,13 +45,33 @@ describe("EN-006a tela de consentimento (SDD-025 §4.1/§8.1)", () => {
     expect(screen.getByRole("checkbox", { name: /Consultar saldos/ })).toBeDisabled();
   });
 
-  it("avisos: loopback e host desconhecido", () => {
-    const { rerender } = render(<ConsentForm {...props} redirectIsLoopback />);
-    expect(screen.getByText(/roda no seu computador/)).toBeInTheDocument();
-    rerender(<ConsentForm {...props} knownHost={false} />);
-    expect(screen.getByText("Aplicativo não reconhecido")).toBeInTheDocument();
-    rerender(<ConsentForm {...props} />);
-    expect(screen.queryByText("Aplicativo não reconhecido")).toBeNull();
+  it("SEC-011: aviso fixo de 'só continue se você pediu' e URL completa de retorno", () => {
+    render(<ConsentForm {...props} />);
+    expect(screen.getByTestId("consent-warning")).toHaveTextContent(
+      "Só continue se você acabou de pedir esta conexão no seu assistente, neste aparelho.",
+    );
+    expect(screen.getByTestId("redirect-url")).toHaveTextContent(
+      "https://claude.ai/api/mcp/auth_callback",
+    );
+    expect(screen.getByTestId("verified-badge")).toHaveTextContent("Verificado");
+  });
+
+  it("SEC-011: cliente não verificado mostra aviso forte e exige 'Entendo o risco'", async () => {
+    const user = userEvent.setup();
+    const client = {
+      verified: false as const,
+      reportedName: "Banco Oficial",
+      clientHost: "evil.example",
+      redirectUrl: "https://evil.example/cb",
+    };
+    render(<ConsentForm {...props} client={client} suggestedLabel="Banco Oficial" />);
+    expect(screen.getByRole("heading", { name: /não verificado/ })).toBeInTheDocument();
+    expect(screen.getByText(/nome informado pelo próprio aplicativo/)).toBeInTheDocument();
+    expect(screen.queryByTestId("verified-badge")).toBeNull();
+    await user.click(screen.getByRole("checkbox", { name: "Entendi" }));
+    expect(screen.getByRole("button", { name: "Permitir" })).toBeDisabled();
+    await user.click(screen.getByRole("checkbox", { name: "Entendo o risco" }));
+    expect(screen.getByRole("button", { name: "Permitir" })).toBeEnabled();
   });
 
   it("título com o cliente e destino; exige nome com 2+ caracteres", async () => {
@@ -57,7 +80,7 @@ describe("EN-006a tela de consentimento (SDD-025 §4.1/§8.1)", () => {
     expect(
       screen.getByRole("heading", { name: "Claude quer acessar seus dados financeiros" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("claude.ai")).toBeInTheDocument();
+    expect(screen.getByText("Claude (claude.ai)")).toBeInTheDocument();
     await user.click(screen.getByRole("checkbox", { name: "Entendi" }));
     const label = screen.getByLabelText("Nome da conexão");
     await user.clear(label);

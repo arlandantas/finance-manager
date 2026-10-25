@@ -3,6 +3,7 @@ import { getClock } from "@/lib/clock";
 import { validateAuthorize } from "@/modules/mcp/authorize";
 import { clientIp } from "@/modules/mcp/client-ip";
 import { mcpEnabled } from "@/modules/mcp/config";
+import { isSecureApp, setConsentCookie } from "@/modules/mcp/consent-binding";
 import { mcpDb } from "@/modules/mcp/repo";
 
 // SDD-024 §4.3. Endpoint (não página) para que o proxy não mande ao login ANTES de gravar o pedido:
@@ -21,10 +22,13 @@ export async function GET(req: Request) {
   });
   const base = process.env.APP_URL?.replace(/\/+$/, "") || url.origin;
   if (out.kind === "ok") {
-    return NextResponse.redirect(`${base}/oauth/consent?request=${out.requestId}`, {
+    // SEC-011: amarra o pedido a ESTE navegador (cookie com nonce; só o hash fica no banco)
+    const res = NextResponse.redirect(`${base}/oauth/consent?request=${out.requestId}`, {
       status: 302,
       headers: NO_STORE,
     });
+    res.headers.append("Set-Cookie", setConsentCookie(out.requestId, out.nonce, isSecureApp()));
+    return res;
   }
   if (out.kind === "redirect-error") {
     return NextResponse.redirect(out.location, { status: 302, headers: NO_STORE });

@@ -19,6 +19,7 @@ import { SPLIT_COPY } from "@/modules/split/copy";
 import { AssistantReviewCard } from "./assistant-review-card";
 import { LedgerRow } from "./extrato/ledger-row";
 import { TransactionDetailDrawer } from "./extrato/transaction-detail-drawer";
+import { NewConnectionCard } from "./new-connection-card";
 import { PayPlannedDrawer } from "./previstas/pay-drawer";
 
 const first = (n: string) => n.split(" ")[0] ?? n;
@@ -554,6 +555,7 @@ export function HomeScreen({ firstName }: { firstName: string }) {
       {h ? (
         <div className="flex flex-col gap-4">
           {h.onboarding.showChecklist ? <Checklist o={h.onboarding} /> : null}
+          <NewConnectionCard />
           <AssistantReviewCard />
 
           <SummaryFold

@@ -28,6 +28,7 @@ Given(
 Given("que o Claude pediu acesso para consultar e lançar", async ({ world }) => {
   const r = await seedAuthorizationRequest(true);
   world.data.requestId = r.id;
+  world.data.consentCookie = r.consentCookie;
 });
 
 // Abre "Configurações" ▸ "Assistente de IA" (US-074) ou "Assistente de IA" ▸ aba (US-077/076b).
@@ -58,6 +59,14 @@ Given(
 
 When("Lucas abre a tela de autorização do Claude", async ({ world, page }) => {
   await loginAsWho(world, page, "Lucas");
+  // SEC-011: o consentimento só abre no navegador que iniciou o pedido (cookie com nonce)
+  await page.context().addCookies([
+    {
+      name: "mcp_authz",
+      value: world.data.consentCookie as string,
+      url: "http://localhost:3101",
+    },
+  ]);
   await gotoReady(page, `/oauth/consent?request=${world.data.requestId as string}`);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("quer acessar seus dados");
 });
@@ -160,4 +169,66 @@ Then("vê o aviso de bloqueio {string}", async ({ page }, texto: string) => {
 Then("não vê a chave {string} editável", async ({ page }, nome: string) => {
   await expect(page.getByRole("switch", { name: nome })).toHaveCount(0);
   await expect(page.getByTestId("family-switch")).toContainText("Permitido pela família");
+});
+
+Given("que um aplicativo desconhecido pediu acesso", async ({ world }) => {
+  const r = await seedAuthorizationRequest(false, { unknown: true });
+  world.data.requestId = r.id;
+  world.data.consentCookie = r.consentCookie;
+});
+
+When("Lucas abre o endereço da autorização em outro navegador", async ({ world, browser }) => {
+  // outro navegador/aparelho: contexto novo, SEM o cookie do pedido (SEC-011)
+  const ctx = await browser.newContext({ baseURL: "http://localhost:3101" });
+  const other = await ctx.newPage();
+  const { loginAs } = await import("../../support/login");
+  await loginAs(other, { email: "lucas@exemplo.com", name: "Lucas Silva" });
+  await gotoReady(other, `/oauth/consent?request=${world.data.requestId as string}`);
+  world.data.otherPage = other;
+});
+
+Then("não há botões para permitir ou negar", async ({ world }) => {
+  const other = world.data.otherPage as Page;
+  await expect(other.getByRole("button", { name: "Permitir" })).toHaveCount(0);
+  await expect(other.getByRole("button", { name: "Cancelar" })).toHaveCount(0);
+  const row = await testDb().mcpAuthorizationRequest.findUniqueOrThrow({
+    where: { id: world.data.requestId as string },
+  });
+  expect(row.userId).toBeNull(); // o pedido não foi vinculado a quem abriu o endereço
+});
+
+Then(
+  "vê o selo {string} e a URL de retorno {string}",
+  async ({ page }, selo: string, url: string) => {
+    await expect(page.getByTestId("verified-badge")).toContainText(selo);
+    await expect(page.getByTestId("redirect-url")).toContainText(
+      url.replace("https://", "https://"),
+    );
+  },
+);
+
+When("Lucas abre o início do app", async ({ world, page }) => {
+  await loginAsWho(world, page, "Lucas");
+  await gotoReady(page, "/");
+});
+
+Then(
+  "vê o cartão de nova conexão {string} com a ação {string}",
+  async ({ page }, label: string, acao: string) => {
+    const card = page.getByTestId("new-connection");
+    await expect(card).toContainText(`Nova conexão: ${label}`);
+    await expect(card.getByRole("button", { name: acao })).toBeVisible();
+  },
+);
+
+When("Lucas dispensa o aviso de nova conexão", async ({ page }) => {
+  await page.getByTestId("new-connection").getByRole("button", { name: "Fui eu" }).click();
+});
+
+Then("o cartão de nova conexão não aparece mais", async ({ page }) => {
+  await expect(page.getByTestId("new-connection")).toHaveCount(0);
+});
+
+Then("o outro navegador vê {string}", async ({ world }, texto: string) => {
+  await expect((world.data.otherPage as Page).getByText(texto)).toBeVisible();
 });

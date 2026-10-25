@@ -1,19 +1,18 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/require-session";
 import { getClock } from "@/lib/clock";
 import { findActiveMembership } from "@/modules/familia/repo";
 import { loadConsentView } from "@/modules/mcp/authorize";
 import { mcpEnabled } from "@/modules/mcp/config";
+import { readConsentCookie } from "@/modules/mcp/consent-binding";
 import { effectiveLimits } from "@/modules/mcp/limits";
 import { describeLimits } from "@/modules/mcp/limits-schemas";
-import { isLoopbackHost } from "@/modules/mcp/redirect";
 import { mcpDb } from "@/modules/mcp/repo";
 import { ConsentForm } from "./consent-form";
 
 // SDD-024 §4.3 / SDD-025 §4.1. Sem navegação do app. O pedido foi validado e gravado por /oauth/authorize.
 export const dynamic = "force-dynamic";
-
-const KNOWN_HOSTS = ["claude.ai", "chatgpt.com", "gemini.google.com", "antigravity.google"];
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -67,23 +66,36 @@ export default async function ConsentPage({
   if (!family?.assistantAccessEnabled) {
     return Notice({ text: "O Administrador bloqueou o acesso por assistente" });
   }
-  const view = await loadConsentView(db, params.request, user.userId, getClock().now());
+  const jar = await cookies();
+  const cookieHeader = jar
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+  const view = await loadConsentView(
+    db,
+    params.request,
+    user.userId,
+    getClock().now(),
+    readConsentCookie(cookieHeader),
+  );
+  if (view?.state === "OTHER_BROWSER") {
+    // SEC-011: pedido iniciado em outro navegador/aparelho; nada é vinculado ao usuário daqui
+    return Notice({
+      text: "Este pedido de conexão foi iniciado em outro navegador ou aparelho. Volte ao seu assistente e peça a conexão de novo, por aqui.",
+    });
+  }
   if (!view) {
     return Notice({
       text: "Este pedido de conexão expirou. Volte ao seu assistente e tente de novo.",
     });
   }
   const limits = await effectiveLimits(db, member.familyId, member.id);
-  const host = new URL(view.redirectUri).hostname;
-  const loopback = isLoopbackHost(host);
   return (
     <Shell>
       <ConsentForm
         requestId={view.requestId}
-        clientName={view.clientName}
-        redirectHost={view.redirectHost}
-        redirectIsLoopback={loopback}
-        knownHost={loopback || KNOWN_HOSTS.includes(host.toLowerCase())}
+        client={view.client}
+        suggestedLabel={view.suggestedLabel}
         wantsWrite={view.scopesRequested.includes("write")}
         limitsText={describeLimits(limits)}
       />

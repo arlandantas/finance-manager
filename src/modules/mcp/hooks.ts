@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/http";
 import type { ActivityResponse } from "@/modules/mcp/activity-schemas";
 import type { AssistantSettingsDTO, ConnectionDTO } from "@/modules/mcp/connections-schemas";
 import type { AssistantLimitsDTO, AssistantLimitsInput } from "@/modules/mcp/limits-schemas";
+import type { NewConnectionNoticeDTO } from "@/modules/mcp/new-connection";
 import type { AssistantReviewDTO } from "@/modules/mcp/review";
 
 export const assistantSettingsKey = ["assistant-settings"] as const;
@@ -38,7 +39,9 @@ export function useRevokeConnection() {
         body: {},
         idempotencyKey: a.idempotencyKey,
       }),
-    onSuccess: invalidate,
+    onSuccess: async () => {
+      await invalidate();
+    },
   });
 }
 
@@ -125,5 +128,28 @@ export function useMarkAssistantReviewed() {
         idempotencyKey,
       }),
     onSuccess: (data) => qc.setQueryData(assistantReviewKey, data),
+  });
+}
+
+// ── Aviso de conexão nova (cartão da Home, SEC-011) ──
+export const newConnectionsKey = ["assistant-new-connections"] as const;
+
+export function useNewConnectionNotices() {
+  return useQuery({
+    queryKey: newConnectionsKey,
+    queryFn: () => apiFetch<NewConnectionNoticeDTO>("/api/v1/assistant/new-connections"),
+  });
+}
+
+export function useDismissNewConnection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (a: { id: string; idempotencyKey: string }) =>
+      apiFetch<NewConnectionNoticeDTO>(`/api/v1/assistant/new-connections/${a.id}/dismiss`, {
+        method: "POST",
+        body: {},
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: (data) => qc.setQueryData(newConnectionsKey, data),
   });
 }

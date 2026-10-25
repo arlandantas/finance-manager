@@ -135,12 +135,27 @@ export function authorizeUrl(o: DanceOptions, challenge: string): string {
   return u.toString();
 }
 
+/** SEC-011: cookie de consentimento (`id.nonce`) de cada pedido, como o navegador que o iniciou o guardaria. */
+const consentCookies = new Map<string, string>();
+export const consentCookieOf = (requestId: string) => consentCookies.get(requestId) ?? null;
+
 export async function getAuthorize(url: string, headers: Record<string, string> = {}) {
   const res = await authorizeGET(new Request(url, { headers }));
-  return { status: res.status, location: res.headers.get("location") ?? "" };
+  const setCookie = res.headers.get("set-cookie") ?? "";
+  const m = /(?:__Host-)?mcp_authz=([^;]+)/.exec(setCookie);
+  if (m?.[1]) consentCookies.set(m[1].split(".")[0] as string, m[1]);
+  return { status: res.status, location: res.headers.get("location") ?? "", setCookie };
 }
 
-export async function postDecision(member: Caller, body: Record<string, unknown>) {
+export async function postDecision(
+  member: Caller,
+  body: Record<string, unknown>,
+  opts: { consentCookie?: string | null } = {},
+) {
+  const cv =
+    opts.consentCookie !== undefined
+      ? opts.consentCookie
+      : consentCookieOf(String(body.requestId ?? ""));
   const res = await decisionPOST(
     new Request(`${ORIGIN}/api/oauth/authorize/decision`, {
       method: "POST",
@@ -148,13 +163,17 @@ export async function postDecision(member: Caller, body: Record<string, unknown>
         "content-type": "application/json",
         origin: ORIGIN,
         host: "localhost:3100",
-        cookie: member.cookie,
+        cookie: [member.cookie, cv ? `mcp_authz=${cv}` : ""].filter(Boolean).join("; "),
       },
       body: JSON.stringify(body),
     }),
     { params: Promise.resolve({}) },
   );
-  return { status: res.status, body: (await res.json()) as Record<string, any> };
+  return {
+    status: res.status,
+    body: (await res.json()) as Record<string, any>,
+    setCookie: res.headers.get("set-cookie") ?? "",
+  };
 }
 
 /** Fluxo completo: PRM -> metadados do AS -> authorize -> consentimento -> token. */

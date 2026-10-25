@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
-import { conflict, notFound } from "@/lib/api/errors";
+import { conflict, notFound, unprocessable } from "@/lib/api/errors";
 import type { Clock } from "@/lib/clock";
-import { sha256Hex } from "@/lib/ids";
+import { randomToken, sha256Hex } from "@/lib/ids";
 import { uuidSchema } from "@/lib/schemas";
 import { recordAudit } from "@/modules/mcp/audit";
 import {
@@ -22,9 +22,11 @@ import {
   RATE,
   SUPPORTED_SCOPES,
 } from "@/modules/mcp/config";
+import { bindingMatches } from "@/modules/mcp/consent-binding";
 import { hit } from "@/modules/mcp/rate-limit";
 import { redirectUriMatches } from "@/modules/mcp/redirect";
 import { newTokenValue } from "@/modules/mcp/tokens";
+import { consentClientView, isVerifiedClient } from "@/modules/mcp/verified-clients";
 
 type Env = Record<string, string | undefined>;
 type Tx = Prisma.TransactionClient;
@@ -47,7 +49,7 @@ export type AuthorizeOutcome =
   /** Cliente/redirect inválidos: página de erro, SEM redirecionar (RFC 6749 §4.1.2.1). */
   | { kind: "error-page"; reason: "unknown_client" | "bad_redirect" | "rate_limited" | "disabled" }
   | { kind: "redirect-error"; location: string }
-  | { kind: "ok"; requestId: string };
+  | { kind: "ok"; requestId: string; nonce: string };
 
 export function errorRedirect(
   redirectUri: string,
@@ -179,8 +181,10 @@ export async function validateAuthorize(
   const asked = (q.scope ?? "").split(/\s+/).filter((s) => known.has(s));
   const scopes = asked.length > 0 ? [...new Set(asked)] : ["read"];
 
+  const nonce = randomToken(32);
   const req = await db.mcpAuthorizationRequest.create({
     data: {
+      browserNonceHash: sha256Hex(nonce),
       clientId: client.id,
       redirectUri: q.redirect_uri,
       state: q.state ?? null,
@@ -190,7 +194,7 @@ export async function validateAuthorize(
       expiresAt: new Date(now.getTime() + AUTH_REQUEST_TTL_S * 1000),
     },
   });
-  return { kind: "ok", requestId: req.id };
+  return { kind: "ok", requestId: req.id, nonce };
 }
 
 // ───────── Consentimento (SDD-024 §4.4 + SDD-025 §8.1) ─────────
@@ -202,6 +206,7 @@ export const ConsentDecisionSchema = z
     validityDays: z.union([z.literal(30), z.literal(90)]).default(30),
     allowWrite: z.boolean().default(false),
     privacyAcknowledged: z.literal(true).optional(),
+    unverifiedAcknowledged: z.literal(true).optional(), // SEC-011: cliente não verificado exige "Entendo o risco"
     writeAcknowledged: z.literal(true).optional(),
   })
   .strict()
@@ -233,7 +238,9 @@ export async function decideConsent(
   input: ConsentDecision,
   now: Date,
   env: Env = process.env,
-): Promise<{ redirectTo: string }> {
+  /** SEC-011: valor do cookie de consentimento do navegador que decide (precisa ser o que iniciou o pedido). */
+  cookieValue: string | null = null,
+): Promise<{ redirectTo: string; grantId?: string }> {
   // pedido de uso único, travado
   await tx.$queryRaw`SELECT id FROM oauth_authorization_requests WHERE id = ${input.requestId}::uuid FOR UPDATE`;
   const req = await tx.mcpAuthorizationRequest.findUnique({
@@ -246,6 +253,20 @@ export async function decideConsent(
       "REQUEST_EXPIRED",
       "Este pedido de conexão expirou. Volte ao seu assistente e tente de novo.",
     );
+  }
+
+  if (!bindingMatches(req, cookieValue)) {
+    throw conflict(
+      "OTHER_BROWSER",
+      "Este pedido de conexão foi iniciado em outro navegador ou aparelho. Volte ao seu assistente e peça a conexão de novo, por aqui.",
+    );
+  }
+  if (
+    input.decision === "allow" &&
+    !isVerifiedClient(req.client, env) &&
+    input.unverifiedAcknowledged !== true
+  ) {
+    throw unprocessable("RISK_NOT_ACKNOWLEDGED", "Confirme que entendeu o risco deste aplicativo");
   }
 
   const done = async () =>
@@ -349,16 +370,33 @@ export async function decideConsent(
   u.searchParams.set("code", code.value);
   if (req.state !== null) u.searchParams.set("state", req.state);
   u.searchParams.set("iss", issuerOf(env));
-  return { redirectTo: u.toString() };
+  return { redirectTo: u.toString(), grantId: grant.id };
 }
 
-/** Dados da tela de consentimento (SDD-025 §4.1); `null` = pedido inexistente/expirado/consumido. */
+export type ConsentView =
+  | {
+      state: "OK";
+      requestId: string;
+      client: ReturnType<typeof consentClientView>;
+      /** Nome mostrado no campo "Nome da conexão" (o verificado, nunca o do documento). */
+      suggestedLabel: string;
+      scopesRequested: string[];
+      redirectUri: string;
+    }
+  | { state: "OTHER_BROWSER" };
+
+/**
+ * Dados da tela de consentimento (SDD-025 §4.1, SDD-028 §4.2); `null` = pedido inexistente/expirado/consumido.
+ * Sem o cookie do navegador que iniciou o pedido => `OTHER_BROWSER`, SEM vincular o `userId` (SEC-011).
+ */
 export async function loadConsentView(
   db: Pick<PrismaClient, "mcpAuthorizationRequest">,
   requestId: string,
   userId: string,
   now: Date,
-) {
+  cookieValue: string | null = null,
+  env: Env = process.env,
+): Promise<ConsentView | null> {
   if (!uuidSchema.safeParse(requestId).success) return null;
   const req = await db.mcpAuthorizationRequest.findUnique({
     where: { id: requestId },
@@ -366,18 +404,20 @@ export async function loadConsentView(
   });
   if (!req || req.consumedAt || req.expiresAt <= now) return null;
   if (req.userId && req.userId !== userId) return null;
+  if (!bindingMatches(req, cookieValue)) return { state: "OTHER_BROWSER" };
   if (!req.userId) {
     await db.mcpAuthorizationRequest.updateMany({
       where: { id: req.id, userId: null },
       data: { userId },
     });
   }
+  const client = consentClientView(req.client, req.redirectUri, env);
   return {
+    state: "OK",
     requestId: req.id,
-    clientName: req.client.clientName,
-    redirectUri: req.redirectUri,
+    client,
+    suggestedLabel: client.verified ? client.displayName : req.client.clientName,
     scopesRequested: req.scopesRequested,
-    redirectHost: new URL(req.redirectUri).host,
-    clientHost: /^https?:\/\//.test(req.client.clientId) ? new URL(req.client.clientId).host : null,
+    redirectUri: req.redirectUri,
   };
 }

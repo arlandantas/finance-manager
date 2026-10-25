@@ -33,6 +33,35 @@ Funcionalidade: Conectar e revogar acesso do assistente
     Quando Lucas marca "Entendi"
     Então o botão de autorização "Permitir" está habilitado
 
+  Cenário: Pedido aberto em outro navegador é recusado
+    Dado que o Claude pediu acesso para consultar e lançar
+    Quando Lucas abre o endereço da autorização em outro navegador
+    Então o outro navegador vê "Este pedido de conexão foi iniciado em outro navegador ou aparelho. Volte ao seu assistente e peça a conexão de novo, por aqui."
+    E não há botões para permitir ou negar
+
+  Cenário: Cliente verificado mostra selo, domínio e aviso fixo
+    Dado que o Claude pediu acesso para consultar e lançar
+    Quando Lucas abre a tela de autorização do Claude
+    Então vê o aviso de autorização "Claude (claude.ai)"
+    E vê o selo "Verificado" e a URL de retorno "https://claude.ai/api/mcp/auth_callback"
+    E vê o aviso de autorização "Só continue se você acabou de pedir esta conexão no seu assistente, neste aparelho."
+
+  Cenário: Aplicativo desconhecido aparece como não verificado
+    Dado que um aplicativo desconhecido pediu acesso
+    Quando Lucas abre a tela de autorização do Claude
+    Então vê o aviso de autorização "nome informado pelo próprio aplicativo"
+    Quando Lucas marca "Entendi"
+    Então o botão de autorização "Permitir" está desabilitado
+    Quando Lucas marca "Entendo o risco"
+    Então o botão de autorização "Permitir" está habilitado
+
+  Cenário: Conexão nova gera aviso na Home e pode ser dispensada
+    Dado que Lucas tem o assistente "Meu Claude" conectado
+    Quando Lucas abre o início do app
+    Então vê o cartão de nova conexão "Meu Claude" com a ação "Revogar"
+    Quando Lucas dispensa o aviso de nova conexão
+    Então o cartão de nova conexão não aparece mais
+
   Cenário: Lançar despesas vem desmarcado
     Dado que o Claude pediu acesso para consultar e lançar
     Quando Lucas abre a tela de autorização do Claude

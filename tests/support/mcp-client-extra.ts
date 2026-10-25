@@ -1,6 +1,7 @@
 import { POST as decision } from "@/app/api/oauth/authorize/decision/route";
 import { POST as token } from "@/app/api/oauth/token/route";
 import type { Caller } from "./call";
+import { consentCookieOf } from "./mcp-client";
 
 export const ORIGIN = "http://localhost:3100";
 
@@ -13,7 +14,14 @@ export function decisionPOST(member: Caller, body: unknown, origin: string) {
         "content-type": "application/json",
         origin,
         host: "localhost:3100",
-        cookie: member.cookie,
+        cookie: [
+          member.cookie,
+          consentCookieOf(String((body as { requestId?: string }).requestId ?? ""))
+            ? `mcp_authz=${consentCookieOf(String((body as { requestId?: string }).requestId))}`
+            : "",
+        ]
+          .filter(Boolean)
+          .join("; "),
       },
       body: JSON.stringify(body),
     }),

@@ -4,30 +4,51 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, TextInput } from "@/components/ui/field";
 import { ApiClientError, apiFetch } from "@/lib/http";
+import type { ConsentClientView } from "@/modules/mcp/verified-clients";
 
 // SDD-025 §4.1 + §8.1: tela de consentimento do assistente (layout mínimo, sem navegação do app).
 type Props = {
   requestId: string;
-  clientName: string;
-  redirectHost: string;
-  redirectIsLoopback: boolean;
-  knownHost: boolean;
+  /** SEC-011: nome/domínio verificados no servidor, ou aviso de aplicativo não verificado. */
+  client: ConsentClientView;
+  suggestedLabel: string;
   wantsWrite: boolean;
   /** Limites vigentes do membro ("Até R$ 500,00 por lançamento · 10 por dia · 5 por hora" ou "Sem limite"). */
   limitsText: string;
 };
 
+function redirectOrigin(url: string): string {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return url;
+  }
+}
+function redirectRest(url: string): string {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return "";
+  }
+}
+
 export function ConsentForm(p: Props) {
-  const [label, setLabel] = useState(p.clientName.slice(0, 40));
+  const [label, setLabel] = useState(p.suggestedLabel.slice(0, 40));
   const [validityDays, setValidityDays] = useState<30 | 90>(30);
   const [allowWrite, setAllowWrite] = useState(false);
   const [privacy, setPrivacy] = useState(false);
   const [writeAck, setWriteAck] = useState(false);
+  const [riskAck, setRiskAck] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
 
-  const canAllow = privacy && label.trim().length >= 2 && (!allowWrite || writeAck) && !submitting;
+  const canAllow =
+    privacy &&
+    label.trim().length >= 2 &&
+    (!allowWrite || writeAck) &&
+    (p.client.verified || riskAck) &&
+    !submitting;
 
   async function decide(decision: "allow" | "deny") {
     setSubmitting(true);
@@ -45,6 +66,7 @@ export function ConsentForm(p: Props) {
                 validityDays,
                 allowWrite,
                 privacyAcknowledged: true,
+                ...(p.client.verified ? {} : { unverifiedAcknowledged: true }),
                 ...(allowWrite ? { writeAcknowledged: true } : {}),
               },
       });
@@ -69,6 +91,17 @@ export function ConsentForm(p: Props) {
       </p>
     );
   }
+  if (error?.code === "OTHER_BROWSER") {
+    return (
+      <p
+        role="alert"
+        className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+      >
+        Este pedido de conexão foi iniciado em outro navegador ou aparelho. Volte ao seu assistente
+        e peça a conexão de novo, por aqui.
+      </p>
+    );
+  }
   if (error?.code === "REQUEST_EXPIRED" || error?.code === "NOT_FOUND") {
     return (
       <p
@@ -89,25 +122,69 @@ export function ConsentForm(p: Props) {
       }}
     >
       <header className="flex flex-col gap-1">
-        <h1 ref={titleRef} tabIndex={-1} className="text-xl font-bold text-slate-900">
-          {p.clientName} quer acessar seus dados financeiros
-        </h1>
-        <p className="text-xs text-slate-500">Nome informado pelo aplicativo</p>
-        <p className="text-sm text-slate-600">
-          Vai voltar para <strong>{p.redirectHost}</strong>
+        {p.client.verified ? (
+          <>
+            <h1 ref={titleRef} tabIndex={-1} className="text-xl font-bold text-slate-900">
+              {p.client.displayName} quer acessar seus dados financeiros
+            </h1>
+            <p className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+              <span
+                data-testid="verified-badge"
+                className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300"
+              >
+                ✓ Verificado
+              </span>
+              <span>
+                {p.client.displayName} ({p.client.domain})
+              </span>
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 ref={titleRef} tabIndex={-1} className="text-xl font-bold text-slate-900">
+              Aplicativo <strong>não verificado</strong> quer acessar seus dados financeiros
+            </h1>
+            <p className="text-sm text-slate-700">
+              &quot;{p.client.reportedName}&quot;{" "}
+              <span className="text-xs text-slate-500">
+                (nome informado pelo próprio aplicativo)
+              </span>
+            </p>
+          </>
+        )}
+        <p data-testid="redirect-url" className="break-all text-sm text-slate-600">
+          Depois de autorizar, você volta para{" "}
+          <strong>{redirectOrigin(p.client.redirectUrl)}</strong>
+          {redirectRest(p.client.redirectUrl)}
         </p>
       </header>
 
-      {p.redirectIsLoopback ? (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200">
-          Este aplicativo roda no seu computador. Continue só se foi você que iniciou a conexão
-          agora.
-        </p>
-      ) : !p.knownHost ? (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200">
-          Aplicativo não reconhecido
-        </p>
+      {!p.client.verified ? (
+        <div className="flex flex-col gap-2 rounded-lg border border-amber-400 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200">
+          <p>
+            Não conseguimos confirmar quem é este aplicativo. Se você não o reconhece, cancele: ele
+            poderia ver suas finanças.
+          </p>
+          <label className="flex min-h-11 items-start gap-2 font-medium">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-5"
+              checked={riskAck}
+              onChange={(e) => setRiskAck(e.target.checked)}
+            />
+            Entendo o risco
+          </label>
+        </div>
       ) : null}
+
+      <p
+        data-testid="consent-warning"
+        className="rounded-lg border border-slate-300 bg-slate-50 p-3 text-sm text-slate-800"
+      >
+        Só continue se <strong>você</strong> acabou de pedir esta conexão no seu assistente, neste
+        aparelho. Se alguém te enviou este link, feche esta página: quem pediu pode ver suas
+        finanças.
+      </p>
 
       <p className="text-sm text-slate-700">
         Os dados que o assistente consultar serão enviados ao provedor da IA que você usa, fora do
