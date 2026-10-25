@@ -1,3 +1,5 @@
+> Estado vigente consolidado em agents/estado/familia-convites-sessoes.md
+
 # SDD-003: Autenticação, Família e Convite (US-001, US-002, US-003)
 
 - **Histórias**: [US-001](../../product-owner/backlog/stories/US-001-login-com-google.md) · [US-002](../../product-owner/backlog/stories/US-002-criar-familia.md) · [US-003](../../product-owner/backlog/stories/US-003-convidar-membro.md)

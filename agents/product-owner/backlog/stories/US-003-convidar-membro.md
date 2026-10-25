@@ -1,3 +1,5 @@
+> Estado vigente consolidado em agents/estado/familia-convites-sessoes.md
+
 # US-003 — Convidar um membro por e-mail
 
 | Campo | Valor |
