@@ -30,7 +30,7 @@ import { useTheme } from "@/lib/use-theme";
 export type ShellUser = { name: string; email: string; image: string | null };
 
 /** Telas de formulário de página inteira: o "+" não pode cobrir "Salvar" (SDD-010 §6.4). */
-const HIDE_FAB_ROUTES = ["/acerto/regra"];
+const HIDE_FAB_ROUTES = ["/acerto/regra", "/perfil", "/perfil/excluir-conta", "/familia/excluir"];
 
 const NAV_ITEMS: Array<{ href: string; label: string; icon: typeof Home }> = [
   { href: "/", label: "Início", icon: Home },
