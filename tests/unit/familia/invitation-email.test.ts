@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { INVITATION_TTL_DAYS } from "@/modules/familia/invitations/constants";
-import { invitationEmail } from "@/modules/familia/invitations/email";
+import { cleanLabel, invitationEmail } from "@/modules/familia/invitations/email";
 
 describe("US-003 invitationEmail (snapshot)", () => {
   const mail = invitationEmail({
@@ -11,9 +11,7 @@ describe("US-003 invitationEmail (snapshot)", () => {
   });
 
   it("assunto e texto", () => {
-    expect(mail.subject).toBe(
-      "Mariana Silva convidou você para a Família Silva no Finance Manager",
-    );
+    expect(mail.subject).toBe("Mariana Silva convidou você para o Finance Manager");
     expect(mail.text).toMatchInlineSnapshot(`
       "Olá!
 
@@ -40,5 +38,21 @@ describe("US-003 invitationEmail (snapshot)", () => {
 
   it("validade padrão de 7 dias (D-GES-07)", () => {
     expect(INVITATION_TTL_DAYS).toBe(7);
+  });
+
+  it("SEC-014: o assunto nunca carrega o nome livre da família nem quebras de linha", () => {
+    const phish = invitationEmail({
+      inviterName: "Mariana\r\nBcc: x@evil.example",
+      familyName: "BANCO OFICIAL: confirme sua senha em http://evil.example\nUrgente",
+      inviteUrl: "http://x/convite/t",
+      email: "a@b.com",
+    });
+    expect(phish.subject).not.toMatch(/[\r\n]/);
+    expect(phish.subject).not.toContain("BANCO");
+    expect(phish.subject).not.toContain("evil.example\nUrgente");
+    expect(phish.subject.endsWith("convidou você para o Finance Manager")).toBe(true);
+    expect(phish.text).not.toContain("\nUrgente");
+    expect(cleanLabel("  a\u0000b\u202e  c  ")).toBe("a b c");
+    expect(cleanLabel("x".repeat(100), 10)).toHaveLength(10);
   });
 });

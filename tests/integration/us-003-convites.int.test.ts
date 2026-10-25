@@ -101,9 +101,7 @@ describe("US-003 Enviar convite com sucesso", () => {
     expect(mailer.sent).toHaveLength(1);
     const mail = mailer.sent[0];
     expect(mail?.to).toBe("lucas@exemplo.com");
-    expect(mail?.subject).toBe(
-      "Mariana Silva convidou você para a Família Silva no Finance Manager",
-    );
+    expect(mail?.subject).toBe("Mariana Silva convidou você para o Finance Manager");
     expect(mail?.text).toContain(res.body.inviteUrl);
     expect(mail?.text).toContain(
       "O convite vale por 7 dias e só funciona com a conta Google deste e-mail (lucas@exemplo.com).",
@@ -580,4 +578,27 @@ it("SEC-014: limite de convites por família: 5/hora e 10/dia (429 INVITATION_LI
   expect((await at(2 * 3_600_000, 10)).status).toBe(429);
   // 25h depois a janela diária esvaziou
   expect((await at(25 * 3_600_000, 11)).status).toBe(201);
+});
+
+it("SEC-027: 15 pedidos paralelos respeitam o limite de 5/hora (contagem + insert atômicos)", async () => {
+  const results = await Promise.all(
+    Array.from({ length: 15 }, (_, i) =>
+      invite({ email: `corrida${i}@exemplo.com`, role: "MEMBER" }),
+    ),
+  );
+  const statuses = results.map((r) => r.status);
+  expect(statuses.filter((s) => s === 201)).toHaveLength(5);
+  expect(statuses.filter((s) => s === 429)).toHaveLength(10);
+  expect(await db.invitation.count({ where: { familyId: fx.family.id } })).toBe(5);
+});
+
+it("SEC-014: o assunto do e-mail não carrega o nome livre da família", async () => {
+  await db.family.update({
+    where: { id: fx.family.id },
+    data: { name: "BANCO OFICIAL: confirme sua senha" },
+  });
+  const res = await invite({ email: "lucas@exemplo.com", role: "MEMBER" });
+  expect(res.status).toBe(201);
+  expect(mailer.sent[0]?.subject).toBe("Mariana Silva convidou você para o Finance Manager");
+  expect(mailer.sent[0]?.subject).not.toContain("BANCO");
 });

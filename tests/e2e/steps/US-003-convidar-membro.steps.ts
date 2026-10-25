@@ -64,7 +64,7 @@ Then("um convite pendente é criado com validade de {int} dias", async ({}, dias
 
 Then("um e-mail com o link de acesso é enviado para {string}", async ({}, para: string) => {
   const mail = await waitForMessage(para);
-  expect(mail.subject).toBe("Mariana Silva convidou você para a Família Silva no Finance Manager");
+  expect(mail.subject).toBe("Mariana Silva convidou você para o Finance Manager");
   expect(mail.text).toMatch(/http:\/\/localhost:3101\/convite\/[\w-]+/);
 });
 

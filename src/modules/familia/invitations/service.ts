@@ -116,6 +116,9 @@ export const INVITES_PER_HOUR = 5;
 export const INVITES_PER_DAY = 10;
 
 async function assertInvitationQuota(tx: Tx, familyId: string, now: Date) {
+  // SEC-027: contagem + insert precisam ser atômicos por família; o lock dura até o fim da transação
+  // (que também faz o insert), então pedidos paralelos veem a contagem uns dos outros.
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`invite-quota:${familyId}`}, 0))`;
   const since = (ms: number) => new Date(now.getTime() - ms);
   const [hour, day] = await Promise.all([
     tx.invitation.count({ where: { familyId, createdAt: { gte: since(3_600_000) } } }),
