@@ -31,6 +31,7 @@ import type {
   InvitationDTO,
   RotatedInvitationResponse,
 } from "@/modules/familia/schemas";
+import { hit } from "@/modules/mcp/rate-limit";
 
 type InvitationRow = {
   id: string;
@@ -115,6 +116,25 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 export const INVITES_PER_HOUR = 5;
 export const INVITES_PER_DAY = 10;
 
+/**
+ * SEC-040: o teto também vale por PESSOA que convida (`userId`), somando todas as famílias que ela criou, inclusive
+ * as já excluídas, e conta o reenvio com e-mail (cada envio é uma mensagem com o nome livre do convidante).
+ * Balde em `mcp_rate_buckets` (sobrevive à exclusão da família); como roda dentro da transação, o pedido recusado
+ * (429) ou revertido não consome cota.
+ */
+async function assertInviterQuota(tx: Tx, userId: string, now: Date) {
+  const hour = await hit(tx, `invite:${userId}:hour`, INVITES_PER_HOUR, 3600, now);
+  const day = await hit(tx, `invite:${userId}:day`, INVITES_PER_DAY, 86_400, now);
+  if (!hour.ok || !day.ok) throw invitationLimit();
+}
+
+const invitationLimit = () =>
+  new ApiError(
+    429,
+    "INVITATION_LIMIT",
+    "Você atingiu o limite de convites por período. Tente novamente mais tarde.",
+  );
+
 async function assertInvitationQuota(tx: Tx, familyId: string, now: Date) {
   // SEC-027: contagem + insert precisam ser atômicos por família; o lock dura até o fim da transação
   // (que também faz o insert), então pedidos paralelos veem a contagem uns dos outros.
@@ -125,11 +145,7 @@ async function assertInvitationQuota(tx: Tx, familyId: string, now: Date) {
     tx.invitation.count({ where: { familyId, createdAt: { gte: since(DAY_MS) } } }),
   ]);
   if (hour >= INVITES_PER_HOUR || day >= INVITES_PER_DAY) {
-    throw new ApiError(
-      429,
-      "INVITATION_LIMIT",
-      "Você atingiu o limite de convites por período. Tente novamente mais tarde.",
-    );
+    throw invitationLimit();
   }
 }
 
@@ -152,6 +168,7 @@ export async function createInvitation(
 
   await repo.expireStale(email, now); // libera reconvite após vencer
   await assertInvitationQuota(tx, ctx.familyId, now);
+  await assertInviterQuota(tx, ctx.userId, now); // SEC-040
   if (await repo.memberWithEmail(email)) {
     throw conflict("DUPLICATE_MEMBER", "Esta pessoa já faz parte da família");
   }
@@ -237,6 +254,7 @@ export async function rotateInvitation(
       "Limite de reenvios atingido. Cancele e crie um novo convite.",
     );
   }
+  if (opts.sendEmail) await assertInviterQuota(tx, ctx.userId, now); // SEC-040: reenvio também conta
   const token = randomToken(32);
   const row = await tx.invitation.update({
     where: { id },
