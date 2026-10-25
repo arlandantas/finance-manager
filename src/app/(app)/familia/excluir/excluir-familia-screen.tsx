@@ -43,7 +43,7 @@ export function ExcluirFamiliaScreen() {
   const del = useMutation({
     networkMode: "always", // offline: tenta e falha com a mensagem, em vez de ficar pausado
     mutationFn: () =>
-      apiFetch<{ deleted: true; familyName: string }>("/api/v1/family/delete", {
+      apiFetch<{ deleted: true }>("/api/v1/family/delete", {
         method: "POST",
         idempotencyKey: keyRef.current,
         body: { confirmFamilyName: typed.trim() },

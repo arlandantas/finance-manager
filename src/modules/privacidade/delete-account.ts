@@ -23,9 +23,24 @@ export const DeleteAccountBodySchema = RemoveMemberSchema.extend({
 }).strict();
 export type DeleteAccountBody = z.output<typeof DeleteAccountBodySchema>;
 
-/** Apaga os registros de idempotência do titular (guardam hash do corpo de requisições dele). */
-async function scrubIdempotency(tx: Tx, userId: string) {
+/**
+ * Apaga os registros de idempotência do titular (guardam hash do corpo de requisições dele) E os de OUTRAS pessoas
+ * cuja resposta guardada cita o titular (ids, e-mail ou nome). SEC-031: a janela de 24 h não vale para PII de excluídos.
+ */
+export async function scrubIdempotency(tx: Tx, userId: string, mentions: string[] = []) {
   await tx.$executeRaw`DELETE FROM idempotency_records WHERE "userId" = ${userId}::uuid`;
+  await scrubIdempotencyMentioning(tx, mentions);
+}
+
+/** Apaga respostas guardadas (de qualquer usuário) que contenham algum dos trechos, sem diferenciar caixa. */
+export async function scrubIdempotencyMentioning(tx: Tx, needles: string[]) {
+  const list = [
+    ...new Set(needles.map((n) => n.trim().toLowerCase()).filter((n) => n.length >= 3)),
+  ];
+  if (list.length === 0) return;
+  await tx.$executeRaw`DELETE FROM idempotency_records
+    WHERE "responseStatus" <> 0 AND EXISTS (SELECT 1 FROM unnest(${list}::text[]) AS t(needle)
+                  WHERE position(t.needle in lower("responseBody"::text)) > 0)`;
 }
 
 /** Desliga o consentimento de IA que este titular deu e ainda está em vigor (um evento DISABLED por finalidade). */
@@ -128,7 +143,7 @@ export async function deleteAccount(tx: Tx, ctx: UserContext, body: DeleteAccoun
   await tx.session.deleteMany({ where: { userId: user.id } });
   await tx.account.deleteMany({ where: { userId: user.id } });
   await tx.verificationToken.deleteMany({ where: { identifier: user.email } });
-  await scrubIdempotency(tx, user.id);
+  await scrubIdempotency(tx, user.id, [user.id, user.email, user.name ?? "", ...memberIds]);
 
   // (4) o e-mail antigo some de convites encerrados e dos eventos de reenvio; convites PENDENTES ficam
   // (valem para a conta nova que a pessoa criar com o mesmo e-mail)

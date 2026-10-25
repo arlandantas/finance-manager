@@ -83,7 +83,7 @@ describe("SEC-017d excluir a família", () => {
 
     const r = await del(mariana(), "Família Silva");
     expect(r.status).toBe(200);
-    expect(r.body).toEqual({ deleted: true, familyName: "Família Silva" });
+    expect(r.body).toEqual({ deleted: true });
 
     const after = await countsOf(fx.family.id);
     expect(Object.values(after).every((n) => n === 0)).toBe(true);

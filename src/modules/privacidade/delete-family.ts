@@ -2,6 +2,7 @@ import { z } from "zod";
 import { conflict, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { lockFamilyAdmins } from "@/modules/familia/manage";
+import { scrubIdempotencyMentioning } from "@/modules/privacidade/delete-account";
 
 // SEC-017d (SDD-028 §7.5, US-081): excluir a família inteira. Única exceção à regra "nada é apagado" (ADR-019):
 // só o Administrador que é o ÚNICO membro ativo, só a própria família, tudo numa transação.
@@ -63,6 +64,16 @@ export async function deleteFamily(tx: Tx, ctx: RequestContext, body: DeleteFami
     throw unprocessable("NAME_MISMATCH", NAME_MISMATCH_MSG);
   }
 
+  // SEC-031: respostas guardadas para idempotência (24 h) citam ids, nomes e observações da família, inclusive
+  // nas linhas de OUTROS usuários; somem na hora, junto com as de quem pertenceu à família.
+  const members = await tx.member.findMany({
+    where: { familyId: ctx.familyId },
+    select: { id: true, userId: true },
+  });
+  await tx.$executeRaw`DELETE FROM idempotency_records
+    WHERE "userId" = ANY(${members.map((m) => m.userId)}::uuid[]) AND "responseStatus" <> 0`; // 0 = a reserva desta requisição
+  await scrubIdempotencyMentioning(tx, [ctx.familyId, family.name, ...members.map((m) => m.id)]);
+
   // Liga a exceção controlada às travas SÓ para esta família e só nesta transação (set_config local).
   await tx.$executeRaw`SELECT set_config('app.purge_family', ${ctx.familyId}, true)`;
   for (const table of FAMILY_TABLES_DELETE_ORDER) {
@@ -70,5 +81,6 @@ export async function deleteFamily(tx: Tx, ctx: RequestContext, body: DeleteFami
   }
   await tx.$executeRaw`DELETE FROM families WHERE id = ${ctx.familyId}::uuid`;
   await tx.$executeRaw`SELECT set_config('app.purge_family', '', true)`;
-  return { deleted: true as const, familyName: family.name };
+  // sem o nome da família: a resposta fica guardada para idempotência e não pode reter dado excluído (SEC-031)
+  return { deleted: true as const };
 }
