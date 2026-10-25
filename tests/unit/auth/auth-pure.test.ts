@@ -3,6 +3,7 @@ import { loginErrorMessage } from "@/app/(public)/login/messages";
 import {
   authorizeSignIn,
   buildSessionPayload,
+  parseAllowedSignupEmails,
   profileUpdates,
   sessionConfig,
 } from "@/lib/auth/config";
@@ -240,5 +241,70 @@ describe("ADR-026 §5: trava APP_DEPLOY_ENV=production", () => {
     const env = { APP_DEPLOY_ENV: "production", AUTH_DEV_LOGIN: "true", NODE_ENV: "development" };
     expect(isDevLoginEnabled(env)).toBe(false);
     expect(isDevToolingEnabled(env)).toBe(false);
+  });
+});
+
+describe("U6 cadastro por lista de e-mails permitidos (ALLOWED_SIGNUP_EMAILS)", () => {
+  const profile = (email: string) => ({ email, email_verified: true });
+  const list = parseAllowedSignupEmails(" Mariana@Exemplo.com , lucas@exemplo.com ,, ");
+  it("a lista é normalizada (caixa e espaços); vazia/ausente = aberto", () => {
+    expect(list).toEqual(["mariana@exemplo.com", "lucas@exemplo.com"]);
+    expect(parseAllowedSignupEmails(undefined)).toEqual([]);
+    expect(parseAllowedSignupEmails("  ")).toEqual([]);
+  });
+  it("lista vazia: qualquer e-mail verificado cria conta", () => {
+    expect(authorizeSignIn({ provider: "google", profile: profile("qualquer@exemplo.com") })).toBe(
+      true,
+    );
+    expect(
+      authorizeSignIn({
+        provider: "google",
+        profile: profile("qualquer@exemplo.com"),
+        allowedSignupEmails: [],
+      }),
+    ).toBe(true);
+  });
+  it("e-mail da lista cria conta, ignorando maiúsculas", () => {
+    for (const e of ["mariana@exemplo.com", "Mariana@Exemplo.com"]) {
+      expect(
+        authorizeSignIn({ provider: "google", profile: profile(e), allowedSignupEmails: list }),
+      ).toBe(true);
+    }
+  });
+  it("e-mail fora da lista é barrado (inclusive quem tem convite)", () => {
+    expect(
+      authorizeSignIn({
+        provider: "google",
+        profile: profile("estranho@exemplo.com"),
+        existingUser: false,
+        allowedSignupEmails: list,
+      }),
+    ).toBe("/login?error=SignupRestricted");
+  });
+  it("conta existente continua entrando mesmo fora da lista", () => {
+    expect(
+      authorizeSignIn({
+        provider: "google",
+        profile: profile("lucas2@exemplo.com"),
+        existingUser: true,
+        allowedSignupEmails: list,
+      }),
+    ).toBe(true);
+  });
+  it("e-mail não verificado continua barrado primeiro", () => {
+    expect(
+      authorizeSignIn({
+        provider: "google",
+        profile: { email: "mariana@exemplo.com", email_verified: false },
+        allowedSignupEmails: list,
+      }),
+    ).toBe("/login?error=EmailNotVerified");
+  });
+  it("a mensagem não revela a lista", () => {
+    const m = loginErrorMessage("SignupRestricted") as string;
+    expect(m).toBe(
+      "O cadastro está restrito a convidados do alpha. Peça acesso a quem convidou você.",
+    );
+    for (const e of list) expect(m).not.toContain(e);
   });
 });

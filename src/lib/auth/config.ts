@@ -8,13 +8,36 @@ import { hashedSessionAdapter } from "@/lib/auth/session-adapter";
 import { getDb } from "@/lib/db";
 import { getEnv } from "@/lib/env";
 
-/** Callback `signIn` (pura, sem rede): Google exige e-mail verificado antes de qualquer criação. */
+/** U6: lista de e-mails que podem criar conta (normalizados); vazia = cadastro aberto. */
+export function parseAllowedSignupEmails(raw: string | undefined): string[] {
+  return (raw ?? "")
+    .split(",")
+    .map((e) => normalizeEmail(e))
+    .filter(Boolean);
+}
+
+/**
+ * Callback `signIn` (pura, sem rede): Google exige e-mail verificado antes de qualquer criação e, com
+ * `ALLOWED_SIGNUP_EMAILS` definida, só e-mails da lista CRIAM conta. Conta já existente continua entrando.
+ */
 export function authorizeSignIn(a: {
   provider?: string;
   profile?: { email?: string | null; email_verified?: boolean | null } | null;
+  /** O e-mail já tem usuário no banco (conta existente não é barrada pela lista). */
+  existingUser?: boolean;
+  allowedSignupEmails?: readonly string[];
 }): true | string {
   if (a.provider === "google" && a.profile?.email_verified !== true) {
     return "/login?error=EmailNotVerified";
+  }
+  const allowed = a.allowedSignupEmails ?? [];
+  if (
+    a.provider === "google" &&
+    allowed.length > 0 &&
+    !a.existingUser &&
+    !allowed.includes(normalizeEmail(a.profile?.email ?? ""))
+  ) {
+    return "/login?error=SignupRestricted";
   }
   return true;
 }
@@ -101,7 +124,20 @@ export function buildAuthConfig(): NextAuthConfig {
       : [],
     pages: { signIn: "/login", error: "/login" },
     callbacks: {
-      signIn: ({ account, profile }) => authorizeSignIn({ provider: account?.provider, profile }),
+      signIn: async ({ account, profile }) => {
+        const email = profile?.email ? normalizeEmail(profile.email) : null;
+        const allowedSignupEmails = parseAllowedSignupEmails(env.ALLOWED_SIGNUP_EMAILS);
+        const existingUser =
+          allowedSignupEmails.length > 0 && email
+            ? (await db.user.findUnique({ where: { email }, select: { id: true } })) !== null
+            : false;
+        return authorizeSignIn({
+          provider: account?.provider,
+          profile,
+          existingUser,
+          allowedSignupEmails,
+        });
+      },
       session: ({ session, user }) => buildSessionPayload(session, user),
     },
     events: {

@@ -31,6 +31,8 @@ const schema = z
     HOSTNAME: optionalString,
     AUTH_GOOGLE_ID: optionalString,
     AUTH_GOOGLE_SECRET: optionalString,
+    // U6 (D-GES-42): lista de e-mails que podem CRIAR conta (vírgula); vazia/ausente = cadastro aberto
+    ALLOWED_SIGNUP_EMAILS: optionalString,
     // EN-006 (SDD-024 §3): servidor MCP/OAuth desligado por padrão; em preview da Vercel nunca liga.
     MCP_ENABLED: flag,
     MCP_CIMD_ALLOWED_CLIENT_IDS: optionalString, // SEC-010: URLs exatas; MCP_CIMD_ALLOWED_HOSTS obsoleta (ignorada)
