@@ -1,20 +1,20 @@
 # Status — Agente de Segurança da Informação
 
-**Última atualização:** 2026-10-26 · **Estágio:** reteste da rodada 8 (SEC-051, resíduo DEV-132, D-GES-59/60) entregue; aguardando o Gestor (SEC-054..057).
+**Última atualização:** 2026-10-26 · **Estágio:** ciclo do "Só meu" encerrado (D-GES-61); sem tarefa de segurança em aberto. Estado vigente dos achados, proteções e riscos aceitos: [../estado/seguranca.md](../estado/seguranca.md) (fonte de verdade; este arquivo é o quadro histórico).
 
 ## Entregas
 | Data | Entrega | Resultado |
 | :-- | :-- | :-- |
-| 2026-10-24 | [Levantamento completo](relatorios/levantamento-2026-10-24.md) (commit analisado `bdeef19`) | 24 achados: 0 Crítica, 2 Alta, 6 Média, 12 Baixa, 4 Informativa |
-| 2026-10-25 | [Reteste das correções](relatorios/reteste-2026-10-25.md) (`ae290d1`..`93d78f2` + Grupo A) | 14 Corrigidos, 7 Parciais, 0 Não corrigidos; 4 achados novos (SEC-025..028) |
-| 2026-10-25 | [Revisão dedicada de LGPD](relatorios/revisao-lgpd-2026-10-25.md) (`3fc271d`..`41b8d9f`) | Sem IDOR/BOLA nem bypass de trava; 9 achados novos: 4 Baixa (SEC-029..032), 5 Informativa (SEC-033..037) |
-| 2026-10-25 | [Reteste do "Só meu" ampliado](relatorios/reteste-so-meu-2026-10-25.md) (`bdd9ed1`..`672ea70`, D-GES-50/51) | Núcleo da regra, IDOR, ex-membro, exportação e MCP sem furo; 5 achados novos: SEC-042 (Média), 043, 044, 045 (Baixa), 046 (Info); suítes 47/47 |
-| 2026-10-26 | [Reteste da rodada 6 + D-GES-55](relatorios/reteste-rodada6-2026-10-26.md) (`adc6946`..`ac946e9`) | SEC-042..045 Corrigidos, 046 Corrigido (aviso); D-GES-52..55 conformes; 4 novos: SEC-047, 048, 049 (Baixa), 050 (Info); suítes 100/100 |
-| 2026-10-26 | [Reteste da rodada 7](relatorios/reteste-rodada7-2026-10-26.md) (`20bfdfe`..`0d33261`, D-GES-57/58) | SEC-047, 049, 050 Corrigidos; SEC-048 Corrigido no passo único, contornável em dois (SEC-051); resíduo DEV-132 quantificado (Admin +V·(n−1)/n); 3 novos: SEC-051 (Baixa), 052, 053 (Info); int 1094/1094 (1 skip) |
-| 2026-10-26 | [Reteste da rodada 8](relatorios/reteste-rodada8-2026-10-26.md) (`55c46b5`..`a0415d6`, D-GES-59/60) | SEC-051 e resíduo DEV-132 Corrigidos no `PATCH`; DEV-135 conforme; SEC-049/050 mantidos; 4 novos: SEC-054, 055, 056 (Baixa), 057 (Info); int 1106/1106 (1 skip) |
-| 2026-10-25 | [Reteste final](relatorios/reteste-final-2026-10-25.md) (`b494e0c`..`849008c`) | 14 Corrigidos, 1 Parcial (SEC-026), 0 Não corrigidos, 0 regressões em achados antigos; 4 novos: SEC-038, 039 (Baixa), SEC-040, 041 (Info); suítes 359/359 |
+| 2026-10-24 | [Levantamento completo](../_historico/security/relatorios/levantamento-2026-10-24.md) (commit analisado `bdeef19`) | 24 achados: 0 Crítica, 2 Alta, 6 Média, 12 Baixa, 4 Informativa |
+| 2026-10-25 | [Reteste das correções](../_historico/security/relatorios/reteste-2026-10-25.md) (`ae290d1`..`93d78f2` + Grupo A) | 14 Corrigidos, 7 Parciais, 0 Não corrigidos; 4 achados novos (SEC-025..028) |
+| 2026-10-25 | [Revisão dedicada de LGPD](../_historico/security/relatorios/revisao-lgpd-2026-10-25.md) (`3fc271d`..`41b8d9f`) | Sem IDOR/BOLA nem bypass de trava; 9 achados novos: 4 Baixa (SEC-029..032), 5 Informativa (SEC-033..037) |
+| 2026-10-25 | [Reteste do "Só meu" ampliado](../_historico/security/relatorios/reteste-so-meu-2026-10-25.md) (`bdd9ed1`..`672ea70`, D-GES-50/51) | Núcleo da regra, IDOR, ex-membro, exportação e MCP sem furo; 5 achados novos: SEC-042 (Média), 043, 044, 045 (Baixa), 046 (Info); suítes 47/47 |
+| 2026-10-26 | [Reteste da rodada 6 + D-GES-55](../_historico/security/relatorios/reteste-rodada6-2026-10-26.md) (`adc6946`..`ac946e9`) | SEC-042..045 Corrigidos, 046 Corrigido (aviso); D-GES-52..55 conformes; 4 novos: SEC-047, 048, 049 (Baixa), 050 (Info); suítes 100/100 |
+| 2026-10-26 | [Reteste da rodada 7](../_historico/security/relatorios/reteste-rodada7-2026-10-26.md) (`20bfdfe`..`0d33261`, D-GES-57/58) | SEC-047, 049, 050 Corrigidos; SEC-048 Corrigido no passo único, contornável em dois (SEC-051); resíduo DEV-132 quantificado (Admin +V·(n−1)/n); 3 novos: SEC-051 (Baixa), 052, 053 (Info); int 1094/1094 (1 skip) |
+| 2026-10-26 | [Reteste da rodada 8](../_historico/security/relatorios/reteste-rodada8-2026-10-26.md) (`55c46b5`..`a0415d6`, D-GES-59/60) | SEC-051 e resíduo DEV-132 Corrigidos no `PATCH`; DEV-135 conforme; SEC-049/050 mantidos; 4 novos: SEC-054, 055, 056 (Baixa), 057 (Info); int 1106/1106 (1 skip) |
+| 2026-10-25 | [Reteste final](../_historico/security/relatorios/reteste-final-2026-10-25.md) (`b494e0c`..`849008c`) | 14 Corrigidos, 1 Parcial (SEC-026), 0 Não corrigidos, 0 regressões em achados antigos; 4 novos: SEC-038, 039 (Baixa), SEC-040, 041 (Info); suítes 359/359 |
 
-## Quadro consolidado (estado final após o reteste final de 2026-10-25)
+## Quadro consolidado (SEC-001..057; estado após D-GES-61)
 | SEC | Sev. | Estado final | Nota |
 | :-- | :-- | :-- | :-- |
 | 001 | — | Risco aceito | D-GES-40 |
@@ -57,10 +57,10 @@
 | 036 | Info | Corrigido | role dona das tabelas em produção não verificada |
 | 037 | Info | Corrigido (aviso) / Em análise (reauth) | pergunta ao usuário |
 | us-016a | — | Corrigido | lock do cartão sem deadlock; corridas coerentes |
-| **038** | Baixa | **Aberto** | captura de prevista/série dividida como "Só meu" |
-| **039** | Baixa | **Aberto** | limpeza de idempotência por trecho de nome atinge outras famílias |
-| **040** | Info | **Aberto** | limite de convites contornável recriando a família |
-| **041** | Info | **Aberto** | balde de falhas do `/token` não freia tentativas |
+| 038 | Baixa | Corrigido | D-GES-49 (rodada 5) |
+| 039 | Baixa | Corrigido | D-GES-49: limpeza por identificadores/escopo |
+| 040 | Info | Corrigido | D-GES-49: limite por pessoa |
+| 041 | Info | Risco aceito | D-GES-49: segredos de 256 bits |
 | 042 | Média | Corrigido | Membro comum 403; resíduo do Admin ⇒ SEC-047 |
 | 043 | Baixa | Corrigido | D-GES-53 |
 | 044 | Baixa | Corrigido | (a)..(d) 403 |
@@ -73,21 +73,15 @@
 | 051 | Baixa | Corrigido | D-GES-59; contornos por excluir/estornar ⇒ SEC-054/055 |
 | 052 | Info | Risco aceito | D-GES-59 |
 | 053 | Info | Risco aceito | D-GES-59 |
-| **054** | Baixa | **Em análise (usuário)** | excluir e relançar a dividida do ex-membro move o crédito (qualquer membro) |
-| **055** | Baixa | **Em análise (usuário)** | estornar a baixa paga pelo ex-membro e dar nova baixa move o crédito (Admin: resíduo DEV-132) |
-| **056** | Baixa | **Em análise (usuário)** | acerto com ex-membro credor aceita qualquer conta de destino da família |
-| **057** | Info | **Em análise (usuário)** | série do removido fica com ele; editar a série desfaz a reatribuição |
+| 054 | Baixa | Risco aceito (D-GES-61; sujeito a veto do usuário) | excluir e relançar a dividida do ex-membro move o crédito (qualquer membro) |
+| 055 | Baixa | Risco aceito (D-GES-61; sujeito a veto do usuário) | estornar a baixa paga pelo ex-membro e dar nova baixa move o crédito (Admin: resíduo DEV-132) |
+| 056 | Baixa | Risco aceito (D-GES-61; sujeito a veto do usuário) | acerto com ex-membro credor aceita qualquer conta de destino da família |
+| 057 | Info | Registrado (D-GES-61) | série do removido fica com ele; editar a série desfaz a reatribuição |
 
 ## Pendências e bloqueios
-- Perguntas do reteste da rodada 8 (§1): excluir/estornar e relançar sobre item de ex-membro (SEC-054/055), acerto com ex-membro (SEC-056), série do removido (SEC-057).
-- Retestar SEC-054..057 quando o Gestor promover as decisões/correções. UI das rodadas 6, 7 e 8 não verificada no navegador.
-- Perguntas do reteste final (§1): SEC-038 (regra nas previstas), "Só meu" na conta de outro dono, limite de convites por pessoa (SEC-040).
-- Retestar SEC-038..041 quando o Gestor promover as correções.
-- Perguntas ao usuário na seção 1 do reteste: regra do "Só meu" para SEC-025/026, risco residual da SEC-011, visão pública do health (SEC-022).
-- Perguntas P1..P3 da revisão de LGPD (regra do ex-membro, janela de 24 h na idempotência, reautenticação).
-- Retestar SEC-029..036 quando o Gestor promover as correções.
-- Reteste da fase 2 da SEC-018 quando o Gestor a promover.
-- Não verificado (sem acesso permitido): Vercel/produção (cabeçalhos de IP, HSTS, variáveis de deploy), claude.ai (`state`), Google real, Claude real com injeção.
+- Perguntas ao usuário vigentes (veto a SEC-054/055/056, SEC-037 reautenticação, texto LGPD): ver [../estado/seguranca.md](../estado/seguranca.md) §a e §e. As perguntas antigas dos retestes (Só meu SEC-025/026, SEC-011, health SEC-022, P1..P3 da LGPD, SEC-038..041, SEC-054..057) foram respondidas ou decididas (D-GES-40..61).
+- Retestar a fase 2 da SEC-018 quando o Gestor a promover.
+- Não verificado (sem acesso permitido): Vercel/produção (cabeçalhos de IP, HSTS, variáveis de deploy), claude.ai (`state`), Google real, Claude real com injeção, UI das rodadas 6 a 8 no navegador.
 
 ## Log
 - 2026-10-24 — Leitura de código, inventário de 112 handlers de rota, páginas e 8 ferramentas MCP, `pnpm audit`, varredura de segredos, exploração local em `127.0.0.1:3190` com banco descartável `finance_sec` (apagado). `tsconfig.json` alterado pelo `next dev` foi revertido; `.next-sec/` apagada. Sem commit (regra da tarefa).
