@@ -1,3 +1,5 @@
+Estado vigente consolidado em agents/estado/lancamentos-contas-extrato.md
+
 # SDD-001: Lançamentos: despesa, receita, correção e exclusão (US-005, US-006, US-013)
 
 - **Histórias**: [US-005](../../product-owner/backlog/stories/US-005-lancar-despesa.md) · [US-006](../../product-owner/backlog/stories/US-006-lancar-receita.md) · [US-013](../../product-owner/backlog/stories/US-013-corrigir-ou-estornar-lancamento.md)

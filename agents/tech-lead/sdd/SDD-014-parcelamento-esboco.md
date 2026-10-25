@@ -1,5 +1,7 @@
 # SDD-014: Compra parcelada no cartão (US-040a, US-040b, US-042, US-041)
 
+> Estado vigente consolidado em agents/estado/parcelamento.md
+
 - **Histórias**: [US-040](../../product-owner/backlog/stories/US-040-compra-parcelada-no-cartao.md) (040a + 040b) · [US-041](../../product-owner/backlog/stories/US-041-gerenciar-compra-parcelada.md) · [US-042](../../product-owner/backlog/stories/US-042-parcelado-dividido-no-acerto-por-parcela.md)
 - **Fluxo**: [FLUXO-014](../../product-owner/flows/FLUXO-014-parcelamento-tags-e-analise.md) §1
 - **Rastreabilidade**: NEED-003 (RN-003.4..9), NEED-007, NEED-018 · Q-F05, Q-F14, Q-20 · D-PO-25, D-PO-26, D-PO-33, D-PO-34 · D-GES-16, D-GES-17, D-GES-22 · TL-02, TL-03, TL-11, TL-12, TL-16, TL-22 · **[ADR-017](../adrs/ADR-017-parcelamento-no-cartao-e-competencia.md)** e **[ADR-020](../adrs/ADR-020-parcela-na-k-esima-fatura-e-competencia-no-banco.md)** (leitura obrigatória: modelo, competência, fatura da parcela, carimbo de exclusão), [ADR-014](../adrs/ADR-014-cartao-e-fatura-no-ledger.md), [ADR-016](../adrs/ADR-016-percentual-gravado-por-lancamento.md) (US-042)
