@@ -203,3 +203,8 @@ Rodar após cada deploy de produção.
 3. Decisões: 1.8 (previews), 6.4 (plano do Prisma), 4.2 (domínio).
 4. Quando o Dev entregar a EN-007: Blocos 5 e 6 (backup e restore), depois Bloco 7.
 5. A cada deploy: Bloco 8.
+
+## Bloco 9: Itens que surgiram do levantamento de segurança (a definir quando as correções do Grupo B forem entregues)
+- [ ] **9.1 `ALLOWED_SIGNUP_EMAILS`** (lista de e-mails permitidos no alpha; vazia = cadastro aberto). Definir na Vercel, escopo Production, antes de divulgar o link (D-GES-42, U6).
+- [ ] **9.2 Teto global de IA** (`LLM_GLOBAL_MONTHLY_CAP_CENTS`, sugerido R$ 50) e limite de gasto na console da Anthropic, antes de ligar `AI_FEATURES_ENABLED` (SEC-013). Nome exato da variável: confirmar no SDD-028.
+- [ ] **9.3 Validar juridicamente** os prazos e o texto de privacidade/LGPD (SEC-017, U5).
