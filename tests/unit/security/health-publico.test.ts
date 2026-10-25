@@ -21,10 +21,15 @@ describe("SEC-022 /api/health público não revela unsafe_config", () => {
     expect(anon.status).toBe(503);
     expect(anon.body.status).toBe("degraded");
     expect(JSON.stringify(anon.body)).not.toContain("unsafe");
+    // SEC-028/022: nem o detalhe do banco ("up" + degraded delataria a configuração insegura)
+    expect(anon.body.checks).toBeUndefined();
+    expect(Object.keys(anon.body).sort()).toEqual(["status", "timestamp"]);
     const wrong = await get({ authorization: "Bearer errado-errado-errado" });
     expect(wrong.body.status).toBe("degraded");
+    expect(wrong.body.checks).toBeUndefined();
     const priv = await get({ authorization: `Bearer ${SECRET}` });
     expect(priv.body.status).toBe("unsafe_config");
+    expect(priv.body.checks).toEqual({ database: "up" });
   });
 
   it("configuração segura: ok (200) para todos", async () => {

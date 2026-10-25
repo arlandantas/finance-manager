@@ -26,10 +26,14 @@ export async function checkHealth(
   };
 }
 
+export type PublicHealthStatus = { status: "ok" | "degraded"; timestamp: string };
+
 /**
- * Visão pública (SEC-022): anônimos só distinguem ok de não-ok; `unsafe_config` (sinal de variável de teste
- * em produção) vira `degraded`. O detalhe completo exige o segredo do cron (`Authorization: Bearer`).
+ * Visão pública (SEC-022): anônimos só distinguem ok de não-ok. `unsafe_config` (sinal de variável de teste
+ * em produção) vira `degraded` e `checks` NÃO é exposto: "degraded" com banco "up" só ocorreria com
+ * `unsafe_config`, então o detalhe do banco entregaria o motivo. O detalhe completo exige o segredo do
+ * cron (`Authorization: Bearer`).
  */
-export function toPublicHealth(h: HealthStatus): HealthStatus {
-  return h.status === "unsafe_config" ? { ...h, status: "degraded" } : h;
+export function toPublicHealth(h: HealthStatus): PublicHealthStatus {
+  return { status: h.status === "ok" ? "ok" : "degraded", timestamp: h.timestamp };
 }
