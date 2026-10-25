@@ -351,7 +351,7 @@ When("Lucas abre a Home", async ({ page }) => {
 });
 
 Then(
-  /^o bloco "A pagar" mostra "([^"]+)" como atrasada e "([^"]+)" vencendo em (\d{2})\/(\d{2})$/,
+  /^o bloco "Vence nos próximos dias" mostra "([^"]+)" como atrasada e "([^"]+)" vencendo em (\d{2})\/(\d{2})$/,
   async ({ page }, atrasada: string, outra: string, d: string, m: string) => {
     const block = page.getByTestId("home-payables");
     await expect(block).toBeVisible();
@@ -366,7 +366,10 @@ Then("não mostra {string}, que vence depois de 7 dias", async ({ page }, nome: 
   await expect(
     page.getByTestId("home-payables").getByTestId("home-payable").filter({ hasText: nome }),
   ).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Ver todas" })).toBeVisible();
+  // Home enxuta (US-061): o link para a lista completa agora é "Ver tudo" (leva a /previstas).
+  await expect(
+    page.getByTestId("home-payables").getByRole("link", { name: "Ver tudo" }),
+  ).toBeVisible();
 });
 
 Given(

@@ -64,10 +64,10 @@ Funcionalidade: Despesa prevista
     Então vê "Escola" antes de "Condomínio"
     E vê o total a pagar "R$ 1.850,00"
 
-  Cenário: Bloco "A pagar" na Home
+  Cenário: Bloco "Vence nos próximos dias" na Home
     Dado a previsão "Internet" de "R$ 120,00" atrasada, "Luz" de "R$ 200,00" com vencimento em 30/10/2026 e "Condomínio" de "R$ 650,00" em 10/11/2026
     Quando Lucas abre a Home
-    Então o bloco "A pagar" mostra "Internet" como atrasada e "Luz" vencendo em 30/10
+    Então o bloco "Vence nos próximos dias" mostra "Internet" como atrasada e "Luz" vencendo em 30/10
     E não mostra "Condomínio", que vence depois de 7 dias
 
   Cenário: Faturas fechadas aparecem em "A pagar"
