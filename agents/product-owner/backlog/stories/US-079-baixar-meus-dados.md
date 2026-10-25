@@ -1,5 +1,7 @@
 # US-079 — Baixar meus dados
 
+Estado vigente consolidado em agents/estado/privacidade-lgpd.md
+
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-25 Segurança, Privacidade e Acesso · **R4-S (correções SEC do alpha)** |

@@ -1,5 +1,7 @@
 # US-082 — Página "Privacidade" (dados tratados, retenção e direitos)
 
+Estado vigente consolidado em agents/estado/privacidade-lgpd.md
+
 | Campo | Valor |
 | :-- | :-- |
 | Épico / Release | EPIC-25 Segurança, Privacidade e Acesso · **R4-S (correções SEC do alpha)** |
