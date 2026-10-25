@@ -95,7 +95,7 @@ function PayableRow({
           authorMemberId: item.authorId,
           accountOwnerMemberId: item.paymentAccountOwnerId ?? null,
         },
-        { memberId: family.currentMemberId },
+        { memberId: family.currentMemberId, role: family.currentRole },
         item.responsible?.removed === true,
       ));
   return (

@@ -56,8 +56,12 @@ export function EditTransactionForm({
 
   // SEC-026: despesa "Só meu" é sempre em nome de quem edita (dono); para outra pessoa, divida.
   const myMemberId = family.data?.currentMemberId ?? "";
+  // SEC-043/044: quem só controla o "Só meu" de outro não muda divisão, pagador nem conta (nem assume o pagamento)
+  const ownerId = t.payer?.id ?? t.author.id;
+  const controllerOnly =
+    kind === "EXPENSE" && !t.isSharedExpense && myMemberId !== "" && ownerId !== myMemberId;
   const personalExpense = kind === "EXPENSE" && !shared && myMemberId !== "";
-  const effectivePayerId = personalExpense ? myMemberId : payerId;
+  const effectivePayerId = controllerOnly ? ownerId : personalExpense ? myMemberId : payerId;
 
   function payload(confirmSettledPeriod?: boolean) {
     return {
@@ -149,11 +153,13 @@ export function EditTransactionForm({
     set: (v: string) => void,
     options: Array<{ id: string; name: string }>,
     error?: string,
+    disabled?: boolean,
   ) => (
     <Field id={id} label={label} error={error}>
       <select
         id={id}
         className={inputClass}
+        disabled={disabled === true}
         value={value}
         onChange={(e) => set(e.target.value)}
         aria-invalid={error ? true : undefined}
@@ -213,6 +219,7 @@ export function EditTransactionForm({
           setAccountId,
           accounts.data?.items ?? [],
           errors.accountId,
+          controllerOnly,
         )
       )}
       {select(
@@ -229,12 +236,15 @@ export function EditTransactionForm({
         effectivePayerId,
         setPayerId,
         (family.data?.members ?? [])
-          .filter((m) => !personalExpense || m.memberId === myMemberId)
+          .filter((m) =>
+            controllerOnly ? m.memberId === ownerId : !personalExpense || m.memberId === myMemberId,
+          )
           .map((m) => ({
             id: m.memberId,
             name: m.name.split(" ")[0] ?? m.name,
           })),
         errors.payerMemberId,
+        controllerOnly,
       )}
       {kind === "EXPENSE" ? (
         <div className="flex min-h-11 items-center justify-between gap-3">
@@ -246,7 +256,10 @@ export function EditTransactionForm({
             role="switch"
             aria-checked={shared}
             aria-labelledby="ed-shared-label"
-            onClick={() => setShared((v) => !v)}
+            aria-disabled={controllerOnly ? true : undefined}
+            onClick={() => {
+              if (!controllerOnly) setShared((v) => !v);
+            }}
             className={cn(
               "relative h-7 w-12 shrink-0 rounded-full transition-colors",
               shared ? "bg-brand-700" : "bg-slate-300",

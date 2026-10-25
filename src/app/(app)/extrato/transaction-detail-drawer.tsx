@@ -115,7 +115,9 @@ export function TransactionDetailDrawer({
   const controlLine =
     ownershipRow && family
       ? ownerGone
-        ? `Pago por ${t?.payer?.name} (ex-membro): este lançamento "Só meu" é somente leitura.`
+        ? canWrite
+          ? `Pago por ${t?.payer?.name} (ex-membro): como Administrador, você pode alterar este lançamento "Só meu".`
+          : `Pago por ${t?.payer?.name} (ex-membro): este lançamento "Só meu" é somente leitura (só o Administrador pode alterá-lo).`
         : personalWriteMessage(
             controllerNames(
               personalControllerIds(ownershipRow),

@@ -174,9 +174,17 @@ export function PlannedDrawer({
   const personalPlanned = splitAvailable
     ? !shared
     : !(planned?.isSharedExpense ?? series?.isSharedExpense ?? false);
-  const effectiveResponsibleId = personalPlanned && me ? me : responsibleId;
-  // SEC-038: numa dividida de outro, não dá para virar "Só meu" nem se pôr como responsável (a API também recusa)
   const existing = planned ?? series ?? null;
+  // SEC-043/044: quem só controla o "Só meu" de outro altera valor, data, descrição, categoria e observação, mas não
+  // a divisão, o responsável nem o "Pagar com" (a API também recusa)
+  const controllerOnly =
+    !!me && !!existing && !existing.isSharedExpense && existing.responsible.id !== me;
+  const effectiveResponsibleId = controllerOnly
+    ? existing?.responsible.id
+    : personalPlanned && me
+      ? me
+      : responsibleId;
+  // SEC-038: numa dividida de outro, não dá para virar "Só meu" nem se pôr como responsável (a API também recusa)
   const capture = (next: { isSharedExpense?: boolean; responsibleMemberId?: string }) =>
     !!me &&
     !!existing &&
@@ -190,7 +198,8 @@ export function PlannedDrawer({
       next,
     );
   const cannotBePersonal = capture({ isSharedExpense: false });
-  const cannotTakeOver = (memberId: string) => capture({ responsibleMemberId: memberId });
+  const cannotTakeOver = (memberId: string) =>
+    controllerOnly || capture({ responsibleMemberId: memberId });
   useEffect(() => {
     if (open && !planned && me) setResponsibleId((cur) => cur || me);
   }, [open, planned, me]);
@@ -544,9 +553,9 @@ export function PlannedDrawer({
                 role="switch"
                 aria-checked={shared}
                 aria-labelledby="pl-shared-label"
-                aria-disabled={shared && cannotBePersonal ? true : undefined}
+                aria-disabled={controllerOnly || (shared && cannotBePersonal) ? true : undefined}
                 onClick={() => {
-                  if (shared && cannotBePersonal) return;
+                  if (controllerOnly || (shared && cannotBePersonal)) return;
                   setShared((v) => !v);
                 }}
                 className={cn(
@@ -574,6 +583,7 @@ export function PlannedDrawer({
               id="pl-account"
               className={inputClass}
               value={source.accountId}
+              disabled={controllerOnly}
               onChange={(e) => {
                 source.pick(e.target.value);
                 setErrors((er) => ({ ...er, paymentAccountId: undefined }));
