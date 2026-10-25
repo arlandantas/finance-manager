@@ -1,5 +1,5 @@
 import { isUniqueViolation } from "@/lib/api/db-errors";
-import { conflict, notFound, unprocessable } from "@/lib/api/errors";
+import { ApiError, conflict, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import { normalizeEmail } from "@/lib/auth/email";
@@ -96,6 +96,25 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   });
 }
 
+/** SEC-014: teto de convites criados por família (qualquer status) para limitar spam/phishing por e-mail. */
+export const INVITES_PER_HOUR = 5;
+export const INVITES_PER_DAY = 10;
+
+async function assertInvitationQuota(tx: Tx, familyId: string, now: Date) {
+  const since = (ms: number) => new Date(now.getTime() - ms);
+  const [hour, day] = await Promise.all([
+    tx.invitation.count({ where: { familyId, createdAt: { gte: since(3_600_000) } } }),
+    tx.invitation.count({ where: { familyId, createdAt: { gte: since(DAY_MS) } } }),
+  ]);
+  if (hour >= INVITES_PER_HOUR || day >= INVITES_PER_DAY) {
+    throw new ApiError(
+      429,
+      "INVITATION_LIMIT",
+      "Você atingiu o limite de convites por período. Tente novamente mais tarde.",
+    );
+  }
+}
+
 /**
  * US-003 (SDD-003 §5.2). O e-mail só sai depois do commit (`afterCommit`); falha não desfaz o
  * convite: `emailStatus: "FAILED"` e a UI oferece copiar o link (ADR-012).
@@ -114,6 +133,7 @@ export async function createInvitation(
   const now = ctx.clock.now();
 
   await repo.expireStale(email, now); // libera reconvite após vencer
+  await assertInvitationQuota(tx, ctx.familyId, now);
   if (await repo.memberWithEmail(email)) {
     throw conflict("DUPLICATE_MEMBER", "Esta pessoa já faz parte da família");
   }

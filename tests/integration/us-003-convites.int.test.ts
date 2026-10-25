@@ -357,3 +357,23 @@ describe("US-003 (infra) Isolamento", () => {
     expect(sameEmail.status).toBe(201);
   });
 });
+
+it("SEC-014: limite de convites por família: 5/hora e 10/dia (429 INVITATION_LIMIT)", async () => {
+  const base = Date.now();
+  const at = (offsetMs: number, i: number) =>
+    withClock(new Date(base + offsetMs).toISOString(), () =>
+      call(mariana(), "POST", "/api/v1/invitations", {
+        email: `p${i}@exemplo.com`,
+        role: "MEMBER",
+      }),
+    );
+  for (let i = 0; i < 5; i++) expect((await at(0, i)).status).toBe(201);
+  const sixth = await at(0, 5);
+  expect(sixth.status).toBe(429);
+  expect(sixth.body.error.code).toBe("INVITATION_LIMIT");
+  // 2h depois a janela de 1h esvaziou: mais 5 até o teto diário
+  for (let i = 5; i < 10; i++) expect((await at(2 * 3_600_000, i)).status).toBe(201);
+  expect((await at(2 * 3_600_000, 10)).status).toBe(429);
+  // 25h depois a janela diária esvaziou
+  expect((await at(25 * 3_600_000, 11)).status).toBe(201);
+});
