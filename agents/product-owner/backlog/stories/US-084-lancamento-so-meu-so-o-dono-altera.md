@@ -4,9 +4,9 @@
 | :-- | :-- |
 | Épico / Release | EPIC-25 Segurança, Privacidade e Acesso · **R4-S (correções SEC do alpha)** |
 | MoSCoW · Tamanho (PO prelim.) | Should · 3 (o TL estima; toca edição, exclusão, restauração, estorno e parcelas) |
-| Status | **Entregue (DEV-88), revisada por D-GES-50 (D-PO-94) e ajustada em 2026-10-25 por D-GES-52/53 (D-PO-95): Administrador altera o "Só meu" de ex-membro; quem só controla não muda divisão, pagador, conta nem "Pagar com" e não assume o pagamento; histórico mantém quem alterou** · SDD-028 §11 · ratificação do Stakeholder de D-PO-91/94 concluída (D-GES-50) |
+| Status | **Entregue (DEV-88), revisada por D-GES-50 (D-PO-94) e ajustada em 2026-10-25 por D-GES-52/53 (D-PO-95): Administrador altera o "Só meu" de ex-membro (com poderes plenos, D-GES-55/D-PO-96); quem só controla não muda divisão, pagador, conta nem "Pagar com" e não assume o pagamento; histórico mantém quem alterou** · SDD-028 §11 · ratificação do Stakeholder de D-PO-91/94 concluída (D-GES-50) |
 | Depende de | US-005, US-013a/b, US-030, US-036, US-041 |
-| Rastreabilidade | SEC-021 · D-GES-42 · **D-GES-50 (revisão do usuário, 2026-10-25)** · **D-GES-52, D-GES-53** · SEC-042..046 · reteste final §5 · RN-007.2 · US-013 · D-PO-91, D-PO-92, **D-PO-94, D-PO-95** |
+| Rastreabilidade | SEC-021 · D-GES-42 · **D-GES-50 (revisão do usuário, 2026-10-25)** · **D-GES-52, D-GES-53** · SEC-042..046 · reteste final §5 · RN-007.2 · US-013 · D-PO-91, D-PO-92, **D-PO-94, D-PO-95, D-PO-96** · **D-GES-55** |
 
 ## História
 Como **membro da família**, quero que **as despesas "Só meu" só possam ser alteradas por quem tem controle sobre elas** (quem pagou, o dono da conta onde caíram e quem as lançou), para **ter certeza de que ninguém mais, nem mesmo quem divide as contas comigo, mexe no que é pessoal, sem que o dono da conta ou quem lançou fiquem de mãos atadas**.
@@ -24,7 +24,7 @@ Como **membro da família**, quero que **as despesas "Só meu" só possam ser al
 - **Titular do cartão**: só o titular atual (ou o Administrador) troca o titular do cartão, e a troca fica registrada no histórico, com quem trocou e quando (SEC-042). O titular do cartão controla as compras "Só meu" feitas nele, por isso a troca não pode ser livre.
 - **Remover um membro**: a tela de revisão da remoção avisa que as contas e cartões dele passam a quem remove e, com isso, essa pessoa passa a controlar os "Só meu" lançados nessas contas (SEC-046).
 - Lançamentos **divididos com a família** continuam editáveis por **qualquer membro** (US-013 inalterada).
-- Lançamento "Só meu" cujo **dono (pagador/responsável) é ex-membro** fica **somente leitura** para os membros comuns, **exceto para o Administrador da família**, que pode **editar, excluir, restaurar e estornar** para dar continuidade ao uso da aplicação (D-GES-52). O Administrador age então como quem só controla: valor, data, descrição, categoria, observação, exclusão e restauração, sem mudar divisão, pagador, conta nem "Pagar com" (decisão do PO, D-PO-95). Se o ex-membro era apenas o dono da conta ou o lançador, ele simplesmente deixa de poder agir; os demais continuam.
+- Lançamento "Só meu" cujo **dono (pagador/responsável) é ex-membro** fica **somente leitura** para os membros comuns, **exceto para o Administrador da família**, que pode **editar, excluir, restaurar e estornar** para dar continuidade ao uso da aplicação (D-GES-52). O Administrador tem então **poderes plenos** sobre esse lançamento (D-GES-55, D-PO-96, que revisa D-PO-95): além de valor, data, descrição, categoria, observação, exclusão e restauração, pode **torná-lo dividido**, **trocar o pagador/responsável**, a **conta** e o **"Pagar com"**. O novo pagador e a nova conta têm de ser membro ativo e conta da mesma família; enquanto o lançamento continuar "Só meu", o pagador só pode ser o próprio Administrador (ninguém entrega "Só meu" em nome de outro). O poder pleno vale **só** para o Administrador atual e **só** quando o dono é ex-membro: dono da conta e lançador, e o Administrador sobre o "Só meu" de membro **ativo**, seguem com os limites acima. Na tela, o seletor "Quem pagou?" mostra o ex-membro como opção atual (rotulada "ex-membro"). Se o ex-membro era apenas o dono da conta ou o lançador, ele simplesmente deixa de poder agir; os demais continuam.
 - **Histórico de alterações**: o histórico de um "Só meu" **mantém quem alterou**, inclusive quando foi o dono da conta, o lançador ou o Administrador (D-GES-52). Sem aviso por e-mail por ora.
 - O formulário avisa antes de salvar quem passará a poder alterar: **"Depois de salvar, só Mariana, o dono da conta e você poderão alterar este lançamento."** (a lista muda conforme o caso; nunca omite quem perde o acesso).
 - A interface **não esconde** o lançamento: para quem não controla, as ações de alterar ficam **ausentes** e há o texto **"Só Mariana, Carla e Lucas podem alterar este lançamento (Só meu)"** (nomes de quem controla, na ordem pagador, dono da conta, lançador, sem repetir).
@@ -171,6 +171,29 @@ Funcionalidade: Lançamento "Só meu" só pelo dono
     Então a despesa mostra "R$ 85,00" e volta ao Extrato
     E o histórico registra as alterações por Mariana
 
+  Cenário: Administrador tem poderes plenos sobre o "Só meu" de um ex-membro
+    Dado uma despesa "Só meu" de "R$ 80,00" paga por "Lucas" na conta "Conta do Lucas"
+    E Lucas saiu da família
+    E Mariana, Administradora, está autenticada
+    Quando Mariana torna a despesa dividida com a família, escolhe "Carla" como pagadora e a "Conta da Mariana"
+    Então a despesa fica dividida, paga por "Carla", na "Conta da Mariana"
+    E o histórico registra as alterações por Mariana
+    E o seletor "Quem pagou?" mostrava "Lucas (ex-membro)" antes da troca
+
+  Cenário: Administrador não troca estrutura do "Só meu" de membro ativo nem de outra família
+    Dado uma despesa "Só meu" paga por "Lucas", que continua na família
+    E Mariana, Administradora, está autenticada
+    Quando Mariana tenta torná-la dividida ou trocar o pagador ou a conta
+    Então a alteração é recusada
+    Mas se Mariana escolhe um pagador ou uma conta de outra família, a escolha é recusada como inválida
+
+  Cenário: Dono da conta não tem poderes plenos sobre o "Só meu" de ex-membro
+    Dado uma despesa "Só meu" paga por "Lucas" na conta "Conta da Carla"
+    E Lucas saiu da família
+    E Carla, Membro, está autenticada
+    Quando Carla tenta torná-la dividida
+    Então a alteração é recusada
+
   Cenário: Membro comum não altera o "Só meu" de um ex-membro
     Dado uma despesa "Só meu" paga por "Lucas" na conta "Conta da Carla"
     E Lucas saiu da família
@@ -248,3 +271,4 @@ Esconder lançamentos "Só meu" dos outros membros, contas e cartões privados (
 - 2026-10-24 — Criada (SEC-021, D-GES-42; D-PO-91, D-PO-92). Ajustes cruzados em US-005, US-007, US-013a, US-013b, US-030 e US-036.
 - 2026-10-25 — Ajustada por D-GES-52/53 (D-PO-95): Administrador altera "Só meu" de ex-membro; histórico mantém quem alterou; quem só controla não muda divisão, pagador, conta nem "Pagar com" e não assume o pagamento (SEC-043/044); estorno checa a prevista; encerrar série preserva "Só meu" alheio (SEC-045); titular do cartão só trocado pelo titular ou Admin, com registro (SEC-042); aviso na remoção de membro (SEC-046).
 - 2026-10-25 — Revisada por D-GES-50 (D-PO-94): controle também do dono da conta (ou do cartão) e do lançador; mensagens, aviso do formulário e cenários atualizados; previstas incluídas. Resolve a pergunta §5 do reteste final.
+- 2026-10-25 — Revisada por D-GES-55 (D-PO-96): o Administrador atual passa a ter poderes plenos (divisão, pagador, conta e "Pagar com") sobre o "Só meu" de ex-membro; só ele e só nesse caso; seletor "Quem pagou?" mostra o ex-membro. Revisa D-PO-95.
