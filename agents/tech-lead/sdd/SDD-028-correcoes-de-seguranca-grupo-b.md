@@ -4,7 +4,7 @@
 - **Toca**: SDD-003 §5.4–5.6 (convite e gate), SDD-021 §4.3 (teto de LLM), SDD-024 §4.3–4.9 (authorize, consentimento, CIMD), SDD-025 §4.1/§8.1 (tela de consentimento), SDD-026 §1 (saída das ferramentas), ADR-002/RN-012.3 (sessão), ADR-019 (ex-membro), ADR-031 §8 (*cron*)
 - **Status**: **Aprovado para Desenvolvimento** com recomendações do TL nos pontos [U] (§9). Uma decisão diferente do usuário muda só parâmetros, não a estrutura.
 - **Executor**: Dev & QA. Modelo **Sonnet** para SEC-004/009/010/011/013/017a/017b. **Opus** para SEC-018 (migração de sessão), 017c e 017d (apagamento e anonimização).
-- **Estimativa total**: **39 pts** (§8). **Fora**: SEC-021, SEC-001/015/016/008, Grupo A.
+- **Estimativa total**: **39 pts** (§8). **Fora**: SEC-021 (tratado no §11, rodadas 1 e 5/D-GES-50), SEC-001/015/016/008, Grupo A.
 - **Convenções**: SDD-000 (envelope de erro, `Idempotency-Key` em mutações, `withApi`). Zod: vale a versão instalada, e os contratos abaixo vinculam.
 
 ---
@@ -475,3 +475,44 @@ Ao fim de cada item, o Dev registra a TASK e pede o **reteste ao Agente de Segur
 6. **História da análise com IA (US-07x da EN-004)**: cenário "Teto global atingido ⇒ 'A análise com IA está indisponível no momento'" (sem revelar o teto).
 7. **RN-012.3 / NEED-012** (com o Stakeholder): explicitar "sessão expira após 30 dias sem uso e no máximo a cada 90 dias; o usuário pode encerrar as outras sessões".
 8. **Novas histórias** (o PO numera): Perfil ➜ "Encerrar as outras sessões" (018b), "Baixar meus dados" (017b), "Excluir minha conta" (017c), "Excluir a família" (017d) e a página "Privacidade" (017e). Cenários mínimos nas §§7.3–7.6.
+
+---
+
+## 11. "Só meu": alcance e matriz de quem pode o quê (SEC-021, revisado por D-GES-50, 2026-10-25)
+
+Origem: D-GES-42 (só o dono), D-GES-45/48 (travas anti-captura SEC-025/026/038) e **D-GES-50** (o usuário amplia o controle). Fonte única da regra: `src/modules/transacoes/ownership.ts`.
+
+### 11.1 Definições
+| Termo | Definição |
+| :-- | :-- |
+| "Só meu" | Despesa (`EXPENSE`) com `isSharedExpense = false`, o que inclui compra no cartão, parcelas, baixa de prevista e lançamento do assistente. Prevista e série: `isSharedExpense = false` na própria prevista. Receita, transferência, acerto e pagamento de fatura **não** são "Só meu". |
+| **Dono** | Quem pagou (`payerMemberId`; sem pagador, o autor). Prevista/série: `responsibleMemberId`. |
+| **Dono da conta** | `ownerMemberId` da `bank_accounts` do lançamento (`accountId`) ou, na compra no cartão, do `credit_cards` (`cardId`). Prevista/série: o dono da conta `paymentAccountId` ("Pagar com"), se houver. Lido **no momento da ação** (acompanha a troca de titularidade). |
+| **Lançador** | `authorMemberId` (imutável). No assistente, o membro que conectou. |
+| **Controlador** | Dono, dono da conta ou lançador. |
+
+### 11.2 Matriz
+| Ação em "Só meu" | Dono | Dono da conta | Lançador | Outro membro (inclui Admin) | Ex-membro |
+| :-- | :-: | :-: | :-: | :-: | :-: |
+| Ver (detalhe, Extrato, totais, histórico) | sim | sim | sim | **sim** | n/a |
+| Editar, excluir, restaurar, estornar/dar baixa (lançamento, parcela, compra parcelada, prevista, série) | sim | **sim** | **sim** | não (403) | não |
+| Tornar "Só meu" uma despesa/prevista **dividida** | sim (só o pagador/responsável **atual**) | **não** | **não** | não | não |
+| Criar "Só meu" em nome de outro / entregar a outro | não | não | não | não | não |
+| Trocar o pagador/responsável de um "Só meu" | só para si mesmo (hoje: o pagador não o entrega a outro) | só para si (assume) | só para si (assume) | não | não |
+| Exportar "Só meu" de outro (SEC-029) | — | **não** | **não** | não | — |
+
+Receita, despesa dividida, transferência e acerto: inalterado (qualquer membro).
+
+### 11.3 Regras de engenharia (gaps resolvidos)
+1. **Ex-membro.** Se o **dono** (pagador/responsável) tem `removedAt`, o lançamento é somente leitura para **todos**, inclusive o dono da conta e o lançador (D-PO-92, sem exceção). Dono da conta ou lançador ex-membros apenas não agem (não autenticam); os demais controladores seguem valendo.
+2. **Anti-captura inalterada.** `assertCanMakePersonal` e `violatesPlannedCapture` continuam exigindo o pagador/responsável **atual**; dono da conta e lançador não entram aí. A checagem "em nome de outro" só dispara quando o resultado **muda** o pagador ou **nasce** "Só meu" (editar valor/descrição de um "Só meu" alheio por um controlador **não** a dispara).
+3. **Assinatura.** `OwnershipRow` ganha `accountOwnerMemberId?: string | null`; `PlannedOwnershipRow` ganha `authorMemberId?` e `accountOwnerMemberId?`. As funções puras (`canWriteTransaction`, `canWritePlanned`) usam o conjunto de controladores (`personalControllerIds`); as `assert*` completam o dono da conta lendo `bank_accounts`/`credit_cards` na própria transação (uma consulta; o caminho do dono/autor não consulta nada).
+4. **Mensagem 403** (`PERSONAL_OWNER_ONLY`, inalterado o código): `Só {nomes} podem alterar este lançamento.` (pagador, dono da conta, lançador; sem repetição; nomes dos membros ativos). A recusa de captura (dividida ⇒ "Só meu") usa `Só quem pagou pode tornar este lançamento "Só meu".`
+5. **DTOs.** `TransactionDTO.accountOwnerId?` (conta ou cartão), `PlannedExpenseDTO.paymentAccount.ownerId?` e `paid.authorId?/accountOwnerId?`, `PayableItemDTO.authorId?/paymentAccountOwnerId?` alimentam as funções puras na UI; o servidor continua sendo a barreira.
+6. **Texto no detalhe:** `Só {nomes} pode(m) alterar este lançamento (Só meu)`. **Aviso do formulário:** `Depois de salvar, só {Dono}, o dono da conta e você poderão alterar este lançamento.` (omite quem não existe).
+7. **Concorrência/idempotência:** sem mudança (a trava é checada dentro da transação, antes da mutação).
+
+### 11.4 Guia de testes (Dev & QA)
+- **Unitários (`ownership`)**: matriz do §11.2 (dono, dono da conta, lançador, outro, Admin outro, dono ex-membro, conta ausente); `personalControllerIds`; `canWritePlanned` com autor e conta; captura inalterada.
+- **Integração**: dono da conta edita/exclui/restaura "Só meu" de outro; lançador idem (conta de terceiro); compra no cartão (dono do cartão) e plano parcelado; prevista (dono da conta "Pagar com") edita, dá baixa e estorna; terceiro sem relação continua com 403; dono da conta/lançador **não** convertem dividida em "Só meu" (403) nem criam "Só meu" em nome de outro; dono ex-membro bloqueia também o dono da conta; mensagem lista os nomes; exportação continua sem o "Só meu" alheio.
+- **Reteste do Agente de Segurança** (D-GES-50): captura em dois passos, conluio e a nova superfície (dono da conta/lançador).
