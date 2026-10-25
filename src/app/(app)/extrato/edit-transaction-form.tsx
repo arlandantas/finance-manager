@@ -61,7 +61,7 @@ export function EditTransactionForm({
   // SEC-049: quem voltou à família é o mesmo dono (o vínculo antigo aponta o vínculo ativo atual)
   const owner = effectiveOwner(t.payer);
   const ownerId = owner.id ?? t.author.id;
-  // D-GES-55: o Administrador atual sobre o "Só meu" de ex-membro tem poderes plenos (altera tudo)
+  // D-GES-55/59: o Administrador atual sobre o "Só meu" de ex-membro altera divisão, conta e "Pagar com" (não o pagador)
   const ownerGone = owner.removed;
   const fullPower = canChangeStructure(
     ownerId,
@@ -75,17 +75,11 @@ export function EditTransactionForm({
     ownerId !== myMemberId &&
     !fullPower;
   const personalExpense = kind === "EXPENSE" && !shared && myMemberId !== "";
-  // "Só meu" do ex-membro sob poderes plenos: o pagador só muda se o Administrador escolher (ele mesmo, se continuar "Só meu")
-  const keepGonePayer = personalExpense && ownerGone && fullPower && payerId === ownerId;
-  // SEC-048: ao dividir o "Só meu" de ex-membro, o pagador continua sendo o ex-membro (a API também recusa outro)
-  const lockGonePayer =
-    kind === "EXPENSE" && ownerGone && fullPower && !t.isSharedExpense && shared;
+  // D-GES-59 (SEC-048/051): o pagador ex-membro (que não voltou) é fixo para todos, inclusive o Administrador,
+  // em "Só meu" e em dividida (a API também recusa)
+  const lockGonePayer = kind === "EXPENSE" && ownerGone;
   const effectivePayerId =
-    controllerOnly || lockGonePayer
-      ? ownerId
-      : personalExpense && !keepGonePayer
-        ? myMemberId
-        : payerId;
+    controllerOnly || lockGonePayer ? ownerId : personalExpense ? myMemberId : payerId;
 
   function payload(confirmSettledPeriod?: boolean) {
     return {

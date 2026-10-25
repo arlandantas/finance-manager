@@ -256,13 +256,13 @@ export async function updateSeries(
   if (row.version !== input.version) throw await versionConflict(repo, tx, ctx, id);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026: série "Só meu" é só do responsável
   assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
-  const standing = row.isSharedExpense
-    ? { ownerIsActor: false, ownerRemoved: false }
-    : await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
-  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved; // D-GES-55
+  const standing = await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
+  // D-GES-55; SEC-051 (D-GES-59): responsável ex-membro sem retorno é imutável (dividida ou "Só meu")
+  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved && !row.isSharedExpense;
   assertPlannedControllerLimits(ctx, row, input, {
     fullPower,
-    ownerIsActor: standing.ownerIsActor,
+    ownerIsActor: standing.ownerIsActor && !row.isSharedExpense,
+    payerGone: standing.ownerRemoved,
   }); // SEC-043/044
   assertPlannedResultAllowed(
     ctx,

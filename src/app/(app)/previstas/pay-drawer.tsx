@@ -18,6 +18,7 @@ import { usePayPlanned, usePlanned } from "@/modules/previstas/hooks";
 import { differenceLabel } from "@/modules/previstas/rules";
 import { PayPlannedExpenseSchema } from "@/modules/previstas/schemas";
 import { useDefaults } from "@/modules/transacoes/hooks";
+import { effectiveOwner } from "@/modules/transacoes/ownership";
 
 type FieldKey = "accountId" | "amountInCents" | "paidOn" | "payerMemberId";
 
@@ -70,7 +71,9 @@ export function PayPlannedDrawer({
   // SEC-026: baixa de prevista "Só meu" é sempre em nome do dono (quem está pagando)
   const myMemberId = family.data?.currentMemberId ?? "";
   const personalPay = planned !== undefined && planned !== null && !planned.isSharedExpense;
-  const effectivePayerId = personalPay && myMemberId ? myMemberId : payerId;
+  // D-GES-59: responsável ex-membro (sem retorno) não paga; a baixa é em nome de quem a realiza
+  const responsibleGone = planned ? effectiveOwner(planned.responsible).removed : false;
+  const effectivePayerId = (personalPay || responsibleGone) && myMemberId ? myMemberId : payerId;
 
   const source = useSourceAccount({
     open,

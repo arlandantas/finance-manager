@@ -192,14 +192,15 @@ export function PlannedDrawer({
     canChangeStructure(ownerId, { memberId: me, role: family.data?.currentRole }, owner.removed);
   const controllerOnly =
     !!me && !!existing && !existing.isSharedExpense && ownerId !== me && !fullPower;
-  const goneResponsible = fullPower && owner.removed ? (existing?.responsible ?? null) : null;
-  // SEC-048: ao dividir o "Só meu" de ex-membro, o responsável continua sendo o ex-membro (a API também recusa outro)
-  const lockGoneResponsible = !!goneResponsible && !existing?.isSharedExpense && !personalPlanned;
+  // D-GES-59 (SEC-048/051): o responsável ex-membro (que não voltou) é fixo para todos, inclusive o Administrador,
+  // em "Só meu" e em dividida (a API também recusa)
+  const goneResponsible = owner.removed ? (existing?.responsible ?? null) : null;
+  const lockGoneResponsible = !!goneResponsible;
   const effectiveResponsibleId = controllerOnly
     ? ownerId
     : lockGoneResponsible
       ? goneResponsible?.id
-      : personalPlanned && me && !(goneResponsible && responsibleId === goneResponsible.id)
+      : personalPlanned && me
         ? me
         : responsibleId;
   // SEC-038: numa dividida de outro, não dá para virar "Só meu" nem se pôr como responsável (a API também recusa)

@@ -174,11 +174,17 @@ export async function updateTransaction(
   const repo = transacoesRepo(tx, ctx.familyId);
   const row = await loadMutable(tx, ctx, repo, id);
   // D-GES-55: Administrador atual sobre o "Só meu" de ex-membro tem poderes plenos
-  const standing = isPersonalExpense(row)
-    ? await ownerStanding(tx, ctx, personalOwnerId(row))
-    : { ownerIsActor: false, ownerRemoved: false };
-  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved;
-  assertCanMakePersonal(ctx, row, input, { fullPower, ownerIsActor: standing.ownerIsActor }); // SEC-049
+  // SEC-051 (D-GES-59): o pagador ex-membro (sem retorno) é imutável também na dividida
+  const standing =
+    row.kind === "EXPENSE"
+      ? await ownerStanding(tx, ctx, personalOwnerId(row))
+      : { ownerIsActor: false, ownerRemoved: false };
+  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved && isPersonalExpense(row);
+  assertCanMakePersonal(ctx, row, input, {
+    fullPower,
+    ownerIsActor: standing.ownerIsActor && isPersonalExpense(row), // SEC-049
+    payerGone: standing.ownerRemoved,
+  });
   if (row.deletedAt) {
     throw unprocessable(
       "TRANSACTION_DELETED",

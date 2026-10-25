@@ -27,6 +27,7 @@ import {
   assertPlannedControllerLimits,
   assertPlannedNoCapture,
   assertPlannedResultAllowed,
+  GONE_PAYER_BAIXA_MESSAGE,
   memberRefsWithReturn,
   ownerStanding,
   PERSONAL_OWNER_ONLY_CODE,
@@ -248,13 +249,13 @@ export async function updatePlannedExpense(
   await assertCanWritePlanned(tx, ctx, row); // SEC-026a: "Só meu" é só do responsável
   assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
   // SEC-043/044: quem só controla não muda divisão, responsável nem conta; D-GES-55: Admin sobre ex-membro pode
-  const standing = row.isSharedExpense
-    ? { ownerIsActor: false, ownerRemoved: false }
-    : await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
-  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved;
+  const standing = await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
+  // SEC-051 (D-GES-59): responsável ex-membro sem retorno é imutável (dividida ou "Só meu"); poder pleno só no "Só meu"
+  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved && !row.isSharedExpense;
   assertPlannedControllerLimits(ctx, row, input, {
     fullPower,
-    ownerIsActor: standing.ownerIsActor,
+    ownerIsActor: standing.ownerIsActor && !row.isSharedExpense,
+    payerGone: standing.ownerRemoved,
   });
   assertPlannedResultAllowed(
     ctx,
@@ -377,12 +378,19 @@ export async function payPlannedExpense(
     throw unprocessable("FUTURE_DATE_NOT_ALLOWED", message, [{ path: "paidOn", message }]);
   }
   const effective = input.amountInCents ?? toCents(row.amountInCents);
-  const standing = row.isSharedExpense
+  const standing = await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
+  const personalStanding = row.isSharedExpense
     ? { ownerIsActor: false, ownerRemoved: false }
-    : await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
+    : standing;
   // quem voltou à família paga em nome do vínculo atual (o antigo, removido, não é pagador válido)
-  const ownerId = standing.ownerIsActor ? ctx.memberId : row.responsibleMemberId;
-  const payerMemberId = input.payerMemberId ?? ownerId;
+  const ownerId = personalStanding.ownerIsActor ? ctx.memberId : row.responsibleMemberId;
+  // D-GES-59 (DEV-135): responsável ex-membro sem retorno é imutável; a baixa é um pagamento NOVO e real, e quem
+  // a realiza é o pagador (o ex-membro não pode pagar). Informar outro pagador ⇒ 403.
+  const responsibleGone = standing.ownerRemoved;
+  const payerMemberId = input.payerMemberId ?? (responsibleGone ? ctx.memberId : ownerId);
+  if (responsibleGone && payerMemberId !== ctx.memberId) {
+    throw forbidden(GONE_PAYER_BAIXA_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
+  }
   if (
     !(await tx.bankAccount.findFirst({ where: { id: input.accountId, familyId: ctx.familyId } }))
   ) {
@@ -390,7 +398,7 @@ export async function payPlannedExpense(
   }
   if (!(await repo.findMember(payerMemberId))) throw invalidRef("payerMemberId", "Membro inválido");
   // SEC-044d: quem só controla (não é o responsável) só dá baixa com conta do responsável ou a sua
-  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved;
+  const fullPower = ctx.role === "ADMIN" && personalStanding.ownerRemoved;
   if (!row.isSharedExpense && ownerId !== ctx.memberId && !fullPower) {
     const acc = await tx.bankAccount.findFirst({
       where: { id: input.accountId, familyId: ctx.familyId },

@@ -12,8 +12,9 @@ import type { MemberRef } from "@/lib/schemas";
 //  - controladores = (1) dono = quem PAGOU (`payerMemberId`; sem pagador, o autor); (2) dono da conta onde
 //    o lançamento está (conta de débito ou, na compra no cartão, o dono do cartão); (3) lançador (autor).
 //  - dono que saiu da família ⇒ lançamento somente leitura, EXCETO para o Administrador atual (D-GES-52), que
-//    tem PODERES PLENOS (D-GES-55): também muda divisão, pagador/responsável, conta e "Pagar com". Só ele e só
-//    quando o dono é ex-membro (`isAdminOverRemovedOwner`); o novo pagador/conta são validados como ativos/da família.
+//    tem PODERES PLENOS (D-GES-55): também muda divisão, conta e "Pagar com". Só ele e só quando o dono é
+//    ex-membro (`isAdminOverRemovedOwner`). D-GES-59: o PAGADOR/responsável de ex-membro que não voltou é
+//    IMUTÁVEL para todos (inclusive o Admin; `violatesGonePayerLock`), em "Só meu" e em dividida.
 //  - quem só controla (não é o dono) NÃO muda divisão, pagador/responsável, conta nem "Pagar com" e não
 //    assume o pagamento (D-GES-53, SEC-043/044).
 //  - torná-lo "Só meu" (SEC-025/026/038) continua sendo só do pagador/responsável ATUAL
@@ -28,8 +29,25 @@ export const PERSONAL_CAPTURE_MESSAGE = 'Só quem pagou pode tornar este lançam
 /** SEC-043/044: quem só controla não muda divisão, pagador, conta nem "Pagar com" (nem assume o pagamento). */
 export const PERSONAL_STRUCTURE_MESSAGE =
   "Só quem pagou pode alterar a divisão, o pagador e a conta deste lançamento.";
-/** SEC-048 (D-GES-57): ao dividir o "Só meu" de ex-membro, o pagador/responsável continua sendo quem pagou. */
-export const KEEP_GONE_PAYER_MESSAGE = "Ao dividir, o pagador continua sendo quem pagou.";
+/**
+ * SEC-048/051 (D-GES-57/59): o pagador/responsável de uma despesa paga por EX-MEMBRO que não voltou à família é
+ * imutável para todos, inclusive o Administrador ("Só meu" ou dividida). Só quem voltou (SEC-049) o altera.
+ */
+export const GONE_PAYER_LOCKED_MESSAGE =
+  "O pagador é um ex-membro e não pode ser alterado. Para outro pagador, exclua e lance de novo.";
+
+/** D-GES-59: a baixa da prevista de ex-membro é paga (e fica no nome de) quem a realiza. */
+export const GONE_PAYER_BAIXA_MESSAGE =
+  "O responsável é um ex-membro: a baixa é paga em nome de quem a realiza.";
+
+/** Regra pura (também usada pela UI): trocar o pagador/responsável atual de ex-membro sem retorno é proibido. */
+export function violatesGonePayerLock(
+  currentPayerId: string,
+  nextPayerId: string | undefined,
+  payerGone: boolean,
+): boolean {
+  return payerGone && nextPayerId !== undefined && nextPayerId !== currentPayerId;
+}
 
 export type OwnershipRow = {
   kind: string;
@@ -56,7 +74,7 @@ export function personalControllerIds(
   return [...new Set(ids.filter((id): id is string => id !== null))];
 }
 
-/** D-GES-55: pode alterar divisão, pagador/responsável, conta e "Pagar com"? (regra pura, usada também pela UI) */
+/** D-GES-55/59: pode alterar divisão, conta e "Pagar com"? (o pagador de ex-membro é imutável, D-GES-59; regra pura, usada pela UI) */
 export function canChangeStructure(
   ownerId: string,
   viewer: { memberId: string; role?: "ADMIN" | "MEMBER" },
@@ -236,23 +254,16 @@ export function assertCanMakePersonal(
     payerMemberId?: string | undefined;
     accountId?: string | undefined;
   },
-  opts: { fullPower?: boolean; ownerIsActor?: boolean } = {},
+  opts: { fullPower?: boolean; ownerIsActor?: boolean; payerGone?: boolean } = {},
 ): void {
   if (current.kind !== "EXPENSE") return;
   const currentOwner = personalOwnerId(current);
+  // SEC-051 (D-GES-59): pagador ex-membro (sem retorno) é imutável para todos, em qualquer pedido
+  if (violatesGonePayerLock(currentOwner, next.payerMemberId, opts.payerGone === true)) {
+    throw forbidden(GONE_PAYER_LOCKED_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
+  }
   // SEC-049: quem voltou à família é o dono do "Só meu" antigo, ainda que o registro aponte o vínculo antigo
   const isOwner = currentOwner === ctx.memberId || opts.ownerIsActor === true;
-  // SEC-048 (D-GES-57): o Administrador que divide o "Só meu" de ex-membro não escolhe novo pagador: quem pagou
-  // continua sendo o ex-membro (o Admin só vira pagador enquanto o lançamento segue "Só meu", DEV-129).
-  if (
-    opts.fullPower &&
-    !current.isSharedExpense &&
-    next.isSharedExpense === true &&
-    next.payerMemberId !== undefined &&
-    next.payerMemberId !== currentOwner
-  ) {
-    throw forbidden(KEEP_GONE_PAYER_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
-  }
   // SEC-043/044: num "Só meu" que NÃO é seu, quem só controla altera valor, data, descrição, categoria e
   // observação, mas não a divisão, o pagador (nem "assume" o pagamento) nem a conta. Exceção (D-GES-55): o
   // Administrador atual sobre o "Só meu" de ex-membro (`fullPower`).
@@ -408,21 +419,20 @@ export function assertPlannedControllerLimits(
     responsibleMemberId?: string | undefined;
     paymentAccountId?: string | null | undefined;
   },
-  opts: { fullPower?: boolean; ownerIsActor?: boolean } = {},
+  opts: { fullPower?: boolean; ownerIsActor?: boolean; payerGone?: boolean } = {},
 ): void {
-  if (opts.ownerIsActor) return; // SEC-049: quem voltou é o responsável do "Só meu" antigo
-  if (opts.fullPower) {
-    // D-GES-55; SEC-048 (D-GES-57): ao dividir, o responsável continua sendo o ex-membro
-    if (
-      current.isSharedExpense === false &&
-      next.isSharedExpense === true &&
-      next.responsibleMemberId !== undefined &&
-      next.responsibleMemberId !== current.responsibleMemberId
-    ) {
-      throw forbidden(KEEP_GONE_PAYER_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
-    }
-    return;
+  // SEC-051 (D-GES-59): responsável ex-membro (sem retorno) é imutável para todos, prevista dividida ou "Só meu"
+  if (
+    violatesGonePayerLock(
+      current.responsibleMemberId,
+      next.responsibleMemberId,
+      opts.payerGone === true,
+    )
+  ) {
+    throw forbidden(GONE_PAYER_LOCKED_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
   }
+  if (opts.ownerIsActor) return; // SEC-049: quem voltou é o responsável do "Só meu" antigo
+  if (opts.fullPower) return; // D-GES-55: divisão, conta e "Pagar com" (o responsável fica travado acima)
   if (current.isSharedExpense || current.responsibleMemberId === ctx.memberId) return;
   const changes =
     next.isSharedExpense === true ||
