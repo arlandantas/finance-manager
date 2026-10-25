@@ -18,7 +18,7 @@ Bem-vindo ao espaço de trabalho do **Agente de Segurança**. Ele é o auditor i
 8. **Disponibilidade e abuso**: limite de taxa, custo da API de LLM, enumeração, bloqueio de contas.
 
 ## 📋 Formato dos achados
-Cada achado vira um registro em [`relatorios/`](relatorios) com:
+Cada achado vira um registro em [`_historico/security/relatorios/`](../_historico/security/relatorios) com:
 
 | Campo | Conteúdo |
 | :-- | :-- |
@@ -53,6 +53,6 @@ O **Tech Lead** continua responsável por projetar com segurança (modelo de ame
 - **Intermediário (Sonnet):** revisão de diffs pequenos e reteste de correções.
 
 ## 📁 Onde escrever
-- Relatórios e achados: [`relatorios/`](relatorios) (ex.: `levantamento-AAAA-MM-DD.md`).
+- Relatórios e achados: [`_historico/security/relatorios/`](../_historico/security/relatorios) (ex.: `levantamento-AAAA-MM-DD.md`).
 - Status e log: `agents/security/status.md`.
 - Co-autoria nos commits: `Co-authored-by: Agente de Segurança <security@finance-manager.local>`.
