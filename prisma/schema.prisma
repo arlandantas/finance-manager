@@ -471,7 +471,7 @@ model Transaction {
 
   family      Family                @relation(fields: [familyId], references: [id])
   plan        InstallmentPlan?      @relation(fields: [familyId, installmentPlanId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  splitRule   SplitRuleVersion?     @relation(fields: [splitRuleVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  splitRule   SplitRuleVersion?     @relation(fields: [familyId, splitRuleVersionId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
   splits      TransactionSplit[]
   account     BankAccount?          @relation(fields: [familyId, accountId], references: [familyId, id])
   card        CreditCard?           @relation(fields: [familyId, cardId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
@@ -637,6 +637,7 @@ model SplitRuleVersion {
   shares       SplitShare[]
   transactions Transaction[]
 
+  @@unique([familyId, id]) // SEC-024: alvo da FK composta de transactions
   @@index([familyId, effectiveFrom(sort: Desc), createdAt(sort: Desc)])
   @@map("split_rule_versions")
 }
