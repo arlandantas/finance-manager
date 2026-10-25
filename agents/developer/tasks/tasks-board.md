@@ -581,3 +581,21 @@ Ver o relatório de entrega ao Gestor e DEV-81..86 em [pedidos-ao-gestor.md](../
 - **Arquivos**: `tests/e2e/support/hooks.ts` (preferência `homeSummaryOpen` simulada como aberta, exceto `@resumo-fechado`), `tests/e2e/features/US-012-home-dashboard.feature` e `steps/US-012-*.ts` (últimos 10; cenário do padrão fechado), `features/US-025-resumo-do-mes.feature` e `steps/US-025-*.ts` (despesas `R$ 2.458,90`; segundo dispositivo).
 - **QA**: Playwright desktop + mobile de US-012/025/026/027/029/036: 94 passando; biome e `tsc --noEmit` limpos. Antes: 32 falhas (16 citadas + US-025/026).
 - **Desvios**: DEV-86.
+
+### [TASK-074] Correções de segurança do Grupo A (D-GES-40) — SEC-002/003/005/006/007/012/014/019/020/022/023/024
+- **Status**: Concluído (aguardando validação do Gestor e reteste do Agente de Segurança). Um commit por achado, cada um com teste de regressão.
+- **Status por achado** (coluna Status do levantamento `levantamento-2026-10-24.md`, que não foi editado):
+  - SEC-002 **Corrigido**: `next` 16.4.3 (sem breaking changes nas notas 16.4.x), `images.unoptimized`; teste de piso de versão.
+  - SEC-003 **Corrigido**: `safeCallbackUrl` por lista de permissão + `new URL`; unit com TAB/LF/CR/espaço/`%09`/`/\`.
+  - SEC-005 **Corrigido**: `/token` e `/authorize` limitados por IP+client_id (+ freio por código/refresh); sem balde global por `client_id`. IP vem de `x-real-ip`/`x-forwarded-for` (confiável na Vercel).
+  - SEC-006 **Corrigido (CSP em Report-Only)**: X-Frame-Options, frame-ancestors, nosniff, Referrer-Policy, Permissions-Policy, HSTS em produção. CSP completa só em `Content-Security-Policy-Report-Only` (script de tema inline exige nonce; não validado em navegador real).
+  - SEC-007 **Corrigido**: `zod` 4.6.7 e teto de 256 KB no `withApi` (413).
+  - SEC-012 **Corrigido**: `describeError` (sem message/stack de 1ª linha) no `withApi` e nos logs do MCP.
+  - SEC-014 **Corrigido**: 5 convites/h e 10/dia por família (429 `INVITATION_LIMIT`); `nodemailer` 10.2.1.
+  - SEC-019 **Parcial**: zod duplicado do MCP SDK deduplicado; restam avisos sem correção disponível: Prisma CLI (lodash, deepmerge-ts, mysql2, fast-uri), vite via vitest e zod 4.1.11 do `@vercel/cli-config`. `pnpm update` geral foi descartado (sobe biome/playwright sem ganho). `overrides` do pnpm 11 não surtiram efeito.
+  - SEC-020 **Corrigido**: 300 req/min por usuário em `/api/v1` via `mcp_rate_buckets` (429 `RATE_LIMITED`). O `/api/dev/login` não foi limitado (fora do escopo; SEC-001/015 risco aceito).
+  - SEC-022 **Corrigido**: health público devolve `degraded`; `unsafe_config` só com `Bearer CRON_SECRET`. O checklist-vercel-producao (itens 8.1) menciona `503 unsafe_config`: o Gestor deve ajustar.
+  - SEC-023 **Corrigido**: o código OAuth só é consumido depois de validar cliente, redirect e PKCE.
+  - SEC-024 **Corrigido**: migração `20261025010000_sec024_split_rule_composite_fk` (pré-checagem, FK NOT VALID + VALIDATE), aplicada com `migrate deploy`.
+- **QA**: lint, `tsc`, unit 648, integração 871 passando (1 falha intermitente preexistente em `us-016a` "corrida PATCH do ciclo", que também falha no HEAD sem estas mudanças), `pnpm build` ok, E2E (desktop+mobile) US-001/003/007/039/074/076/077: 164 passando.
+- **Desvios**: DEV-87.
