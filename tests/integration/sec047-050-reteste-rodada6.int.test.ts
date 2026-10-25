@@ -85,7 +85,7 @@ describe("SEC-048 ao dividir o 'Só meu' de ex-membro, o pagador continua o ex-m
       const res = await patch("Mariana", t.id, 1, body);
       expect(res.status, JSON.stringify(body)).toBe(403);
       expect(res.body.error.code).toBe("PERSONAL_OWNER_ONLY");
-      expect(res.body.error.message).toBe("Ao dividir, o pagador continua sendo quem pagou.");
+      expect(res.body.error.message).toMatch(/ex-membro e não pode ser alterado/); // D-GES-59
     }
     const row = await txRow(t.id);
     expect(row.isSharedExpense).toBe(false);
@@ -117,15 +117,15 @@ describe("SEC-048 ao dividir o 'Só meu' de ex-membro, o pagador continua o ex-m
     expect(get("Lucas")).toBeGreaterThan(0);
   });
 
-  it("DEV-129 segue valendo enquanto 'Só meu': o Admin assume em nome próprio; para terceiro, 403", async () => {
+  it("D-GES-59 revoga o DEV-129: o Admin não assume nem entrega o pagador do 'Só meu' de ex-membro (403)", async () => {
     const t = await mk();
     await removeLucas();
-    const toCarla = await patch("Mariana", t.id, 1, { payerMemberId: idOf("Carla") });
-    expect(toCarla.status).toBe(403);
-    expect(toCarla.body.error.code).toBe("PERSONAL_ON_BEHALF_FORBIDDEN");
-    const ok = await patch("Mariana", t.id, 1, { payerMemberId: idOf("Mariana") });
-    expect(ok.status, JSON.stringify(ok.body)).toBe(200);
-    expect((await txRow(t.id)).payerMemberId).toBe(idOf("Mariana"));
+    for (const who of ["Mariana", "Carla"]) {
+      const res = await patch("Mariana", t.id, 1, { payerMemberId: idOf(who) });
+      expect(res.status, who).toBe(403);
+      expect(res.body.error.code).toBe("PERSONAL_OWNER_ONLY");
+    }
+    expect((await txRow(t.id)).payerMemberId).toBe(idOf("Lucas"));
   });
 
   it("prevista e série: dividir mantém o responsável ex-membro; trocar o responsável ao dividir ⇒ 403", async () => {

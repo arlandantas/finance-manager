@@ -15,6 +15,7 @@ import {
   personalControllerIds,
   personalWriteMessage,
   plannedControllerIds,
+  violatesGonePayerLock,
 } from "@/modules/transacoes/ownership";
 
 const row = (over: Partial<Parameters<typeof canWriteTransaction>[0]> = {}) => ({
@@ -216,30 +217,45 @@ describe("D-GES-55 poderes plenos do Administrador sobre o 'Só meu' de ex-membr
     expect(canChangeStructure("m1", member("m2"), true)).toBe(false);
     expect(canChangeStructure("m1", member("m3"), false)).toBe(false);
   });
-  it("com fullPower o Admin muda divisão, pagador e conta; sem ele, 403", () => {
+  it("com fullPower o Admin muda divisão e conta; sem ele, 403", () => {
     for (const next of [
       { isSharedExpense: true },
       { isSharedExpense: true, payerMemberId: "m1" }, // reenviar o ex-membro como pagador vale
       { accountId: "acc2" },
-      { payerMemberId: "m2" },
     ]) {
       expect(() =>
-        assertCanMakePersonal(admin, expense(), next, { fullPower: true }),
+        assertCanMakePersonal(admin, expense(), next, { fullPower: true, payerGone: true }),
       ).not.toThrow();
       expect(() => assertCanMakePersonal(admin, expense(), next)).toThrow();
     }
   });
-  it("SEC-048: ao dividir, outro pagador (o Admin ou um ativo) é recusado, com ou sem fullPower", () => {
-    for (const payer of ["m2", "m3"]) {
+  it("D-GES-59 (SEC-048/051): pagador de ex-membro é imutável, mesmo com fullPower, dividindo ou não", () => {
+    for (const next of [
+      { payerMemberId: "m2" }, // assumir (DEV-129 revogado)
+      { payerMemberId: "m3" },
+      { isSharedExpense: true, payerMemberId: "m2" },
+      { isSharedExpense: true, payerMemberId: "m3" },
+    ]) {
       expect(() =>
-        assertCanMakePersonal(
-          admin,
-          expense(),
-          { isSharedExpense: true, payerMemberId: payer },
-          { fullPower: true },
-        ),
-      ).toThrow(/pagador continua sendo quem pagou/);
+        assertCanMakePersonal(admin, expense(), next, { fullPower: true, payerGone: true }),
+      ).toThrow(/ex-membro e não pode ser alterado/);
     }
+    // já dividida (segundo pedido) e qualquer ator ativo: também 403
+    const shared = { ...expense(), isSharedExpense: true };
+    for (const who of [admin, ctx("m3")]) {
+      expect(() =>
+        assertCanMakePersonal(who, shared, { payerMemberId: "m3" }, { payerGone: true }),
+      ).toThrow(/ex-membro e não pode ser alterado/);
+    }
+    // reenviar o mesmo pagador não conta; quem voltou (payerGone falso) e divididas de ativos seguem como antes
+    expect(() =>
+      assertCanMakePersonal(admin, shared, { payerMemberId: "m1" }, { payerGone: true }),
+    ).not.toThrow();
+    expect(() => assertCanMakePersonal(ctx("m2"), shared, { payerMemberId: "m3" })).not.toThrow();
+    expect(violatesGonePayerLock("m1", "m2", true)).toBe(true);
+    expect(violatesGonePayerLock("m1", "m1", true)).toBe(false);
+    expect(violatesGonePayerLock("m1", undefined, true)).toBe(false);
+    expect(violatesGonePayerLock("m1", "m2", false)).toBe(false);
   });
   it("fullPower não permite entregar o 'Só meu' em nome de terceiro", () => {
     expect(() =>
@@ -253,35 +269,35 @@ describe("D-GES-55 poderes plenos do Administrador sobre o 'Só meu' de ex-membr
       assertPlannedControllerLimits(admin, planned, next, { fullPower: true }),
     ).not.toThrow();
     expect(() => assertPlannedControllerLimits(admin, planned, next)).toThrow();
-    // trocar só o responsável (ainda "Só meu"), com fullPower, segue permitido (a trava de terceiro é outra)
-    expect(() =>
-      assertPlannedControllerLimits(
-        admin,
-        planned,
-        { responsibleMemberId: "m2" },
-        { fullPower: true },
-      ),
-    ).not.toThrow();
   });
-  it("SEC-048 na prevista: ao dividir, outro responsável é recusado com fullPower", () => {
+  it("D-GES-59 na prevista/série: responsável ex-membro é imutável (Só meu ou dividida, qualquer ator)", () => {
     const planned = { isSharedExpense: false, responsibleMemberId: "m1", paymentAccountId: "a1" };
+    const sharedPlanned = { ...planned, isSharedExpense: true };
     for (const responsibleMemberId of ["m2", "m3"]) {
-      expect(() =>
-        assertPlannedControllerLimits(
-          admin,
-          planned,
-          { isSharedExpense: true, responsibleMemberId },
-          { fullPower: true },
-        ),
-      ).toThrow(/pagador continua sendo quem pagou/);
+      for (const [cur, next] of [
+        [planned, { responsibleMemberId }],
+        [planned, { isSharedExpense: true, responsibleMemberId }],
+        [sharedPlanned, { responsibleMemberId }],
+      ] as const) {
+        expect(() =>
+          assertPlannedControllerLimits(admin, cur, next, {
+            fullPower: !cur.isSharedExpense,
+            payerGone: true,
+          }),
+        ).toThrow(/ex-membro e não pode ser alterado/);
+      }
     }
     expect(() =>
       assertPlannedControllerLimits(
         admin,
         planned,
         { isSharedExpense: true, responsibleMemberId: "m1" },
-        { fullPower: true },
+        { fullPower: true, payerGone: true },
       ),
+    ).not.toThrow();
+    // sem payerGone (quem voltou / ativo) nada muda
+    expect(() =>
+      assertPlannedControllerLimits(ctx("m2"), sharedPlanned, { responsibleMemberId: "m3" }),
     ).not.toThrow();
   });
 });

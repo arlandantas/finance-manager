@@ -89,19 +89,19 @@ describe("D-GES-55 lançamento 'Só meu' de ex-membro", () => {
     expect(actors).toEqual([idOf("Mariana")]);
   });
 
-  it("Admin continua 'Só meu' trocando a conta e assume o pagamento em nome próprio; não entrega a terceiro", async () => {
+  it("Admin continua 'Só meu' trocando a conta, mas não assume nem entrega o pagador (D-GES-59)", async () => {
     const t = await mk(accLucas, "Lucas");
     await removeLucas();
-    const toCarla = await patch("Mariana", t.id, 1, { payerMemberId: idOf("Carla") });
-    expect(toCarla.status).toBe(403);
-    expect(toCarla.body.error.code).toBe("PERSONAL_ON_BEHALF_FORBIDDEN");
-    const ok = await patch("Mariana", t.id, 1, {
-      payerMemberId: idOf("Mariana"),
-      accountId: accMariana.id,
-    });
+    for (const who of ["Carla", "Mariana"]) {
+      const res = await patch("Mariana", t.id, 1, { payerMemberId: idOf(who) });
+      expect(res.status, who).toBe(403);
+      expect(res.body.error.code).toBe("PERSONAL_OWNER_ONLY");
+    }
+    const ok = await patch("Mariana", t.id, 1, { accountId: accMariana.id, amountInCents: 6000 });
     expect(ok.status, JSON.stringify(ok.body)).toBe(200);
     const row = await txRow(t.id);
-    expect(row.payerMemberId).toBe(idOf("Mariana"));
+    expect(row.payerMemberId).toBe(idOf("Lucas"));
+    expect(row.accountId).toBe(accMariana.id);
     expect(row.isSharedExpense).toBe(false);
   });
 
@@ -298,7 +298,7 @@ describe("D-GES-55 prevista e série 'Só meu' de ex-membro", () => {
     expect(t.isSharedExpense).toBe(false);
   });
 
-  it("série: Admin muda divisão e responsável do 'Só meu' de ex-membro; Bia não", async () => {
+  it("série: Admin muda a divisão do 'Só meu' de ex-membro (o responsável fica); Bia não", async () => {
     const cat = await db.category.findFirstOrThrow({
       where: { familyId: fx.family.id, name: "Moradia" },
     });
