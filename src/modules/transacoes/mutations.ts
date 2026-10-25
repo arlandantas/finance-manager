@@ -18,6 +18,7 @@ import {
   resolveRuleSplit,
   rewriteSplitAmounts,
 } from "@/modules/split/write";
+import { assertCanMakePersonal, assertCanWriteTransaction } from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
   RevisionDTO,
@@ -42,9 +43,11 @@ const invalidRef = (path: string, message: string) =>
 type Repo = ReturnType<typeof transacoesRepo>;
 type Row = NonNullable<Awaited<ReturnType<Repo["findById"]>>>;
 
-async function loadMutable(tx: Tx, familyId: string, repo: Repo, id: string): Promise<Row> {
+async function loadMutable(tx: Tx, ctx: RequestContext, repo: Repo, id: string): Promise<Row> {
+  const familyId = ctx.familyId;
   const row = await repo.findById(id);
   if (!row) throw notFound("Lançamento não encontrado.");
+  await assertCanWriteTransaction(tx, ctx, row); // SEC-021: "Só meu" é só do dono
   await assertAccountsEditable(tx, familyId, [row.accountId]); // conta arquivada: lançamento travado
   if (row.kind === "INVOICE_PAYMENT") throw unprocessable("NOT_EDITABLE", PAYMENT_NOT_EDITABLE);
   if (row.kind !== "EXPENSE" && row.kind !== "INCOME") {
@@ -163,7 +166,8 @@ export async function updateTransaction(
 ): Promise<UpdateTransactionResponse> {
   const engine = await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: primeira trava
   const repo = transacoesRepo(tx, ctx.familyId);
-  const row = await loadMutable(tx, ctx.familyId, repo, id);
+  const row = await loadMutable(tx, ctx, repo, id);
+  assertCanMakePersonal(ctx, row, input);
   if (row.deletedAt) {
     throw unprocessable(
       "TRANSACTION_DELETED",
@@ -340,7 +344,7 @@ export async function deleteTransaction(
 ): Promise<{ transaction: UpdateTransactionResponse["transaction"] }> {
   await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: o rateio acompanha o lançamento (linhas intactas)
   const repo = transacoesRepo(tx, ctx.familyId);
-  const row = await loadMutable(tx, ctx.familyId, repo, id);
+  const row = await loadMutable(tx, ctx, repo, id);
   if (row.deletedAt) throw conflict("ALREADY_DELETED", "Este lançamento já foi excluído.");
   if (row.paidPlanned) throw unprocessable("LINKED_TO_PLANNED", LINKED_TO_PLANNED);
   if (row.cardId) await lockPurchaseInvoices(tx, ctx, repo, row);
@@ -375,7 +379,7 @@ export async function restoreTransaction(
 ): Promise<{ transaction: UpdateTransactionResponse["transaction"] }> {
   await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2
   const repo = transacoesRepo(tx, ctx.familyId);
-  const row = await loadMutable(tx, ctx.familyId, repo, id);
+  const row = await loadMutable(tx, ctx, repo, id);
   if (row.paidPlanned) throw unprocessable("LINKED_TO_PLANNED", LINKED_TO_PLANNED);
   if (!row.deletedAt || row.deletionReason !== "DELETED") {
     throw unprocessable("NOT_RESTORABLE", "Este lançamento não pode ser restaurado.");

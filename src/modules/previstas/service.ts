@@ -20,6 +20,7 @@ import type {
 } from "@/modules/previstas/schemas";
 import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
+import { assertCanWriteTransaction } from "@/modules/transacoes/ownership";
 import { createExpenseCore } from "@/modules/transacoes/service";
 
 type Repo = ReturnType<typeof previstasRepo>;
@@ -394,6 +395,7 @@ export async function undoPlannedPayment(
     where: { id: row.paidTransactionId, familyId: ctx.familyId },
   });
   if (!t) throw notFound(NOT_FOUND);
+  await assertCanWriteTransaction(tx, ctx, t); // SEC-021: estornar a baixa de um "Só meu" é só do dono
   if (!t.deletedAt) {
     const marked = await tx.transaction.updateMany({
       where: { id: t.id, familyId: ctx.familyId, version: t.version, deletedAt: null },

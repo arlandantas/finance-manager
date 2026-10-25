@@ -13,12 +13,14 @@ import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import { useUndoInvoicePayment } from "@/modules/cartoes/hooks";
+import { useFamily } from "@/modules/familia/hooks";
 import {
   useDefaults,
   useInstallmentPlan,
   useTransactionDetail,
   useTransactionState,
 } from "@/modules/transacoes/hooks";
+import { canWriteTransaction } from "@/modules/transacoes/ownership";
 import type { TransactionDetailDTO } from "@/modules/transacoes/schemas";
 import { EditTransactionForm } from "./edit-transaction-form";
 import { HistoryList } from "./history-list";
@@ -83,6 +85,22 @@ export function TransactionDetailDrawer({
   const planQuery = useInstallmentPlan(installment?.planId ?? null);
   const parcel = planQuery.data?.plan.installments.find((p) => p.no === installment?.no);
   const editable = t && (t.type === "EXPENSE" || t.type === "INCOME") && !installment;
+  const family = useFamily().data;
+  // SEC-021: "Só meu" de outro membro é somente leitura (só o dono altera)
+  const canWrite =
+    !t ||
+    (family !== undefined &&
+      canWriteTransaction(
+        {
+          kind: t.type,
+          isSharedExpense: t.isSharedExpense,
+          payerMemberId: t.payer?.id ?? null,
+          authorMemberId: t.author.id,
+        },
+        { memberId: family.currentMemberId, role: family.currentRole },
+        t.payer?.removed === true,
+      ));
+  const readOnlyPersonal = Boolean(t && !canWrite);
   const isLeg = t && (t.type === "TRANSFER_OUT" || t.type === "TRANSFER_IN");
   const isPayment = t?.type === "INVOICE_PAYMENT";
 
@@ -226,7 +244,7 @@ export function TransactionDetailDrawer({
         {t && mode === "view" ? (
           <>
             <div className="mb-2 flex flex-wrap items-center justify-end gap-2">
-              {t.deletedAt && t.deletionReason === "DELETED" && editable ? (
+              {t.deletedAt && t.deletionReason === "DELETED" && editable && canWrite ? (
                 <Button
                   variant="secondary"
                   disabled={restore.isPending}
@@ -248,13 +266,13 @@ export function TransactionDetailDrawer({
                   {t.isSettlement ? "Desfazer acerto" : "Desfazer transferência"}
                 </Button>
               ) : null}
-              {editable && !t.deletedAt ? (
+              {editable && canWrite && !t.deletedAt ? (
                 <Button variant="secondary" onClick={() => setMode("edit")}>
                   <Pencil size={16} aria-hidden="true" />
                   Editar
                 </Button>
               ) : null}
-              {editable && !t.deletedAt && !t.plannedExpenseId ? (
+              {editable && canWrite && !t.deletedAt && !t.plannedExpenseId ? (
                 <Button variant="secondary" onClick={() => setConfirmingDelete(true)}>
                   <Trash2 size={16} aria-hidden="true" />
                   Excluir
@@ -266,7 +284,7 @@ export function TransactionDetailDrawer({
                     <ListOrdered size={16} aria-hidden="true" />
                     Ver compra
                   </Button>
-                  {parcel?.lockedReason === "INVOICE_PAID" ? (
+                  {!canWrite ? null : parcel?.lockedReason === "INVOICE_PAID" ? (
                     <span
                       data-testid="installment-paid"
                       className="text-sm font-medium text-slate-600"
@@ -288,6 +306,15 @@ export function TransactionDetailDrawer({
                 </Button>
               ) : null}
             </div>
+            {readOnlyPersonal ? (
+              <p
+                data-testid="personal-readonly"
+                className="mb-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800"
+              >
+                Despesa pessoal ("Só meu") de <strong>{t?.payer?.name ?? t?.author.name}</strong>:
+                só quem pagou pode editar, excluir ou restaurar.
+              </p>
+            ) : null}
             <dl>
               <Row label="Valor">
                 {t.direction === "CREDIT" ? "+" : "-"}

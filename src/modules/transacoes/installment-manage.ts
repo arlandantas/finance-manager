@@ -9,6 +9,7 @@ import { type Change, recordRevision } from "@/modules/contas/ledger";
 import { lockFamilySplit } from "@/modules/split/lock";
 import { loadInstallmentPlanDTO } from "@/modules/transacoes/installment-plan";
 import { memberNames, requireSettledConfirmation } from "@/modules/transacoes/mutations";
+import { assertCanWriteTransaction } from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
   DeleteInstallmentPlanInput,
@@ -85,6 +86,7 @@ export async function deleteInstallmentPlan(
     include: { invoice: true },
     orderBy: { installmentNo: "asc" },
   });
+  for (const p of parcels) await assertCanWriteTransaction(tx, ctx, p); // SEC-021
   const invoiceIds = parcels.flatMap((p) => (p.invoiceId ? [p.invoiceId] : []));
   await lockInvoices(tx, ctx.familyId, invoiceIds);
   const today = todayInFamilyTz(ctx.clock);
@@ -172,6 +174,7 @@ export async function restoreInstallmentPlan(
     where: { familyId: ctx.familyId, installmentPlanId: id, deletedAt: plan.deletedAt },
     orderBy: { installmentNo: "asc" },
   });
+  for (const p of parcels) await assertCanWriteTransaction(tx, ctx, p); // SEC-021
   const invoiceIds = parcels.flatMap((p) => (p.invoiceId ? [p.invoiceId] : []));
   await lockInvoices(tx, ctx.familyId, invoiceIds);
   if ((await activePayments(tx, ctx.familyId, invoiceIds)).size > 0) {

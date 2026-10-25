@@ -16,6 +16,7 @@ import type { AcceptSuggestionInput, DismissSuggestionInput } from "@/modules/an
 import { recordRevision } from "@/modules/contas/ledger";
 import { splitRepo } from "@/modules/split/repo";
 import { periodPredicate } from "@/modules/transacoes/ledger-where";
+import { assertCanWriteTransaction, canWriteTransaction } from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import { getTransaction } from "@/modules/transacoes/service";
 
@@ -40,18 +41,35 @@ export async function listCategorySuggestions(
       occurredOn: Date;
       amountInCents: bigint;
       categoryId: string;
+      kind: string;
+      isSharedExpense: boolean;
+      payerMemberId: string | null;
+      authorMemberId: string;
     }>
   >`
     SELECT t.id::text AS id, t.version, t.description, t."occurredOn", t."amountInCents",
-           t."categoryId"::text AS "categoryId"
+           t."categoryId"::text AS "categoryId", t.kind::text AS kind,
+           t."isSharedExpense", t."payerMemberId"::text AS "payerMemberId",
+           t."authorMemberId"::text AS "authorMemberId"
     FROM transactions t
     WHERE t."familyId" = ${ctx.familyId}::uuid AND t."deletedAt" IS NULL AND t.kind = 'EXPENSE'
       AND t."installmentPlanId" IS NULL AND t."categoryId" IS NOT NULL
       AND ${periodPredicate("t", first.start, current.end)}`;
+  const removed = new Set(
+    (
+      await tx.member.findMany({
+        where: { familyId: ctx.familyId, removedAt: { not: null } },
+        select: { id: true },
+      })
+    ).map((m) => m.id),
+  );
   const rows: SuggestionRow[] = [];
   for (const r of raw) {
     const key = normalizeDescription(r.description);
     if (!key) continue;
+    // SEC-021: não sugere (nem deixa aceitar) mudança em "Só meu" de outro membro
+    const owner = r.payerMemberId ?? r.authorMemberId;
+    if (!canWriteTransaction(r, ctx, removed.has(owner))) continue;
     rows.push({
       id: r.id,
       version: r.version,
@@ -107,6 +125,7 @@ export async function acceptCategorySuggestion(
   const repo = transacoesRepo(tx, ctx.familyId);
   const row = await repo.findById(input.transactionId);
   if (!row) throw notFound("Lançamento não encontrado.");
+  await assertCanWriteTransaction(tx, ctx, row); // SEC-021
   if (row.kind !== "EXPENSE") {
     throw unprocessable("NOT_EDITABLE", "Só despesas recebem sugestão de categoria");
   }

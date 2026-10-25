@@ -603,6 +603,20 @@ export function TransactionDrawer({
             </button>
           </div>
         ) : null}
+        {kind === "EXPENSE" &&
+        !(shared && splitAvailable && !splitBlocked) &&
+        family.data &&
+        payerId &&
+        payerId !== family.data.currentMemberId ? (
+          <p
+            role="note"
+            data-testid="personal-other-payer-notice"
+            className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200"
+          >
+            Despesa "Só meu" de outra pessoa: depois de salvar, só quem pagou poderá editá-la ou
+            excluí-la.
+          </p>
+        ) : null}
         {splitBlocked && showInstallmentNotice(splitAvailable) ? (
           <p
             id="tx-installment-notice"

@@ -24,6 +24,7 @@ import { Drawer } from "@/components/ui/drawer";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import { useFamily } from "@/modules/familia/hooks";
 import {
   useDeletePlanned,
   usePayables,
@@ -34,6 +35,7 @@ import {
 import { useEndSeries, useSeries, useSeriesImpact } from "@/modules/previstas/recurring-hooks";
 import { differenceLabel } from "@/modules/previstas/rules";
 import type { PayableItemDTO, PlannedExpenseDTO } from "@/modules/previstas/schemas";
+import { canWriteTransaction } from "@/modules/transacoes/ownership";
 import { monthLabel, shiftMonthKey } from "../extrato/filters";
 import { PayPlannedDrawer } from "./pay-drawer";
 import { PlannedDrawer } from "./planned-drawer";
@@ -189,6 +191,21 @@ function PayableRow({
 function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void }) {
   const paid = item.paid;
   const fmt = useFormatMoney();
+  const family = useFamily().data;
+  // SEC-021: estornar a baixa de um "Só meu" é só do dono (quem pagou)
+  const canUndo =
+    !paid ||
+    (family !== undefined &&
+      canWriteTransaction(
+        {
+          kind: "EXPENSE",
+          isSharedExpense: item.isSharedExpense,
+          payerMemberId: paid.payer.id,
+          authorMemberId: paid.payer.id,
+        },
+        { memberId: family.currentMemberId, role: family.currentRole },
+        paid.payer.removed === true,
+      ));
   return (
     <li
       id={item.id}
@@ -217,16 +234,22 @@ function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void
           {differenceLabel(paid.differenceInCents, fmt)}
         </p>
       ) : null}
-      <div>
-        <Button
-          variant="secondary"
-          aria-label={`Desfazer pagamento de ${item.description}`}
-          onClick={onUndo}
-        >
-          <Undo2 size={16} aria-hidden="true" />
-          Desfazer pagamento
-        </Button>
-      </div>
+      {canUndo ? (
+        <div>
+          <Button
+            variant="secondary"
+            aria-label={`Desfazer pagamento de ${item.description}`}
+            onClick={onUndo}
+          >
+            <Undo2 size={16} aria-hidden="true" />
+            Desfazer pagamento
+          </Button>
+        </div>
+      ) : (
+        <p data-testid="personal-readonly" className="text-xs text-slate-600">
+          Despesa pessoal de {paid?.payer.name}: só quem pagou pode desfazer.
+        </p>
+      )}
     </li>
   );
 }
