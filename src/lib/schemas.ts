@@ -11,5 +11,6 @@ export const memberRefSchema = z.object({
   name: z.string(),
   image: z.string().nullable(),
   removed: z.literal(true).optional(), // ex-membro (ADR-019): UI mostra "(ex-membro)"; nunca o e-mail
+  deleted: z.literal(true).optional(), // conta excluída (`users.deletedAt`, SEC-033): nunca decidido pelo nome
 });
 export type MemberRef = z.infer<typeof memberRefSchema>;

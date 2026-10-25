@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { DELETED_ACCOUNT_NAME } from "@/lib/deleted-account";
 import { formatBRL } from "@/lib/money";
 import { periodKeySchema } from "@/lib/schemas";
 import { shortMonthLabel } from "@/modules/analise-ia/labels";
@@ -48,12 +47,12 @@ export const READ_ANNOTATIONS = {
 export const name60 = (s: string): UserText => userText(s, 60);
 
 /** Nome curto do membro; ex-membro: "ex-membro {nome}" (ADR-019), como nas telas. Também é texto não confiável. */
-export const memberName = (m: { name: string; removed?: true | undefined }): UserText =>
+export const memberName = (m: {
+  name: string;
+  removed?: true | undefined;
+  deleted?: true | undefined;
+}): UserText =>
   userText(
-    m.name === DELETED_ACCOUNT_NAME
-      ? "ex-membro (conta excluída)"
-      : m.removed
-        ? `ex-membro ${m.name}`
-        : m.name,
+    m.deleted ? "ex-membro (conta excluída)" : m.removed ? `ex-membro ${m.name}` : m.name,
     60,
   );

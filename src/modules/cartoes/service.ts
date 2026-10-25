@@ -31,12 +31,13 @@ export const CYCLE_LOCKED_MESSAGE =
 const memberRef = (m: {
   id: string;
   removedAt?: Date | null;
-  user: { name: string | null; email: string; image: string | null };
+  user: { name: string | null; email: string; image: string | null; deletedAt?: Date | null };
 }): MemberRef => ({
   id: m.id,
   name: m.user.name ?? localPart(m.user.email),
   image: m.user.image,
   ...(m.removedAt ? { removed: true as const } : {}),
+  ...(m.user.deletedAt ? { deleted: true as const } : {}),
 });
 
 /** Monta os DTOs com as consultas derivadas (uso, fatura aberta, faturas pagáveis). */

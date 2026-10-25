@@ -72,6 +72,7 @@ async function toDto(
         name: m ? (m.user.name ?? m.user.email.split("@")[0] ?? "Membro") : "Membro",
         image: m?.user.image ?? null,
         ...(m?.removedAt ? { removed: true as const } : {}),
+        ...(m?.user.deletedAt ? { deleted: true as const } : {}),
       },
       at: r.createdAt.toISOString(),
     };

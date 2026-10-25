@@ -34,6 +34,10 @@ export function hashedSessionAdapter(base: Adapter, db: Db): Adapter {
         return null;
       }
       if (row.endedAt) return null; // DEV-91: membro removido
+      if (row.user.deletedAt) {
+        await db.session.deleteMany({ where: { id: row.id } }); // SEC-030: conta excluída nunca autentica
+        return null;
+      }
       const { user, ...session } = row;
       return {
         session: { sessionToken: token, userId: session.userId, expires: session.expires },

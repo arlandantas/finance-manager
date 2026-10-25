@@ -232,6 +232,7 @@ export async function toDto(tx: Tx, ctx: RequestContext, row: DbRow): Promise<Sp
       name: m ? (m.user.name ?? m.user.email.split("@")[0] ?? "Membro") : "Membro",
       image: m?.user.image ?? null,
       ...(m?.removedAt ? { removed: true as const } : {}),
+      ...(m?.user.deletedAt ? { deleted: true as const } : {}),
     },
     categoryNames: new Map(cats.map((c) => [c.id, c.name])),
     dismissedKeys: await loadDismissedKeys(tx, ctx.familyId),
@@ -379,6 +380,7 @@ export async function listAnalyses(
           name: m ? (m.user.name ?? m.user.email.split("@")[0] ?? "Membro") : "Membro",
           image: m?.user.image ?? null,
           ...(m?.removedAt ? { removed: true as const } : {}),
+          ...(m?.user.deletedAt ? { deleted: true as const } : {}),
         },
       };
     }),

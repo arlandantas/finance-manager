@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import { zodDetails } from "@/lib/api/with-api";
-import { createDevSession } from "@/lib/auth/dev-login";
+import { createDevSession, DeletedAccountError } from "@/lib/auth/dev-login";
 import { isDevLoginEnabled, isDevLoginHost } from "@/lib/auth/dev-login-guard";
 import { SECURE_SESSION_COOKIE, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "@/lib/auth/session";
 import { getDb } from "@/lib/db";
@@ -45,7 +45,19 @@ export async function handleDevLogin(req: Request): Promise<Response> {
       { status: 400 },
     );
   }
-  const { user, sessionToken, expires } = await createDevSession(getDb(), parsed.data);
+  let session: Awaited<ReturnType<typeof createDevSession>>;
+  try {
+    session = await createDevSession(getDb(), parsed.data);
+  } catch (e) {
+    if (e instanceof DeletedAccountError) {
+      return Response.json(
+        { error: { code: "ACCOUNT_DELETED", message: "Esta conta foi excluída." } },
+        { status: 403 },
+      );
+    }
+    throw e;
+  }
+  const { user, sessionToken, expires } = session;
   const secure =
     req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() === "https" ||
     getEnv().AUTH_URL.startsWith("https://");

@@ -133,8 +133,12 @@ export function ConsentSwitch({
       {last ? (
         <p data-testid="ai-last-change" className="text-xs text-slate-500">
           {last.action === "ENABLED" ? "Ligado" : "Desligado"} por{" "}
-          {memberLabel({ name: last.by.name, removed: last.by.former ? true : undefined })} em{" "}
-          {SP_DATE.format(new Date(last.at))}
+          {memberLabel({
+            name: last.by.name,
+            removed: last.by.former ? true : undefined,
+            deleted: last.by.deleted,
+          })}{" "}
+          em {SP_DATE.format(new Date(last.at))}
         </p>
       ) : null}
 

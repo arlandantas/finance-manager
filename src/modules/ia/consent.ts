@@ -88,6 +88,7 @@ async function featureDto(
         id: last.memberId,
         name: m ? (m.user.name ?? m.user.email.split("@")[0] ?? "Membro") : "Membro",
         former: m?.removedAt != null,
+        ...(m?.user.deletedAt ? { deleted: true as const } : {}),
       },
       textVersion: last.textVersion,
     };

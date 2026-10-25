@@ -19,7 +19,7 @@ export type AiFeatureStateDTO = {
   lastChange: {
     action: "ENABLED" | "DISABLED";
     at: string;
-    by: { id: string; name: string; former: boolean };
+    by: { id: string; name: string; former: boolean; deleted?: true };
     textVersion: number;
   } | null;
 };

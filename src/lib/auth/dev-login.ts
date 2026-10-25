@@ -5,6 +5,14 @@ import { hashSessionToken, SESSION_IDLE_SECONDS } from "@/lib/auth/session";
 import { randomToken } from "@/lib/ids";
 
 /** Reproduz o fim de um login OAuth: upsert do User + Session em banco (ADR-008 §1). */
+/** SEC-030: o login de teste não reaproveita uma conta excluída (anonimizada). */
+export class DeletedAccountError extends Error {
+  constructor() {
+    super("Conta excluída.");
+    this.name = "DeletedAccountError";
+  }
+}
+
 export async function createDevSession(
   db: Pick<PrismaClient, "user" | "session">,
   input: { email: string; name?: string | undefined },
@@ -12,6 +20,7 @@ export async function createDevSession(
 ) {
   const email = normalizeEmail(input.email);
   const existing = await db.user.findUnique({ where: { email } });
+  if (existing?.deletedAt) throw new DeletedAccountError();
   const user = existing
     ? await db.user.update({
         where: { id: existing.id },

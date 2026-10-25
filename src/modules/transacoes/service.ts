@@ -39,7 +39,7 @@ import type {
 type MemberRow = {
   id: string;
   removedAt?: Date | null;
-  user: { name: string | null; email: string; image: string | null };
+  user: { name: string | null; email: string; image: string | null; deletedAt?: Date | null };
 };
 
 export const memberRefOf = (m: MemberRow): MemberRef => ({
@@ -47,6 +47,7 @@ export const memberRefOf = (m: MemberRow): MemberRef => ({
   name: m.user.name ?? localPart(m.user.email),
   image: m.user.image,
   ...(m.removedAt ? { removed: true as const } : {}),
+  ...(m.user.deletedAt ? { deleted: true as const } : {}),
 });
 
 type TxRow = {

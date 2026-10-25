@@ -78,6 +78,11 @@ export async function findSessionUser(
   }
   // DEV-91: sessão encerrada (membro removido) não autentica; a linha fica só para o aviso único.
   if (session.endedAt) return null;
+  // SEC-030: conta excluída (anonimizada) nunca autentica; a sessão sobrante é apagada.
+  if (session.user.deletedAt) {
+    await db.session.deleteMany({ where: { id: session.id } });
+    return null;
+  }
   const next = slidingExpiry(session.createdAt, now);
   if (next.getTime() - session.expires.getTime() >= SESSION_UPDATE_AGE_SECONDS * 1000) {
     await db.session.update({ where: { id: session.id }, data: { expires: next } });

@@ -168,6 +168,7 @@ export async function getFamily(tx: Tx, ctx: RequestContext): Promise<FamilyDTO>
       name: m.user.name ?? localPart(m.user.email),
       image: m.user.image,
       removedAt: (m.removedAt as Date).toISOString(),
+      ...(m.user.deletedAt ? { deleted: true as const } : {}),
     })),
     events: await listFamilyEvents(tx, ctx),
     pendingInvitations: ctx.role === "ADMIN" ? await listPendingInvitations(tx, ctx) : [],

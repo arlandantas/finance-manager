@@ -549,7 +549,7 @@ export function FamiliaScreen() {
               <ul className="flex flex-col gap-1 text-sm text-slate-600">
                 {data.exMembers.map((x) => (
                   <li key={x.id} data-testid="ex-member">
-                    {memberLabel({ name: x.name, removed: true })}
+                    {memberLabel({ name: x.name, removed: true, deleted: x.deleted })}
                   </li>
                 ))}
               </ul>

@@ -124,7 +124,13 @@ export type FamilyDTO = {
   currentMemberId: string;
   currentRole: Role;
   members: Array<MemberDTO & { canChangeRole: boolean }>;
-  exMembers: Array<{ id: string; name: string; image: string | null; removedAt: string }>; // histórico (sem e-mail)
+  exMembers: Array<{
+    id: string;
+    name: string;
+    image: string | null;
+    removedAt: string;
+    deleted?: true;
+  }>; // histórico (sem e-mail)
   events: FamilyEventDTO[]; // últimos 20 (trilha simples: autor e data)
   pendingInvitations: InvitationDTO[]; // [] para quem não é ADMIN
   declinedInvitations: InvitationDTO[]; // SEC-004: recusas dos últimos 30 dias ([] para quem não é ADMIN)
