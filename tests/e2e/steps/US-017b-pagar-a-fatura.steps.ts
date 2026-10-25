@@ -99,12 +99,20 @@ When(
   },
 );
 
-Then("o total de despesas de outubro no extrato e na Home não muda", async ({ page }) => {
-  await gotoReady(page, "/extrato");
-  await expect(page.getByTestId("totals-expense")).toHaveText(normalizeSpaces("R$ 1.200,00"));
-  await gotoReady(page, "/");
-  await expect(page.getByTestId("home-expense")).toContainText(normalizeSpaces("R$ 1.200,00"));
-});
+Then(
+  "o total de despesas de outubro no extrato não muda e a Home segue projetando a fatura em novembro",
+  async ({ page }) => {
+    // Extrato por competência: o pagamento é linha neutra e as compras seguem somando R$ 1.200,00.
+    await gotoReady(page, "/extrato");
+    await expect(page.getByTestId("totals-expense")).toHaveText(normalizeSpaces("R$ 1.200,00"));
+    // Home (US-061/063): "Despesas" por vencimento; a fatura de out/2026 vence em 05/11 e o pagamento não vira despesa.
+    await gotoReady(page, "/");
+    await expect(page.getByTestId("home-expense")).toContainText("R$ 0,00");
+    await page.getByRole("button", { name: "Próximo mês" }).click();
+    await expect(page.getByTestId("home-period")).toContainText(/novembro/i);
+    await expect(page.getByTestId("home-expense")).toContainText(normalizeSpaces("R$ 1.200,00"));
+  },
+);
 
 Then("o acerto de contas de outubro não muda", async ({ page }) => {
   const res = await page.request.get("/api/v1/settlement?period=2026-10");

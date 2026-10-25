@@ -3,7 +3,7 @@ import { parseBRL } from "@/lib/money";
 import { normalizeSpaces } from "../../support/constants";
 import { testDb } from "../../support/db";
 import { makeCard, makeCardPurchase } from "../../support/factories";
-import { gotoReady } from "../../support/nav";
+import { gotoReady, reloadIfOpen } from "../../support/nav";
 import { openPanel } from "../support/acerto";
 import { buyOnCard, chooseSource, fillExpense, todayOf } from "../support/cartoes";
 import { Given, Then, When } from "../support/fixtures";
@@ -221,11 +221,16 @@ When("abro o acerto de outubro", async ({ world, page }) => {
 });
 
 Then(
-  "o total de despesas de outubro no extrato e na Home aumenta {string}",
+  "o total de despesas de outubro no extrato aumenta {string} e a Home o projeta em novembro, no vencimento da fatura",
   async ({ page }, valor: string) => {
+    // Extrato: por competência (data da compra). Home (US-061/063): "Despesas" é projetada por vencimento,
+    // então a fatura de out/2026 (vence 05/11) entra em novembro, não em outubro.
     await gotoReady(page, "/extrato");
     await expect(page.getByTestId("totals-expense")).toHaveText(normalizeSpaces(valor));
     await gotoReady(page, "/");
+    await expect(page.getByTestId("home-expense")).toContainText("R$ 0,00");
+    await page.getByRole("button", { name: "Próximo mês" }).click();
+    await expect(page.getByTestId("home-period")).toContainText(/novembro/i);
     await expect(page.getByTestId("home-expense")).toContainText(normalizeSpaces(valor));
   },
 );
@@ -237,18 +242,23 @@ Then("o saldo da família não muda", async ({ page }) => {
   );
 });
 
-Given("que o limite disponível do cartão é {string}", async ({ world }, disponivel: string) => {
-  const c = card(world);
-  const limit = Number(
-    (await db.creditCard.findUniqueOrThrow({ where: { id: c.id } })).limitInCents,
-  );
-  await makeCardPurchase(world.family as never, {
-    card: c,
-    amountInCents: limit - money(disponivel),
-    occurredOn: "2026-10-10",
-    description: "Consumo do limite",
-  });
-});
+Given(
+  "que o limite disponível do cartão é {string}",
+  async ({ world, page }, disponivel: string) => {
+    const c = card(world);
+    const limit = Number(
+      (await db.creditCard.findUniqueOrThrow({ where: { id: c.id } })).limitInCents,
+    );
+    await makeCardPurchase(world.family as never, {
+      card: c,
+      amountInCents: limit - money(disponivel),
+      occurredOn: "2026-10-10",
+      description: "Consumo do limite",
+    });
+    // O Contexto já abriu a Home: recarrega para o limite disponível do drawer refletir o consumo semeado.
+    await reloadIfOpen(page);
+  },
+);
 
 When(
   "Lucas tenta salvar uma compra de {string} no cartão",

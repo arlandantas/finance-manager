@@ -21,7 +21,7 @@ Funcionalidade: Pagamento da fatura
 
   Cenário: Pagamento não é despesa
     Quando Lucas paga a fatura "out/2026"
-    Então o total de despesas de outubro no extrato e na Home não muda
+    Então o total de despesas de outubro no extrato não muda e a Home segue projetando a fatura em novembro
     E o acerto de contas de outubro não muda
 
   Cenário: Pagamento aparece no extrato como linha neutra

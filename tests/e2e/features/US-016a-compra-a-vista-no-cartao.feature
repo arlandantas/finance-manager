@@ -56,7 +56,7 @@ Funcionalidade: Compra à vista no cartão
 
   Cenário: Compra no cartão entra nos totais do mês
     Quando Lucas lança "R$ 300,00" no cartão "Nubank Mariana"
-    Então o total de despesas de outubro no extrato e na Home aumenta "R$ 300,00"
+    Então o total de despesas de outubro no extrato aumenta "R$ 300,00" e a Home o projeta em novembro, no vencimento da fatura
     E o saldo da família não muda
 
   Cenário: Compra acima do limite disponível
