@@ -1,6 +1,6 @@
 # Status — Agente de Segurança da Informação
 
-**Última atualização:** 2026-10-26 · **Estágio:** reteste da rodada 7 (SEC-047..050, D-GES-57/58) entregue; aguardando o Gestor (SEC-051..053, resíduo DEV-132).
+**Última atualização:** 2026-10-26 · **Estágio:** reteste da rodada 8 (SEC-051, resíduo DEV-132, D-GES-59/60) entregue; aguardando o Gestor (SEC-054..057).
 
 ## Entregas
 | Data | Entrega | Resultado |
@@ -11,6 +11,7 @@
 | 2026-10-25 | [Reteste do "Só meu" ampliado](relatorios/reteste-so-meu-2026-10-25.md) (`bdd9ed1`..`672ea70`, D-GES-50/51) | Núcleo da regra, IDOR, ex-membro, exportação e MCP sem furo; 5 achados novos: SEC-042 (Média), 043, 044, 045 (Baixa), 046 (Info); suítes 47/47 |
 | 2026-10-26 | [Reteste da rodada 6 + D-GES-55](relatorios/reteste-rodada6-2026-10-26.md) (`adc6946`..`ac946e9`) | SEC-042..045 Corrigidos, 046 Corrigido (aviso); D-GES-52..55 conformes; 4 novos: SEC-047, 048, 049 (Baixa), 050 (Info); suítes 100/100 |
 | 2026-10-26 | [Reteste da rodada 7](relatorios/reteste-rodada7-2026-10-26.md) (`20bfdfe`..`0d33261`, D-GES-57/58) | SEC-047, 049, 050 Corrigidos; SEC-048 Corrigido no passo único, contornável em dois (SEC-051); resíduo DEV-132 quantificado (Admin +V·(n−1)/n); 3 novos: SEC-051 (Baixa), 052, 053 (Info); int 1094/1094 (1 skip) |
+| 2026-10-26 | [Reteste da rodada 8](relatorios/reteste-rodada8-2026-10-26.md) (`55c46b5`..`a0415d6`, D-GES-59/60) | SEC-051 e resíduo DEV-132 Corrigidos no `PATCH`; DEV-135 conforme; SEC-049/050 mantidos; 4 novos: SEC-054, 055, 056 (Baixa), 057 (Info); int 1106/1106 (1 skip) |
 | 2026-10-25 | [Reteste final](relatorios/reteste-final-2026-10-25.md) (`b494e0c`..`849008c`) | 14 Corrigidos, 1 Parcial (SEC-026), 0 Não corrigidos, 0 regressões em achados antigos; 4 novos: SEC-038, 039 (Baixa), SEC-040, 041 (Info); suítes 359/359 |
 
 ## Quadro consolidado (estado final após o reteste final de 2026-10-25)
@@ -66,16 +67,20 @@
 | 045 | Baixa | Corrigido | `endSeries` preserva |
 | 046 | Info | Corrigido (aviso) | `reassignNotice` |
 | 047 | Baixa | Corrigido | só o titular troca; via remoção ⇒ SEC-052 |
-| 048 | Baixa | Corrigido (passo único) | dois passos ⇒ SEC-051; resíduo DEV-132 (aceito por ora, D-GES-58) |
+| 048 | Baixa | Corrigido | dois passos e resíduo DEV-132 fechados no D-GES-59 |
 | 049 | Baixa | Corrigido | acerto em duas linhas ⇒ SEC-053 |
-| 050 | Info | Corrigido | nota volta se o pagador deixa de ser ex-membro (SEC-051/DEV-132) |
-| **051** | Baixa | **Em análise (usuário)** | dividir e depois trocar o pagador da dividida do ex-membro move o crédito |
-| **052** | Info | **Em análise (usuário)** | Admin reatribui a si cartão/conta na remoção e controla "Só meu" de ativo |
-| **053** | Info | **Em análise (usuário)** | quem voltou e divide o item antigo aparece em duas linhas no acerto |
+| 050 | Info | Corrigido | pagador fixo (D-GES-59): a nota não volta |
+| 051 | Baixa | Corrigido | D-GES-59; contornos por excluir/estornar ⇒ SEC-054/055 |
+| 052 | Info | Risco aceito | D-GES-59 |
+| 053 | Info | Risco aceito | D-GES-59 |
+| **054** | Baixa | **Em análise (usuário)** | excluir e relançar a dividida do ex-membro move o crédito (qualquer membro) |
+| **055** | Baixa | **Em análise (usuário)** | estornar a baixa paga pelo ex-membro e dar nova baixa move o crédito (Admin: resíduo DEV-132) |
+| **056** | Baixa | **Em análise (usuário)** | acerto com ex-membro credor aceita qualquer conta de destino da família |
+| **057** | Info | **Em análise (usuário)** | série do removido fica com ele; editar a série desfaz a reatribuição |
 
 ## Pendências e bloqueios
-- Perguntas do reteste da rodada 7 (§1): pagador de ex-membro imutável (SEC-051 + resíduo DEV-132), reatribuição na remoção (SEC-052), acerto de quem voltou (SEC-053).
-- Retestar SEC-051..053 quando o Gestor promover as decisões/correções. UI das rodadas 6 e 7 não verificada no navegador.
+- Perguntas do reteste da rodada 8 (§1): excluir/estornar e relançar sobre item de ex-membro (SEC-054/055), acerto com ex-membro (SEC-056), série do removido (SEC-057).
+- Retestar SEC-054..057 quando o Gestor promover as decisões/correções. UI das rodadas 6, 7 e 8 não verificada no navegador.
 - Perguntas do reteste final (§1): SEC-038 (regra nas previstas), "Só meu" na conta de outro dono, limite de convites por pessoa (SEC-040).
 - Retestar SEC-038..041 quando o Gestor promover as correções.
 - Perguntas ao usuário na seção 1 do reteste: regra do "Só meu" para SEC-025/026, risco residual da SEC-011, visão pública do health (SEC-022).
