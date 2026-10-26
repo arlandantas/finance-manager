@@ -50,7 +50,25 @@ async function loadTransactions(tx: Tx, familyId: string, mine: string[] | null)
       splitsBy.set(sp.transactionId, list);
     }
   }
-  return rows.map((r) => ({ ...r, splits: splitsBy.get(r.id) ?? [] }));
+  // US-045: nomes das tags de cada lançamento (também em lotes; só despesa/receita têm tags)
+  const tagsBy = new Map<string, string[]>();
+  for (let i = 0; i < rows.length; i += BATCH) {
+    const ids = rows.slice(i, i + BATCH).map((r) => r.id);
+    const links = await tx.transactionTag.findMany({
+      where: { familyId, transactionId: { in: ids } },
+      include: { tag: { select: { name: true } } },
+    });
+    for (const l of links) {
+      const list = tagsBy.get(l.transactionId) ?? [];
+      list.push(l.tag.name);
+      tagsBy.set(l.transactionId, list);
+    }
+  }
+  return rows.map((r) => ({
+    ...r,
+    splits: splitsBy.get(r.id) ?? [],
+    tags: (tagsBy.get(r.id) ?? []).sort((a, b) => a.localeCompare(b)),
+  }));
 }
 
 const mapTransaction = (t: TxRow, hideNote = false) => ({
@@ -81,6 +99,7 @@ const mapTransaction = (t: TxRow, hideNote = false) => ({
   planoParcelasId: t.installmentPlanId,
   parcela: t.installmentNo,
   parcelas: t.installmentCount,
+  ...(t.tags.length > 0 ? { tags: t.tags } : {}),
   origem: t.origin,
   criadoEm: ts(t.createdAt),
   excluidoEm: tsOrNull(t.deletedAt),

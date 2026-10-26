@@ -68,6 +68,16 @@ export function zodDetails(error: z.ZodError): Array<{ path: string; message: st
   return error.issues.map((i) => ({ path: i.path.join("."), message: i.message }));
 }
 
+/** Query string ⇒ objeto; parâmetro REPETIDO vira array (`tagIds=a&tagIds=b`, SDD-016 §1); o resto, texto. */
+export function queryObject(params: URLSearchParams): Record<string, string | string[]> {
+  return Object.fromEntries(
+    [...new Set(params.keys())].map((key) => {
+      const all = params.getAll(key);
+      return [key, all.length > 1 ? all : (all[0] as string)] as const;
+    }),
+  );
+}
+
 function validationError(error: z.ZodError): ApiError {
   const details = zodDetails(error);
   return badRequest("VALIDATION_ERROR", details[0]?.message ?? "Dados inválidos.", details);
@@ -162,7 +172,7 @@ export function withApi<A extends AuthMode = "family", B = undefined, Q = undefi
       }
       let query = undefined as Q;
       if (opts.query) {
-        const parsed = opts.query.safeParse(Object.fromEntries(url.searchParams));
+        const parsed = opts.query.safeParse(queryObject(url.searchParams));
         if (!parsed.success) throw validationError(parsed.error);
         query = parsed.data;
       }

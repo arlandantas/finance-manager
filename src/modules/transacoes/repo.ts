@@ -10,6 +10,7 @@ const loadInclude = {
   category: true,
   group: true,
   paidPlanned: { select: { id: true } },
+  tags: { select: { tag: { select: { id: true, name: true } } } }, // US-045
 } as const;
 
 /** Lançamentos e categorias sempre escopados por `familyId` (ADR-013). */

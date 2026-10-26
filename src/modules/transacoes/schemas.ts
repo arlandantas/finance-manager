@@ -4,6 +4,7 @@ import { amountInCentsSchema } from "@/lib/money";
 import { type MemberRef, periodKeySchema, uuidSchema, versionSchema } from "@/lib/schemas";
 import type { InvoiceStatus } from "@/modules/cartoes/cycle";
 import { addMonthsClamped, MAX_INSTALLMENTS } from "@/modules/cartoes/installments";
+import { TagNamesSchema, type TagRef } from "@/modules/tags/schemas";
 
 /** Mensagem única de descrição inválida em despesa/receita/cartão (SDD-013 §1; previstas mantêm as suas). */
 export const DESCRIPTION_MSG = "A descrição precisa ter entre 2 e 100 caracteres";
@@ -22,6 +23,7 @@ const common = {
   payerMemberId: uuidSchema.optional(), // padrão: membro logado
   description: descriptionSchema,
   note: z.string().trim().max(500, "A observação deve ter no máximo 500 caracteres").optional(),
+  tags: TagNamesSchema.optional(), // US-045: nomes digitados; o servidor reaproveita/cria (ausente = sem tags)
 };
 
 const INSTALLMENTS_MSG = "Escolha de 1 a 24 parcelas";
@@ -116,6 +118,7 @@ export type TransactionDTO = {
   installment: InstallmentDTO | null; // US-040: parcela de compra parcelada
   description: string;
   note: string | null;
+  tags: TagRef[]; // US-045: chips ordenados por nome ([] fora de despesa/receita)
   account: { id: string; name: string; archived?: boolean } | null; // null em compra no cartão; `archived` marca "(arquivada)"
   card: { id: string; name: string; archived?: boolean } | null; // compra no cartão e pagamento de fatura
   invoice: { ref: string; closingDate: string; dueDate: string } | null;
@@ -305,6 +308,7 @@ export const UpdateTransactionSchema = z
       .nullable()
       .optional(),
     isSharedExpense: z.boolean().optional(), // só despesa; em receita => 400
+    tags: TagNamesSchema.optional(), // US-045: SUBSTITUI o conjunto ([] limpa; ausente não toca)
   })
   .strict();
 export type UpdateTransactionInput = z.input<typeof UpdateTransactionSchema>;

@@ -320,7 +320,7 @@ export async function makeCardPurchase(
   const author = (o.author ? fx.byName[o.author] : fx.members[0]) ?? fx.members[0];
   const payer = (o.payer ? fx.byName[o.payer] : author) ?? author;
   if (!author || !payer) throw new Error("Família sem membros");
-  return createExpenseRow(
+  const row = await createExpenseRow(
     fx,
     {
       familyId: fx.family.id,
@@ -348,6 +348,8 @@ export async function makeCardPurchase(
     o.occurredOn,
     o.split,
   );
+  if (o.tags?.length) await attachTags(fx, row.id, o.tags);
+  return row;
 }
 
 /** Pagamento de fatura direto no banco (uma perna, DEBIT na conta). */
@@ -459,7 +461,7 @@ export async function makeTransaction(
   const author = (o.author ? fx.byName[o.author] : fx.members[0]) ?? fx.members[0];
   const payer = (o.payer ? fx.byName[o.payer] : author) ?? author;
   if (!author || !payer) throw new Error("Família sem membros");
-  return createExpenseRow(
+  const row = await createExpenseRow(
     fx,
     {
       familyId: fx.family.id,
@@ -485,6 +487,40 @@ export async function makeTransaction(
     o.occurredOn,
     o.split,
   );
+  if (o.tags?.length) await attachTags(fx, row.id, o.tags);
+  return row;
+}
+
+/** Tag da família direto no banco (reaproveita pela chave normalizada, como o servidor). */
+export async function makeTag(fx: FamilyFixture, name: string, by?: string) {
+  const db = fdb();
+  const { canonicalTagName, normalizeTagKey } = await import("@/modules/tags/normalize");
+  const nameKey = normalizeTagKey(name);
+  const creator = (by ? fx.byName[by] : fx.members[0]) ?? fx.members[0];
+  if (!creator) throw new Error("Família sem membros");
+  return db.tag.upsert({
+    where: { familyId_nameKey: { familyId: fx.family.id, nameKey } },
+    update: {},
+    create: {
+      familyId: fx.family.id,
+      name: canonicalTagName(name),
+      nameKey,
+      createdByMemberId: creator.memberId,
+    },
+  });
+}
+
+/** Liga tags (criadas se preciso) a um lançamento já gravado. */
+export async function attachTags(fx: FamilyFixture, transactionId: string, names: string[]) {
+  const db = fdb();
+  for (const name of names) {
+    const tag = await makeTag(fx, name);
+    await db.transactionTag.upsert({
+      where: { transactionId_tagId: { transactionId, tagId: tag.id } },
+      update: {},
+      create: { transactionId, tagId: tag.id, familyId: fx.family.id },
+    });
+  }
 }
 
 /** Transferência (ou acerto) com as duas pernas; `undone` marca o grupo e as pernas como desfeitos. */

@@ -40,6 +40,7 @@ export async function seedEverything(fx: FamilyFixture): Promise<void> {
     payer: who,
     shared: true,
     description: "Mercado do mês",
+    tags: ["viagem"], // US-045: tags e transaction_tags também têm dado
   });
   await makeTransfer(fx, { from: itau, to: nub, amountInCents: 1000, occurredOn: "2026-10-11" });
   const card = await makeCard(fx, { name: "Visa", owner: who });

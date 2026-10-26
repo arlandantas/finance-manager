@@ -76,6 +76,7 @@ export const ExportTransactionSchema = z
     planoParcelasId: id.nullable(),
     parcela: z.number().int().nullable(),
     parcelas: z.number().int().nullable(),
+    tags: z.array(z.string()).optional(), // US-045: nomes das tags (só quando houver)
     origem: z.string(),
     criadoEm: iso,
     excluidoEm: nullableIso,

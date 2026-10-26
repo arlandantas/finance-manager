@@ -16,6 +16,8 @@ import { currentRuleShares } from "@/modules/split/current-rule";
 import { assertCanShare, isSettlementEnabled } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
 import { insertSplitRows, resolveRuleSplit } from "@/modules/split/write";
+import type { TagRef } from "@/modules/tags/schemas";
+import { attachTagsOnCreate, sortTagRefs } from "@/modules/tags/service";
 import {
   decodeCursor,
   encodeCursor,
@@ -103,6 +105,8 @@ export function toTransactionDTO(
     accountOwnerId?: string | null;
     category: CategoryRef | null;
     members: Map<string, MemberRef>;
+    /** US-045: chips do lançamento (despesa/receita); ausente = sem tags. */
+    tags?: TagRef[];
     /** Rótulos das conexões (grantId ⇒ "Meu Claude") para o selo "via assistente". */
     assistantLabels?: Map<string, string>;
   },
@@ -126,6 +130,7 @@ export function toTransactionDTO(
         : null,
     description: row.description,
     note: row.note,
+    tags: ctx.tags ?? [],
     account: ctx.account,
     card: ctx.card ?? null,
     invoice: ctx.invoice ?? null,
@@ -304,8 +309,10 @@ export async function createExpenseCore(
       shares: rule.shares,
     });
   }
+  const tags = await attachTagsOnCreate(tx, ctx, [row.id], input.tags); // US-045: mesma transação
 
   const dto = toTransactionDTO(row, {
+    tags,
     account,
     card: card ? { id: card.id, name: card.name } : null,
     invoice: invoice
@@ -338,6 +345,7 @@ export async function createExpenseCore(
           description,
           payerMemberId,
           isSharedExpense: input.isSharedExpense,
+          ...(tags.length > 0 ? { tags: tags.map((t) => t.name) } : {}),
         },
       },
     ],
@@ -401,8 +409,10 @@ async function createIncome(
     authorMemberId: ctx.memberId,
     isSharedExpense: false,
   });
+  const tags = await attachTagsOnCreate(tx, ctx, [row.id], input.tags); // US-045
 
   const dto = toTransactionDTO(row, {
+    tags,
     account,
     category: categoryRefOf(category),
     members: memberRefsWithReturn(await repo.listMembers(), memberRefOf),
@@ -426,6 +436,7 @@ async function createIncome(
           description,
           payerMemberId,
           isSharedExpense: false,
+          ...(tags.length > 0 ? { tags: tags.map((t) => t.name) } : {}),
         },
       },
     ],
@@ -457,6 +468,7 @@ function dtoFromLoaded(
         }
       : null,
     plannedExpenseId: r.paidPlanned?.id ?? null,
+    tags: sortTagRefs(r.tags.map((l) => ({ id: l.tag.id, name: l.tag.name }))),
     accountOwnerId: r.account?.ownerMemberId ?? r.card?.ownerMemberId ?? null,
     category: r.category ? categoryRefOf(r.category) : null,
     members,

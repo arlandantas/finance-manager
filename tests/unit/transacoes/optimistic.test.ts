@@ -48,6 +48,7 @@ const existing = (id: string, occurredOn: string): TransactionDTO => ({
   installment: null,
   description: id,
   note: null,
+  tags: [],
   account: nubank,
   card: null,
   invoice: null,

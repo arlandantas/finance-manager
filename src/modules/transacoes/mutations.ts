@@ -18,6 +18,7 @@ import {
   resolveRuleSplit,
   rewriteSplitAmounts,
 } from "@/modules/split/write";
+import { replaceTags, type TagSetChange } from "@/modules/tags/service";
 import {
   assertCanMakePersonal,
   assertCanWriteTransaction,
@@ -163,6 +164,95 @@ async function respond(
   return { transaction, account: { id: accountId, balanceInCents: balance } };
 }
 
+const FINANCIAL_KEYS = [
+  "accountId",
+  "categoryId",
+  "amountInCents",
+  "occurredOn",
+  "payerMemberId",
+  "description",
+  "note",
+  "isSharedExpense",
+] as const;
+
+/** SDD-016 §1: PATCH cujos campos ⊆ { tags } é edição NÃO financeira (não pede acerto, não é barrada por fatura/conta/parcela). */
+const isTagsOnly = (input: UpdateTransactionParsed) =>
+  input.tags !== undefined && FINANCIAL_KEYS.every((k) => input[k] === undefined);
+
+const tagNames = (tags: Array<{ name: string }>) => tags.map((t) => t.name);
+
+/**
+ * US-045 (SDD-016 §4.2): troca só o conjunto de tags. Tag não altera saldo, fatura nem acerto: vale em
+ * fatura paga, conta arquivada e parcela; só o lançamento EXCLUÍDO barra. Em compra parcelada o conjunto
+ * vale para TODAS as parcelas (plano travado antes das parcelas). Sem diferença: 200 sem `version + 1`.
+ */
+async function updateTagsOnly(
+  tx: Tx,
+  ctx: RequestContext,
+  repo: Repo,
+  id: string,
+  input: UpdateTransactionParsed,
+): Promise<UpdateTransactionResponse> {
+  const row = await repo.findById(id);
+  if (!row) throw notFound("Lançamento não encontrado.");
+  await assertCanWriteTransaction(tx, ctx, row); // SEC-021: "Só meu" é só do dono
+  if (row.kind === "INVOICE_PAYMENT") throw unprocessable("NOT_EDITABLE", PAYMENT_NOT_EDITABLE);
+  if (row.kind !== "EXPENSE" && row.kind !== "INCOME") {
+    throw unprocessable("NOT_EDITABLE", NOT_EDITABLE);
+  }
+  const deleted = () =>
+    unprocessable("TRANSACTION_DELETED", "Este lançamento foi excluído. Restaure para editar.");
+  if (row.deletedAt) throw deleted();
+
+  type Parcel = { id: string; version: number; deletedAt: Date | null };
+  let parcels: Parcel[] = [{ id: row.id, version: row.version, deletedAt: row.deletedAt }];
+  if (row.installmentPlanId) {
+    await tx.$executeRaw`SELECT 1 FROM installment_plans
+      WHERE id = ${row.installmentPlanId}::uuid AND "familyId" = ${ctx.familyId}::uuid FOR UPDATE`;
+    parcels = await tx.transaction.findMany({
+      where: { familyId: ctx.familyId, installmentPlanId: row.installmentPlanId },
+      select: { id: true, version: true, deletedAt: true },
+      orderBy: [{ installmentNo: "asc" }],
+    });
+  }
+  const target = parcels.find((p) => p.id === id);
+  if (!target) throw notFound("Lançamento não encontrado.");
+  if (target.deletedAt) throw deleted();
+
+  const diffs = new Map<string, TagSetChange>(
+    (
+      await replaceTags(
+        tx,
+        ctx,
+        parcels.map((p) => p.id),
+        input.tags ?? [],
+      )
+    ).map((c) => [c.transactionId, c] as const),
+  );
+  const targetDiff = diffs.get(id);
+  if (targetDiff?.changed && target.version !== input.version) {
+    throw await versionConflict(repo, id, await memberNames(repo)); // a transação inteira é desfeita
+  }
+  for (const p of parcels) {
+    const diff = diffs.get(p.id);
+    if (!diff?.changed || p.deletedAt) continue; // excluídas ficam com o conjunto novo, sem revisão
+    const res = await tx.transaction.updateMany({
+      where: { id: p.id, familyId: ctx.familyId, version: p.version, deletedAt: null },
+      data: { updatedByMemberId: ctx.memberId, version: { increment: 1 } },
+    });
+    if (res.count === 0) throw await versionConflict(repo, id, await memberNames(repo));
+    await recordRevision(tx, {
+      familyId: ctx.familyId,
+      transactionId: p.id,
+      revision: p.version + 1,
+      action: "UPDATE",
+      actorMemberId: ctx.memberId,
+      changes: [{ field: "tags", from: tagNames(diff.before), to: tagNames(diff.after) }],
+    });
+  }
+  return respond(tx, ctx, id);
+}
+
 /** PATCH /transactions/:id (SDD-001 §4.2). */
 export async function updateTransaction(
   tx: Tx,
@@ -172,6 +262,7 @@ export async function updateTransaction(
 ): Promise<UpdateTransactionResponse> {
   const engine = await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: primeira trava
   const repo = transacoesRepo(tx, ctx.familyId);
+  if (isTagsOnly(input)) return updateTagsOnly(tx, ctx, repo, id, input);
   const row = await loadMutable(tx, ctx, repo, id);
   // D-GES-55: Administrador atual sobre o "Só meu" de ex-membro tem poderes plenos
   // SEC-051 (D-GES-59): o pagador ex-membro (sem retorno) é imutável também na dividida
@@ -267,7 +358,12 @@ export async function updateTransaction(
   }
   if (input.note === null && row.note === null) delete wanted.note;
   const keys = Object.keys(wanted) as Array<keyof Fields>;
-  if (keys.length === 0) return respond(tx, ctx, id);
+  if (keys.length === 0) {
+    // nada financeiro mudou: só as tags (se vieram) ainda podem mudar
+    return input.tags === undefined
+      ? respond(tx, ctx, id)
+      : updateTagsOnly(tx, ctx, repo, id, input);
+  }
 
   const touchesSettlement = keys.some((k) =>
     ["amountInCents", "occurredOn", "payerMemberId", "isSharedExpense"].includes(k),
@@ -341,6 +437,12 @@ export async function updateTransaction(
     from: before[field],
     to: wanted[field],
   }));
+  if (input.tags !== undefined) {
+    const [diff] = await replaceTags(tx, ctx, [id], input.tags);
+    if (diff?.changed) {
+      changes.push({ field: "tags", from: tagNames(diff.before), to: tagNames(diff.after) });
+    }
+  }
   await recordRevision(tx, {
     familyId: ctx.familyId,
     transactionId: id,
@@ -432,6 +534,7 @@ const FIELD_LABELS: Record<string, string> = {
   isSharedExpense: "Dividir com a família",
   accountId: "Conta",
   note: "Observação",
+  tags: "Tags",
   deletionReason: "Situação",
   "*": "Criação",
 };

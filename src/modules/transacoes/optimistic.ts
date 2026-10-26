@@ -15,6 +15,8 @@ export type LedgerUiFilters = {
   cardId?: string;
   memberId?: string;
   categoryId?: string;
+  tagIds?: string[]; // US-047: qualquer uma das tags (repetido na URL)
+  untagged?: boolean; // drill-down "Sem tag" (chip)
   type?: "EXPENSE" | "INCOME" | "TRANSFER" | "INVOICE_PAYMENT";
   shared?: boolean;
   origin?: "APP" | "ASSISTANT";
@@ -47,6 +49,9 @@ export function admits(
     filters.memberId !== item.author.id
   )
     return false;
+  // tags provisórias não têm id: com filtro de tag o servidor decide (a lista é recarregada)
+  if (filters.tagIds && filters.tagIds.length > 0) return false;
+  if (filters.untagged && item.tags.length > 0) return false;
   if (filters.origin === "ASSISTANT") return false; // criado pelo app nunca é "via assistente"
   if (filters.type === "TRANSFER") return false;
   if (filters.type && filters.type !== item.type) return false;
@@ -142,6 +147,8 @@ export function buildPendingItem(
     description:
       (typeof input.description === "string" && input.description.trim()) || category.name,
     note: input.note ?? null,
+    // chips provisórios (sem id real até o servidor responder)
+    tags: (input.tags ?? []).map((name) => ({ id: `pending-tag-${name}`, name })),
     account: card ? null : account,
     card: card ? { id: card.id, name: card.name } : null,
     invoice: ref && dates ? { ref, closingDate: dates.closingDate, dueDate: dates.dueDate } : null,

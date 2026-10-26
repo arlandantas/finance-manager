@@ -12,6 +12,7 @@ import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { recordRevision } from "@/modules/contas/ledger";
 import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
+import { attachTagsOnCreate } from "@/modules/tags/service";
 import { loadInstallmentPlanDTO } from "@/modules/transacoes/installment-plan";
 import { assertPersonalForSelf } from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
@@ -160,6 +161,13 @@ export async function createInstallmentPurchase(
     })),
   });
   rows.sort((a, b) => (a.installmentNo as number) - (b.installmentNo as number));
+  // US-045 (RN-013.5): a tag vale para TODAS as parcelas; o plano já está criado/travado nesta transação
+  const tags = await attachTagsOnCreate(
+    tx,
+    ctx,
+    rows.map((r) => r.id),
+    input.tags,
+  );
 
   // 5) revisão CREATE de cada parcela
   for (const [i, row] of rows.entries()) {
@@ -187,6 +195,7 @@ export async function createInstallmentPurchase(
             payerMemberId,
             isSharedExpense: false,
             installment: { planId: plan.id, no: d.no, count, paidBeforeApp },
+            ...(tags.length > 0 ? { tags: tags.map((t) => t.name) } : {}),
           },
         },
       ],
@@ -198,6 +207,7 @@ export async function createInstallmentPurchase(
   const inv1 = invoices[0] as (typeof invoices)[number];
   const members = new Map((await repo.listMembers()).map((m) => [m.id, memberRefOf(m)] as const));
   const transaction = toTransactionDTO(first, {
+    tags,
     account: null,
     card: { id: card.id, name: card.name },
     invoice: { ref: inv1.ref, closingDate: inv1.closingDate, dueDate: inv1.dueDate },
