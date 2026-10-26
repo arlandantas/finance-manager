@@ -193,6 +193,7 @@ model Family {
   recurringExpenses            RecurringExpense[]
   installmentPlans             InstallmentPlan[]
   transactions                 Transaction[]
+  tags                         Tag[]
   transferGroups               TransferGroup[]
   splitSnapshots               SplitMigrationSnapshot[]
   dataMigrations               DataMigration[]
@@ -227,6 +228,9 @@ enum FamilyEventType {
   ASSISTANT_ACCESS_CHANGED // US-074
   MEMBER_JOINED // SEC-004: entrou por convite (aceite explícito)
   CARD_OWNER_CHANGED // SEC-042: troca de titular de cartão (quem trocou, de quem para quem)
+  TAG_RENAMED // US-046 (SDD-016): gestão de tags (sem uso nesta fatia)
+  TAG_MERGED
+  TAG_DELETED
 }
 
 // Trilha append-only de eventos da família (trigger forbid_mutation em SQL cru)
@@ -276,6 +280,8 @@ model Member {
   transactionSplits            TransactionSplit[]
   paidTransactions             Transaction[]                 @relation("TxPayer")
   authoredTransactions         Transaction[]                 @relation("TxAuthor")
+  tagsCreated                  Tag[]                         @relation("TagCreator")
+  tagsUpdated                  Tag[]                         @relation("TagUpdater")
   eventsAsActor                FamilyEvent[]                 @relation("EventActor")
   aiConsentEvents              AiConsentEvent[]
   mcpGrants                    McpGrant[]
@@ -495,6 +501,7 @@ model Transaction {
   group       TransferGroup?        @relation(fields: [familyId, transferGroupId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
   revisions   TransactionRevision[]
   paidPlanned PlannedExpense?       @relation("PlannedPaidTx")
+  tags        TransactionTag[]
 
   @@unique([familyId, id])
   @@index([familyId, occurredOn(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
@@ -508,6 +515,42 @@ model Transaction {
   @@index([familyId, origin, occurredOn])
   @@unique([assistantGrantId, assistantIdemKey])
   @@map("transactions")
+}
+
+// ───────── Tags livres (US-045, SDD-016, ADR-022): fora do ledger (permitem DELETE) ─────────
+model Tag {
+  id                String   @id @default(uuid()) @db.Uuid
+  familyId          String   @db.Uuid
+  name              String // 1ª grafia, espaços internos já viram hífen (CHECK 2..30)
+  nameKey           String // normalizeTagKey(name): único por família
+  version           Int      @default(1)
+  createdByMemberId String   @db.Uuid
+  updatedByMemberId String?  @db.Uuid
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+
+  family    Family           @relation(fields: [familyId], references: [id])
+  createdBy Member           @relation("TagCreator", fields: [familyId, createdByMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  updatedBy Member?          @relation("TagUpdater", fields: [familyId, updatedByMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  links     TransactionTag[]
+
+  @@unique([familyId, id])
+  @@unique([familyId, nameKey])
+  @@map("tags")
+}
+
+// Só EXPENSE/INCOME (gatilho transaction_tags_kind em SQL cru)
+model TransactionTag {
+  transactionId String @db.Uuid
+  tagId         String @db.Uuid
+  familyId      String @db.Uuid
+
+  transaction Transaction @relation(fields: [familyId, transactionId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  tag         Tag         @relation(fields: [familyId, tagId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([transactionId, tagId])
+  @@index([tagId, transactionId])
+  @@map("transaction_tags")
 }
 
 // ───────── Compra parcelada (US-040, ADR-017/020, SDD-014): cabeçalho SEM valor próprio no ledger ─────────

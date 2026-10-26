@@ -28,6 +28,7 @@ const PURE: RegExp[] = [
   /^src\/lib\/(period|money|apportion|dates)\.ts$/,
   /^src\/modules\/.+\/(rules|settlement|period|money|apportion|cycle|installments)[^/]*\.ts$/,
   /^src\/modules\/split\/(backfill|split-amount)\.ts$/,
+  /^src\/modules\/tags\/normalize\.ts$/, // SDD-016: normalização de tags pura
   /^src\/modules\/analise-ia\/payload\.ts$/, // ADR-029: payload puro e determinístico
 ];
 

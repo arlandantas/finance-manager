@@ -152,6 +152,9 @@ const EVENT_TEXT: Record<FamilyDTO["events"][number]["type"], string> = {
   ASSISTANT_ACCESS_CHANGED: "alterou o acesso por assistente",
   MEMBER_JOINED: "entrou na família",
   CARD_OWNER_CHANGED: "trocou o titular de um cartão",
+  TAG_RENAMED: "renomeou uma tag",
+  TAG_MERGED: "mesclou tags",
+  TAG_DELETED: "removeu uma tag",
 };
 
 function RenameDialog({
