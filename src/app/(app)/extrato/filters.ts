@@ -3,7 +3,12 @@ import type { LedgerUiFilters } from "@/modules/transacoes/optimistic";
 const TYPES = ["EXPENSE", "INCOME", "TRANSFER", "INVOICE_PAYMENT"] as const;
 
 /** Filtros da URL (mesmos nomes da API, SDD-005 §4.1). Valores desconhecidos são ignorados. */
-export function parseFilters(sp: { get(name: string): string | null }): LedgerUiFilters {
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function parseFilters(sp: {
+  get(name: string): string | null;
+  getAll?(name: string): string[];
+}): LedgerUiFilters {
   const f: LedgerUiFilters = {};
   const period = sp.get("period");
   if (period && /^\d{4}-(0[1-9]|1[0-2])$/.test(period)) f.period = period;
@@ -27,20 +32,31 @@ export function parseFilters(sp: { get(name: string): string | null }): LedgerUi
   const q = sp.get("q")?.trim();
   if (q && q.length >= 2 && q.length <= 50) f.q = q;
   if (sp.get("includeDeleted") === "true") f.includeDeleted = true;
+  // US-047: `tagIds` repetido na URL (qualquer uma das tags) e o chip técnico "Sem tag"
+  const tagIds = [...new Set((sp.getAll?.("tagIds") ?? []).filter((v) => UUID.test(v)))].slice(
+    0,
+    20,
+  );
+  if (tagIds.length > 0) f.tagIds = tagIds;
+  if (sp.get("untagged") === "true") f.untagged = true;
   return f;
 }
 
 export function filtersToSearch(f: LedgerUiFilters): string {
   const p = new URLSearchParams();
-  for (const [k, v] of Object.entries(f))
-    if (v !== undefined && v !== false && v !== "") p.set(k, String(v));
+  for (const [k, v] of Object.entries(f)) {
+    if (Array.isArray(v)) for (const x of v) p.append(k, String(x));
+    else if (v !== undefined && v !== false && v !== "") p.set(k, String(v));
+  }
   return p.toString();
 }
 
 /** Quantos filtros além do período estão ativos. */
 export function activeFilterCount(f: LedgerUiFilters): number {
   const { period: _period, from: _from, to: _to, ...rest } = f;
-  return Object.values(rest).filter((v) => v !== undefined && v !== false).length;
+  return Object.values(rest).filter(
+    (v) => v !== undefined && v !== false && !(Array.isArray(v) && v.length === 0),
+  ).length;
 }
 
 export function monthLabel(key: string): string {

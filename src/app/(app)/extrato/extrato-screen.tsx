@@ -24,6 +24,7 @@ import {
 } from "./filters";
 import { FiltersPanel } from "./filters-panel";
 import { LedgerRow } from "./ledger-row";
+import { TagFilterChips } from "./tag-filter";
 import { TransactionDetailDrawer } from "./transaction-detail-drawer";
 
 function Totals({
@@ -227,6 +228,7 @@ export function ExtratoScreen() {
           </>
         ) : null}
       </div>
+      <TagFilterChips filters={filters} onChange={patchFilters} />
       <Drawer open={filtersOpen} onOpenChange={setFiltersOpen} title="Filtros">
         <FiltersPanel filters={filters} onChange={patchFilters} idPrefix="m" />
         <Button className="mt-4 w-full" onClick={() => setFiltersOpen(false)}>
@@ -269,7 +271,11 @@ export function ExtratoScreen() {
 
       {first && items.length === 0 && !noTransactionsAtAll ? (
         <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-8 text-center">
-          <p className="text-slate-700">Nenhum lançamento encontrado</p>
+          <p className="text-slate-700">
+            {filters.tagIds && filters.tagIds.length > 0
+              ? "Nenhum lançamento com essa tag neste período"
+              : "Nenhum lançamento encontrado"}
+          </p>
           <Button variant="secondary" onClick={() => replaceFilters({})}>
             Limpar filtros
           </Button>

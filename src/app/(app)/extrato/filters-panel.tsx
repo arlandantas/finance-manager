@@ -7,6 +7,7 @@ import { useAllCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
 import type { LedgerUiFilters } from "@/modules/transacoes/optimistic";
+import { TagFilter } from "./tag-filter";
 
 /** Busca por descrição (US-024): só aplica com 2+ caracteres; vazio limpa o filtro. */
 function SearchField({
@@ -129,6 +130,7 @@ export function FiltersPanel({
           ))}
         </select>
       </Field>
+      <TagFilter id={id("tag")} filters={filters} onChange={onChange} />
       <Field id={id("type")} label="Tipo">
         <select
           id={id("type")}
