@@ -55,3 +55,7 @@ Skeleton nos cards e na fatura; vazio por cartão/fatura; erro de leitura com "T
 
 ## 6. Histórico
 - 2026-10-04 — Criado no refinamento da R2.
+
+## 7. Atualização (2026-10-26): conta pagadora e assinaturas
+- **Conta pagadora padrão** (opcional, [US-089](../backlog/stories/US-089-conta-pagadora-padrao-do-cartao.md), Q-U22/Q-U23): campo "Conta que paga a fatura" no cadastro/edição do cartão; "Pagar fatura" vem com a conta preenchida e editável; o app **nunca paga sozinho**; a fatura em aberto entra nessa conta na visão por conta ([FLUXO-018](FLUXO-018-visao-por-conta-em-a-pagar.md)).
+- **Assinaturas** ([US-096](../backlog/stories/US-096-assinatura-mensal-no-cartao.md)..[US-099](../backlog/stories/US-099-assinatura-dividida-entra-no-acerto.md), Q-U18/Q-U19): cobrança mensal lançada sozinha no dia como compra no cartão com selo "Assinatura"; a fatura mostra "Assinaturas previstas neste ciclo" (informativo, fora do total e do limite até o lançamento); lista "Assinaturas" com total mensal em Cartões. Cadastro também pela porta única ([FLUXO-019](FLUXO-019-lancar-ou-prever-na-mesma-porta.md)).

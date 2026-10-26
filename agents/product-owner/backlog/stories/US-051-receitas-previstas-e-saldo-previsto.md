@@ -23,6 +23,7 @@ Como **membro da família**, quero **cadastrar receitas previstas (ex.: salário
 - Receita prevista **não** entra no acerto.
 - **O tipo da previsão é imutável** (D-PO-47, TL-21): não se troca receita prevista em despesa prevista (nem o contrário); para trocar, exclui-se e cadastra-se de novo.
 - A aba **"Pagas e recebidas"** mistura os dois tipos.
+- **Porta única (NEED-031, US-090):** a receita prevista usa a mesma porta do lançamento (tipo Receita + "Vai acontecer"); o `kind` da família de previstas também comportará a transferência prevista (US-100). **Na US-060** a receita prevista entra no saldo previsto por conta (coluna "A receber", só quando existir). Atualizado em 2026-10-26.
 - "Parcelas futuras" (US-040) é um indicador do cartão e **não** entra em "A pagar", "A receber" nem no "Saldo previsto".
 
 ## Critérios de aceite (Gherkin)
