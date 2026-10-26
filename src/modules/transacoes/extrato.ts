@@ -29,6 +29,28 @@ export function buildLedgerWhere(f: LedgerFilters): Prisma.Sql {
       Prisma.sql`(t."payerMemberId" = ${f.memberId}::uuid OR t."authorMemberId" = ${f.memberId}::uuid)`,
     );
   }
+  // SDD-016 §4.4: plurais (OU dentro). Os ids entram só em ANY(...) depois do `familyId` (nunca vazam linhas).
+  if (f.categoryIds?.length) {
+    parts.push(Prisma.sql`t."categoryId" = ANY(${f.categoryIds}::uuid[])`);
+  }
+  if (f.payerIds?.length) parts.push(Prisma.sql`t."payerMemberId" = ANY(${f.payerIds}::uuid[])`);
+  if (f.sourceIds?.length) {
+    parts.push(
+      Prisma.sql`(t."accountId" = ANY(${f.sourceIds}::uuid[]) OR t."cardId" = ANY(${f.sourceIds}::uuid[]))`,
+    );
+  }
+  // US-047 (ADR-022 §3): EXISTS, nunca JOIN: um lançamento com duas tags aparece e soma uma vez.
+  if (f.tagIds?.length) {
+    parts.push(
+      Prisma.sql`EXISTS (SELECT 1 FROM transaction_tags tt WHERE tt."transactionId" = t.id AND tt."tagId" = ANY(${f.tagIds}::uuid[]))`,
+    );
+  }
+  if (f.untagged) {
+    parts.push(
+      // só despesa/receita têm tags: transferência/acerto/pagamento de fatura não são "sem tag" (DEV)
+      Prisma.sql`(t.kind IN ('EXPENSE', 'INCOME') AND NOT EXISTS (SELECT 1 FROM transaction_tags tt WHERE tt."transactionId" = t.id))`,
+    );
+  }
   if (f.type === "EXPENSE") parts.push(Prisma.sql`t.kind = 'EXPENSE'`);
   if (f.type === "INCOME") parts.push(Prisma.sql`t.kind = 'INCOME'`);
   if (f.type === "INVOICE_PAYMENT") parts.push(Prisma.sql`t.kind = 'INVOICE_PAYMENT'`);

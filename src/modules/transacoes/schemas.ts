@@ -231,6 +231,11 @@ export type TransactionDefaults = {
 /** Último dia de uma janela de 24 meses a partir de `from` (inclusive). */
 const lastDayOfWindow = (from: string) => addDays(addMonthsClamped(from, 24), -1);
 const boolParam = z.enum(["true", "false"]).transform((v) => v === "true");
+/** Filtro plural (OU dentro): `?tagIds=a&tagIds=b` ou um só valor; no máximo 20 (SDD-016 §1). */
+export const idListParam = z
+  .union([uuidSchema, z.array(uuidSchema).max(20, "Escolha no máximo 20 valores no filtro")])
+  .transform((v) => (Array.isArray(v) ? v : [v]));
+export const UNTAGGED_WITH_TAGS_MSG = 'Use tags ou "sem tag", não os dois';
 
 export const ListTransactionsQuerySchema = z
   .object({
@@ -244,6 +249,11 @@ export const ListTransactionsQuerySchema = z
     type: z.enum(["EXPENSE", "INCOME", "TRANSFER", "INVOICE_PAYMENT"]).optional(),
     shared: boolParam.optional(), // true = comum; false = pessoal (só despesas)
     origin: z.enum(["APP", "ASSISTANT"]).optional(), // US-076a: "Pelo app" / "Via assistente"
+    categoryIds: idListParam.optional(), // SDD-016 §1: plurais (OU dentro, E entre filtros)
+    payerIds: idListParam.optional(), // quem pagou/recebeu (difere de `memberId`: pagador OU autor)
+    sourceIds: idListParam.optional(), // ids de conta OU cartão
+    tagIds: idListParam.optional(), // US-047: qualquer uma das tags
+    untagged: boolParam.optional(), // drill-down "Sem tag"
     includeDeleted: boolParam.optional(),
     q: z.string().trim().min(2, "Digite ao menos 2 letras").max(50).optional(), // busca na descrição (US-024)
     cursor: z.string().max(300).optional(),
@@ -253,6 +263,10 @@ export const ListTransactionsQuerySchema = z
   .refine((v) => !(v.period && (v.from || v.to)), { message: "Use period ou from/to, não ambos" })
   .refine((v) => (v.from == null) === (v.to == null), { message: "Informe from e to juntos" })
   .refine((v) => !v.from || !v.to || v.from <= v.to, { message: "Intervalo inválido" })
+  .refine((v) => !(v.untagged === true && v.tagIds && v.tagIds.length > 0), {
+    message: UNTAGGED_WITH_TAGS_MSG,
+    path: ["untagged"],
+  })
   // US-040b (SDD-016 §3.4, D-PO-44): as parcelas ocupam até 24 competências
   .refine((v) => !v.from || !v.to || v.from > v.to || v.to <= lastDayOfWindow(v.from), {
     message: "Escolha um intervalo de até 24 meses",
@@ -267,6 +281,11 @@ export type LedgerFilters = {
   cardId?: string;
   memberId?: string;
   categoryId?: string;
+  categoryIds?: string[]; // SDD-016 §1: plurais (OU dentro, E entre filtros)
+  payerIds?: string[]; // quem pagou/recebeu
+  sourceIds?: string[]; // conta ou cartão
+  tagIds?: string[]; // US-047: qualquer uma (EXISTS, sem junção)
+  untagged?: boolean; // sem nenhuma tag (só despesa/receita têm tags)
   type?: "EXPENSE" | "INCOME" | "TRANSFER" | "INVOICE_PAYMENT";
   shared?: boolean;
   origin?: "APP" | "ASSISTANT"; // US-076a: predicado a mais, como `shared` (totais continuam reconciliados)
