@@ -70,6 +70,7 @@ Atualizado: 2026-10-27. Fonte de verdade: código + testes (§f). Mudou a regra?
 - Homologação visual pendente de achados da R2.1 (`_historico/stakeholder/homologacao-r21.md`): selo "Comum" com acerto desligado, FAB cobrindo ações no mobile; não confirmados como resolvidos.
 - Divergência de produto a validar: assimetria à vista x parcela (competência) e limitação de acento na busca (D-GES-22).
 - Não há tela de configuração do dia de corte nem de orçamento.
+- US-060 (SDD-029, não iniciada): o bloco "Por conta" do A pagar lê saldos por `listAccountBalances` (novo, enxuto, em `contas/service.ts`) e exige que `contas/hooks.ts` invalide `["payables"]` (criar, transferir, renomear, arquivar, reserva). Regra do saldo/Resumo não muda.
 
 ## f) Mapa de fontes
 Código: `src/modules/transacoes/{service,mutations,extrato,ledger-where,schemas,repo,optimistic,hooks}.ts`; `contas/{service,archive,transfers,ledger,ledger-queries,lock,suggest-source,schemas}.ts`; `categorias/{service,schemas,repo}.ts`; `home/{service,repo,schemas,copy}.ts`; `lib/{money,dates,period,clock,apportion,prefs,mask-money,http}.ts`, `lib/api/{with-api,idempotency,errors,rate-limit}.ts`; UI `app/(app)/{extrato,contas,categorias,home-screen.tsx}`, `components/{money,money-input,transaction-drawer,quick-add,tag-input}.tsx`; `tags/{normalize,schemas,service,hooks}.ts`, `api/v1/tags`; `prisma/schema.prisma`, `scripts/check-imports.ts`. Regra de "Só meu": `transacoes/ownership.ts` (ver so-meu.md).

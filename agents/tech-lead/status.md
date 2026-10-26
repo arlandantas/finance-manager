@@ -2,6 +2,15 @@
 
 *Atualizado: 2026-10-24 · Ciclos: **SEC Grupo B** (ADR-032, SDD-028 — abaixo), **R4-D v2** (Vercel, alternativas ao OAuth, lançamento direto, POC — abaixo), **R4-D** (MCP), **R4**, **R2.1 e R3**, **R1/R2***
 
+## Ciclo uso real (TL-U4, 2026-10-26): US-060 **SDD pronto, aprovada para Dev**
+| Artefato | Cobre |
+| :--- | :--- |
+| [SDD-029 Resumo por conta no A pagar](sdd/SDD-029-resumo-por-conta-no-a-pagar-us-060.md) | `byAccount` em `GET /payables` (função pura sobre os mesmos `items` do `collectOpenPayables`), saldo atual/a pagar/previsto, "Só meu" alheio (Q-U24, sem filtro), contas arquivadas/reserva, fatura em "Sem conta definida" até a US-089, reconciliação Σ linhas = total, estados de UI, guia de testes |
+
+**Pontos:** **5** (confirma o PO; API 2 · UI 2 · testes 1). **Sem migração.** **Riscos:** fatura cai em "Sem conta definida" até a US-089; `contas/hooks` precisa invalidar `["payables"]`; Σ linhas ≠ saldo previsto do Resumo (só o "A pagar" reconcilia). **Nenhuma decisão do usuário pendente.**
+
+---
+
 ## Ciclo SEC Grupo B (D-GES-40): correções de segurança **Especificadas**
 | Artefato | Cobre |
 | :--- | :--- |

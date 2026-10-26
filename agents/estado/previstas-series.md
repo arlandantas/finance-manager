@@ -54,6 +54,7 @@ Rotas (`src/app/api/v1/`): `planned-expenses` (GET lista, POST), `planned-expens
 
 ## e) Em andamento / pendências
 - Nada em implementação nesta área.
+- US-060 (resumo por conta no A pagar): **SDD-029 pronto, aprovada p/ Dev (TASK-054, 5 pts)**; não iniciada. Contrato: `GET /payables` ganha `byAccount` derivado dos mesmos `items` do `collectOpenPayables` (Σ `dueInCents` das linhas = `totals.dueInCents` = `toPay.totalInCents`), inclui "Só meu" alheio (Q-U24), `paymentAccountId` no item, fatura em "Sem conta definida" até a US-089. `previstas_do_mes` (MCP) não muda.
 - US-051 / SDD-017 (receitas previstas e saldo previsto, ADR-023, estimativa 5, Could, primeiro corte da R3): status na US: "Aprovada p/ Dev, não iniciada" (2026-10-25); NADA no código (sem `kind` em `PlannedExpense`, nenhum INCOME em `previstas/`). Detalhar o SDD antes de implementar.
 - Verificação da UI de Previstas/pay-drawer/planned-drawer no navegador: ver pendência equivalente em [so-meu.md](so-meu.md) §e.
 - Não verificado: BDD (`tests/e2e/features/US-018`, `US-019`) rodado nesta consolidação; testes citados em §f foram lidos, não executados.
@@ -61,7 +62,7 @@ Rotas (`src/app/api/v1/`): `planned-expenses` (GET lista, POST), `planned-expens
 ## f) Mapa de fontes
 Código (`src/modules/previstas/`): `service.ts` (CRUD, baixa, estorno), `recurring-service.ts` (série, geração, impacto, encerrar), `recurrence.ts` (aritmética de meses, `monthsToGenerate`), `rules.ts` (atraso, recortes de A pagar), `payables.ts` (coletor único), `schemas.ts`, `recurring-schemas.ts`, `repo.ts`, `recurring-repo.ts`, `hooks.ts`, `recurring-hooks.ts`. Fora do módulo: `transacoes/ownership.ts`, `transacoes/service.ts` (`createExpenseCore`, `personalFromPlanned`), `transacoes/mutations.ts` (`LINKED_TO_PLANNED`), `transacoes/extrato.ts`, `home/service.ts`, `familia/removal.ts`, `privacidade/export.ts`, `mcp/tools/previstas.ts`. Banco: `prisma/schema.prisma` (`PlannedExpense`, `RecurringExpense`), migrations `20261004200822_us018_previstas`, `20261006120000_v0_recorrencia_e_conta_prevista`. UI: `src/app/(app)/previstas/{previstas-screen,planned-drawer,pay-drawer}.tsx`.
 Testes: `tests/unit/previstas/{recurrence,rules}.test.ts`; `tests/integration/` `us-018-despesa-prevista`, `us-019-baixa`, `us-058-059-recorrencia`, `us-061-063-inicio-previstas`, `sec038-previstas-captura`, mais as de "Só meu" listadas em [so-meu.md](so-meu.md) §f; BDD em `tests/e2e/features/US-018*`, `US-019*`.
-Docs: [SDD-009](../tech-lead/sdd/SDD-009-despesas-previstas.md) (previstas e baixa), [SDD-019](../tech-lead/sdd/SDD-019-recorrencia-conta-de-pagamento-e-polimento-v0.md) (recorrência, conta de pagamento), [SDD-017](../tech-lead/sdd/SDD-017-cor-e-receitas-previstas-esboco.md) (receita prevista, não implementada); ADR-015 (prevista como entidade), ADR-023 (receita por kind), ADR-025 (recorrência materializada); US-018, US-019, US-058, US-059, US-051 em `product-owner/backlog/stories/`; FLUXO-005.
+Docs: [SDD-029](../tech-lead/sdd/SDD-029-resumo-por-conta-no-a-pagar-us-060.md) (US-060, `byAccount`, não implementado), [SDD-009](../tech-lead/sdd/SDD-009-despesas-previstas.md) (previstas e baixa), [SDD-019](../tech-lead/sdd/SDD-019-recorrencia-conta-de-pagamento-e-polimento-v0.md) (recorrência, conta de pagamento), [SDD-017](../tech-lead/sdd/SDD-017-cor-e-receitas-previstas-esboco.md) (receita prevista, não implementada); ADR-015 (prevista como entidade), ADR-023 (receita por kind), ADR-025 (recorrência materializada); US-018, US-019, US-058, US-059, US-051 em `product-owner/backlog/stories/`; FLUXO-005.
 
 | Regra | Origem |
 | :-- | :-- |
@@ -72,7 +73,7 @@ Docs: [SDD-009](../tech-lead/sdd/SDD-009-despesas-previstas.md) (previstas e bai
 | Riscos aceitos | D-GES-61, SEC-055/057 |
 
 Divergências docs x código (código vence):
-1. Status das US-018/019/058/059 corrigido em 2026-10-25 para "Implementada (TASK-xxx)". Pendentes de fato: US-051 (não iniciada) e US-060 (resumo por conta no A pagar, TASK-054 pendente: `/payables` sem `byAccount`).
+1. Status das US-018/019/058/059 corrigido em 2026-10-25 para "Implementada (TASK-xxx)". Pendentes de fato: US-051 (não iniciada) e US-060 (TASK-054: `/payables` ainda sem `byAccount` no código; especificada no SDD-029).
 2. SDD-009 descreve baixa com pagador padrão = responsável; no código, quando o responsável é ex-membro sem retorno o pagador é quem realiza a baixa (DEV-135) e quem voltou paga em nome do vínculo atual.
 3. SDD-009/US-025 citam "A pagar" com regra hoje+7; vigente por vencimento no período (D-GES-26); hoje+7 só na janela do Início (US-061).
 4. SDD-017 mantém o sufixo `-esboco` no nome, mas diz ser SDD completo; o código não o implementa.

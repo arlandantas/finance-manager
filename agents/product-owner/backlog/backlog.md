@@ -298,7 +298,7 @@ Origem: NEED-028..034 (feedback de uso real), **ordem e respostas Q-U15..Q-U24 a
 
 | Ordem | História | NEED | Release | Épico | MoSCoW | V/U/R | Pts | WSJF | Depende de | Estado |
 | :-: | :-- | :-- | :-: | :-: | :-: | :-: | :-: | :-: | :-- | :-- |
-| 1 | [US-060](stories/US-060-resumo-por-conta-no-a-pagar.md) **Resumo por conta no A pagar** (refinada: saldo previsto, "Sem conta definida", "Só meu" de outro membro, soma bate) | 033 | UR-1 | EPIC-17 | **Must** | 9/7/5 | **5** (era 3) | 4,2 | US-059, 055, 057 | Refinada · SDD detalhado do TL (TASK-054) |
+| 1 | [US-060](stories/US-060-resumo-por-conta-no-a-pagar.md) **Resumo por conta no A pagar** (refinada: saldo previsto, "Sem conta definida", "Só meu" de outro membro, soma bate) | 033 | UR-1 | EPIC-17 | **Must** | 9/7/5 | **5** (TL confirma) | 4,2 | US-059, 055, 057 | **SDD pronto, aprovada p/ Dev** ([SDD-029](../../tech-lead/sdd/SDD-029-resumo-por-conta-no-a-pagar-us-060.md), TASK-054) |
 | 2 | [US-085](stories/US-085-destaque-despesa-receita.md) Seleção despesa x receita inequívoca | 034 (item 1) | UR-1 | EPIC-19 | Should | 5/4/3 | 2 | 6,0 | — | Proposta |
 | 3 | [US-087](stories/US-087-alinhamento-das-colunas-do-extrato.md) Colunas do Extrato alinhadas | 034 (item 7) | UR-1 | EPIC-19 | Should | 6/3/3 | 3 | 4,0 | US-062, 040b | Proposta |
 | 4 | [US-086](stories/US-086-espacamento-compacto-de-formularios.md) Espaçamento compacto de formulários | 034 (item 2) | UR-1 | EPIC-19 | Should | 5/3/2 | 2 | 5,0 | — | Proposta · cortável |
@@ -366,7 +366,7 @@ Origem: NEED-028..034 (feedback de uso real), **ordem e respostas Q-U15..Q-U24 a
 | **Inc 4** — R2.1 | US-022..039 | ✅ **Especificadas** (SDD-010..013; 67 pts) | Nenhum SDD pendente; ratificação de D-PO-33..42 pelo Gestor; linha de base E2E (D-GES-19) |
 | **Inc 5** — R3 | US-040..051, EN-002 (EN-003 concluída) | ✅ Refinadas e **Esboçadas** (SDD-014..017; ADR-016..018) | SDD completo antes de cada história; depende da R2.1 (predicado único, `findActiveMembership`, `FamilyEvent`) |
 | **Inc 6** — R4 (proposta) | US-065..077, EN-004..006 | ⏳ Refinadas; **aguardam ADRs/SDD do TL** ([`_historico/product-owner/backlog/pedidos-ao-tech-lead-ia.md`](../../_historico/product-owner/backlog/pedidos-ao-tech-lead-ia.md)) e ratificação de D-PO-53..69 | R4-A: nenhum além do SDD curto. R4-B: Q-U01, Q-U08, Q-U10 e ADRs de LLM/privacidade. R4-D: ADR do MCP |
-| **Inc 7** — UR-1 (uso real, proposta) | US-060 refinada, US-085..US-091 | ⏳ Refinadas; **aguardam SDD/estimativa do TL** ([`pedidos-ao-tech-lead-uso-real.md`](pedidos-ao-tech-lead-uso-real.md)) | Q-U22..Q-U24 respondidas; nenhum bloqueio de usuário. US-090 e US-089 precisam de SDD curto; US-085..088 são só apresentação |
+| **Inc 7** — UR-1 (uso real, proposta) | US-060 refinada, US-085..US-091 | ⏳ US-060 **SDD pronto (SDD-029, 5 pts), aprovada p/ Dev**; demais refinadas, **aguardam SDD/estimativa do TL** ([`pedidos-ao-tech-lead-uso-real.md`](pedidos-ao-tech-lead-uso-real.md)) | Q-U22..Q-U24 respondidas; nenhum bloqueio de usuário. US-090 e US-089 precisam de SDD curto; US-085..088 são só apresentação |
 | **Inc 8** — UR-2 (uso real, proposta) | US-092..US-101 | ⏳ Refinadas; **bloqueio: spike do TL sobre membro/vínculo (TL-U1/U2) e revisão de segurança** | Q-U15..Q-U21 respondidas; US-096 e US-100 precisam de ADR/SDD; US-099 depende de TL-U5 |
 
 ---
