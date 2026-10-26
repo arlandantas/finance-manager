@@ -65,14 +65,16 @@ Todas as necessidades estão detalhadas em arquivos modulares nesta pasta:
 | **[`NEED-026`](NEED-026-importacao-de-fatura-por-arquivo.md)** | **Importar Fatura por Arquivo (LLM)** | **Proposta: após NEED-024** (Alta) | Arquivo da fatura validado e extraído por LLM, com revisão humana obrigatória e anti-duplicidade. Antecipa item do AP3. |
 | **[`NEED-027`](NEED-027-analise-de-gastos-evitaveis-por-ia.md)** | **Análise de Gastos Evitáveis por IA** | **Proposta: depois da importação** (Média) | Sugestões de categorias e gastos evitáveis com base em educação financeira; concretiza o NEED-023. |
 
-| **[`NEED-028`](NEED-028-membro-sem-conta-ativa-e-convite-posterior.md)** | **Membro sem Conta Ativa (Convite Posterior)** | **Proposta: decisão do usuário** (Should/Alta) | Cadastrar o membro antes de ele entrar, atrelar contas e lançamentos e convidar depois; reabre Q-01/US-021. |
-| **[`NEED-029`](NEED-029-assinatura-recorrente-no-cartao.md)** | **Assinatura Recorrente no Cartão** | **Proposta: R3 fatia 2** (Should/Média-Alta) | Cobrança mensal sem fim no cartão; a recorrência atual só aceita conta. |
-| **[`NEED-030`](NEED-030-transferencia-prevista-entre-contas.md)** | **Transferência Prevista entre Contas** | **Proposta: pós-NEED-033** (Could→Should) | Prever movimento entre contas, neutro para totais, que afeta o saldo previsto. |
-| **[`NEED-031`](NEED-031-previsao-na-mesma-porta-do-lancamento.md)** | **Previsão na Mesma Porta do Lançamento** | **Proposta: R3 fatia 2** (Should/Alta) | Uma só interface para lançar real ou previsto (despesa e, depois, receita). |
-| **[`NEED-032`](NEED-032-conta-que-paga-a-fatura-no-cartao.md)** | **Conta que Paga a Fatura** | **Proposta: próxima entrega** (Should/Média-Alta) | Conta pagadora padrão no cartão, sugerida ao pagar. |
-| **[`NEED-033`](NEED-033-visao-sintetica-por-conta-em-contas-a-pagar.md)** | **Visão Sintética por Conta (Saldo Previsto)** | **Proposta: próxima entrega** (Must/Alta) | Tabela por conta: saldo atual, previstas em aberto, saldo previsto; é a US-060 já aprovada. |
-| **[`NEED-034`](NEED-034-polimento-de-ux-formularios-selecoes-e-extrato.md)** | **Polimento de UX Agregado** | **Proposta: próxima entrega** (Should) | Destaque despesa/receita, espaçamento de formulários, alinhamento do extrato, "ver compra" no card. |
+| **[`NEED-028`](NEED-028-membro-sem-conta-ativa-e-convite-posterior.md)** | **Membro sem Conta Ativa (Convite Posterior)** | **Aprovada: 5ª na ordem do usuário** (Should/Alta; depende de spike do TL) | Cadastrar o membro antes de ele entrar, atrelar contas e lançamentos e convidar depois; reabre Q-01/US-021. Q-U15..U17 respondidas (usuário, 2026-10-26). |
+| **[`NEED-029`](NEED-029-assinatura-recorrente-no-cartao.md)** | **Assinatura Recorrente no Cartão** | **Aprovada: 6ª na ordem do usuário** (Should/Média-Alta) | Cobrança mensal sem fim no cartão; a recorrência atual só aceita conta. Q-U18/U19 respondidas (usuário, 2026-10-26). |
+| **[`NEED-030`](NEED-030-transferencia-prevista-entre-contas.md)** | **Transferência Prevista entre Contas** | **Aprovada: 7ª na ordem do usuário** (Could→Should) | Prever movimento entre contas, neutro para totais, que afeta o saldo previsto; **pode repetir todo mês** (Q-U20, usuário, 2026-10-26). |
+| **[`NEED-031`](NEED-031-previsao-na-mesma-porta-do-lancamento.md)** | **Previsão na Mesma Porta do Lançamento** | **Aprovada: 4ª na ordem do usuário** (Should/Alta) | Uma só interface para lançar real ou previsto (despesa e, depois, receita); "repetir todo mês" na mesma porta (Q-U21). |
+| **[`NEED-032`](NEED-032-conta-que-paga-a-fatura-no-cartao.md)** | **Conta que Paga a Fatura** | **Aprovada: 3ª na ordem do usuário** (Should/Média-Alta) | Conta pagadora padrão (opcional) no cartão, só sugerida ao pagar, com aviso de vencimento (Q-U22/U23, usuário, 2026-10-26). |
+| **[`NEED-033`](NEED-033-visao-sintetica-por-conta-em-contas-a-pagar.md)** | **Visão Sintética por Conta (Saldo Previsto)** | **Aprovada: 1ª na ordem do usuário** (Must/Alta) | Tabela por conta: saldo atual, previstas em aberto, saldo previsto (inclui "Só meu" de outro membro, Q-U24); é a US-060 refinada. |
+| **[`NEED-034`](NEED-034-polimento-de-ux-formularios-selecoes-e-extrato.md)** | **Polimento de UX Agregado** | **Aprovada: 2ª na ordem do usuário** (Should) | Destaque despesa/receita, espaçamento de formulários, alinhamento do extrato, "ver compra" no card. |
 
+
+**Ordem de prioridade dos NEED-028..034 (decisão do usuário, 2026-10-26):** 1) NEED-033, 2) NEED-034, 3) NEED-032, 4) NEED-031, 5) NEED-028, 6) NEED-029, 7) NEED-030. Q-U15..Q-U24 respondidas (usuário, 2026-10-26): todas as hipóteses do Stakeholder aprovadas, **exceto Q-U20** (a transferência prevista pode ter recorrência mensal).
 
 ---
 

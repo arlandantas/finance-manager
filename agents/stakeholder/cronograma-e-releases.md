@@ -134,35 +134,19 @@ Observação: o **Épico 7 (parcelamento)** sai do AP1 e passa à R3. Se o Tech 
 
 ---
 
-## 🆕 Proposta de encaixe — novas solicitações do usuário (2026-10-24)
+## 🆕 Encaixe dos 10 pontos do uso real — ordem APROVADA pelo usuário (2026-10-26)
 
-*Proposta do Stakeholder por valor; releases já homologadas (R1, R2, R2.1) não são alteradas. Cronograma e estimativas são do Gestor, Tech Lead e Dev.*
+*Ordem decidida pelo usuário (dono do produto). Cronograma e estimativas são do Gestor, TL e Dev. Releases homologadas não mudam. Q-U15..Q-U24 respondidas em 2026-10-26: todas as hipóteses aprovadas, exceto Q-U20 (a transferência prevista pode repetir todo mês).*
 
-| Ordem sugerida | Necessidade | Prioridade de valor | Justificativa |
-| :---: | :--- | :---: | :--- |
-| 1 | **NEED-024** Parcelas já pagas na entrada | **Alta** | Pequena extensão do parcelamento (NEED-003/US-042), sem IA nem risco de privacidade; destrava a adoção por quem já tem parcelas. |
-| 2 | **NEED-026** Importar fatura por arquivo | **Alta** | Maior ganho contra a fadiga de cadastro. Depende das decisões Q-U07..Q-U10 (privacidade, chave, custo). Antecipa o item de importação do AP3. |
-| 3 | **NEED-027** Análise de gastos evitáveis | **Média** | Reaproveita a infraestrutura de LLM e o opt-in do NEED-026; melhor após alguns meses de dados bons. |
-| 4 | **NEED-025** Acesso por LLM via MCP | **Média** | Conveniência; independente da chave Anthropic do app; começar somente leitura. |
-
-Dependência comum: uma **decisão única de privacidade e de chave de API (Q-U01, Q-U07, Q-U08)** destrava os NEEDs 026 e 027. O NEED-024 pode andar de imediato. A ordem entre 025 e 027 pode ser invertida pelo usuário.
-
-
----
-
-## 🆕 Proposta de encaixe — 10 pontos do uso real (2026-10-26)
-
-*Proposta por valor/dor; cronograma e estimativas são do Gestor, TL e Dev. Releases homologadas não mudam.*
-
-| Ordem | NEED (itens) | MoSCoW | Valor | Justificativa | Depende do usuário |
+| Ordem | NEED (itens) | MoSCoW | Valor | Justificativa | Decisões do usuário |
 | :-: | :--- | :-: | :-: | :--- | :--- |
-| 1 | **NEED-033** Visão por conta em "A pagar" (9) | **Must** | Alto | Responde "cada conta aguenta o mês?"; já é a US-060 aprovada (TASK-054) | Q-U24 (menor) |
+| 1 | **NEED-033** Visão por conta em "A pagar" (9) | **Must** | Alto | Responde "cada conta aguenta o mês?"; é a US-060 refinada (TASK-054) | Q-U24: inclui previstas "Só meu" de outro membro |
 | 2 | **NEED-034** Polimento agregado (1, 2, 7, 10) | **Should** (10: Could) | Médio, alcance largo | Atrito diário e confiança no extrato; sem regra nova | Nada |
-| 3 | **NEED-032** Conta que paga a fatura (8) | **Should** | Médio/Alto | Barato; alimenta a previsão por conta do item 9 | Q-U22, Q-U23 |
-| 4 | **NEED-031** Previsão na mesma porta (6) | **Should** | Alto | Uma porta para o gesto mais frequente; prepara receita prevista (US-051) | Nada (Q-U21 informativa) |
-| 5 | **NEED-028** Membro sem conta ativa (3) | **Should** (Alta) | Muito alto na adoção | Pode ser o que impede a família real de usar; mexe no modelo central | **Q-U15..Q-U17**; spike do TL antes |
-| 6 | **NEED-029** Assinatura no cartão (4) | **Should** | Médio/Alto | Dor recorrente e silenciosa; reaproveita a recorrência | Q-U18, Q-U19 |
-| 7 | **NEED-030** Transferência prevista (5) | **Could** (sobe a Should após 1) | Médio | Só faz sentido com o saldo previsto por conta | Q-U20 |
+| 3 | **NEED-032** Conta que paga a fatura (8) | **Should** | Médio/Alto | Barato; alimenta a previsão por conta do item 9 | Q-U22 só sugere e avisa o vencimento; Q-U23 opcional |
+| 4 | **NEED-031** Previsão na mesma porta (6) | **Should** | Alto | Uma porta para o gesto mais frequente; prepara receita prevista (US-051) | Q-U21: série "todo mês" também na porta (informativa) |
+| 5 | **NEED-028** Membro sem conta ativa (3) | **Should** (Alta) | Muito alto na adoção | Pode ser o que impede a família real de usar; mexe no modelo central | Q-U15 os dois casos, mesmo mecanismo; Q-U16 entra no acerto; Q-U17 só Administrador; spike do TL antes |
+| 6 | **NEED-029** Assinatura no cartão (4) | **Should** | Médio/Alto | Dor recorrente e silenciosa; reaproveita a recorrência | Q-U18 lançada sozinha, com correção do valor do mês; Q-U19 dividida entra no acerto |
+| 7 | **NEED-030** Transferência prevista (5) | **Could** (sobe a Should após 1) | Médio | Só faz sentido com o saldo previsto por conta | Q-U20 (exceção): pode repetir todo mês |
 
-- **Release sugerido:** 1 a 4 numa **próxima entrega curta** (R3 fatia 2); 5 a 7 em seguida. NEED-028 pode saltar à frente assim que o usuário decidir, por ser a maior dor de adoção. Nenhuma depende de IA ou de decisão de privacidade, e **não competem com NEED-024/026** (a ordem relativa entre eles fica com o Gestor).
+- **Release sugerido:** 1 a 4 numa **próxima entrega curta** (R3 fatia 2); 5 a 7 em seguida. A ordem acima é a do usuário (NEED-028 fica em 5º; depende de spike do Tech Lead). Nenhuma depende de IA ou de decisão de privacidade, e **não competem com NEED-024/026** (a ordem relativa entre eles fica com o Gestor).
 - **Dependências:** 3 -> 1 (conta pagadora alimenta a previsão); 7 -> 1; 4 -> US-051 (receita prevista) para completar.

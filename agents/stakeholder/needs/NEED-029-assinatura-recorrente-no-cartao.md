@@ -3,7 +3,7 @@
 ## 📋 Metadados
 - **ID:** `NEED-029`
 - **Área:** Cartões e Previstas (estende NEED-003 e NEED-004)
-- **Status:** Levantado em 2026-10-26 (uso real, item 4) — aguardando Q-U18/Q-U19
+- **Status:** Levantado em 2026-10-26 (uso real, item 4) — Q-U18/Q-U19 respondidas pelo usuário em 2026-10-26; prioridade **6ª** na ordem aprovada
 - **Prioridade de valor:** **Should (Média/Alta)** — dor frequente (streaming, apps, seguros) e silenciosa
 - **Consumidores:** Product Owner, Tech Lead
 - **Origem:** Item 4 do feedback de uso real
@@ -37,5 +37,7 @@ Assinaturas caem todo mês no cartão, sem data de fim. Hoje o usuário só tem 
 | Previstas "sem efeito no saldo" | Assinatura no cartão afeta a fatura prevista | Entra na projeção, nunca no saldo da conta |
 
 ## 5. Perguntas em aberto
-- **Q-U18:** a cobrança deve **ser lançada automaticamente** todo mês (você confia no valor fixo) ou **só prevista, para você confirmar** quando o valor mudar? Hipótese: lançada automaticamente com opção de corrigir o valor do mês (assinaturas costumam ter valor estável).
-- **Q-U19:** assinatura **dividida** entra no acerto de contas? Hipótese: sim se a regra de divisão estiver ligada; senão "Só meu".
+- **Q-U18 — RESPONDIDA (usuário, 2026-10-26):** a cobrança é **lançada sozinha** todo mês, com a opção de **corrigir o valor do mês**.
+- **Q-U19 — RESPONDIDA (usuário, 2026-10-26):** assinatura **dividida entra no acerto** (se a divisão estiver ligada; senão "Só meu").
+
+**Prioridade aprovada:** 6ª. Histórias: US-096..US-099.

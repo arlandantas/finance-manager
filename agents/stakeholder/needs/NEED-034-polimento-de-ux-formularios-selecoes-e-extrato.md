@@ -3,7 +3,7 @@
 ## 📋 Metadados
 - **ID:** `NEED-034`
 - **Área:** Ergonomia e consistência visual (estende NEED-022)
-- **Status:** Levantado em 2026-10-26 (uso real, itens 1, 2, 7 e 10) — decidido pelo time; sem pergunta ao usuário
+- **Status:** Levantado em 2026-10-26 (uso real, itens 1, 2, 7 e 10) — decidido pelo time; sem pergunta ao usuário; prioridade **2ª** na ordem aprovada pelo usuário (2026-10-26). Histórias: US-085..US-088
 - **Prioridade de valor:** **Should** (itens 1, 2, 7) e **Could** (item 10)
 - **Consumidores:** Product Owner (desenho), Dev
 - **Origem:** Itens 1, 2, 7 e 10 do feedback. Princípio: a dor é descrita aqui; o desenho é do PO

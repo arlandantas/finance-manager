@@ -3,7 +3,7 @@
 ## 📋 Metadados
 - **ID:** `NEED-033`
 - **Área:** Disponibilidade e Previstas (estende NEED-011 e NEED-016; corresponde à **US-060**)
-- **Status:** Levantado em 2026-10-26 (uso real, item 9). **Já existe história aprovada (US-060, TASK-054 pendente)**
+- **Status:** Levantado em 2026-10-26 (uso real, item 9). **Já existe história aprovada (US-060, TASK-054 pendente)**; Q-U24 respondida pelo usuário em 2026-10-26; prioridade **1ª** na ordem aprovada
 - **Prioridade de valor:** **Must (Alta)** — responde "cada conta aguenta o mês?"
 - **Consumidores:** Product Owner, Tech Lead
 - **Origem:** Item 9 do feedback de uso real
@@ -34,4 +34,6 @@
 | Visibilidade do "Só meu" (todos veem o lançamento, só dono controla) | "Só meu" é visível a todos hoje, então o cálculo pode incluir | Q-U24 confirma |
 
 ## 5. Pergunta
-- **Q-U24:** o saldo previsto de uma conta deve incluir previstas "Só meu" de outro membro? Hipótese: sim (todos já enxergam, só o controle é restrito); caso contrário o saldo mostrado diverge do real.
+- **Q-U24 — RESPONDIDA (usuário, 2026-10-26):** **sim**, o saldo previsto por conta **inclui previstas "Só meu" de outro membro** (todos já enxergam; só o controle é restrito). RN-033.6 resolvida.
+
+**Prioridade aprovada:** 1ª. História: US-060 (refinada).

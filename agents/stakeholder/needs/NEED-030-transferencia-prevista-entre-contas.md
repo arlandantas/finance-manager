@@ -3,7 +3,7 @@
 ## 📋 Metadados
 - **ID:** `NEED-030`
 - **Área:** Contas e Previstas (estende NEED-002 e NEED-004; alimenta NEED-011)
-- **Status:** Levantado em 2026-10-26 (uso real, item 5) — aguardando Q-U20
+- **Status:** Levantado em 2026-10-26 (uso real, item 5) — Q-U20 respondida pelo usuário em 2026-10-26 (**com exceção**: pode ter recorrência); prioridade **7ª** na ordem aprovada
 - **Prioridade de valor:** **Could → Should** (sobe se o saldo previsto por conta, NEED-033, for entregue)
 - **Consumidores:** Product Owner, Tech Lead
 - **Origem:** Item 5 do feedback de uso real
@@ -34,4 +34,6 @@ A família sabe que no dia 10 vai mover R$ 2.000 da conta do salário para a con
 | "A pagar" lista despesas e faturas | Transferência prevista não é "a pagar" | Fica em lista própria ou filtro; desenho é do PO |
 
 ## 5. Perguntas em aberto
-- **Q-U20:** a transferência prevista precisa **repetir todo mês** (ex.: aporte fixo)? Hipótese: pontual primeiro; recorrência depois.
+- **Q-U20 — RESPONDIDA (usuário, 2026-10-26), mudando a hipótese:** a transferência prevista **PODE ter recorrência** (mensal, como as séries de previstas), não só pontual. RN-030.5 deixa de ser "desejável" e passa a requisito (entregue em fatia própria, após a pontual).
+
+**Prioridade aprovada:** 7ª. Histórias: US-100 e US-101.

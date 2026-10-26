@@ -3,7 +3,7 @@
 ## 📋 Metadados
 - **ID:** `NEED-031`
 - **Área:** Ergonomia de lançamento e Previstas (estende NEED-004 e NEED-022; liga-se a US-051)
-- **Status:** Levantado em 2026-10-26 (uso real, item 6) — pode ser decidido pelo time; Q-U21 só informativa
+- **Status:** Levantado em 2026-10-26 (uso real, item 6) — Q-U21 respondida pelo usuário em 2026-10-26; prioridade **4ª** na ordem aprovada
 - **Prioridade de valor:** **Should (Alta)**
 - **Consumidores:** Product Owner (fluxo), Tech Lead
 - **Origem:** Item 6 do feedback de uso real
@@ -34,4 +34,6 @@ Hoje "lançar uma despesa" e "prever uma despesa" são lugares e formulários di
 | Dividir parcelado bloqueado | Previsão de parcelado não existe | Fora do escopo |
 
 ## 5. Pergunta
-- **Q-U21 (informativa):** o usuário quer que a "série" (todo mês) também apareça nessa mesma porta? Hipótese: sim, como opção "repetir".
+- **Q-U21 — RESPONDIDA (usuário, 2026-10-26):** **sim**, a série "todo mês" também aparece na mesma porta, como opção "repetir"; **só informativa** (não muda regra de série).
+
+**Prioridade aprovada:** 4ª. Histórias: US-090 e US-091.

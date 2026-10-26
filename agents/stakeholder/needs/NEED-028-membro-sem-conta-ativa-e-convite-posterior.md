@@ -3,7 +3,7 @@
 ## 📋 Metadados
 - **ID:** `NEED-028`
 - **Área:** Governança e Membros (estende NEED-001 e NEED-020; reabre Q-01/US-021)
-- **Status:** Levantado em 2026-10-26 (uso real, item 3 do usuário) — **aguardando decisão do usuário (Q-U15..Q-U17)**
+- **Status:** Levantado em 2026-10-26 (uso real, item 3 do usuário) — **Q-U15..Q-U17 respondidas pelo usuário em 2026-10-26**; prioridade **5ª** na ordem aprovada; depende de spike do Tech Lead
 - **Prioridade de valor:** **Should (Alta)** — vira Must se o usuário confirmar que hoje não consegue cadastrar a família real por causa disso
 - **Consumidores:** Product Owner, Tech Lead (modelo de membro), Segurança
 - **Origem:** Item 3 do feedback de uso real
@@ -37,9 +37,11 @@ Montar a família no app exige que a outra pessoa já tenha entrado com Google. 
 | NEED-001 "tripla responsabilidade" | Responsável pode ser alguém sem login | Compatível; valida o caso "filho" já citado no NEED-001 |
 
 ## 5. Perguntas em aberto (só o usuário responde)
-- **Q-U15:** o caso é principalmente **adulto que ainda não entrou** (convite posterior) ou também **dependente que nunca terá login** (criança)? Hipótese: ambos, com o mesmo mecanismo.
-- **Q-U16:** membro sem conta **entra no acerto de contas** (dividindo despesas comuns)? Hipótese: sim por padrão, ele continua opcional (NEED-019).
-- **Q-U17:** quem pode cadastrar e convidar esse membro: só o Administrador ou qualquer membro? Hipótese: só Administrador cadastra; convite também.
+- **Q-U15 — RESPONDIDA (usuário, 2026-10-26):** os dois casos (adulto que ainda não entrou e dependente que nunca terá login), **com o mesmo mecanismo**. US-021 unificada nesta necessidade.
+- **Q-U16 — RESPONDIDA (usuário, 2026-10-26):** membro sem conta **entra no acerto** (continua opcional, NEED-019).
+- **Q-U17 — RESPONDIDA (usuário, 2026-10-26):** **só o Administrador** cadastra e convida.
+
+**Prioridade aprovada pelo usuário (2026-10-26):** 5ª (após NEED-033, 034, 032, 031). Histórias: US-092..US-095 no backlog do PO; a modelagem depende da investigação do Tech Lead.
 
 ## 6. Riscos
 Modelo central ("Só meu", propriedade, remoção, sessões) foi desenhado com membro = usuário; mudar exige revisão de segurança. É por isso que a priorização é "Alta" mas **depende de spike do Tech Lead**.

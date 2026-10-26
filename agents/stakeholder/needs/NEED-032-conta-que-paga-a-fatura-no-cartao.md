@@ -3,7 +3,7 @@
 ## 📋 Metadados
 - **ID:** `NEED-032`
 - **Área:** Cartões e Faturas (estende NEED-003)
-- **Status:** Levantado em 2026-10-26 (uso real, item 8) — aguardando Q-U22/Q-U23
+- **Status:** Levantado em 2026-10-26 (uso real, item 8) — Q-U22/Q-U23 respondidas pelo usuário em 2026-10-26; prioridade **3ª** na ordem aprovada
 - **Prioridade de valor:** **Should (Média/Alta)** — barato e reduz erro mensal
 - **Consumidores:** Product Owner, Tech Lead
 - **Origem:** Item 8 do feedback de uso real
@@ -32,5 +32,7 @@ Cada cartão é pago, na vida real, por **uma conta** (débito automático ou ro
 | Conta de outro dono ("Só meu" do dono da conta) | Pagar de conta alheia | Já permitido hoje (qualquer membro paga, sem verificar titular); manter |
 
 ## 5. Perguntas em aberto
-- **Q-U22:** o app deve **pagar sozinho** na data (débito automático "de mentira") ou apenas **sugerir** a conta e o aviso de vencimento? Hipótese: só sugerir; baixa automática é decisão de dinheiro.
-- **Q-U23:** a conta padrão deve ser **obrigatória** no cadastro? Hipótese: opcional.
+- **Q-U22 — RESPONDIDA (usuário, 2026-10-26):** o app **só sugere** a conta e **avisa o vencimento**; não paga sozinho.
+- **Q-U23 — RESPONDIDA (usuário, 2026-10-26):** a conta pagadora é **opcional**.
+
+**Prioridade aprovada:** 3ª. História: US-089.
