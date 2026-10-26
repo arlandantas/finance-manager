@@ -43,3 +43,19 @@ Origem: NEED-024..027, backlog R4 (US-065..077, EN-004..006, 81 pts PO prelim.) 
 **Atualização (2026-10-24):** Q-U01 respondida (opt-in por família + anonimização máxima); Q-U08 respondida (chave única do app); Q-U10 **em análise** pelo usuário; importação de fatura (Q-U07/Q-U09) **adiada para a R5** (D-GES-28). Ver D-GES-27..30.
 
 **Pendentes após o Tech Lead (2026-10-24):** TL-23 (enviar o rótulo saneado da categoria, único texto livre do payload; hipótese: sim), TL-24 (US-072 como regra local, sem IA; hipótese: sim), TL-25 (retenção das análises, expurgo em 24 meses), TL-26 (retenção da Anthropic: o opt-in não promete retenção zero por ora), TL-27 (**teto mensal**; sugestão R$ 5,00 por família, ≈ R$ 0,01 por análise), TL-29 (R5 de importação sem IA, extração local de CSV/OFX/PDF-texto; hipótese: sim). Detalhes em `_historico/tech-lead/respostas-r4.md`.
+
+## G. Uso real: NEED-028..034 (2026-10-26) — RESPONDIDAS pelo usuário
+Todas as hipóteses do Stakeholder foram aprovadas em 2026-10-26, **exceto Q-U20**. Nada deste bloco depende mais do usuário. Ordem aprovada: 1) NEED-033, 2) NEED-034, 3) NEED-032, 4) NEED-031, 5) NEED-028, 6) NEED-029, 7) NEED-030. Registro: D-GES-62; histórias US-060, US-085..US-101 em `product-owner/backlog/`.
+
+| ID | Decisão | Resposta (usuário, 2026-10-26) |
+| :-- | :-- | :-- |
+| Q-U15 | Membro sem conta: adulto que ainda não entrou, dependente ou ambos | Os dois, mesmo mecanismo |
+| Q-U16 | Membro sem conta entra no acerto | Sim |
+| Q-U17 | Quem cadastra e convida | Só o Administrador |
+| Q-U18 | Assinatura no cartão: lançada sozinha ou só prevista | Lançada sozinha, com correção do valor do mês |
+| Q-U19 | Assinatura dividida entra no acerto | Sim |
+| Q-U20 | Transferência prevista repete todo mês | **Sim, pode ter recorrência mensal** (muda a hipótese) |
+| Q-U21 | Série "todo mês" na mesma porta do lançamento | Sim, só informativa |
+| Q-U22 | Pagar a fatura sozinho na data | Não: o app só sugere a conta e avisa o vencimento |
+| Q-U23 | Conta pagadora obrigatória no cartão | Opcional |
+| Q-U24 | Saldo previsto por conta inclui previstas "Só meu" de outro membro | Sim |
