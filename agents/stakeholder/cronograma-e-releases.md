@@ -146,3 +146,23 @@ Observação: o **Épico 7 (parcelamento)** sai do AP1 e passa à R3. Se o Tech 
 | 4 | **NEED-025** Acesso por LLM via MCP | **Média** | Conveniência; independente da chave Anthropic do app; começar somente leitura. |
 
 Dependência comum: uma **decisão única de privacidade e de chave de API (Q-U01, Q-U07, Q-U08)** destrava os NEEDs 026 e 027. O NEED-024 pode andar de imediato. A ordem entre 025 e 027 pode ser invertida pelo usuário.
+
+
+---
+
+## 🆕 Proposta de encaixe — 10 pontos do uso real (2026-10-26)
+
+*Proposta por valor/dor; cronograma e estimativas são do Gestor, TL e Dev. Releases homologadas não mudam.*
+
+| Ordem | NEED (itens) | MoSCoW | Valor | Justificativa | Depende do usuário |
+| :-: | :--- | :-: | :-: | :--- | :--- |
+| 1 | **NEED-033** Visão por conta em "A pagar" (9) | **Must** | Alto | Responde "cada conta aguenta o mês?"; já é a US-060 aprovada (TASK-054) | Q-U24 (menor) |
+| 2 | **NEED-034** Polimento agregado (1, 2, 7, 10) | **Should** (10: Could) | Médio, alcance largo | Atrito diário e confiança no extrato; sem regra nova | Nada |
+| 3 | **NEED-032** Conta que paga a fatura (8) | **Should** | Médio/Alto | Barato; alimenta a previsão por conta do item 9 | Q-U22, Q-U23 |
+| 4 | **NEED-031** Previsão na mesma porta (6) | **Should** | Alto | Uma porta para o gesto mais frequente; prepara receita prevista (US-051) | Nada (Q-U21 informativa) |
+| 5 | **NEED-028** Membro sem conta ativa (3) | **Should** (Alta) | Muito alto na adoção | Pode ser o que impede a família real de usar; mexe no modelo central | **Q-U15..Q-U17**; spike do TL antes |
+| 6 | **NEED-029** Assinatura no cartão (4) | **Should** | Médio/Alto | Dor recorrente e silenciosa; reaproveita a recorrência | Q-U18, Q-U19 |
+| 7 | **NEED-030** Transferência prevista (5) | **Could** (sobe a Should após 1) | Médio | Só faz sentido com o saldo previsto por conta | Q-U20 |
+
+- **Release sugerido:** 1 a 4 numa **próxima entrega curta** (R3 fatia 2); 5 a 7 em seguida. NEED-028 pode saltar à frente assim que o usuário decidir, por ser a maior dor de adoção. Nenhuma depende de IA ou de decisão de privacidade, e **não competem com NEED-024/026** (a ordem relativa entre eles fica com o Gestor).
+- **Dependências:** 3 -> 1 (conta pagadora alimenta a previsão); 7 -> 1; 4 -> US-051 (receita prevista) para completar.

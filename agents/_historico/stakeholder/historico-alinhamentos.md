@@ -324,3 +324,16 @@ Nenhuma objeção bloqueante. As observações acima (D-PO-03, Q-13, Q-17) são 
 - **Objeções/riscos de valor:** (1) **privacidade percebida:** o "Só meu" deixa de significar "só eu mexo"; o aviso do formulário precisa deixar isso claro antes de salvar (DEV-122 cobre). (2) **Adulteração silenciosa:** dono da conta ou lançador podem alterar valor de despesa pessoal alheia; recomendo que a auditoria/histórico de alteração (NEED-010) registre quem alterou, e a mensagem de recusa/detalhe mostre isso ao pagador. (3) **Lançador em nome de outro:** como o formulário só cria "Só meu" em nome próprio, o lançador é quase sempre o pagador, risco baixo.
 - **Perguntas ao usuário (não decido):** **Q-U13** — "Só meu" de **ex-membro**: hoje é somente leitura para todos, inclusive o dono da conta. Deve o dono da conta (ou o Administrador) poder agir, por exemplo para corrigir um lançamento na conta que continua dele? Hipótese conservadora: manter somente leitura. **Q-U14** — o pagador deve ser **avisado/ver no histórico** quando o dono da conta ou o lançador alterar seu "Só meu"? Hipótese: sim, no histórico de alterações.
 - **Entrega:** `requisitos-negocio.md` (RF46, RN17..17.3) e `needs/NEED-018` (RN-018.6).
+
+
+---
+
+## [2026-10-26] - Levantamento: 10 pontos do uso real (NEED-028..034)
+
+- **Participantes:** Agente Stakeholder; Gestor (repasse do usuário, dono do produto).
+- **Contexto:** o usuário trouxe 10 pontos do uso real do app. Análise por valor/dor, sem desenhar telas.
+- **Resultado:** itens 1, 2, 7 e 10 -> **NEED-034** (polimento agregado); 3 -> **NEED-028**; 4 -> **NEED-029**; 5 -> **NEED-030**; 6 -> **NEED-031**; 8 -> **NEED-032**; 9 -> **NEED-033** (já é a US-060 aprovada, TASK-054 pendente).
+- **Verificado no código/estado:** recorrência existe mas só com conta (não cartão); cartão não tem conta pagadora no cadastro; `Member` exige usuário com login; previsão é só despesa; `/payables` sem visão por conta.
+- **Conflitos assinalados:** item 3 vs. "membro = usuário" e Q-01/US-021 (reabre); item 4 vs. séries, parcelamento e "fatura paga não muda"; item 8 vs. pagamento integral (a conta vira só sugestão).
+- **Prioridade:** 033 (Must) > 034 > 032 > 031 > 028 > 029 > 030 (ver `cronograma-e-releases.md`).
+- **Perguntas ao usuário:** Q-U15..Q-U17 (NEED-028), Q-U18/19 (029), Q-U20 (030), Q-U21 (031, informativa), Q-U22/23 (032), Q-U24 (033).

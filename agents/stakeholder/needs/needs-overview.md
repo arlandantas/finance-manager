@@ -30,7 +30,7 @@ Uma família típica enfrenta dores crônicas na gestão do seu dinheiro:
 
 ---
 
-## 🗺️ Matriz Consolidada de Necessidades (NEED-001 a NEED-027)
+## 🗺️ Matriz Consolidada de Necessidades (NEED-001 a NEED-034)
 
 Todas as necessidades estão detalhadas em arquivos modulares nesta pasta:
 
@@ -65,8 +65,17 @@ Todas as necessidades estão detalhadas em arquivos modulares nesta pasta:
 | **[`NEED-026`](NEED-026-importacao-de-fatura-por-arquivo.md)** | **Importar Fatura por Arquivo (LLM)** | **Proposta: após NEED-024** (Alta) | Arquivo da fatura validado e extraído por LLM, com revisão humana obrigatória e anti-duplicidade. Antecipa item do AP3. |
 | **[`NEED-027`](NEED-027-analise-de-gastos-evitaveis-por-ia.md)** | **Análise de Gastos Evitáveis por IA** | **Proposta: depois da importação** (Média) | Sugestões de categorias e gastos evitáveis com base em educação financeira; concretiza o NEED-023. |
 
+| **[`NEED-028`](NEED-028-membro-sem-conta-ativa-e-convite-posterior.md)** | **Membro sem Conta Ativa (Convite Posterior)** | **Proposta: decisão do usuário** (Should/Alta) | Cadastrar o membro antes de ele entrar, atrelar contas e lançamentos e convidar depois; reabre Q-01/US-021. |
+| **[`NEED-029`](NEED-029-assinatura-recorrente-no-cartao.md)** | **Assinatura Recorrente no Cartão** | **Proposta: R3 fatia 2** (Should/Média-Alta) | Cobrança mensal sem fim no cartão; a recorrência atual só aceita conta. |
+| **[`NEED-030`](NEED-030-transferencia-prevista-entre-contas.md)** | **Transferência Prevista entre Contas** | **Proposta: pós-NEED-033** (Could→Should) | Prever movimento entre contas, neutro para totais, que afeta o saldo previsto. |
+| **[`NEED-031`](NEED-031-previsao-na-mesma-porta-do-lancamento.md)** | **Previsão na Mesma Porta do Lançamento** | **Proposta: R3 fatia 2** (Should/Alta) | Uma só interface para lançar real ou previsto (despesa e, depois, receita). |
+| **[`NEED-032`](NEED-032-conta-que-paga-a-fatura-no-cartao.md)** | **Conta que Paga a Fatura** | **Proposta: próxima entrega** (Should/Média-Alta) | Conta pagadora padrão no cartão, sugerida ao pagar. |
+| **[`NEED-033`](NEED-033-visao-sintetica-por-conta-em-contas-a-pagar.md)** | **Visão Sintética por Conta (Saldo Previsto)** | **Proposta: próxima entrega** (Must/Alta) | Tabela por conta: saldo atual, previstas em aberto, saldo previsto; é a US-060 já aprovada. |
+| **[`NEED-034`](NEED-034-polimento-de-ux-formularios-selecoes-e-extrato.md)** | **Polimento de UX Agregado** | **Proposta: próxima entrega** (Should) | Destaque despesa/receita, espaçamento de formulários, alinhamento do extrato, "ver compra" no card. |
+
+
 ---
 
 ## 📌 Relação com Outros Agentes
-- **Product Owner (PO):** Utiliza este panorama e os arquivos `NEED-001` a `NEED-027` para construir os fluxos (`flows/`) e o backlog de histórias BDD (`backlog/`).
+- **Product Owner (PO):** Utiliza este panorama e os arquivos `NEED-001` a `NEED-034` para construir os fluxos (`flows/`) e o backlog de histórias BDD (`backlog/`).
 - **Tech Lead:** Avalia a viabilidade dos requisitos, modela as entidades e gera os contratos de engenharia (`sdd/`).
