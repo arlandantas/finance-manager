@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-23 Entrada de Dados e Análise por IA · **R4-C (proposta)** · fatia 1/4 da análise |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Should · 1,8 · 8 (se o TL estimar mais, fatiar: 070a pedido/resultado básico, 070b recorrentes) |
-| Status | Refinada (PO) · aguarda ADR de privacidade e SDD do TL (payload agregado, prompt, validação da resposta) |
+| Status | Implementada (TASK-059/060, aguardando validação do Gestor) |
 | Depende de | **EN-004**, **EN-005**, US-048/049 (visões sintéticas: fonte dos agregados), US-058 (recorrentes), US-040 (parcela por mês da fatura) |
 | Corte | Cortável com as demais da análise (primeiro bloco a sair depois do MCP) |
 | Rastreabilidade | **NEED-027** (RN-027.1..5, 027.7, 027.9; Q-U01, Q-U11, Q-U12) · NEED-023 · RF45 · RN15, RN16 · FLUXO-017 · D-PO-64 |

@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-6 Cartões de Crédito (fase 1) · R2 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 2,8 · 5 |
-| Status | Refinada (PO) — **fatia 016a** (fatia 016b: [US-016b](US-016b-corrigir-compra-no-cartao-e-filtro.md)) |
+| Status | Implementada (TASK-019, aguardando validação do Gestor) |
 | Depende de | US-015, US-005 (drawer), US-007 (extrato) |
 | Rastreabilidade | NEED-003 (RN-003.1, RN-003.3) · NEED-001 (RN-001.1, RN-001.3) · NEED-007 · FLUXO-001 (rev. 3), FLUXO-004 · D-PO-01, D-PO-06, D-PO-08 |
 

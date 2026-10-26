@@ -5,7 +5,7 @@
 | Épico / Release | EPIC-23 Entrada de Dados e Análise por IA · **R4-B (proposta)**, antes de qualquer história de LLM |
 | Tipo | **Habilitadora** (sem tela de negócio; entrega mínima de "Consumo" em Configurações do Administrador) |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Must · 2,8 · 8 |
-| Status | Refinada (PO) · **depende do ADR do Tech Lead** (integração LLM) e da resposta Q-U08/Q-U10 |
+| Status | Implementada (TASK-057, aguardando validação do Gestor) |
 | Depende de | nenhuma história; EN-005 (opt-in) sempre antes do primeiro envio real |
 | Corte | Não cortar (US-066 e US-070 dependem dela) |
 | Rastreabilidade | NEED-026 (§4, Q-U08, Q-U10), NEED-027 (RN-027.7) · RF44, RF45 · RN15, RN16 · D-PO-57 |

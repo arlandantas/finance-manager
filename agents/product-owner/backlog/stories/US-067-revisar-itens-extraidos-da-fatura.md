@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-23 Entrada de Dados e Análise por IA · **R4-B (proposta)** · fatia 2/4 da importação |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Must · 2,3 · 8 (candidata a 2 fatias se o TL estimar mais: 067a lista/edição, 067b conferência/duplicidade) |
-| Status | Refinada (PO) · aguarda SDD do TL (contrato de extração, dedupe, sessão de revisão) |
+| Status | Refinada, aguarda SDD do TL (R5 adiada); não iniciada |
 | Depende de | US-066, US-024 (descrição), US-014 (categorias), US-040a (parcelas) |
 | Corte | Não cortar (RN15: a IA nunca grava sozinha; a revisão é o que torna a importação segura) |
 | Rastreabilidade | **NEED-026** (RN-026.3..8) · NEED-023 §5 · NEED-024 (RN-024.x) · RF44 · RN12, RN15 · FLUXO-015 · D-PO-60, D-PO-61, D-PO-63 |

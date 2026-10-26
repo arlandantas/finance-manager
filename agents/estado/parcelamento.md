@@ -95,7 +95,7 @@ Docs: US [040](../product-owner/backlog/stories/US-040-compra-parcelada-no-carta
 | Parcelas já pagas | D-GES-29/31/34, D-PO-54..56, DEV-48..50 |
 
 Divergências docs x código (código vence):
-1. SDD-014 (arquivo `-esboco`) traz US-042/US-041 como contrato "Aprovado para Desenvolvimento", mas só 040a/040b e (via SDD-020) 065 existem; US-041 e US-042 NÃO estão implementadas.
+1. SDD-014 (arquivo `-esboco`, aprovado) traz US-042/US-041 como contrato "Aprovado para Desenvolvimento", mas só 040a/040b e (via SDD-020) 065 existem; US-041 e US-042 NÃO estão implementadas.
 2. SDD-014 §4.8 cita a guarda `assertEditableTransaction`; não existe. Real: `loadMutable` em `mutations.ts` (lança `INSTALLMENT_NOT_EDITABLE`).
-3. Status das US-040/052/065 ("Esboçada", "Refinada, aguarda SDD") estão desatualizados: todas implementadas (DEV-48..50, D-GES-34).
+3. Status das US corrigido em 2026-10-25: US-040/052/065 "Implementada" (DEV-48..50, D-GES-34); US-041/042/043/044 "Aprovada p/ Dev, não iniciada" (042/043/044 bloqueadas pela janela de reversão do rateio). Fila completa em `developer/tasks/tasks-board.md`.
 4. SDD-018 §2 (US-055, "A pagar") não pertence a esta área; ver Previstas.

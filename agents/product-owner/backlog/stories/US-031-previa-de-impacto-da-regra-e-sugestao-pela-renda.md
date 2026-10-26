@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-16 Acerto e Divisão Opcionais e Transparentes · **R2.1** |
 | MoSCoW · WSJF · Tamanho (TL) | Should · 2,0 · 3 |
-| Status | **Especificada** (SDD-011, pronta para o Dev) · tamanho confirmado pelo TL |
+| Status | Implementada (TASK-035, aguardando validação do Gestor) |
 | Depende de | US-008, US-022 |
 | Corte | **Cortável** (ver ordem de corte do backlog) |
 | Rastreabilidade | Homologação achado 4 e 13 · Parecer ressalva 4 · NEED-007 (RN-007.6) · Q-08/D-GES-08 · FLUXO-003 |

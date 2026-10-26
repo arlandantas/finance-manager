@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-21 Classificação e Análise · **R3** |
 | MoSCoW · WSJF · Tamanho (TL) | Should · 2,6 · 5 |
-| Status | **Esboçada** (SDD-016, esboço do Tech Lead) · tamanho confirmado pelo TL; detalhar o SDD antes do Dev |
+| Status | Aprovada p/ Dev, não iniciada (SDD-016) |
 | Depende de | US-007 (Extrato, fonte única), US-025 (mesmas regras de soma); US-040 (parcela por mês da fatura) |
 | Corte | **Cortável** (com a US-049); não começa antes das tags só se o TL pedir, mas **pode começar sem elas** |
 | Rastreabilidade | Parecer item 7, Q-F10, Q-F12 · NEED-016 (RN-016.1..5) · NEED-006 · FLUXO-014 · D-PO-29 |

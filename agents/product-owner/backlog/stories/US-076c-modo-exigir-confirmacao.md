@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-24 Acesso por Assistente (MCP) · **ampliação (backlog)** |
 | MoSCoW · Tamanho (TL) | Could · **3** |
-| Status | Refinada (PO) · **fora do POC** · SDD-027 (rev. 1, proposta + confirmação) reaproveitado |
+| Status | Refinada (PO) · fora do POC, não iniciada (SDD-027 rev. 1 reaproveitado) |
 | Depende de | US-076a/b |
 | Corte | Opcional |
 | Rastreabilidade | **NEED-025** (RN-025.4 original, agora opcional) · D-GES-36 (c) · D-PO-72 |

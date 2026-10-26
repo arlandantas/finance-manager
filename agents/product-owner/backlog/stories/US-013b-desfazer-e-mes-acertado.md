@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-3 Transações & Categorização · R1 |
 | MoSCoW · WSJF · Tamanho | Should · 2,3 · 3 |
-| Status | Especificada (SDD-001) · fatia **13b** da US-013 · **cortável** sem quebrar a R1 (primeira a cortar) |
+| Status | Implementada (TASK-016, aguardando validação do Gestor) · cortável |
 | Depende de | [US-013a](US-013-corrigir-ou-estornar-lancamento.md), US-010, US-011 |
 | Rastreabilidade | NEED-001 · NEED-007 · ADR-001, ADR-006, ADR-007 |
 

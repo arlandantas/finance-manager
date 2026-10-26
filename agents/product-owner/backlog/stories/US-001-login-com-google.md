@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-0 Autenticação & Onboarding · R1 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 7,7 · 3 |
-| Status | Refinada (PO) |
+| Status | Implementada (TASK-002, aguardando validação do Gestor) |
 | Depende de | EN-001 |
 | Rastreabilidade | NEED-012 · RN-012.1, RN-012.2, RN-012.3 · FLUXO-002 · ADR-002 |
 

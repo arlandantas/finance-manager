@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-3 Transações & Categorização · R1 |
 | MoSCoW · WSJF · Tamanho (PO) | Should · 2,8 · 5 (TL: 8 na história inteira; 13a + 13b) |
-| Status | Especificada (SDD-001) · fatia **13a** da US-013 (a 13b é [US-013b](US-013b-desfazer-e-mes-acertado.md)) |
+| Status | Implementada (TASK-015, aguardando validação do Gestor) |
 | Depende de | US-005, US-007 |
 | Rastreabilidade | NEED-001 (autor/auditoria) · NEED-010 (princípio de auditoria) · ADR-001 (ledger imutável, `version`) · ADR-006 |
 

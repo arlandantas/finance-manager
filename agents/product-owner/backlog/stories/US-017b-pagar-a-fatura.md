@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-6 Cartões de Crédito (fase 1) · R2 |
 | MoSCoW · WSJF · Tamanho (PO) | Should (D-GES-04) · 2,0 · 5 |
-| Status | Refinada (PO) · **cortável** |
+| Status | Implementada (TASK-023, aguardando validação do Gestor) · cortável |
 | Depende de | US-017a, US-004 (contas), US-010 (padrão de aviso de saldo negativo e de desfazer) |
 | Rastreabilidade | NEED-003 (§2.2: pagar a fatura debita a conta e libera o limite) · NEED-002 (RN-002.2, RN-002.3) · ADR-007 · FLUXO-004 · D-GES-04 · D-PO-09 |
 

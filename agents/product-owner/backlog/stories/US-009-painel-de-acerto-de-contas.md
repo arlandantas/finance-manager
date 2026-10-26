@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-4 Divisão & Acerto de Contas · R1 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 4,4 · 5 (TL: 8 na história inteira; 9a + 9b) |
-| Status | Especificada (SDD-002) · **substitui a antiga US-002** · fatia **9a** da US-009 (a 9b é [US-009b](US-009b-acerto-tres-membros-e-detalhe.md)) |
+| Status | Implementada (TASK-010, aguardando validação do Gestor) · fatia 9a |
 | Depende de | US-005, US-008 |
 | Rastreabilidade | NEED-007 · RN-007.1, RN-007.2 · ADR-006 · FLUXO-003 |
 

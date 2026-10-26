@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-19 Ergonomia e Preferências · **R2.1** |
 | MoSCoW · WSJF · Tamanho (TL) | Could · 1,7 · 3 |
-| Status | **Especificada** (SDD-010, pronta para o Dev) · tamanho confirmado pelo TL |
+| Status | Implementada (TASK-041, aguardando validação do Gestor) |
 | Depende de | nenhuma (transversal); a cor por conta (US-050) depende desta |
 | Corte | **Primeiro item a cortar da R2.1** (depois da US-039) |
 | Rastreabilidade | Parecer item 14 · NEED-022 (RN-022.1) · FLUXO-013 · D-PO-22 |

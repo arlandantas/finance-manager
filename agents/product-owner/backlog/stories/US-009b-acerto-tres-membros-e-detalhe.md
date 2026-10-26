@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-4 Divisão & Acerto de Contas · R1 |
 | MoSCoW · WSJF · Tamanho | Should · 3,0 · 3 |
-| Status | Especificada (SDD-002) · fatia **9b** da US-009 · **cortável** sem quebrar a R1 |
+| Status | Implementada (TASK-014, aguardando validação do Gestor) · cortável |
 | Depende de | [US-009a](US-009-painel-de-acerto-de-contas.md) |
 | Rastreabilidade | NEED-007 · RN-007.1, RN-007.2 · ADR-006 · FLUXO-003 |
 

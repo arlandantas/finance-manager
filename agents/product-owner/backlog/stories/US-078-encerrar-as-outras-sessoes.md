@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-25 Segurança, Privacidade e Acesso · **R4-S (correções SEC do alpha)** |
 | MoSCoW · Tamanho (TL) | Should · 2 (SEC-018b) |
-| Status | Refinada (PO) · SDD-028 §6 (aprovado para Dev) |
+| Status | Implementada (TASK-075/076, aguardando validação do Gestor) |
 | Depende de | SEC-018a (sessão por *hash*, 3 pts, TL), US-035 (encerramento por remoção/troca de papel) |
 | Rastreabilidade | **NEED-012** (RN-012.3, **revisão a validar pelo Stakeholder**, D-PO-85) · SEC-018 · ADR-032 §7 · SDD-028 §6 · D-GES-42 U2 · D-PO-80 |
 

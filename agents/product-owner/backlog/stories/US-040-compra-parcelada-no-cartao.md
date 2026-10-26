@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-20 Cartão Completo (parcelamento) · **R3, 1ª entrega** (não entra na R2.1: o TL estimou 8 > 5 e a US-042 depende da EN-002; D-GES-17 não satisfeita, TL-02) |
 | MoSCoW · WSJF · Tamanho (TL) | Must · 2,1 (recalc.) · 8 (040a 5 + 040b 3) (PO: 5) |
-| Status | **Esboçada** (SDD-014, esboço do Tech Lead) · tamanho re-estimado pelo TL; detalhar o SDD antes do Dev |
+| Status | Implementada (TASK-044/045, aguardando validação do Gestor) |
 | Depende de | US-016a, US-017a, US-015 (já entregues); US-024 (descrição) |
 | Corte | **Não cortar** (item 6: "dia a dia do cartão no Brasil"); a **040b** não sai sem a 040a, e a exclusão da compra inteira dela é o que torna um erro de digitação recuperável |
 | Rastreabilidade | Parecer item 6, Q-F14 · NEED-003 (RN-003.4, 003.5, 003.6, 003.7, 003.9) · NEED-008 (ortogonal) · FLUXO-014 · D-PO-25, D-PO-26, **D-PO-33** · SDD-014 (esboço), ADR-017, TL-02, TL-03 |

@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-17 Visão do Mês e Privacidade de Exibição · **R2.1** |
 | MoSCoW · WSJF · Tamanho (TL) | Must · 3,4 · 5 |
-| Status | **Especificada** (SDD-010, pronta para o Dev) · tamanho confirmado pelo TL |
+| Status | Implementada (TASK-026, aguardando validação do Gestor) |
 | Depende de | nenhuma (transversal); **1ª da R2.1** (D-PO-35): todo valor das telas seguintes (US-022 em diante) já nasce em `Money` |
 | Corte | **Não cortar** |
 | Rastreabilidade | Parecer item 3, Q-F04 · NEED-014 (RN-014.1..4) · NEED-022 (RN-022.1) · FLUXO-007 · D-PO-15 |

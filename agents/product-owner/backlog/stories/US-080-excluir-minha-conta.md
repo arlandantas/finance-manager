@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-25 Segurança, Privacidade e Acesso · **R4-S (correções SEC do alpha)** |
 | MoSCoW · Tamanho (TL) | **Must** (antes de abrir o cadastro além do alpha) · 5 (SEC-017c) · prazo do TL: ≤ 60 dias |
-| Status | Refinada (PO) · SDD-028 §7.4 (aprovado para Dev; modelo Opus) |
+| Status | Implementada (TASK-077, aguardando validação do Gestor) |
 | Depende de | US-078 (sessões encerradas), US-079 (baixar antes), US-035 (saída da família), SEC-018a |
 | Rastreabilidade | SEC-017c · LGPD art. 18 (eliminação; **validação jurídica do usuário**) · ADR-019 · ADR-032 §6 · SDD-028 §7.4 · D-GES-42 U5 · D-PO-86, D-PO-87 |
 

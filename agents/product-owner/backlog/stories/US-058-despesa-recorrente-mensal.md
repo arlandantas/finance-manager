@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-17 Visão do Mês · **v0 alpha** |
 | MoSCoW · Tamanho (PO) | **Must** · 8 (domínio crítico: datas/centavos; o TL estima) |
-| Status | Refinada (PO) · **aguarda SDD do TL** (pedido em `release-v0-alpha.md` §4) |
+| Status | Implementada (TASK-050/051, aguardando validação do Gestor) |
 | Depende de | US-006 (despesa prevista), US-019 (baixa) |
 | Rastreabilidade | feedback-usuario-v0 U4 · escopo-v0-alpha decisão (c) · NEED-003 |
 

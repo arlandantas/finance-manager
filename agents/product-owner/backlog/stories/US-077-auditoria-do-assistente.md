@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-24 Acesso por Assistente (MCP) · **R4-D (POC)** · fatia 4/4 |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Could · 1,2 · 3 |
-| Status | Refinada (PO) |
+| Status | Implementada (TASK-070, aguardando validação do Gestor) |
 | Depende de | EN-006b (grava a auditoria), US-074; deve sair **antes da US-076a/b** |
 | Corte | Cortável com o bloco; **a US-076a/b não vai sem ela** |
 | Rastreabilidade | **NEED-025** (RN-025.6) · RF43 · D-PO-66, D-PO-76 |

@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-20 Cartão Completo · **R2.2 (ajustes da homologação de 2026-10-05)**, antes da R3-B |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 4,0 · 2 |
-| Status | Refinada (PO) · aguarda SDD/estimativa do TL |
+| Status | Implementada (TASK-049, aguardando validação do Gestor) |
 | Depende de | US-040a/b (entregue), US-030, US-029 |
 | Corte | **Não cortar**; **sai de cena quando a US-042 for entregue** (cenário de remoção) |
 | Rastreabilidade | Homologação R2.1 achado 1 (Importante) · NEED-003, NEED-007, NEED-018 · Q-F05 · D-PO-25, D-PO-49 · decisão do Gestor (aviso agora, sem antecipar a US-042) |

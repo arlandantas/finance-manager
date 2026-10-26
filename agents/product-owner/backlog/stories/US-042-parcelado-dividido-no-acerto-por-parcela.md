@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-20 Cartão Completo (parcelamento) · **R3, 4ª posição** (depois da US-040 e da EN-002; não entra na R2.1, TL-02) |
 | MoSCoW · WSJF · Tamanho (TL) | Must · 2,7 · 3 |
-| Status | **Esboçada** (SDD-014, esboço do Tech Lead) · tamanho confirmado pelo TL; detalhar o SDD antes do Dev |
+| Status | Aprovada p/ Dev, não iniciada (SDD-014 (bloqueada pela janela de reversão do rateio)) |
 | Depende de | US-040, **EN-002 (dependência dura: o percentual da parcela é o gravado na compra)**, US-030, US-009a |
 | Corte | **Não cortar** (sem ela, o parcelado fica "Só meu" e o acerto subestima) |
 | Rastreabilidade | Parecer Q-F05 · NEED-003 (RN-003.8) · NEED-007, NEED-018, NEED-019 · Q-20/D-GES-13 · FLUXO-014 · D-PO-26 |

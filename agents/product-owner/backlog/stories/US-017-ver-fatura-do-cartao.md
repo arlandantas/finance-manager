@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-6 Cartões de Crédito (fase 1) · R2 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 4,7 · 3 |
-| Status | Refinada (PO) — **fatia 017a** (pagar a fatura: [US-017b](US-017b-pagar-a-fatura.md), Should) |
+| Status | Implementada (TASK-020, aguardando validação do Gestor) |
 | Depende de | US-016 |
 | Rastreabilidade | NEED-003 (§2.2, RN-003.1, RN-003.3) · FLUXO-004 · D-GES-04 · D-PO-06, D-PO-09, D-PO-10 |
 

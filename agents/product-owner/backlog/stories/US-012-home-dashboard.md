@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-5 Visão Geral (Dashboard) · R1 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 5,3 · 3 |
-| Status | Refinada (PO) |
+| Status | Implementada (TASK-013, aguardando validação do Gestor) |
 | Depende de | US-004, US-007, US-009 |
 | Rastreabilidade | NEED-002 · NEED-006 (visões sintéticas) · NEED-007 · mvp-definition ("Dashboard minimalista") · FLUXO-001, FLUXO-003 |
 

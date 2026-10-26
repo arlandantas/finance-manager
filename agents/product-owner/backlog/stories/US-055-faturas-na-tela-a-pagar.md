@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-17 Visão do Mês · **R2.2** |
 | MoSCoW · WSJF · Tamanho (PO) | Should · 1,7 · 3 |
-| Status | Refinada (PO) · aguarda SDD/estimativa do TL |
+| Status | Implementada (TASK-052, aguardando validação do Gestor) |
 | Depende de | US-017a/b, US-018, US-019, US-025 |
 | Corte | **Cortável (3º do pacote R2.2)** |
 | Rastreabilidade | Homologação R2.1 achado 7 (Melhoria; persiste do achado 10 da rodada anterior) · NEED-003, NEED-004, NEED-015 · D-PO-51 |

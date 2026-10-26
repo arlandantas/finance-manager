@@ -5,7 +5,7 @@
 | Épico / Release | EPIC-24 Acesso por Assistente (MCP) · **pré-requisito do POC do MCP** (prioridade 1) |
 | Tipo | **Habilitadora** (sem tela própria) |
 | MoSCoW · Tamanho (TL) | Should · **5** |
-| Status | Refinada (PO) · especificada no [ADR-031](../../../tech-lead/adrs/ADR-031-producao-vercel-prisma-postgres.md) · liberada pelo Gestor (D-GES-37) |
+| Status | Implementada (TASK-064, aguardando validação do Gestor) |
 | Depende de | ações do usuário do item 0 do TL (conferir variáveis, informar plano/região, `migrate status`) |
 | Corte | **Não se corta** se o MCP for ligado: sem ela o lançamento direto grava dados reais sem backup nem travas |
 | Rastreabilidade | NEED-025 (RN-025.5, 025.6) · D-GES-36 (a), D-GES-37 · ADR-031 (substitui o ADR-026 em produção) · D-PO-70 |

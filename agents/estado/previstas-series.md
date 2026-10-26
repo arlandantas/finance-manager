@@ -54,7 +54,7 @@ Rotas (`src/app/api/v1/`): `planned-expenses` (GET lista, POST), `planned-expens
 
 ## e) Em andamento / pendências
 - Nada em implementação nesta área.
-- US-051 / SDD-017 (receitas previstas e saldo previsto, ADR-023, estimativa 5, Could, primeiro corte da R3): status "Esboçada" na US; NADA no código (sem `kind` em `PlannedExpense`, nenhum INCOME em `previstas/`). Detalhar o SDD antes de implementar.
+- US-051 / SDD-017 (receitas previstas e saldo previsto, ADR-023, estimativa 5, Could, primeiro corte da R3): status na US: "Aprovada p/ Dev, não iniciada" (2026-10-25); NADA no código (sem `kind` em `PlannedExpense`, nenhum INCOME em `previstas/`). Detalhar o SDD antes de implementar.
 - Verificação da UI de Previstas/pay-drawer/planned-drawer no navegador: ver pendência equivalente em [so-meu.md](so-meu.md) §e.
 - Não verificado: BDD (`tests/e2e/features/US-018`, `US-019`) rodado nesta consolidação; testes citados em §f foram lidos, não executados.
 
@@ -72,7 +72,7 @@ Docs: [SDD-009](../tech-lead/sdd/SDD-009-despesas-previstas.md) (previstas e bai
 | Riscos aceitos | D-GES-61, SEC-055/057 |
 
 Divergências docs x código (código vence):
-1. US-018/019/058/059 mostram status "Refinada (PO)"/"aguarda SDD/estimativa", mas estão implementadas e testadas; US-051 "Esboçada" é a única de fato pendente.
+1. Status das US-018/019/058/059 corrigido em 2026-10-25 para "Implementada (TASK-xxx)". Pendentes de fato: US-051 (não iniciada) e US-060 (resumo por conta no A pagar, TASK-054 pendente: `/payables` sem `byAccount`).
 2. SDD-009 descreve baixa com pagador padrão = responsável; no código, quando o responsável é ex-membro sem retorno o pagador é quem realiza a baixa (DEV-135) e quem voltou paga em nome do vínculo atual.
 3. SDD-009/US-025 citam "A pagar" com regra hoje+7; vigente por vencimento no período (D-GES-26); hoje+7 só na janela do Início (US-061).
 4. SDD-017 mantém o sufixo `-esboco` no nome, mas diz ser SDD completo; o código não o implementa.

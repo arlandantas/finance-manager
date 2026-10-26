@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-18 Manutenção de Cadastros · **R2.1** |
 | MoSCoW · WSJF · Tamanho (TL) | Should · 1,1 (recalc.) · 8 (035a 5 + 035b 3) (PO: 5) |
-| Status | **Especificada** (SDD-012, pronta para o Dev) · tamanho re-estimado pelo TL |
+| Status | Implementada (TASK-039, aguardando validação do Gestor) |
 | Depende de | US-034, US-032, US-003 |
 | Corte | **Cortável** (caso sensível; alto risco, risco de inchar a R2.1) |
 | Fatias | **035a** (5): remover membro, ex-membro, revisão de pendências e reatribuição, reconvite · **035b** (3): sair da família, avisos de acesso encerrado e casos-limite (D-PO-36) |

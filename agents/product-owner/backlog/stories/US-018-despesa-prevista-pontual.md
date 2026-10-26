@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-7 Despesas Previstas (fase 1) · R2 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 2,2 · 5 |
-| Status | Refinada (PO) |
+| Status | Implementada (TASK-021, aguardando validação do Gestor) |
 | Depende de | US-005 (categorias, quem pagou), US-012 (Home) · integra faturas fechadas se a US-017a já existir |
 | Rastreabilidade | NEED-004 (§2.1, RN-004.1) · NEED-001 (RN-001.2, RN-001.3) · NEED-002 (RN-002.2) · FLUXO-005 · D-PO-01, D-PO-11 |
 

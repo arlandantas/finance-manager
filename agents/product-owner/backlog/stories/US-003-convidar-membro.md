@@ -6,7 +6,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-1 Núcleo Familiar & Membros · R1 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 6,3 · 3 |
-| Status | Refinada (PO) · **revisada 2026-10-24 (aceite explícito, SEC-004)** |
+| Status | Implementada (TASK-008, aguardando validação do Gestor) · revisada 2026-10-24 (aceite explícito, SEC-004) |
 | Depende de | US-002 |
 | Rastreabilidade | NEED-012 (cenário do convite) · NEED-001 · RN-012.2 · FLUXO-002 · ADR-002 · SEC-004 · SDD-028 §1 · ADR-032 · D-GES-42 · D-PO-79 |
 

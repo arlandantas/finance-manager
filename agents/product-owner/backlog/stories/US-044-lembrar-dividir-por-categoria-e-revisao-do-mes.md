@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-16 Acerto e Divisão Opcionais e Transparentes · **R3** |
 | MoSCoW · WSJF · Tamanho (TL) | Should · 2,3 · 3 |
-| Status | **Esboçada** (SDD-015, esboço do Tech Lead) · tamanho confirmado pelo TL; detalhar o SDD antes do Dev |
+| Status | Aprovada p/ Dev, não iniciada (SDD-015 (bloqueada pela janela de reversão)) |
 | Depende de | US-043, US-014, US-030 |
 | Corte | **Cortável** (mitigação do risco C7; sem ela vale a linha informativa da US-030) |
 | Rastreabilidade | Parecer item 9 (risco C7, salvaguardas) · NEED-018 (§2.4, §4) · FLUXO-008 · D-PO-16, D-PO-27 |

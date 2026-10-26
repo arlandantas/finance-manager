@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-19 Ergonomia e Preferências · **R2.1** |
 | MoSCoW · WSJF · Tamanho (TL) | Should · 2,3 · 3 |
-| Status | **Especificada** (SDD-010, pronta para o Dev) · tamanho confirmado pelo TL |
+| Status | Implementada (TASK-040, aguardando validação do Gestor) |
 | Depende de | US-012, US-013a, US-007 |
 | Corte | **Cortável, o último dos itens de ergonomia a sair** (ordem: tema, navegação desktop, polimento e, por fim, esta) |
 | Rastreabilidade | Parecer item 12 · Homologação achado 7 · NEED-022 · FLUXO-013 · D-PO-21 |

@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-16 Acerto e Divisão Opcionais e Transparentes · **R2.1** |
 | MoSCoW · WSJF · Tamanho (TL) | Must · 3,2 · 5 |
-| Status | **Especificada** (SDD-011, pronta para o Dev) · tamanho confirmado pelo TL |
+| Status | Implementada (TASK-032, aguardando validação do Gestor) |
 | Depende de | US-009a, US-011, US-012 (entregues); US-002 (onboarding) |
 | Corte | **Não cortar** (item 2 do usuário; destrava US-029 e US-030) |
 | Rastreabilidade | Parecer item 2 · NEED-019 (RN-019.1..6) · NEED-007 · Q-F01 · FLUXO-009 · D-PO-14 |

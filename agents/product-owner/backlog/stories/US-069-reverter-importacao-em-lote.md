@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-23 Entrada de Dados e Análise por IA · **R4-B (proposta)** · fatia 4/4 da importação |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Should · 2,0 · 3 |
-| Status | Refinada (PO) · aguarda SDD do TL |
+| Status | Refinada, aguarda SDD do TL (R5 adiada); não iniciada |
 | Depende de | US-068, US-041 (exclusão/Desfazer) |
 | Corte | Cortável (1º do bloco da fatura): sem ela o usuário exclui lançamento a lançamento; RN-026.10 pede, mas não é vital |
 | Rastreabilidade | **NEED-026** (RN-026.10) · RF44 · FLUXO-015 · D-PO-60 |

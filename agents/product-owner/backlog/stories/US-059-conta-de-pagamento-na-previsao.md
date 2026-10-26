@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-17 Visão do Mês · **v0 alpha** |
 | MoSCoW · Tamanho (PO) | **Must** · 2 |
-| Status | Refinada (PO) · aguarda estimativa do TL |
+| Status | Implementada (TASK-050/051, aguardando validação do Gestor) |
 | Depende de | US-006, US-019; entregue **junto com** a US-058 |
 | Rastreabilidade | feedback-usuario-v0 U3 · escopo-v0-alpha decisão (d) · NEED-003, NEED-004 |
 

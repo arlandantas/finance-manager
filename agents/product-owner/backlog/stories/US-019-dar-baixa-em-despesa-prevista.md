@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-7 Despesas Previstas (fase 1) · R2 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 2,4 · 5 |
-| Status | Refinada (PO) |
+| Status | Implementada (TASK-022, aguardando validação do Gestor) |
 | Depende de | US-018, US-004 · o cenário de exclusão no extrato depende da US-013a |
 | Rastreabilidade | NEED-004 (§2.2, RN-004.2, RN-004.3) · NEED-002 (RN-002.2) · NEED-007 · ADR-007 · FLUXO-005 · D-PO-01, D-PO-11 |
 

@@ -6,7 +6,7 @@ Estado vigente consolidado em agents/estado/privacidade-lgpd.md
 | :-- | :-- |
 | Épico / Release | EPIC-25 Segurança, Privacidade e Acesso · **R4-S (correções SEC do alpha)** |
 | MoSCoW · Tamanho (TL) | **Must** (publicar junto com a US-080) · 1 (SEC-017e) |
-| Status | Refinada (PO) · **texto aguarda aprovação do usuário e revisão jurídica** |
+| Status | Implementada (TASK-077, aguardando validação do Gestor) · rascunho do texto implementado; texto aguarda aprovação do usuário e revisão jurídica |
 | Depende de | Tabela de retenção do TL (SDD-028 §7.1); US-079 e US-080 (os botões citados no texto) |
 | Rastreabilidade | SEC-017e · LGPD (arts. 6, 9, 18) · EN-005 (privacidade de IA) · ADR-032 §6 · SDD-028 §7.1, §7.6 · D-GES-42 U5 · D-PO-86, D-PO-89 |
 

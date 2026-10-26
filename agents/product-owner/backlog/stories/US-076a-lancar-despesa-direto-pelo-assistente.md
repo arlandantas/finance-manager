@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-24 Acesso por Assistente (MCP) · **R4-D (POC)** · fatia 3a/4 |
 | MoSCoW · WSJF · Tamanho (TL) | Could · 1,3 · **5** |
-| Status | Refinada (PO, revisão 2) · SDD-027 (rev. 2, §R2) · **sai junto com a US-076b** · marco POC-2 |
+| Status | Implementada (TASK-071, aguardando validação do Gestor) |
 | Depende de | US-075, US-074 (permissão de lançar), US-077, US-005/016a (lançar), EN-007 liberada |
 | Corte | Cortável; a US-076b não vai sem ela e ela não vai sem a 076b |
 | Rastreabilidade | **NEED-025** (RN-025.3..6; RN-025.4 trocada) · RF43 · FLUXO-008 §6 · D-GES-36 (c), D-GES-37 · D-PO-72, D-PO-75 |

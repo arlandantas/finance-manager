@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-17 Visão do Mês e Privacidade de Exibição · **R2.1** |
 | MoSCoW · WSJF · Tamanho (TL) | Must · 3,6 · 5 |
-| Status | **Especificada** (SDD-010, pronta para o Dev) · tamanho confirmado pelo TL |
+| Status | Implementada (TASK-030, aguardando validação do Gestor) |
 | Depende de | US-012, US-017a (faturas), US-018 (previstas), US-007 (Extrato, reconciliação) |
 | Corte | **Não cortar** (item 8 do usuário) |
 | Rastreabilidade | Parecer item 8, Q-F03, Q-F03b · NEED-015 (RN-015.1..7) · NEED-009 (RN08 rebaixado) · FLUXO-006 · D-PO-13 |

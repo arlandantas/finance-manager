@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-3 Transações & Categorização · R1 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 5,0 · 2 |
-| Status | Refinada (PO) |
+| Status | Implementada (TASK-006, aguardando validação do Gestor) |
 | Depende de | US-005 |
 | Rastreabilidade | NEED-002 (entradas) · NEED-001 · RN-002.2 · FLUXO-001 (rev. 2) |
 

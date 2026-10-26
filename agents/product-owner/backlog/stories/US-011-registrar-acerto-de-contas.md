@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-4 Divisão & Acerto de Contas · R1 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 5,3 · 3 |
-| Status | Refinada (PO) — aguarda SDD-002 |
+| Status | Implementada (TASK-012, aguardando validação do Gestor) |
 | Depende de | US-009, US-010 |
 | Rastreabilidade | NEED-007 · RN-007.3 · ADR-006 · FLUXO-003 |
 

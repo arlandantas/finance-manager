@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-24 Acesso por Assistente (MCP) · **R4-D (POC)** · fatia 3b/4 |
 | MoSCoW · Tamanho (TL) | Could · **3** |
-| Status | Refinada (PO, revisão 2) · SDD-027 §R2.3 e SDD-025 §8.2 · **sai junto com a US-076a** |
+| Status | Implementada (TASK-072, aguardando validação do Gestor) |
 | Depende de | US-076a, US-074 |
 | Corte | Não vai sem a 076a (e a 076a não vai sem ela) |
 | Rastreabilidade | **NEED-025** (RN-025.4 trocada, RN-025.6) · TL-47 · D-GES-37 · D-PO-75 |

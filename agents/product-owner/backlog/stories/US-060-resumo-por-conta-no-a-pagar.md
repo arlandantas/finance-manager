@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-17 Visão do Mês · **v0 alpha (Should)** |
 | MoSCoW · Tamanho (PO) | **Should** · 3 |
-| Status | Refinada (PO) · aguarda estimativa do TL |
+| Status | Aprovada p/ Dev, não iniciada (TASK-054 pendente; SDD resumido em SDD-019 §7, sem SDD detalhado) |
 | Depende de | US-059, US-055, US-057 |
 | Corte | 2º a cortar dos Should (ver `release-v0-alpha.md`) |
 | Rastreabilidade | feedback-usuario-v0 U3 · escopo-v0-alpha decisão (d) · NEED-003, NEED-004 |

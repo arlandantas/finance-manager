@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-19 Polimento · **v0 alpha (Should, 1º dos Should)** |
 | MoSCoW · Tamanho (PO) | **Should** · 2 |
-| Status | Refinada (PO) · aguarda estimativa do TL |
+| Status | Implementada (TASK-054, aguardando validação do Gestor) · menu lateral entregue |
 | Depende de | US-038 (conteúdo contido), US-056 (contraste) |
 | Rastreabilidade | feedback-usuario-v0 U9 · escopo-v0-alpha decisão (h) · NEED-022 |
 

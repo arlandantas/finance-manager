@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-19 Ergonomia e Preferências · **R2.1** |
 | MoSCoW · WSJF · Tamanho (TL) | Must · 3,7 (recalc.) · 3 (PO: 2) |
-| Status | **Especificada** (SDD-013, pronta para o Dev) · tamanho re-estimado pelo TL |
+| Status | Implementada (TASK-029, aguardando validação do Gestor) |
 | Depende de | US-005, US-006, US-016a |
 | Corte | **Não cortar** |
 | Rastreabilidade | Parecer item 5, Q-F13 · NEED-022 · DEV-10, Q-05 · FLUXO-008 · D-PO-20 |

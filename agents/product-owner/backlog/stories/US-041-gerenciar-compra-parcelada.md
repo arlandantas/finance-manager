@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-20 Cartão Completo (parcelamento) · **R3** |
 | MoSCoW · WSJF · Tamanho (TL) | Should · 2,0 · 5 |
-| Status | **Esboçada** (SDD-014, esboço do Tech Lead) · tamanho confirmado pelo TL; detalhar o SDD antes do Dev |
+| Status | Aprovada p/ Dev, não iniciada (SDD-014) |
 | Depende de | US-040 (inclui a exclusão da compra inteira), US-016b, US-013a; ordem técnica: depois da US-043 (TL, ordem de risco) |
 | Corte | **Cortável** (contorno: excluir a compra inteira, que agora vem na US-040b, e lançar de novo) |
 | Rastreabilidade | NEED-003 (RN-003.7) · Parecer item 6 · FLUXO-014 · D-PO-25 |

@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-18 Contas · **v0 alpha** |
 | MoSCoW · Tamanho (PO) | **Must** · 3 |
-| Status | Refinada (PO) · aguarda SDD/estimativa do TL |
+| Status | Implementada (TASK-049, aguardando validação do Gestor) |
 | Depende de | US-032, US-026 |
 | Rastreabilidade | feedback-usuario-v0 U6 · escopo-v0-alpha decisão (e) · NEED-004 |
 

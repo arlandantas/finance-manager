@@ -5,7 +5,7 @@
 | Épico / Release | EPIC-16 Acerto e Divisão Opcionais e Transparentes · **R3, 2ª entrega** (depois da US-040) |
 | Tipo | **Enabler técnico** (sem valor direto ao usuário; habilita **US-042 (Must)**, US-043, US-044 e o rótulo ponderado) |
 | MoSCoW · WSJF · Tamanho (TL) | **Must** (era Should: a US-042 depende dela, D-PO-34) · 1,1 (recalc.) · 13 (002a 5 + 002b 8) (PO: 5) |
-| Status | **Esboçada** (SDD-015, esboço do Tech Lead) · tamanho re-estimado pelo TL; detalhar o SDD antes do Dev |
+| Status | Implementada (TASK-046/047, aguardando validação do Gestor) · janela de reversão do rateio em curso (migração em produção ainda não feita; `--verify` limpo) |
 | Depende de | US-008, US-009a/b, US-011, US-013a/b, US-022; na ordem da R3 vem depois da US-040 |
 | Corte | **Não cortar** (Must: a US-042 depende do percentual gravado; D-PO-34). Só a **US-043** (e a US-044) são cortáveis |
 | Rastreabilidade | Parecer item 9b e §10 (risco: migração do acerto) · NEED-018 (RN-018.1..4) · Q-08/D-GES-08 · D-PO-27, **D-PO-34** · SDD-015 (esboço), ADR-016, TL-07 |

@@ -62,7 +62,7 @@ Todos os de segurança sujeitos a veto do usuário.
 
 ## e) Em andamento / pendências
 - Nada em implementação nesta área.
-- US-042 (rateio por parcela), US-041/US-040 em status "Esboçada" nas US, mas o código de parcelamento (US-040a/b, US-065) existe e tem testes: status das US não reflete o código (ver Parcelamento, a migrar).
+- US-042 (rateio por parcela) e US-041 seguem "Aprovada p/ Dev, não iniciada"; US-040/065 constam como "Implementada" nas US desde 2026-10-25 (ver [parcelamento.md](parcelamento.md)).
 - UI de cartões e fatura nunca verificada no navegador após as correções de titular (SEC-042/047).
 - Não verificado: `pay-drawer`/Fatura mostrando compras "Só meu" alheias a todos (a API lista para todos, como o Extrato); não confirmado na tela.
 - Usuário: veto a D-GES-57; decisão sobre liberar US-042.
@@ -88,5 +88,5 @@ Divergências docs x código (código vence):
 2. SDD-008 §4.4 passo 2/6 e §2 não citam arquivado (`INVALID_REFERENCE` via `getOrCreateInvoice`, US-033) nem `CARD_OWNER_ONLY`.
 3. SDD-008 §4.5 diz `payerMemberId: null` no pagamento; o código grava só `authorMemberId` e `isSharedExpense=false` (sem payer).
 4. D-GES-53 (Admin troca titular via SEC-042) superada por D-GES-57: o código nega ao Admin fora da remoção.
-5. Status das US-040/041/042/052/055/065 ("Esboçada"/"Refinada") desatualizado: US-040a/b, US-052, US-055 e US-065 estão implementadas e testadas; só US-042 segue não liberada.
+5. Status das US corrigido em 2026-10-25 (US-040, 052, 055, 065 "Implementada"; US-041/042 "Aprovada p/ Dev, não iniciada").
 6. SDD-018 §2.4 diz "Faturas ... sem pagar na lista": confere com o código (link "Ver fatura").

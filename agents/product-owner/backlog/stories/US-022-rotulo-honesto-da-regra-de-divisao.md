@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-16 Acerto e Divisão Opcionais e Transparentes · **R2.1** |
 | MoSCoW · WSJF · Tamanho (TL) | Must · 4,0 · 3 |
-| Status | **Especificada** (SDD-011, pronta para o Dev) · tamanho confirmado pelo TL |
+| Status | Implementada (TASK-027, aguardando validação do Gestor) |
 | Depende de | US-008, US-009a (já entregues) |
 | Corte | **Não cortar** (ressalva 1 da homologação; sem isso o casal acha que o app errou) |
 | Rastreabilidade | Homologação R1+R2 achado 1 · NEED-007 (RN-007.4) · NEED-018 (RN-018.2) · Q-08/D-GES-08 · FLUXO-003 · D-PO-12 |

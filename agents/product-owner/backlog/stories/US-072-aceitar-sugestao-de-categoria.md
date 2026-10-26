@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-23 · **R4-C (proposta)** · fatia 3/4 da análise |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Could · 1,5 · 3 |
-| Status | Refinada (PO) · aguarda SDD do TL |
+| Status | Implementada (TASK-063, aguardando validação do Gestor) |
 | Depende de | US-070, US-014, US-045 (edição não financeira de tags/categoria) |
 | Corte | Cortável (2º do bloco da análise) |
 | Rastreabilidade | **NEED-027** (RN-027.3) · NEED-023 §5 · NEED-013/016 · RF45 · RN15 · FLUXO-017 · D-PO-65 |

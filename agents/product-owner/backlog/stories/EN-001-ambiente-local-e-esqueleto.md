@@ -5,7 +5,7 @@
 | Épico / Release | EPIC-00 Fundação · R1 |
 | Tipo | **Enabler técnico** (sem valor direto ao usuário) |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 4,2 · 5 |
-| Status | Especificada (TL: [`ambiente-local.md`](../../../tech-lead/architecture/ambiente-local.md)) |
+| Status | Implementada (TASK-001, aguardando validação do Gestor) |
 | Depende de | — |
 | Rastreabilidade | ADR-001, ADR-002, ADR-003 · TASK-001 (tasks-board) |
 

@@ -5,7 +5,7 @@
 | Épico / Release | EPIC-24 Acesso por Assistente de IA (MCP) · **R4-D (proposta)** |
 | Tipo | **Habilitadora** (sem tela própria; as telas vêm na US-074); **POC só com o Claude** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Should · 1,4 · **12 no POC** (006a 7 + 006b 5); +2 na ampliação |
-| Status | Refinada (PO, revisão 2) · ADR-030 e SDD-024 (rev. 2) · **depende da EN-007** |
+| Status | Implementada (TASK-066/067, aguardando validação do Gestor) |
 | Depende de | nenhuma história de LLM (o MCP usa a LLM **do usuário**, não a chave do app; não depende de EN-004) |
 | Corte | Cortável com todo o bloco MCP |
 | Rastreabilidade | **NEED-025** (RN-025.1..7; Q-U04, Q-U05, Q-U06) · RF43 · RN15 · D-PO-66, D-PO-71 |

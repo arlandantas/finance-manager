@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-18 Manutenção de Cadastros · **R2.1** |
 | MoSCoW · WSJF · Tamanho (TL) | Should · 1,7 (recalc.) · 3 (PO: 2) |
-| Status | **Especificada** (SDD-012, pronta para o Dev) · tamanho re-estimado pelo TL |
+| Status | Implementada (TASK-037, aguardando validação do Gestor) |
 | Depende de | US-015, US-017a, US-032 |
 | Corte | **Cortável** |
 | Rastreabilidade | Parecer item 13 · NEED-020 (RN-020.3) · NEED-003 · FLUXO-010 · D-PO-17 |

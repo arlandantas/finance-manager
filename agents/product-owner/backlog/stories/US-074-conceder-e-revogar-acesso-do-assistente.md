@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-24 Acesso por Assistente (MCP) · **R4-D (POC)** · fatia 1/4 |
 | MoSCoW · WSJF · Tamanho (TL) | Should · 1,6 · 5 |
-| Status | Refinada (PO, revisão 2) · SDD-025 (rev. 2) |
+| Status | Implementada (TASK-068, aguardando validação do Gestor) |
 | Depende de | EN-007, EN-006a, EN-006b, US-031/035 (papéis) |
 | Corte | Cortável com o bloco MCP; **não pode ser cortada sozinha** |
 | Rastreabilidade | **NEED-025** (RN-025.1, 025.2, 025.4 revisada, Q-U04) · RF43 · FLUXO-016 §3 · D-PO-66, D-PO-72, D-PO-73 |

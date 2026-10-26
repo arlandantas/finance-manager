@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-16 Extrato · **v0 alpha** |
 | MoSCoW · Tamanho (PO) | **Must** · 2 |
-| Status | Refinada (PO) · aguarda estimativa do TL |
+| Status | Implementada (TASK-052, aguardando validação do Gestor) |
 | Depende de | extrato com filtros (R1/R2) |
 | Rastreabilidade | feedback-usuario-v0 U10 · escopo-v0-alpha decisão (b) · NEED-015 |
 

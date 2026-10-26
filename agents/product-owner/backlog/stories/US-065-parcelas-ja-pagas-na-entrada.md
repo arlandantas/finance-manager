@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-20 Cartão Completo (parcelamento) · **R4-A (proposta)**, primeira da fila: sem IA e sem risco de privacidade |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Must · 3,6 · 5 |
-| Status | Refinada (PO) · aguarda estimativa/SDD do Tech Lead (extensão do SDD-014) |
+| Status | Implementada (TASK-056, aguardando validação do Gestor) |
 | Depende de | US-040a/b (parcelamento básico), US-041 (editar/excluir); **a divisão das parcelas restantes depende da US-042** |
 | Corte | Não cortar da R4-A (é o item de maior valor/menor risco do pacote) |
 | Rastreabilidade | **NEED-024** (RN-024.1..7), Q-U03 · RF42 · NEED-003 (RN-003.2..9) · FLUXO-014 · D-PO-54..56 |

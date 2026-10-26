@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-25 Segurança, Privacidade e Acesso · **R4-S (correções SEC do alpha)** |
 | MoSCoW · Tamanho (TL) | Should · 1 (D-GES-42 U6; "1 pt no Grupo A" do SDD-028 §9) |
-| Status | Refinada (PO) · **sem SDD ainda** (o TL especifica; não consta do SDD-028) |
+| Status | Implementada (TASK-075, aguardando validação do Gestor) · sem SDD próprio (código em `ALLOWED_SIGNUP_EMAILS`) |
 | Depende de | — |
 | Rastreabilidade | Levantamento SEC (pergunta 3; reduz SEC-004, SEC-013, SEC-014) · D-GES-42 U6 · variável `ALLOWED_SIGNUP_EMAILS` · D-PO-90 |
 

@@ -5,7 +5,7 @@
 | Épico / Release | EPIC-23 Entrada de Dados e Análise por IA · **R4-B (proposta)**, antes do primeiro envio real a LLM |
 | Tipo | **Habilitadora** com tela mínima em "Configurações ▸ IA e privacidade" |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Must · 2,6 · 5 |
-| Status | Refinada (PO) · aguarda ADR de privacidade do TL e Q-U01/Q-U07 |
+| Status | Implementada (TASK-058, aguardando validação do Gestor) |
 | Depende de | US-031/035 (papéis da família), EN-004 (para exibir o consumo) |
 | Corte | Não cortar (RN16: sem opt-in não há envio) |
 | Rastreabilidade | NEED-026 (§4, Q-U07), NEED-027 (RN-027.1, RN-027.8), NEED-023 (RN-023.1) · RN15, RN16 · FLUXO-016 · D-PO-58 |

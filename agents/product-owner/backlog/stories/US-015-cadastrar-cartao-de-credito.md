@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-6 Cartões de Crédito (fase 1) · R2 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 4,0 · 3 |
-| Status | Refinada (PO) |
+| Status | Implementada (TASK-018, aguardando validação do Gestor) |
 | Depende de | US-002 |
 | Rastreabilidade | NEED-003 (§2.1, RN-003.1) · NEED-001 (titular) · FLUXO-004 · D-PO-02, D-PO-05, D-PO-07 |
 

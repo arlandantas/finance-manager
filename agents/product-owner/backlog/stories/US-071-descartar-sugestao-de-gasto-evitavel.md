@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-23 · **R4-C (proposta)** · fatia 2/4 da análise |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Should · 1,9 · 3 |
-| Status | Refinada (PO) · aguarda SDD do TL (chave de memória do descarte) |
+| Status | Implementada (TASK-061, aguardando validação do Gestor) |
 | Depende de | US-070 |
 | Corte | Cortável; sem ela a análise repete sugestões já recusadas |
 | Rastreabilidade | **NEED-027** (RN-027.6) · RF45 · FLUXO-017 · D-PO-65 |

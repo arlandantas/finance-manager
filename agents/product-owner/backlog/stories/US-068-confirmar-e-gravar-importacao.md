@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-23 Entrada de Dados e Análise por IA · **R4-B (proposta)** · fatia 3/4 da importação |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Must · 2,6 · 5 |
-| Status | Refinada (PO) · aguarda SDD do TL (lote, idempotência, transação, retenção) |
+| Status | Refinada, aguarda SDD do TL (R5 adiada); não iniciada |
 | Depende de | US-067, US-016a (compra no cartão), US-040a, EN-002 (para itens divididos; ver "Fora de escopo") |
 | Corte | Não cortar |
 | Rastreabilidade | **NEED-026** (RN-026.5, 026.9, 026.10) · RF44 · RN12, RN15 · FLUXO-015 · D-PO-60, D-PO-62 |

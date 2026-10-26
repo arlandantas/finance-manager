@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-2 Contas & Movimentações · R1 |
 | MoSCoW · WSJF · Tamanho (PO) | Must · 6,3 · 3 |
-| Status | Refinada (PO) |
+| Status | Implementada (TASK-004, aguardando validação do Gestor) |
 | Depende de | US-002 |
 | Rastreabilidade | NEED-002 · RN-002.1, RN-002.2 · ADR-001 (ledger, centavos) |
 

@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-23 · **R4-C (proposta)** · fatia 4/4 da análise |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | Could · 1,3 · 2 |
-| Status | Refinada (PO) |
+| Status | Implementada (TASK-062, aguardando validação do Gestor) |
 | Depende de | US-070, EN-005 |
 | Corte | Cortável; **mas** a transparência mínima (mostrar "o que será enviado") já está na US-070 |
 | Rastreabilidade | **NEED-027** (RN-027.8) · NEED-023 (RN-023.5) · RF45 · RN16 · D-PO-64 |

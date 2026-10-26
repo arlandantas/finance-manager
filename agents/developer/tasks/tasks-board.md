@@ -1,6 +1,6 @@
 # 📋 Quadro de Tarefas & QA do Desenvolvedor
 
-*Atualizado: 2026-10-05 (R2.1 até US-036 concluída; retomar em US-037) · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Incremento 1 (walking skeleton) concluído: EN-001 → US-001 → US-002 → US-004 → US-005 → US-006 → US-007 → US-003. Incremento 2 (fechar o mês), ordem do PO: US-008 → US-009a → US-010 → US-011 → US-012 → US-009b → US-013a → US-013b.*
+*Atualizado: 2026-10-25 (TASK-001..085 registradas; ver a seção final "Fila de implementação") · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Os trechos "Ponto de retomada" e "Estado do Incremento" abaixo são históricos e foram marcados como superados.*
 
 ## 📌 Fluxo de Execução
 
@@ -236,7 +236,7 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 ---
 
 ## 📌 Estado do Incremento 1 (walking skeleton)
-EN-001 (complemento), US-001, US-002, US-004, US-005, US-006, US-007 e US-003 **concluídos** e commitados, cada um com `lint`, `typecheck`, `test`, `test:int`, `test:e2e`, `build` e verificação manual (375 px e desktop). Próximas na ordem do Gestor: US-008, US-009, US-010, US-011, US-012, US-013 (Incremento 2; `computeSettlement`, regra de divisão, transferência/acerto, Home e correções).
+EN-001 (complemento), US-001, US-002, US-004, US-005, US-006, US-007 e US-003 **concluídos** e commitados, cada um com `lint`, `typecheck`, `test`, `test:int`, `test:e2e`, `build` e verificação manual (375 px e desktop). (Histórico: o Incremento 2 foi concluído, ver abaixo.)
 **Nota de ambiente:** o banco de desenvolvimento ficou com dados de teste manual (Família Silva, Família Souza e lançamentos); `prisma migrate reset` é bloqueado em sessões de IA e o ledger não aceita `DELETE` (trigger). Para limpar: `docker compose -p finance-manager down -v` e `pnpm db:up && pnpm db:migrate && pnpm db:seed` (executar manualmente).
 
 ---
@@ -306,7 +306,7 @@ EN-001 (complemento), US-001, US-002, US-004, US-005, US-006, US-007 e US-003 **
 ---
 
 ## 📌 Estado do Incremento 2
-US-008, US-009a, US-010, US-011, US-012, US-009b, US-013a e US-013b **concluídas e commitadas**, com todos os portões verdes. Pendente: passada de regressão completa do R1 e relatório `_historico/developer/tasks/qa-r1.md`.
+US-008, US-009a, US-010, US-011, US-012, US-009b, US-013a e US-013b **concluídas e commitadas**, com todos os portões verdes. (Superado: R1 homologada com ressalvas, ver `backlog.md`.)
 
 
 ---
@@ -373,7 +373,7 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 
 # R2.1 — Lote 1 (D-GES-19/D-GES-14..20)
 
-> **Ponto de retomada**: R2.1 concluída (TASK-026..043, US-022..039). Migração `20261005130000_r21_convites_reenvio` aplicada no banco de dev (`db:deploy`). Próxima: **R3-A** (US-040a/b + EN-002a/b, D-GES-23).
+> **Ponto de retomada (SUPERADO em 2026-10-25)**: R2.1 concluída (TASK-026..043, US-022..039); R3-A também foi entregue. Estado atual: seção "Fila de implementação" no fim deste arquivo.
 
 ## ✅ [TASK-026] US-027 — Ocultar valores
 - **SDD-010** §1, §4.4. **Arquivos**: `src/lib/prefs.ts`, `src/lib/mask-money.ts`, `src/components/money.tsx` (`Money`, `useFormatMoney`, `useMoneyText`), olho em `app-shell.tsx`, `PrefsProvider` no `(app)/layout`, `ApiClientError` mascara valores de mensagens do servidor, todas as telas migradas, regra `check:imports` (`money-format`, `period-predicate`).
@@ -433,7 +433,7 @@ US-014 → US-015 → US-016a → US-017a → US-018 → US-019 → US-017b → 
 
 # R3-A — Parcelamento + percentual por lançamento (D-GES-23/25)
 
-> **Ponto de retomada**: R3-A implementada (TASK-044..047). **Pausa** até a janela de reversão (≥ 7 dias desde a migração em produção, `--verify` limpo e um fechamento de mês conferido). Bloqueados pela janela: US-042, US-043, US-044 (migração de contrato). Independentes do rateio: US-041, tags (045/047/046), Análise (048/049), cor (050), receitas previstas (051). Decisão do Gestor pendente sobre antecipá-los.
+> **Ponto de retomada (SUPERADO em 2026-10-25; ver "Fila de implementação" no fim)**: R3-A implementada (TASK-044..047). **Pausa** até a janela de reversão (≥ 7 dias desde a migração em produção, `--verify` limpo e um fechamento de mês conferido). Bloqueados pela janela: US-042, US-043, US-044 (migração de contrato). Independentes do rateio: US-041, tags (045/047/046), Análise (048/049), cor (050), receitas previstas (051). Decisão pendente do usuário sobre antecipá-los (não antecipados até 2026-10-25: tags, Análise, cor e receitas previstas seguem sem código).
 
 **Baseline verificada em 2026-10-05 (máquina nova, Node 22.23, pnpm 11.1.2, Postgres 17):**
 - `typecheck`, `lint` e `check:imports`: verdes.
@@ -698,3 +698,37 @@ Ver o relatório de entrega ao Gestor e DEV-81..86 em [pedidos-ao-gestor.md](../
 - **Baixa de prevista de ex-membro** (`payPlannedExpense`, DEV-135): pagador = quem realiza a baixa; outro pagador ⇒ 403 (`GONE_PAYER_BAIXA_MESSAGE`).
 - **UI**: `edit-transaction-form.tsx`, `planned-drawer.tsx` (ex-membro fixo e desabilitado para todos), `pay-drawer.tsx` (envia o próprio pagador). **Não verificada no navegador.**
 - **Testes**: integração nova `d-ges-59-pagador-ex-membro-imutavel` (12: provas do reteste como 403, dividida criada com ex-membro, cartão, prevista, série, baixa, negativos de Admin, ativos, quem voltou, outra família); `d-ges-55` e `sec047-050` ajustados; unit `sec021-ownership` (`violatesGonePayerLock`, `payerGone`). Lint, typecheck, 718 unit e 1106 int verdes (1 skip).
+
+---
+
+## Fila de implementação (atualizada em 2026-10-25)
+
+Verificada no código (`src/`, `prisma/schema.prisma`, `prisma/migrations`, `tests/`) e no `git log`; o código vence a documentação. Estados de área em `agents/estado/`. Pontos = estimativa do TL/PO no backlog.
+
+| Item | Status real | Bloqueio | Pts | Próximo passo |
+| :-- | :-- | :-- | :-: | :-- |
+| TASK-054 / US-060 (resumo por conta no A pagar) | Não iniciada. US-064 (menu lateral) entregue; `byAccount` de `/payables` não existe | Integração local sem Docker (disco); SDD só resumido (SDD-019 §7) | 3 | Dev implementa conforme SDD-019 §7 (TL confirma se basta) |
+| TASK-055 (produção, ADR-026) | Parcial: sessionToken, trava+health, Dockerfile, smoke, backup e runbook entregues | `docker build` não validado; smoke no 1º deploy e ensaio de restore. O alvo de hospedagem passou a ser Vercel (EN-007, TASK-064): TASK-055 pode estar superada em parte | 5 | Gestor decide se encerra TASK-055 por ter sido superada pela TASK-064 |
+| TASK-056 / US-065 | Código completo, testes escritos | Validação do Gestor; cenário `@depende-us-042` marcado `@skip` | 5 | Gestor valida |
+| EN-007 / TASK-064 (Vercel + Prisma Postgres) | Código no repositório concluído | Painel da Vercel/Prisma/GitHub é do usuário (checklist); `regions`, `CRON_SECRET`, `APP_DEPLOY_ENV`, ensaio de restore | 8 | Usuário executa o checklist; Dev ajusta `regions` depois |
+| TASK-057..063 (EN-004, EN-005, US-070..073) | Concluídas | Validação do Gestor; conta e chave Anthropic, limite na console (EXT-12) e valor do teto (Q-U10) para ligar a IA real | 27 | Gestor valida; usuário decide o teto |
+| TASK-065..072 (MCP: EN-006a/b, US-074, 075, 076a/b, 077) | Concluídas, `MCP_ENABLED` desligado | Validação do Gestor; MCP Inspector, Claude real e homologação SDD-025 §6 dependem de serviço externo | 33 | Gestor valida; usuário liga o MCP após o checklist |
+| TASK-073..085 (DEV-86, segurança grupos A/B, LGPD, Só meu rodadas 4 a 8; US-078..084) | Concluídas | Validação do Gestor e reteste curto da Segurança (SEC-051/DEV-135 etc., ver `estado/seguranca.md`) | n/d | Gestor valida; Segurança reteste; migrações 2026-10-26+ a aplicar em produção |
+| US-082 (página Privacidade) | Implementada com texto rascunho | Texto aguarda aprovação do usuário e revisão jurídica | 1 | Usuário aprova o texto |
+| TASK-044..047 (US-040, EN-002) | Concluídas; `INSTALLMENT_SPLIT_RELEASED=false` | Janela de reversão do rateio em curso (>= 7 dias desde a migração em produção, `--verify` limpo e um fechamento conferido) | 21 | Gestor valida; aguardar a janela |
+| US-041 (editar/excluir parcela) | Não iniciada (nenhum código; `INSTALLMENT_NOT_EDITABLE` vigente) | Nenhum técnico; ordem de risco do PO a coloca depois da US-043 | 5 | Pode iniciar (independente do rateio) se o Gestor antecipar |
+| US-042, US-043, US-044 (rateio por parcela, três modos, lembrar por categoria) | Não iniciadas | Janela de reversão do rateio (motor STORED, EN-002); US-042 liga o flag | 3 / 5 / 3 | Esperar a janela; depois US-042, US-043, US-044 |
+| US-045, US-047, US-046 (tags) | Não iniciadas: não existe model `Tag`/`TransactionTag` nem migração | Independentes do rateio; decisão do usuário sobre antecipar | 5 / 2 / 3 | Dev após decisão (SDD-016 aprovado) |
+| US-048, US-049 (visão sintética na Análise) | Não iniciadas | Dependem de tags (filtro) e da competência da US-040 (pronta) | 5 / 5 | Após as tags |
+| US-050 (cor por conta e cartão) | Não iniciada (sem coluna de cor no schema) | Independente; decisão sobre antecipar | 3 | Dev (SDD-017 aprovado) |
+| US-051 (receitas previstas e saldo previsto) | Não iniciada | Independente; decisão sobre antecipar | 5 | Dev (SDD-017 aprovado) |
+| US-053, US-054 (textos do acerto; avisar antes de arquivar e botão flutuante) | Sem TASK e sem evidência de código | Sem estimativa/SDD do TL registrada | 3 / 3 | PO/TL confirmam se seguem na fila (ver dúvidas do relatório) |
+| US-066..069 (importação de fatura) | Não iniciadas (R5 adiada, D-GES-28/33); `INVOICE_IMPORT` indisponível | Sem SDD/ADR (armazenamento, extração, dedupe, lote); Q-U07..Q-U10 | 5 / 8 / 5 / 3 | TL escreve ADR/SDD quando a R5 for retomada |
+| US-074b (token pessoal) e US-076c (exigir confirmação) | Não iniciadas, fora do POC | Decisão do usuário (D-GES-37) | n/d | Sem ação |
+| US-083 (lista de e-mails permitidos) | Implementada em TASK-075 (U6) | Sem SDD próprio; usuário define `ALLOWED_SIGNUP_EMAILS` em produção | 1 | Usuário configura |
+
+### Decisões pendentes do usuário
+1. Antecipar tags (US-045..049), cor (US-050) e receitas previstas (US-051), independentes do rateio, enquanto a janela de reversão corre? E ratificar DEV-48..50.
+2. Q-U10: valor do teto mensal de custo da IA (padrão técnico R$ 5,00 por família; teto global sugerido R$ 50) e EXT-12 (conta e chave Anthropic).
+3. Aprovar o texto da página de Privacidade (US-082) e a revisão jurídica.
+4. Ordem de US-041 frente à US-042 (ordem técnica: US-042, US-043, US-041).

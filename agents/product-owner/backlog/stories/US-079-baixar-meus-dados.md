@@ -6,7 +6,7 @@ Estado vigente consolidado em agents/estado/privacidade-lgpd.md
 | :-- | :-- |
 | Épico / Release | EPIC-25 Segurança, Privacidade e Acesso · **R4-S (correções SEC do alpha)** |
 | MoSCoW · Tamanho (TL) | Should · 3 (SEC-017b) · prazo do TL: ≤ 60 dias |
-| Status | Refinada (PO) · SDD-028 §7.3 (aprovado para Dev) |
+| Status | Implementada (TASK-077, aguardando validação do Gestor) |
 | Depende de | — (independe das demais; é pré-requisito natural da US-080) |
 | Rastreabilidade | SEC-017b · LGPD arts. 18 e 19 (acesso e portabilidade; **validação jurídica do usuário**) · ADR-032 §6 · SDD-028 §7.3 · D-GES-42 U5 · D-PO-86 |
 
