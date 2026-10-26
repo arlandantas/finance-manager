@@ -1,6 +1,6 @@
 # 📋 Quadro de Tarefas & QA do Desenvolvedor
 
-*Atualizado: 2026-10-25 (TASK-001..085 registradas; ver a seção final "Fila de implementação") · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Os trechos "Ponto de retomada" e "Estado do Incremento" abaixo são históricos e foram marcados como superados.*
+*Atualizado: 2026-10-27 (TASK-001..087 registradas; ver a seção final "Fila de implementação") · Responsável: Agente Desenvolvedor & QA · Base: D-GES-09 (uma TASK por história, na ordem do PO). Os trechos "Ponto de retomada" e "Estado do Incremento" abaixo são históricos e foram marcados como superados.*
 
 ## 📌 Fluxo de Execução
 
@@ -61,6 +61,8 @@ Regra (diretriz 3 do Gestor em `decisoes-do-gestor.md`): nenhuma história come�
 | TASK-045 | US-040b | Excluir/desfazer a compra parcelada inteira, "Ver compra", Extrato por intervalo de até 24 meses | US-040a | SDD-014 | 3 | Concluído (aguardando validação do Gestor) |
 | TASK-046 | EN-002a | Motor STORED, despachante por motor, `splitAmount`, `lockFamilySplit`, `computeSettlementLegacy` extraído (S1..S16 nos dois motores) | US-040a | SDD-015 | 5 | Concluído (aguardando validação do Gestor) |
 | TASK-047 | EN-002b | `allocateBackfill` (pesos exatos, ADR-021), `migrateFamily` com snapshot e gate de 1 centavo, reversão e `--verify`, script `migrate:split` | EN-002a | SDD-015 | 8 | Concluído (aguardando validação do Gestor); **janela de reversão em curso** |
+| TASK-086 | US-045 | Tags livres no lançamento (migrações `us045_*`, `normalizeTagKey`, upsert atômico, edição só de tags, `TagInput`, privacidade) | US-005/006/016a/024 | SDD-016, ADR-022 | 5 | Concluído (aguardando validação do Gestor) |
+| TASK-087 | US-047 | Filtrar o Extrato por tag (`tagIds`/`untagged` por `EXISTS`, filtros plurais, painel e chips, URL) | US-045, US-007 | SDD-016, ADR-022 | 2 | Concluído (aguardando validação do Gestor) |
 
 ---
 
@@ -699,6 +701,29 @@ Ver o relatório de entrega ao Gestor e DEV-81..86 em [pedidos-ao-gestor.md](../
 - **UI**: `edit-transaction-form.tsx`, `planned-drawer.tsx` (ex-membro fixo e desabilitado para todos), `pay-drawer.tsx` (envia o próprio pagador). **Não verificada no navegador.**
 - **Testes**: integração nova `d-ges-59-pagador-ex-membro-imutavel` (12: provas do reteste como 403, dividida criada com ex-membro, cartão, prevista, série, baixa, negativos de Admin, ativos, quem voltou, outra família); `d-ges-55` e `sec047-050` ajustados; unit `sec021-ownership` (`violatesGonePayerLock`, `payerGone`). Lint, typecheck, 718 unit e 1106 int verdes (1 skip).
 
+### [TASK-086] US-045 — Tags livres no lançamento (SDD-016 §1-§6, §8; ADR-022)
+- **Status**: Concluído (aguardando validação do Gestor). **Migrações** `20261029010000_us045_enum_family_event_tags` (isolada; `TAG_RENAMED/MERGED/DELETED`) e `20261029010100_us045_tags` (`tags`, `transaction_tags`, FKs compostas `RESTRICT`, CHECKs de tamanho e gatilho `transaction_tags_kind` com `search_path` fixo). Aplicadas em dev (`pnpm db:deploy`) e no banco de teste; a produção recebe no próximo `migrate deploy`.
+- **Código**: `tags/{normalize,schemas,service,hooks}.ts` (`normalize.ts` entra em `PURE`); `transacoes/{service,installment-create,mutations,schemas,repo,optimistic,hooks}.ts`; `api/v1/tags`; `lib/api/with-api.ts` (parâmetro repetido da query vira array); `privacidade/{export,export-schema,delete-family}.ts`; UI `components/{tag-input,transaction-drawer}.tsx`, `extrato/{edit-transaction-form,edit-tags-form,ledger-row,transaction-detail-drawer}.tsx`; fábricas `makeTag/attachTags`, `seedEverything` com tag.
+- **Regras**: ver `estado/lancamentos-contas-extrato.md` regras 24, 25 e 27.
+- **Testes**: unit `tags/normalize` (14: T1..T9, propriedades, schemas); int `us-045-tags` (26: criação/sugestão/caixa/acento, 4/20/21 tags, validações, transferência e gatilho, corrida de 10 POSTs = 1 tag, `Idempotency-Key`, edição (revisão `tags`, mesmo conjunto, `[]`), conflito de versão desfaz as tags, excluído 422, "Só meu" 403, mês acertado + acerto idêntico, fatura paga, conta arquivada, parcelada (10 parcelas, `PATCH` em uma = 10 com revisão e `version` por parcela), isolamento entre famílias, exportação); E2E `US-045` (15 cenários x 2 projetos; 3 cenários marcados `@integration`: tag não muda o acerto, mês acertado e fatura paga).
+- **Rodada final** (2026-10-27): lint, typecheck, 732 unit (14 novos), 1144 int verdes (1 skip; +38), E2E US-045/047/005/006/024: 104 verdes (desktop + Pixel 7). Em rodadas longas o dev server E2E às vezes degrada (páginas recarregando em laço, todos os testes falham por timeout); reexecutar com servidor novo resolveu, sem relação com o código.
+- **Não verificada no navegador de verdade**: só pelo Playwright (desktop e Pixel 7); sem teste manual de leitor de tela, teclado em celular real nem do lembrete de foco do `TagInput`.
+
+### [TASK-087] US-047 — Filtrar o Extrato por tag (SDD-016 §4.4, §8)
+- **Status**: Concluído (aguardando validação do Gestor). Sem migração (índice `transaction_tags (tagId, transactionId)` e a PK vieram na TASK-086).
+- **Código**: `transacoes/{extrato,schemas,service}.ts` (`buildLedgerWhere` com `tagIds`/`untagged` por `EXISTS` e os plurais `categoryIds`, `payerIds`, `sourceIds`; `ListTransactionsQuerySchema` com a recusa `untagged` + `tagIds`); UI `extrato/{filters,filters-panel,tag-filter,extrato-screen}`; `transacoes/hooks.ts` (`ledgerQueryString` repete `tagIds`). O intervalo de 24 meses do Extrato já existia (US-040b).
+- **Testes**: int `us-047-filtro-tags` (12: uma tag, duas tags sem duplicar nem somar em dobro, tag + categoria, vazio, excluído, `untagged`, 400 de `untagged` + `tagIds`/id inválido/mais de 20, isolamento por família, cursor, `payerIds`/`sourceIds`, parcelada em 10 meses e total do mês, propriedade de 200 combinações com semente fixa); E2E `US-047` (10 cenários x 2 projetos).
+
+### Desvios e hipóteses (TASK-086/087)
+- **DEV-136**: `untagged=true` filtra só `EXPENSE`/`INCOME` sem tag (o SDD §4.4 traz um `NOT EXISTS` puro, que traria transferências, acertos e pagamentos de fatura para o chip "Sem tag").
+- **DEV-137**: `withApi` passou a montar `?tagIds=a&tagIds=b` como array (antes `Object.fromEntries` guardava só o último valor). Efeito colateral: parâmetro singular repetido na URL agora dá 400 em vez de usar o último.
+- **DEV-138**: `prisma/seed.ts` não semeia família nem lançamentos, então não ganhou as "duas tags de exemplo" do SDD §5; as fábricas `makeTag/attachTags` e `seedEverything` cobrem os testes.
+- **DEV-139**: no `PATCH` de tags em compra parcelada, as parcelas JÁ excluídas recebem o novo conjunto (invariante 6) mas sem `version + 1` nem revisão (a atualização versionada só vale para linha ativa). `TagDTO` ficou sem `updatedBy` (nasce com a US-046).
+- **DEV-140**: o painel de filtros não oferece "Sem tag" como opção (a US-047 diz que o filtro por ausência só existe como chip vindo da Análise; o SDD §6 sugere a opção): o chip aparece pela URL (`untagged=true`) e é removível.
+- **DEV-141**: nome só de hífens/pontos (ex.: `--`) passa pela validação do SDD (letras, números, `-`, `_`, `.`); não há regra de "ao menos uma letra ou número". Hipótese: aceitar; pedir ao TL se quiser fechar.
+- **DEV-142**: o SDD §6 cita `invalidateFinancialCaches`, que não existe no código; as chaves `["tags"]` e `["analysis"]` entraram em `useInvalidateAfterTransactionChange` (`transacoes/hooks.ts`).
+- **DEV-143**: o formulário de edição manda só `{version, tags}` quando nada financeiro mudou (é o que torna a edição só de tags "não financeira" na prática); o detalhe ganhou o botão "Editar tags", que também serve à parcela (somente leitura para o resto).
+
 ---
 
 ## Fila de implementação (atualizada em 2026-10-25)
@@ -718,7 +743,7 @@ Verificada no código (`src/`, `prisma/schema.prisma`, `prisma/migrations`, `tes
 | TASK-044..047 (US-040, EN-002) | Concluídas; `INSTALLMENT_SPLIT_RELEASED=false` | Janela de reversão do rateio em curso (>= 7 dias desde a migração em produção, `--verify` limpo e um fechamento conferido) | 21 | Gestor valida; aguardar a janela |
 | US-041 (editar/excluir parcela) | Não iniciada (nenhum código; `INSTALLMENT_NOT_EDITABLE` vigente) | Nenhum técnico; ordem de risco do PO a coloca depois da US-043 | 5 | Pode iniciar (independente do rateio) se o Gestor antecipar |
 | US-042, US-043, US-044 (rateio por parcela, três modos, lembrar por categoria) | Não iniciadas | Janela de reversão do rateio (motor STORED, EN-002); US-042 liga o flag | 3 / 5 / 3 | Esperar a janela; depois US-042, US-043, US-044 |
-| US-045, US-047, US-046 (tags) | Não iniciadas: não existe model `Tag`/`TransactionTag` nem migração | Independentes do rateio; decisão do usuário sobre antecipar | 5 / 2 / 3 | Dev após decisão (SDD-016 aprovado) |
+| US-045, US-047 (tags) | **Implementadas (TASK-086/087)**; US-046 (gerenciar tags) não iniciada | Validação do Gestor; migrações `20261029*` a aplicar em produção | 5 / 2 / 3 | Gestor valida; Dev segue com US-046 se o Gestor liberar |
 | US-048, US-049 (visão sintética na Análise) | Não iniciadas | Dependem de tags (filtro) e da competência da US-040 (pronta) | 5 / 5 | Após as tags |
 | US-050 (cor por conta e cartão) | Não iniciada (sem coluna de cor no schema) | Independente; decisão sobre antecipar | 3 | Dev (SDD-017 aprovado) |
 | US-051 (receitas previstas e saldo previsto) | Não iniciada | Independente; decisão sobre antecipar | 5 | Dev (SDD-017 aprovado) |
@@ -728,7 +753,7 @@ Verificada no código (`src/`, `prisma/schema.prisma`, `prisma/migrations`, `tes
 | US-083 (lista de e-mails permitidos) | Implementada em TASK-075 (U6) | Sem SDD próprio; usuário define `ALLOWED_SIGNUP_EMAILS` em produção | 1 | Usuário configura |
 
 ### Decisões pendentes do usuário
-1. Antecipar tags (US-045..049), cor (US-050) e receitas previstas (US-051), independentes do rateio, enquanto a janela de reversão corre? E ratificar DEV-48..50.
+1. (Tags US-045/US-047 antecipadas por autorização do usuário em 2026-10-27; US-046, US-048 e US-049 seguem pendentes.) Antecipar o resto das tags (US-046, US-048, US-049), cor (US-050) e receitas previstas (US-051), independentes do rateio, enquanto a janela de reversão corre? E ratificar DEV-48..50.
 2. Q-U10: valor do teto mensal de custo da IA (padrão técnico R$ 5,00 por família; teto global sugerido R$ 50) e EXT-12 (conta e chave Anthropic).
 3. Aprovar o texto da página de Privacidade (US-082) e a revisão jurídica.
 4. Ordem de US-041 frente à US-042 (ordem técnica: US-042, US-043, US-041).

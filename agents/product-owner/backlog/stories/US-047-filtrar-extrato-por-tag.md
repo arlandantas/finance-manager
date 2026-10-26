@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-21 Classificação e Análise · **R3** |
 | MoSCoW · WSJF · Tamanho (TL) | Should · 3,5 · 2 |
-| Status | Aprovada p/ Dev, não iniciada (SDD-016) |
+| Status | **Implementada (TASK-087), aguardando validação do Gestor** (SDD-016) |
 | Depende de | US-045, US-007 |
 | Corte | **Cortável** (mas é o drill-down das visões, US-048/049) |
 | Rastreabilidade | Parecer item 1 · NEED-013 (§2.3) · NEED-006 · FLUXO-014 · D-PO-28 |
@@ -94,3 +94,4 @@ Filtro "todas as tags" (E); salvar filtros. O filtro por **ausência de tag** n�
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 1).
 - 2026-10-05 — **Ajuste pós-SDD (D-GES-24, D-PO-46):** chip "Sem tag" só como drill-down da Análise (TL-14); 2 cenários novos. Fica na **R3-B**.
+- 2026-10-27 — **Implementação (TASK-087, Agente Dev & QA):** Implementada: `tagIds`/`untagged` em `buildLedgerWhere` (EXISTS), filtros plurais, painel com seletor múltiplo e chips, URL. Testes: int `us-047-filtro-tags` (inclui propriedade de 200 combinações), E2E `US-047`. Desvios e hipóteses em `developer/tasks/tasks-board.md` (DEV-136..139).

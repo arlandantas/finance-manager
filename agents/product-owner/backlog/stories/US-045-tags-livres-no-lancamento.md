@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-21 Classificação e Análise · **R3** |
 | MoSCoW · WSJF · Tamanho (TL) | Should · 2,4 · 5 |
-| Status | Aprovada p/ Dev, não iniciada (SDD-016) |
+| Status | **Implementada (TASK-086), aguardando validação do Gestor** (SDD-016) |
 | Depende de | US-005, US-006, US-016a, US-024 |
 | Corte | **Cortável** junto com US-046..049 (a análise sem tags ainda funciona por categoria/membro/conta) |
 | Rastreabilidade | Parecer item 1, Q-F09 · NEED-013 (RN-013.1..6) · FLUXO-014 · D-PO-28 |
@@ -133,3 +133,4 @@ Hierarquia, cor ou orçamento por tag (RN-013.6); tags automáticas; tags em tra
 ## Histórico
 - 2026-10-04 — Criada a partir do parecer (item 1, Q-F09). Correção de redação: acentos e caixa são normalizados; variações ortográficas ("viajem") **não** são unificadas (só sugestão ao digitar).
 - 2026-10-05 — **Ajuste pós-SDD (D-GES-24, D-PO-46):** caracteres permitidos e mensagem "A tag só pode ter letras, números, hífen, ponto e sublinhado" (TL-15); edição só de tags é não financeira (TL-20); 3 cenários novos. Fica na **R3-B**.
+- 2026-10-27 — **Implementação (TASK-086, Agente Dev & QA):** Implementada: migrações `us045_*`, `normalizeTagKey`, upsert atômico, edição só de tags (não financeira), `TagInput`, chips no Extrato/detalhe, privacidade. Testes: unit `tags/normalize`, int `us-045-tags`, E2E `US-045` (3 cenários de mês acertado/fatura paga/acerto cobertos em integração). Desvios e hipóteses em `developer/tasks/tasks-board.md` (DEV-136..139).

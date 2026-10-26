@@ -87,8 +87,8 @@ export function TagFilter({
       <input
         id={`${id}-search`}
         type="search"
-        aria-label="Buscar tag"
-        placeholder="Buscar tag"
+        aria-label="Procurar tag"
+        placeholder="Procurar tag"
         className={inputClass}
         maxLength={30}
         value={text}
