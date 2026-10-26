@@ -1,6 +1,6 @@
 # 📑 Backlog do Produto (Product Owner)
 
-*Status: **R1 e R2 (Inc 3) Especificadas e homologadas com ressalvas** · **R2.1 (US-022..039): implementada (TASK-026..043)** (SDD-010..013, **67 pts** do TL) · **R3: US-040 e EN-002 implementadas (TASK-044..047, janela de reversão do rateio em curso); US-041..051 aprovadas p/ Dev (SDD-014..017) e não iniciadas**; **R4/R4-S: implementadas (TASK-056..085), exceto US-066..069 (R5 adiada), US-074b e US-076c**; **US-060, US-053 e US-054 não iniciadas**; estado real em `agents/developer/tasks/tasks-board.md` (fila de 2026-10-25) · **EN-003 concluída** (ADR-018) · Atualizado: 2026-10-24 (**R4-S proposta: correções SEC do alpha, US-078..084 e revisões da US-003/012/035/039/070/074/075, D-PO-79..93**; antes, R4 proposta: US-065..077, EN-004..006, D-PO-53..69; antes, 2026-10-05: R2.2 US-052..055, D-PO-48..52)*
+*Status: **Atualização 2026-10-26: UR-1/UR-2 (uso real) refinadas — US-060 refinada e US-085..US-101 propostas (60 pts PO prelim.), ordem aprovada pelo usuário; aguardam SDD/estimativa do TL (pedidos em `pedidos-ao-tech-lead-uso-real.md`; D-PO-99..106)** · **R1 e R2 (Inc 3) Especificadas e homologadas com ressalvas** · **R2.1 (US-022..039): implementada (TASK-026..043)** (SDD-010..013, **67 pts** do TL) · **R3: US-040 e EN-002 implementadas (TASK-044..047, janela de reversão do rateio em curso); US-041..051 aprovadas p/ Dev (SDD-014..017) e não iniciadas**; **R4/R4-S: implementadas (TASK-056..085), exceto US-066..069 (R5 adiada), US-074b e US-076c**; **US-060, US-053 e US-054 não iniciadas**; estado real em `agents/developer/tasks/tasks-board.md` (fila de 2026-10-25) · **EN-003 concluída** (ADR-018) · Atualizado: 2026-10-24 (**R4-S proposta: correções SEC do alpha, US-078..084 e revisões da US-003/012/035/039/070/074/075, D-PO-79..93**; antes, R4 proposta: US-065..077, EN-004..006, D-PO-53..69; antes, 2026-10-05: R2.2 US-052..055, D-PO-48..52)*
 *Responsável: Agente Product Owner (PO)*
 *Método e portões (DoR/DoD): [`working-agreement.md`](working-agreement.md) · Escopo: [`mvp-definition.md`](mvp-definition.md)*
 
@@ -52,6 +52,7 @@ Os épicos adotam a numeração do cronograma do Stakeholder ([`cronograma-e-rel
 | **EPIC-22** | Modelo de Grupos (spike) | NEED-021 | R3 (spike **concluído**, ADR-018) |
 | **EPIC-23** | Entrada de Dados e Análise por IA (importação de fatura, infra de LLM, análise de gastos evitáveis) | NEED-026, NEED-027 (NEED-023) | R4-B / R4-C (proposta) |
 | **EPIC-24** | Acesso por Assistente de IA (MCP) | NEED-025 | R4-D (proposta) |
+| **EPIC-26** | Previsão unificada e visão por conta (porta única de lançar/prever, repetir, transferência prevista) | NEED-031, NEED-030, NEED-033 | UR-1 / UR-2 (proposta) |
 | **EPIC-25** | Segurança, Privacidade e Acesso (sessões, direitos do titular/LGPD, cadastro restrito, "Só meu" do dono) | NEED-012, NEED-001, NEED-020 (revisões a validar pelo Stakeholder) | R4-S (proposta) |
 
 ---
@@ -111,7 +112,7 @@ Escala 1–10 para V/U/R; Tamanho em Fibonacci relativo (1, 2, 3, 5, 8). **Desde
 | ID | Item | Observação |
 | :-- | :-- | :-- |
 | US-020 | Permissões granulares por conta/cartão | Hoje vale **D-PO-02** (todos veem tudo). Refinar se o Stakeholder rejeitar a decisão. |
-| US-021 | Membros sem login (dependentes) como responsáveis pelo gasto | Pendente da pergunta **Q-01**. |
+| US-021 | Membros sem login (dependentes) como responsáveis pelo gasto | **Absorvida pela NEED-028 (2026-10-26, Q-U15): ver US-092..US-095.** |
 | AP1+ | Ciclo com dia de corte, tetos, auto-clonagem, disponibilidade, parcelamento, recorrência | NEED-003/004/005/006 — refinar ao final do Incremento 3. |
 
 ---
@@ -186,8 +187,8 @@ Pacote derivado de [`escopo-v0-alpha.md`](../../stakeholder/escopo-v0-alpha.md);
 | 4 | [US-043](stories/US-043-dividir-no-lancamento-tres-modos.md) | Dividir no lançamento: três modos (item 9b) | EPIC-16 | Should | 7/2/4 | 5 | 2,6 | EN-002, US-030 | NEED-018 · Q-F02b | Aprovada p/ Dev, não iniciada (SDD-015; bloqueada pela janela de reversão) · libera o modo CUSTOM após a janela de reversão; **cortável (7º, o último)** |
 | 5 | [US-041](stories/US-041-gerenciar-compra-parcelada.md) | Gerenciar compra parcelada (editar parcelas, excluir uma parcela) | EPIC-20 | Should | 5/2/3 | 5 | 2,0 | US-040 (com exclusão da compra inteira), US-016b; após a US-043 | NEED-003 | Aprovada p/ Dev, não iniciada (SDD-014) · depois da US-043 (ordem de risco); cortável (6º) |
 | 6 | [US-044](stories/US-044-lembrar-dividir-por-categoria-e-revisao-do-mes.md) | Lembrar "dividir" por categoria e revisar no fechamento | EPIC-16 | Should | 4/1/2 | 3 | 2,3 | US-043, US-014 | NEED-018 (risco C7) | Aprovada p/ Dev, não iniciada (SDD-015; bloqueada pela janela de reversão) · cortável (5º) |
-| 7 | [US-045](stories/US-045-tags-livres-no-lancamento.md) | Tags livres no lançamento (item 1) | EPIC-21 | Should | 6/2/4 | 5 | 2,4 | US-005, US-006, US-016a, US-024 | NEED-013 · Q-F09 | Aprovada p/ Dev, não iniciada (SDD-016) |
-| 8 | [US-047](stories/US-047-filtrar-extrato-por-tag.md) | Filtrar o Extrato por tag | EPIC-21 | Should | 4/2/1 | 2 | 3,5 | US-045, US-007 | NEED-013, NEED-006 | Aprovada p/ Dev, não iniciada (SDD-016) · drill-down das visões |
+| 7 | [US-045](stories/US-045-tags-livres-no-lancamento.md) | Tags livres no lançamento (item 1) | EPIC-21 | Should | 6/2/4 | 5 | 2,4 | US-005, US-006, US-016a, US-024 | NEED-013 · Q-F09 | Implementada (TASK-086), aguardando validação do Gestor |
+| 8 | [US-047](stories/US-047-filtrar-extrato-por-tag.md) | Filtrar o Extrato por tag | EPIC-21 | Should | 4/2/1 | 2 | 3,5 | US-045, US-007 | NEED-013, NEED-006 | Implementada (TASK-087), aguardando validação do Gestor · drill-down das visões |
 | 9 | [US-046](stories/US-046-gerenciar-tags.md) | Gerenciar tags (renomear, mesclar, remover) | EPIC-21 | Should | 3/1/1 | 3 | 1,7 | US-045 | NEED-013 | Aprovada p/ Dev, não iniciada (SDD-016) · cortável (4º) |
 | 10 | [US-048](stories/US-048-visao-sintetica-periodo-totais-e-categoria.md) | Visão sintética: período, totais e categoria (item 7) | EPIC-21 | Should | 7/3/3 | 5 | 2,6 | US-007, US-025 | NEED-016 · Q-F10 | Aprovada p/ Dev, não iniciada (SDD-016) · depende da competência da US-040 |
 | 11 | [US-049](stories/US-049-visao-sintetica-quebras-e-filtros.md) | Visão sintética: quebras e filtros combináveis | EPIC-21 | Should | 5/2/3 | 5 | 2,0 | US-048, US-045, US-047 | NEED-016 · Q-F10 | Aprovada p/ Dev, não iniciada (SDD-016) · cortável (3º) |
@@ -289,6 +290,56 @@ Assistente de IA generativa de uso geral (NEED-023 foi **concretizada** em US-07
 
 ---
 
+## 🧭 Uso real: UR-1 e UR-2 *(adicionado em 2026-10-26)* — **60 pts (PO, prelim.): Must 5 · Should 46 · Could 9** *(a US-100, Could → Should, conta como Could)*
+
+Origem: NEED-028..034 (feedback de uso real), **ordem e respostas Q-U15..Q-U24 aprovadas pelo usuário em 2026-10-26** (D-GES-62; exceção: Q-U20, a transferência prevista pode repetir todo mês). Decisões do PO **D-PO-99..106** (tabela ao fim). Fluxos novos: [FLUXO-018](../flows/FLUXO-018-visao-por-conta-em-a-pagar.md), [FLUXO-019](../flows/FLUXO-019-lancar-ou-prever-na-mesma-porta.md), [FLUXO-020](../flows/FLUXO-020-membro-sem-conta-e-convite-posterior.md). Pedidos ao TL: [`pedidos-ao-tech-lead-uso-real.md`](pedidos-ao-tech-lead-uso-real.md). **Nenhuma altera o motor do acerto nem a EN-002**; nenhuma depende de IA ou de privacidade; **não competem com NEED-024/026** (ordem relativa é do Gestor).
+
+**Ordem de execução = ordem de prioridade do usuário** (dependência dura > WSJF; dentro de cada NEED, a ordem das fatias). Pontos são do PO (preliminares); o TL confirma ou reestima.
+
+| Ordem | História | NEED | Release | Épico | MoSCoW | V/U/R | Pts | WSJF | Depende de | Estado |
+| :-: | :-- | :-- | :-: | :-: | :-: | :-: | :-: | :-: | :-- | :-- |
+| 1 | [US-060](stories/US-060-resumo-por-conta-no-a-pagar.md) **Resumo por conta no A pagar** (refinada: saldo previsto, "Sem conta definida", "Só meu" de outro membro, soma bate) | 033 | UR-1 | EPIC-17 | **Must** | 9/7/5 | **5** (era 3) | 4,2 | US-059, 055, 057 | Refinada · SDD detalhado do TL (TASK-054) |
+| 2 | [US-085](stories/US-085-destaque-despesa-receita.md) Seleção despesa x receita inequívoca | 034 (item 1) | UR-1 | EPIC-19 | Should | 5/4/3 | 2 | 6,0 | — | Proposta |
+| 3 | [US-087](stories/US-087-alinhamento-das-colunas-do-extrato.md) Colunas do Extrato alinhadas | 034 (item 7) | UR-1 | EPIC-19 | Should | 6/3/3 | 3 | 4,0 | US-062, 040b | Proposta |
+| 4 | [US-086](stories/US-086-espacamento-compacto-de-formularios.md) Espaçamento compacto de formulários | 034 (item 2) | UR-1 | EPIC-19 | Should | 5/3/2 | 2 | 5,0 | — | Proposta · cortável |
+| 5 | [US-088](stories/US-088-ver-compra-no-card-da-parcela.md) "Ver compra" no card da parcela | 034 (item 10) | UR-1 | EPIC-20 | Could | 2/1/1 | 1 | 4,0 | US-040b, 087 | Proposta · **1ª a cortar** |
+| 6 | [US-089](stories/US-089-conta-pagadora-padrao-do-cartao.md) Conta pagadora padrão do cartão | 032 | UR-1 | EPIC-6 | Should | 6/4/3 | 3 | 4,3 | US-015, 017b, 033 | Proposta · SDD curto |
+| 7 | [US-090](stories/US-090-prever-na-mesma-porta-do-lancamento.md) Lançar ou prever na mesma porta | 031 | UR-1 | EPIC-26 | Should | 8/5/3 | 5 | 3,2 | US-005/006/018/019/030 | Proposta · SDD do TL |
+| 8 | [US-091](stories/US-091-repetir-todo-mes-na-mesma-porta.md) "Repetir todo mês" na mesma porta | 031 | UR-1 | EPIC-26 | Should | 5/3/2 | 3 | 3,3 | US-090, 058/059 | Proposta · cortável |
+| 9 | [US-092](stories/US-092-cadastrar-membro-sem-conta.md) Cadastrar membro sem conta | 028 | UR-2 | EPIC-18 | Should (Alta) | 7/5/5 | 3 | 5,7 | **spike do TL**, US-002/003/034/035 | Proposta · **bloqueada pelo spike** |
+| 10 | [US-093](stories/US-093-atribuir-contas-e-lancamentos-ao-membro-sem-conta.md) Membro sem conta como titular/pagador/responsável e no acerto | 028 | UR-2 | EPIC-18 | Should (Alta) | 8/5/5 | 5 | 3,6 | US-092, 009a, 028, 084 | Proposta · revisão de segurança |
+| 11 | [US-094](stories/US-094-convidar-membro-cadastrado-e-assumir-historico.md) Convidar o membro cadastrado e herdar o histórico | 028 | UR-2 | EPIC-1 | Should (Alta) | 8/4/7 | 5 | 3,8 | US-092, 093, 003, 035 | Proposta · alto risco (pode ir a 8) |
+| 12 | [US-095](stories/US-095-ciclo-de-vida-do-membro-sem-conta.md) Ciclo de vida do membro sem conta | 028 | UR-2 | EPIC-18 | Should | 3/2/2 | 2 | 3,5 | US-092, 093, 035 | Proposta · 1ª a cortar da NEED-028 |
+| 13 | [US-096](stories/US-096-assinatura-mensal-no-cartao.md) Assinatura mensal no cartão | 029 | UR-2 | EPIC-20 | Should | 7/4/4 | 5 | 3,0 | US-016a, 017a, 058/059 | Proposta · ADR/SDD do TL |
+| 14 | [US-097](stories/US-097-corrigir-reajustar-e-encerrar-assinatura.md) Corrigir, reajustar e encerrar assinatura | 029 | UR-2 | EPIC-20 | Should | 5/3/2 | 3 | 3,3 | US-096 | Proposta |
+| 15 | [US-098](stories/US-098-lista-de-assinaturas-e-total-mensal.md) Lista de assinaturas e total mensal | 029 | UR-2 | EPIC-20 | Should | 4/2/2 | 2 | 4,0 | US-096 | Proposta |
+| 16 | [US-099](stories/US-099-assinatura-dividida-entra-no-acerto.md) Assinatura dividida entra no acerto | 029 | UR-2 | EPIC-16 | Should | 4/2/3 | 3 | 3,0 | US-096, EN-002, 028, 030 | Proposta · TL-U5 |
+| 17 | [US-100](stories/US-100-transferencia-prevista.md) Transferência prevista | 030 | UR-2 | EPIC-26 | Could → Should | 5/2/3 | 5 | 2,0 | **US-060, US-090**, US-010; alinhar com US-051 | Proposta · ADR/SDD do TL |
+| 18 | [US-101](stories/US-101-transferencia-prevista-recorrente.md) Transferência prevista recorrente | 030 | UR-2 | EPIC-26 | Could | 3/1/2 | 3 | 2,0 | US-100, 091 | Proposta · cortável |
+| — | | **Total (US-060 conta 5)** | | | | | **60** | | | |
+
+**Pontos acumulados:** US-060 (5) = 5 ➔ US-085 (2) = 7 ➔ US-087 (3) = 10 ➔ US-086 (2) = 12 ➔ US-088 (1) = 13 ➔ US-089 (3) = 16 ➔ US-090 (5) = 21 ➔ US-091 (3) = 24 ➔ **UR-1 = 24 pts** ➔ US-092 (3) = 27 ➔ US-093 (5) = 32 ➔ US-094 (5) = 37 ➔ US-095 (2) = 39 ➔ US-096 (5) = 44 ➔ US-097 (3) = 47 ➔ US-098 (2) = 49 ➔ US-099 (3) = 52 ➔ US-100 (5) = 57 ➔ US-101 (3) = **60 (UR-1 + UR-2)**.
+
+**Por que a ordem difere do WSJF:** o usuário fixou a prioridade por NEED (033, 034, 032, 031, 028, 029, 030); o PO só ordena **dentro** de cada NEED. A NEED-028 (WSJF alto) fica em 5º por decisão do usuário e porque **depende do spike do TL**: o TL pode antecipar a investigação durante a UR-1 sem mexer em código.
+
+**Dependências duras:** US-060 completa-se com US-089 (fatura na conta pagadora), US-051 (receita) e US-100 (transferência); **US-100 depende da US-060 e da US-090** (porta única e tipo `kind`, alinhado à US-051/ADR-023); US-091 depende da US-090; US-094 depende de 092 e 093; 097/098/099 dependem da 096; US-088 pode andar com a US-087 (mesma linha). Estas histórias **não dependem** de R4/R5.
+
+**Linha de corte (de baixo para cima):** US-101 ➔ US-099 ➔ US-088 ➔ US-095 ➔ US-098 ➔ US-086 ➔ US-091 ➔ US-097. **Não se cortam:** US-060, US-085, US-087, US-089, US-090 e o núcleo de cada NEED (092/093/094; 096; 100).
+
+**Release sugerida:** **UR-1 (24 pts, "próxima entrega curta", ex-R3 fatia 2)** = NEED-033 + 034 + 032 + 031; **UR-2 (36 pts)** = NEED-028 + 029 + 030, em três ondas independentes na ordem 028 ➔ 029 ➔ 030. Homologação do Stakeholder ao fim de cada release.
+
+| ID | Critério central |
+| :-- | :-- |
+| US-060 | Tabela por conta (atual · a pagar · previsto) com a soma das linhas = total de "A pagar"; "Sem conta definida"; "Falta R$ X" com texto; inclui "Só meu" de outro membro (Q-U24). |
+| US-085..088 | Mesmo seletor despesa/receita com ícone + texto em todo lugar; formulários compactos (cabe em 375×667); colunas do Extrato alinhadas em todas as linhas; "Ver compra" dentro do card. |
+| US-089 | Conta pagadora **opcional** no cartão; **só sugere** ao pagar e mostra o vencimento; nunca paga sozinho; não altera pagamentos feitos. |
+| US-090/091 | "Já aconteceu | Vai acontecer" no mesmo formulário (padrão: já aconteceu); efeito explícito antes de salvar; "Repetir todo mês" só informativo sobre a série existente. |
+| US-092..095 | Membro sem conta (só Administrador cadastra/convida), com os mesmos seletores, no acerto e com "Só meu" controlado; convite posterior **assume** o membro com todo o histórico, sem duplicar; totais idênticos antes e depois. |
+| US-096..099 | Assinatura = série no cartão, **lançada sozinha no dia**; fatura e limite só contam o lançado; corrigir o mês sem reescrever o passado; lista e total mensal; dividida entra no acerto. |
+| US-100/101 | Transferência prevista neutra (fora de despesa, receita e "A pagar"), afeta o saldo previsto por conta; efetiva em transferência real; **pode repetir todo mês** (Q-U20). |
+
+---
+
 ## 📦 Plano de releases (proposta do PO ao Gestor)
 
 | Release | Incrementos | Conteúdo | Promessa ao usuário |
@@ -297,6 +348,8 @@ Assistente de IA generativa de uso geral (NEED-023 foi **concretizada** em US-07
 | **R2 — "AP0 completo"** | Inc 3 (US-014..019) | Categorias, cartões à vista, fatura, despesas previstas | *"Cartões e contas a pagar também estão aqui."* |
 | **R2.1 — "Ressalvas e ajustes de baixo risco"** | Inc 4 (US-022..039) | Rótulo honesto do acerto, conta de origem padrão, descrição, Resumo do Mês, ocultar valores, acerto opcional, "Dividir" Só meu, arquivar conta/cartão, família e membros, detalhe, tema, desktop | *"A Início responde como está o mês, o acerto é discreto e opcional, e nada expõe meu dinheiro sem eu querer."* |
 | **R3 — "Cartão completo e análise"**, em **R3-A** (US-040a/b + EN-002a/b, interface inalterada) e **R3-B** (US-042 em diante), com pausa de homologação entre elas | Inc 5 (US-040..051, EN-002, EN-003) | Parcelamento no cartão, divisão por lançamento, tags, visões sintéticas, cor, receitas previstas, spike de grupos | *"O cartão parcelado funciona e sei para onde foi o dinheiro."* |
+| **UR-1 — "Uso real: ver o mês por conta e lançar sem atrito"** (proposta, 24 pts) | Inc 7 (US-060, US-085..US-091) | Visão por conta em "A pagar", polimento de UX, conta pagadora do cartão, lançar/prever na mesma porta | *"Sei se cada conta aguenta o mês e lanço ou prevejo no mesmo lugar."* |
+| **UR-2 — "Família real e compromissos fixos"** (proposta, 36 pts) | Inc 8 (US-092..US-101) | Membro sem conta e convite posterior, assinaturas no cartão, transferência prevista | *"Cadastro a família toda antes de ela entrar e prevejo assinaturas e repasses."* |
 | AP1 | a refinar (logo após a R3, Q-F12) | Orçamento e autocontrole: ciclo, tetos, disponibilidade, recorrência | — |
 
 **Justificativa:** a dor vital do MVP (`mvp-definition.md`) e o ADR-006 colocam o split no centro; cartões e previstas são do AP0 do Stakeholder mas **não bloqueiam** a dor central. Entregar R1 antes de R2 permite **homologação de valor antecipada** com o Stakeholder e reduz o risco de um MVP "grande demais". Divisão R1/R2 **ratificada pelo Gestor (D-GES-01)**; homologação de valor após a R1.
@@ -313,6 +366,8 @@ Assistente de IA generativa de uso geral (NEED-023 foi **concretizada** em US-07
 | **Inc 4** — R2.1 | US-022..039 | ✅ **Especificadas** (SDD-010..013; 67 pts) | Nenhum SDD pendente; ratificação de D-PO-33..42 pelo Gestor; linha de base E2E (D-GES-19) |
 | **Inc 5** — R3 | US-040..051, EN-002 (EN-003 concluída) | ✅ Refinadas e **Esboçadas** (SDD-014..017; ADR-016..018) | SDD completo antes de cada história; depende da R2.1 (predicado único, `findActiveMembership`, `FamilyEvent`) |
 | **Inc 6** — R4 (proposta) | US-065..077, EN-004..006 | ⏳ Refinadas; **aguardam ADRs/SDD do TL** ([`_historico/product-owner/backlog/pedidos-ao-tech-lead-ia.md`](../../_historico/product-owner/backlog/pedidos-ao-tech-lead-ia.md)) e ratificação de D-PO-53..69 | R4-A: nenhum além do SDD curto. R4-B: Q-U01, Q-U08, Q-U10 e ADRs de LLM/privacidade. R4-D: ADR do MCP |
+| **Inc 7** — UR-1 (uso real, proposta) | US-060 refinada, US-085..US-091 | ⏳ Refinadas; **aguardam SDD/estimativa do TL** ([`pedidos-ao-tech-lead-uso-real.md`](pedidos-ao-tech-lead-uso-real.md)) | Q-U22..Q-U24 respondidas; nenhum bloqueio de usuário. US-090 e US-089 precisam de SDD curto; US-085..088 são só apresentação |
+| **Inc 8** — UR-2 (uso real, proposta) | US-092..US-101 | ⏳ Refinadas; **bloqueio: spike do TL sobre membro/vínculo (TL-U1/U2) e revisão de segurança** | Q-U15..Q-U21 respondidas; US-096 e US-100 precisam de ADR/SDD; US-099 depende de TL-U5 |
 
 ---
 
@@ -323,7 +378,7 @@ Assistente de IA generativa de uso geral (NEED-023 foi **concretizada** em US-07
 | **D-PO-01** | Decisão | No MVP há **um único campo "Quem pagou?"**, que preenche *responsável pelo gasto* e *pagador* (reduz o formulário para os 10 s). `responsavel_pagamento` só existe nas previstas (US-018). | Stakeholder valida; TL modela | Não — ✅ aprovada (D-GES-05); validada pelo Stakeholder em 2026-10-04 |
 | **D-PO-02** | Decisão | No MVP **todos os membros veem e lançam em todas as contas/cartões** (sem permissões granulares). | Stakeholder valida | Não — ✅ aprovada (D-GES-05); validada pelo Stakeholder em 2026-10-04 |
 | **D-PO-03** | Decisão | **Período = mês-calendário** no MVP; o ciclo com dia de corte (NEED-005) chega no AP1. O TL deve projetar o cálculo de período como função de um `cutDay` (padrão 1). | TL confirma | Não — ✅ aprovada (D-GES-05); validada pelo Stakeholder em 2026-10-04 (obs.: período como função de `cutDay`) |
-| Q-01 | Pergunta | NEED-001 cita "filho" como responsável pelo gasto: dependentes sem login entram no MVP? Proposta: **não** (US-021). | Stakeholder | ✅ **Respondida** (D-GES-06; Stakeholder aceitou): fora do MVP, vira US-021 |
+| Q-01 | Pergunta | NEED-001 cita "filho" como responsável pelo gasto: dependentes sem login entram no MVP? Proposta: **não** (US-021). | Stakeholder | ✅ **Respondida** (D-GES-06; Stakeholder aceitou): fora do MVP, vira US-021. **Reaberta e atendida em 2026-10-26** pela NEED-028 (Q-U15, usuário): US-092..US-095 |
 | Q-03 | Pergunta | Validade do convite: 7 dias. | TL/Gestor | ✅ **Respondida** (D-GES-07): **7 dias** |
 | Q-08 | Pergunta | Regra de divisão deve ter **vigência por data** para preservar meses passados? Recomendação: sim. | TL (SDD-002) | ✅ **Respondida** (D-GES-08): **sim**, vigência por data; TL modela no SDD-002 (ainda bloqueia o início da US-008 até o SDD) |
 | Q-13 | Pergunta | Subir US-013 (corrigir/excluir) de Should para Must? | Gestor | ✅ **Respondida** (D-GES-03): permanece **Should**, mas **dentro da R1** (Inc 2); último a ser cortado |
@@ -365,3 +420,11 @@ Assistente de IA generativa de uso geral (NEED-023 foi **concretizada** em US-07
 | **D-PO-51** | Decisão | **Faturas na tela "A pagar" entram no escopo** (US-055; antes "fora do escopo", achado 10): mesma definição e total do "A pagar" do Resumo; sem pagar dentro da lista. | Gestor ratifica | Não |
 | **D-PO-52** | Decisão | Achado 2 amplia a US-054: o diálogo de arquivar (cartão e conta) **lista todos os impedimentos antes de confirmar**; validação do servidor mantida. Achado 5 (botão flutuante) resolvido com espaço inferior reservado nas listas. | Gestor ratifica | Não |
 | **D-PO-53..69** | Decisão | **R4 (proposta):** parcelas já pagas (só o restante), infra de LLM e opt-in como Habilitadoras, importação de fatura em 4 fatias (revisão obrigatória, lote atômico, anti-duplicidade, arquivo descartado), análise de gastos (método fixo, só agregados, números do app), MCP por membro (leitura primeiro, lançar com confirmação), ordem e corte. Detalhe e **perguntas Q-U01..Q-U12 ao usuário** (com hipótese) em [`_historico/product-owner/backlog/decisoes-po-ia-e-parcelas.md`](../../_historico/product-owner/backlog/decisoes-po-ia-e-parcelas.md). | Gestor ratifica; usuário responde Q-U | Q-U01/08/10 bloqueiam o início da R4-B |
+| **D-PO-99** | Decisão | **US-060 refinada (NEED-033):** sobe a **Must** e a 5 pts; tabela atual · a pagar · previsto por conta; **soma das linhas = total de "A pagar"** (mesma fonte); linha "Sem conta definida" para previstas e faturas sem conta; destaque "Falta R$ X" (texto + cor); **inclui previstas "Só meu" de outro membro (Q-U24, usuário)**; receita e transferência previstas entram quando existirem (colunas só quando há valores). | Gestor ratifica | Não |
+| **D-PO-100** | Decisão | **NEED-034 fatiada em 4 itens independentes** (US-085 destaque despesa/receita, US-086 espaçamento, US-087 colunas do Extrato, US-088 "Ver compra"): **componentes e tokens únicos** (um seletor de tipo, um espaçamento) em vez de ajuste por tela; seletor segmentado com ícone + texto (nunca só cor); grade fixa com valores à direita em algarismos tabulares. Desenho escolhido pelo PO (sem 2 alternativas que mudem o fluxo). | Gestor ratifica | Não |
+| **D-PO-101** | Decisão | **US-089 (NEED-032):** conta pagadora **opcional** (Q-U23) que **só sugere** a conta e mostra o vencimento (Q-U22); nunca paga sozinho; conta arquivada limpa o campo com aviso e o arquivamento da conta lista os cartões que a usam. Alimenta a US-060. | Gestor ratifica | Não |
+| **D-PO-102** | Decisão | **Porta única (NEED-031, FLUXO-019):** seletor "Já aconteceu | Vai acontecer" (**padrão: já aconteceu**, para não piorar os < 10 s), efeito explícito antes de salvar, padrões de "Só meu" de cada modo mantidos e avisados ao trocar; **"Vai acontecer" indisponível no cartão** (compra no cartão não admite data futura): ali a cobrança mensal é a **Assinatura (US-096)**; "Repetir todo mês" (**Q-U21**) só reaproveita a série; receita usa a mesma porta quando a US-051 existir. | Gestor ratifica | Não |
+| **D-PO-103** | Decisão | **NEED-028 em 4 fatias** (US-092 cadastrar, 093 atribuir e acerto, 094 convidar e herdar, 095 ciclo de vida); **absorve a US-021**; **Q-U15 mesmo mecanismo, Q-U16 entra no acerto, Q-U17 só Administrador**; membro sem conta **nunca é Administrador**; aceite continua explícito (SEC-004) com tela "o que você vai assumir"; totais e acerto idênticos antes e depois do aceite; **"Só meu" de membro sem conta: controlado por quem lançou, dono da conta e Administrador (hipótese a validar pelo TL/Segurança)**. Depende do **spike do TL**. | Gestor ratifica; **Segurança revisa** | Não |
+| **D-PO-104** | Decisão | **NEED-029 em 4 fatias** (US-096 assinatura, 097 corrigir/reajustar/encerrar, 098 lista e total, 099 dividida no acerto): assinatura **é a série com cartão** (sem conceito novo); **lançada sozinha só quando o dia chega** (compra no cartão não admite data futura), "Assinaturas previstas neste ciclo" informativo, **fatura e limite só contam o lançado** (sem contar duas vezes); fatura paga não muda (cobrança pulada com aviso); **Q-U18, Q-U19**. | Gestor ratifica | Não |
+| **D-PO-105** | Decisão | **NEED-030 em 2 fatias** (US-100 pontual, US-101 recorrente por **Q-U20**): transferência prevista **neutra** (não é despesa, receita nem "A pagar"; lista própria em Previstas), afeta o saldo previsto por conta (coluna só quando há), efetiva em transferência real atômica e desfazível; **depende da US-060 e da porta única (US-090)** e do mesmo `kind` da US-051. | Gestor ratifica | Não |
+| **D-PO-106** | Decisão | **UR-1 (24 pts) e UR-2 (36 pts)** na ordem do usuário (033 ➔ 034 ➔ 032 ➔ 031 ➔ 028 ➔ 029 ➔ 030); linha de corte: US-101 ➔ 099 ➔ 088 ➔ 095 ➔ 098 ➔ 086 ➔ 091 ➔ 097; pedidos ao TL em `pedidos-ao-tech-lead-uso-real.md` (spike do membro sem conta pode correr em paralelo à UR-1). Nenhum cálculo do acerto muda. | Gestor ratifica | Não |
