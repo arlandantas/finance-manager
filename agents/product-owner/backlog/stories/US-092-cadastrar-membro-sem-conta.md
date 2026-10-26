@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-18 Manutenção de Cadastros / EPIC-1 Núcleo Familiar · **UR-2 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should (Alta)** · 5,7 (V7/U5/R5) · **3** (a estimativa real depende do modelo do TL) |
-| Status | Proposta pelo PO em 2026-10-26; **bloqueada pela investigação (spike) do TL sobre o modelo de membro/vínculo** (ver `pedidos-ao-tech-lead-uso-real.md`, TL-U1) |
+| Status | Proposta pelo PO em 2026-10-26; **bloqueada pela investigação (spike) do TL sobre o modelo de membro/vínculo** (ver `pedidos-ao-tech-lead-uso-real.md`, TL-U1); **2026-10-26 (TL): spike concluído no [ADR-033](../../../tech-lead/adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md) (proposto); tamanho TL 5 (TL, ADR-033: 092a modelo 3 + 092b cadastro 2); SDD aguarda Q-TL-U1..U5 e revisão da Segurança** |
 | Depende de | **Spike/ADR do TL**; US-002, US-003, US-034, US-035. Substitui e unifica a US-021 (parking lot) |
 | Corte | Fatia fundamental da NEED-028: sem ela, 093..095 não existem |
 | Rastreabilidade | **NEED-028** (RN-028.1, 028.3, 028.6, 028.7) · **Q-U15, Q-U17 (usuário, 2026-10-26)** · NEED-001, NEED-020 · Q-01/US-021 · FLUXO-011, **FLUXO-020** · D-PO-103 |

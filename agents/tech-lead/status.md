@@ -11,6 +11,15 @@
 
 ---
 
+## Ciclo uso real (TL-U1/U2/U3, 2026-10-26): membro sem conta **ADR proposto, SDD pendente**
+| Artefato | Cobre |
+| :--- | :--- |
+| [ADR-033 Membro sem conta e convite vinculado](adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md) | US-092..095 (NEED-028): `Member.userId` anulável (+ `name`, `pendingEmail`, `linkedAt`), CHECKs e gatilho `members_link_guard`, migração expand sem reescrita; efeitos em acerto (motores intactos), "Só meu" (estado `ownerUnlinked`, Admin tutor), LGPD, sessões; convite vinculado (`invitations.memberId`) e aceite atômico que só faz `UPDATE members`; matriz TL-U3; testes (reconciliação do aceite no harness) |
+
+**Pontos TL:** **23** (PO 15) = US-092 5 (092a 3 + 092b 2) · US-093 8 (093a 3 + 093b 5) · US-094 8 (094a 3 + 094b 5) · US-095 2. **Alternativas descartadas:** entidade separada; usuário "fantasma". **Achado:** `ownerStanding` compara `userId` sem barrar `NULL` (corrigir na 092a). **Pendente:** Q-TL-U1..U5 (usuário/Segurança) e revisão da Segurança (ADR-033 §7) antes dos SDDs de 093b/094b; 092a pode ser especificada já.
+
+---
+
 ## Ciclo SEC Grupo B (D-GES-40): correções de segurança **Especificadas**
 | Artefato | Cobre |
 | :--- | :--- |

@@ -1,12 +1,13 @@
 # Estado vigente: Família, convites, membros e sessões
 
-Atualizado: 2026-10-26. Fonte de verdade: código + testes (§f). Mudou a regra? Atualize ESTE arquivo no mesmo commit.
+Atualizado: 2026-10-26 (ADR-033 proposto). Fonte de verdade: código + testes (§f). Mudou a regra? Atualize ESTE arquivo no mesmo commit.
 
 ## a) Resumo para o usuário
 - Cadastro: login só com Google (e-mail verificado). Com `ALLOWED_SIGNUP_EMAILS` preenchida só e-mails da lista CRIAM conta (convite não contorna); vazia = aberto. Hoje a lista é ação do usuário na Vercel (checklist 9.1).
 - Convite: Administrador convida por e-mail (válido 7 dias). Vínculo só no aceite explícito do convidado em `/convites`; quem já tem família não aceita (409). Tetos: 5/h e 10/dia por família e por pessoa que convida; reenvio máx. 3.
 - Papéis: Administrador e Membro; a família sempre mantém ao menos 1 Administrador. Remoção/saída exige revisar contas, cartões, previstas e acerto em aberto; o Administrador que remove recebe aviso de que passa a controlar os "Só meu" nas contas reatribuídas.
 - Sessão: 30 dias sem uso, 90 dias absolutos; removido perde todas as sessões na hora; quem sai mantém a atual.
+- Membro sem conta (NEED-028, US-092..095): modelo proposto no [ADR-033](../tech-lead/adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md) (`Member.userId` anulável, convite vinculado ao membro); NADA implementado, regras abaixo seguem valendo.
 - Aberto: fase 2 da SEC-018 (remover `sessionToken` legado) agendada ao Gestor; definir `ALLOWED_SIGNUP_EMAILS` na Vercel; SEC-037 (reautenticação nas exclusões) sem decisão do usuário.
 
 ## b) Regras vigentes
@@ -55,6 +56,7 @@ Atualizado: 2026-10-26. Fonte de verdade: código + testes (§f). Mudou a regra?
 
 ## e) Em andamento / pendências
 - Nada em implementação nesta área.
+- **Proposto, não vigente (ADR-033, TL-U1/U2/U3):** membro sem conta = `members.userId NULL` (+ `name`, `pendingEmail`, `linkedAt`), nunca ADMIN, não é ex-membro; convite vinculado (`invitations.memberId`) assumido no aceite por `UPDATE` condicional sob lock da família, sem tocar o ledger; contagens `ONLY_MEMBER`/`SOLE_MEMBER`/`HAS_OTHER_MEMBERS` passam a ignorar cadastros sem conta. Bug latente a corrigir junto: `ownerStanding` compara `userId` sem barrar `NULL`. Pendências: Q-TL-U1..U5 (usuário/Segurança) e revisão da Segurança antes dos SDDs de 093b/094b; 092a pode ser especificada já. Estimativa TL: 23 pts (092 5, 093 8, 094 8, 095 2).
 - Fase 2 da SEC-018: `prisma/pending/20261027000000_sec018_drop_plain_session_token` ainda pendente; `Session.sessionToken` legado existe no schema. Só >=1 dia após a fase 1 em produção, rodar `scripts/sec018-phase2-check.ts`; tarefa do Gestor (D-GES-44, checklist Vercel 9.7).
 - Usuário: definir `ALLOWED_SIGNUP_EMAILS` na Vercel (checklist 9.1) antes de divulgar; decidir SEC-037.
 - Cron `retention.ts`: sessões encerradas apagadas após 7 dias; convites após 90 dias.

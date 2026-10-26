@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-1 Núcleo Familiar (revisa a US-003) · **UR-2 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should (Alta)** · 3,8 (V8/U4/R7) · **5** (alto risco: segurança e migração do vínculo; o TL pode reestimar para 8 e fatiar) |
-| Status | Proposta pelo PO em 2026-10-26; **bloqueada pelo spike do TL sobre herança de histórico no convite (TL-U1/TL-U2)** e por revisão de segurança |
+| Status | Proposta pelo PO em 2026-10-26; **bloqueada pelo spike do TL sobre herança de histórico no convite (TL-U1/TL-U2)** e por revisão de segurança; **2026-10-26 (TL): spike concluído no [ADR-033](../../../tech-lead/adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md) (proposto); tamanho TL 8 (TL, ADR-033: 094a convite vinculado 3 + 094b aceite 5); SDD aguarda Q-TL-U1..U5 e revisão da Segurança** |
 | Depende de | **US-092, US-093**; US-003 (convite com aceite explícito, SEC-004), US-035 (regra 18 de ex-membro) |
 | Corte | Último da NEED-028; as fatias 092/093 já entregam valor sem convite |
 | Rastreabilidade | **NEED-028** (RN-028.2, 028.3, 028.6, 028.7, 028.8) · **Q-U17 (usuário, 2026-10-26)** · SEC-004 · `estado/familia-convites-sessoes.md` · FLUXO-002, **FLUXO-020** · D-PO-103 |
