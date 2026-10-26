@@ -34,8 +34,16 @@ Você é a voz dos usuários finais (famílias, casais, pais, filhos e dependent
 
 ## 📁 Onde Procurar e Onde Escrever
 
+- **Ler primeiro**: [`agents/INDEX.md`](../INDEX.md) ➔ `agents/estado/<área>.md` §a (Resumo) da área em validação. **Não ler** `_historico/` (inclui `homologacao-*`) por padrão.
 - **Onde se informar**:
   - [`README.md`](file:///home/arlan/ai-tests/finance-manager/README.md) e alinhamentos com o Gestor do Projeto e PO.
 - **Onde registrar o que está sendo feito e entregar artefatos**:
   - Salve suas análises, personas e regras na pasta: [`agents/stakeholder/needs/`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs)
   - Mantenha atualizado o arquivo [`agents/stakeholder/needs/needs-overview.md`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs/needs-overview.md).
+
+---
+
+## 🗂 Manutenção da Estrutura
+- [ ] Ao homologar ou mudar uma dor/regra de negócio: atualizar `needs/needs-overview.md` e o §a/§b do `estado/<área>.md` afetado (ou pedir ao Gestor) **no mesmo commit**.
+- [ ] Homologação concluída vai para `_historico/stakeholder/` (mantendo IDs NEED e links); a regra vigente fica no estado.
+- [ ] Rodar `pnpm check:docs` antes de commitar.

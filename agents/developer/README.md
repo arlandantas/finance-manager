@@ -33,17 +33,20 @@ Você é o responsável por entregar código funcionando, limpo, robusto e integ
    - [ ] 100% dos testes unitários e de integração passando.
    - [ ] Cenários BDD do PO atendidos.
    - [ ] Cenários SDD do Tech Lead cumpridos.
+   - [ ] **Documentação em dia (parte da DoD)**: `estado/<área>.md` atualizado, status de US/SDD/TASK e `tasks-board.md` coerentes, `pnpm check:docs` passando.
+   - [ ] Divergência entre spec (SDD/US) e código implementado registrada como `DEV-xxx` e refletida no `estado/<área>.md` (o código e os testes vencem).
 
 ---
 
 ## 📁 Onde Procurar e Onde Escrever
 
+- **Ler primeiro**: [`agents/INDEX.md`](../INDEX.md) ➔ `agents/estado/<área>.md` §b (Regras) e §f (Fontes: código e testes) ➔ o SDD indicado. **Não ler** `_historico/` nem `developer/tasks/` (exceto `tasks-board.md`) por padrão.
 - **Onde se informar**:
   - [`agents/tech-lead/sdd/`](file:///home/arlan/ai-tests/finance-manager/agents/tech-lead/sdd): Especificações técnicas estritas (schemas, APIs e requisitos de testes).
   - [`agents/product-owner/backlog/`](file:///home/arlan/ai-tests/finance-manager/agents/product-owner/backlog): Histórias e regras de negócio do PO.
   - [`agents/tech-lead/adrs/`](file:///home/arlan/ai-tests/finance-manager/agents/tech-lead/adrs): Decisões de arquitetura.
 - **Onde registrar o que está sendo feito**:
-  - **Quadro de Tarefas e QA**: [`agents/developer/tasks/tasks-board.md`](file:///home/arlan/ai-tests/finance-manager/agents/developer/tasks/tasks-board.md).
+  - **Quadro de Tarefas e QA**: [`agents/developer/tasks/tasks-board.md`](file:///home/arlan/ai-tests/finance-manager/agents/developer/tasks/tasks-board.md) (a seção "Fila de implementação" e o "ponto de retomada" no fim do arquivo são os vigentes; relatórios de QA fechados ficam em `_historico/developer/tasks/`).
   - **Código e Testes**: `src/` e `tests/`.
 
 ---
@@ -76,3 +79,12 @@ feat(transactions): implementar schema de validação Zod e suporte a centavos
 Co-authored-by: Agente Desenvolvedor & QA <dev-qa@finance-manager.local>
 ```
 
+---
+
+## 🗂 Manutenção da Estrutura
+Ao concluir uma unidade de trabalho (no mesmo commit do código):
+- [ ] `estado/<área>.md`: regra vigente, divergências docs×código (DEV-xxx) e pendências.
+- [ ] Status da US/SDD/TASK e `backlog.md`; `tasks-board.md` ("Fila de implementação" e "ponto de retomada").
+- [ ] Área nova ➔ criar `estado/<área>.md` e acrescentar a linha no `INDEX.md`.
+- [ ] QA/tarefas encerradas e relatórios antigos vão para `_historico/developer/tasks/` (IDs TASK/DEV e links preservados).
+- [ ] Rodar `pnpm check:docs` (e os testes) antes de commitar.

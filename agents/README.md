@@ -43,14 +43,14 @@ agents/
 │
 └── developer/                     # Agente 4: Desenvolvedor & QA (Dono da IMPLEMENTAÇÃO & TESTES)
     ├── README.md                  # Manual do Desenvolvedor & QA (implementação SDD e plano de testes)
-    └── tasks/                     # Acompanhamento de tarefas e checklist de QA
+    └── tasks/                     # tasks-board.md (fila de implementação, vivo); demais TASK/QA são histórico
 ```
 
 ---
 
 ## 🧭 Como Usar Esta Pasta
 
-0a. **Comece por [`INDEX.md`](INDEX.md)** e pelo `estado/<área>.md` da sua tarefa; histórico só para rastrear origem.
+0a. **Comece por [`INDEX.md`](INDEX.md)** e pelo `estado/<área>.md` da sua tarefa (§a Resumo, §b Regras, §c Invariantes, §d Riscos aceitos, §e Pendências, §f Fontes); histórico (`_historico/`, `manager/decisoes-do-gestor.md`, `developer/tasks/` exceto `tasks-board.md`) só para rastrear origem.
 0. **O usuário fala apenas com o Gestor** ([`manager/README.md`](manager/README.md)), que distribui as tarefas e traz de volta só as decisões que o time não pode tomar.
 1. **Identifique o seu papel**: Vá diretamente para a pasta do seu agente.
 2. **Leia o `README.md` da sua pasta**: Ele contém o escopo exato do que você deve fazer e o formato dos arquivos que deve produzir.
@@ -58,3 +58,14 @@ agents/
 4. **Mantenha os artefatos atualizados**: Registre cada nova entrega ou atualização nas subpastas apropriadas.
 
 5. **Use o menor modelo capaz** (Haiku para tarefas mecânicas, Sonnet para implementação e histórias, Opus só para arquitetura e domínio crítico). Tabela completa em [`manager/README.md`](manager/README.md).
+
+---
+
+## 🔧 Manutenção da Estrutura (vale para todos os papéis)
+
+Mapa e regra de manutenção ficam no [`INDEX.md`](INDEX.md) (não duplicar aqui). Checklist ao concluir uma unidade de trabalho:
+- [ ] Atualizei `estado/<área>.md` (regra vigente, divergências docs×código, pendências) **no mesmo commit** da mudança; o arquivo continua com ~1500 palavras ou menos.
+- [ ] Atualizei o status do que toquei (US/SDD/TASK), `backlog.md` e, se couber ao meu papel, a "Fila de implementação" do `tasks-board.md`.
+- [ ] Se a área é nova: criei `estado/<área>.md` (molde em [`_brief-estado.md`](_brief-estado.md)) e acrescentei a linha no `INDEX.md`.
+- [ ] Item fechado (relatório, QA, resposta, decisão antiga) vai para `_historico/` com a mesma subestrutura, mantendo IDs e corrigindo os links que apontavam para o caminho antigo.
+- [ ] Rodei `pnpm check:docs` antes de commitar.

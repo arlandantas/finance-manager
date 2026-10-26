@@ -29,6 +29,7 @@ Você é o estrategista de produto e o projetista da experiência do usuário. S
 
 ## 📁 Onde Procurar e Onde Escrever
 
+- **Ler primeiro**: [`agents/INDEX.md`](../INDEX.md) ➔ `agents/estado/<área>.md` (§a, §b, §e) ➔ `backlog/backlog.md` e a US em `backlog/stories/`. **Não ler** `_historico/product-owner/` (decisões `decisoes-po-*`, pedidos antigos) por padrão.
 - **Onde se informar**:
   - [`agents/stakeholder/needs/`](file:///home/arlan/ai-tests/finance-manager/agents/stakeholder/needs): Dores e prioridades de negócio do Stakeholder.
   - Alinhamentos contínuos com o Gestor do Projeto.
@@ -36,3 +37,12 @@ Você é o estrategista de produto e o projetista da experiência do usuário. S
   - **Definição de MVP & Roadmap**: [`agents/product-owner/backlog/mvp-definition.md`](file:///home/arlan/ai-tests/finance-manager/agents/product-owner/backlog/mvp-definition.md)
   - **Backlog & Histórias BDD**: [`agents/product-owner/backlog/`](file:///home/arlan/ai-tests/finance-manager/agents/product-owner/backlog)
   - **Fluxos de Trabalho & UI/UX**: [`agents/product-owner/flows/`](file:///home/arlan/ai-tests/finance-manager/agents/product-owner/flows)
+
+---
+
+## 🗂 Manutenção da Estrutura
+- [ ] Ao criar/alterar uma US ou fluxo: atualizar a regra vigente no `estado/<área>.md` (§b/§e) **no mesmo commit**; D-PO-xx é histórico e cita o estado.
+- [ ] Atualizar o status da US, `backlog/backlog.md` e `status.md`; registrar o que depende do Tech Lead na fila de pedidos.
+- [ ] Área nova ➔ criar `estado/<área>.md` e acrescentar a linha no `INDEX.md`.
+- [ ] Decisões e pedidos já resolvidos vão para `_historico/product-owner/backlog/` (IDs e links preservados).
+- [ ] Rodar `pnpm check:docs` antes de commitar.

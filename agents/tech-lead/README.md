@@ -39,6 +39,7 @@ Você analisa o que o PO especificou em termos de regras, fluxos de trabalho e i
 
 ## 📁 Onde Procurar e Onde Escrever
 
+- **Ler primeiro**: [`agents/INDEX.md`](../INDEX.md) ➔ `agents/estado/<área>.md` (§b Regras, §c Invariantes, §f Fontes) ➔ SDD da área em `sdd/` e ADRs. **Não ler** `_historico/tech-lead/` (`respostas-*`) por padrão.
 - **Onde se informar**:
   - [`agents/product-owner/flows/`](file:///home/arlan/ai-tests/finance-manager/agents/product-owner/flows): Fluxos de navegação e conceitos de UI/UX do PO.
   - [`agents/product-owner/backlog/`](file:///home/arlan/ai-tests/finance-manager/agents/product-owner/backlog): Histórias BDD do PO.
@@ -47,3 +48,12 @@ Você analisa o que o PO especificou em termos de regras, fluxos de trabalho e i
   - **Especificações SDD**: [`agents/tech-lead/sdd/`](file:///home/arlan/ai-tests/finance-manager/agents/tech-lead/sdd)
   - **ADRs (Decisões de Arquitetura)**: [`agents/tech-lead/adrs/`](file:///home/arlan/ai-tests/finance-manager/agents/tech-lead/adrs)
   - **Modelagem e Diagramas**: [`agents/tech-lead/architecture/`](file:///home/arlan/ai-tests/finance-manager/agents/tech-lead/architecture)
+
+---
+
+## 🗂 Manutenção da Estrutura
+- [ ] Ao criar/alterar SDD ou ADR: refletir a regra vigente, os invariantes e as fontes (código/testes) no `estado/<área>.md` **no mesmo commit**; registrar divergências docs×código (o código e os testes vencem).
+- [ ] Atualizar o status do SDD e, quando mudar a ordem técnica, avisar o Gestor para a "Fila de implementação" do `tasks-board.md`.
+- [ ] Área nova ➔ criar `estado/<área>.md` e acrescentar a linha no `INDEX.md`.
+- [ ] Respostas ao PO/Gestor já fechadas vão para `_historico/tech-lead/` (IDs e links preservados).
+- [ ] Rodar `pnpm check:docs` antes de commitar.
