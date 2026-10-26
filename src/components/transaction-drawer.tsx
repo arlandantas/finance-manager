@@ -7,6 +7,7 @@ import { CategoryIcon } from "@/components/category-icon";
 import { InstallmentPreviewText } from "@/components/installment-preview";
 import { useFormatMoney } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
+import { TagInput } from "@/components/tag-input";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
@@ -44,7 +45,8 @@ type FieldKey =
   | "note"
   | "payerMemberId"
   | "installments"
-  | "paidBeforeApp";
+  | "paidBeforeApp"
+  | "tags";
 
 const TEXT: Record<Kind, { title: string; payer: string; save: string; success: string }> = {
   EXPENSE: {
@@ -84,6 +86,7 @@ export function TransactionDrawer({
   const [date, setDate] = useState("");
   const [description, setDescription] = useState("");
   const [note, setNote] = useState("");
+  const [tags, setTags] = useState<string[]>([]); // US-045: nomes digitados (linha "+ Tag" recolhida)
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [banner, setBanner] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -113,6 +116,7 @@ export function TransactionDrawer({
     setDate("");
     setDescription("");
     setNote("");
+    setTags([]);
     setErrors({});
     setBanner(null);
     setDetailsOpen(false);
@@ -203,6 +207,7 @@ export function TransactionDrawer({
           : {}),
       ...(description.trim() ? { description } : {}),
       ...(note.trim() ? { note } : {}),
+      ...(tags.length > 0 ? { tags } : {}),
       ...(kind === "EXPENSE" ? { isSharedExpense: splitAvailable && shared && !splitBlocked } : {}),
       ...(fromCard && installments > 1 ? { installments } : {}),
       ...(fromCard && installments > 1 && paidBeforeApp >= 1 ? { paidBeforeApp } : {}),
@@ -544,6 +549,15 @@ export function TransactionDrawer({
             aria-invalid={errors.description || liveDescriptionError ? true : undefined}
           />
         </Field>
+
+        <TagInput
+          value={tags}
+          onChange={(next) => {
+            setTags(next);
+            setErrors((x) => ({ ...x, tags: undefined }));
+          }}
+          error={errors.tags}
+        />
 
         <div className="flex flex-col gap-1.5">
           <span id="tx-payer-label" className="text-sm font-medium text-slate-800">

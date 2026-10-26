@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { MoneyInput } from "@/components/money-input";
+import { TagInput } from "@/components/tag-input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Field, inputClass } from "@/components/ui/field";
@@ -10,6 +11,7 @@ import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
+import { normalizeTagKey } from "@/modules/tags/normalize";
 import { useUpdateTransaction } from "@/modules/transacoes/hooks";
 import { canChangeStructure, effectiveOwner } from "@/modules/transacoes/ownership";
 import { type TransactionDetailDTO, UpdateTransactionSchema } from "@/modules/transacoes/schemas";
@@ -21,7 +23,8 @@ type FieldKey =
   | "occurredOn"
   | "description"
   | "note"
-  | "payerMemberId";
+  | "payerMemberId"
+  | "tags";
 
 export function EditTransactionForm({
   t,
@@ -49,6 +52,7 @@ export function EditTransactionForm({
   const [date, setDate] = useState(t.occurredOn);
   const [description, setDescription] = useState(t.description);
   const [note, setNote] = useState(t.note ?? "");
+  const [tags, setTags] = useState<string[]>(t.tags.map((x) => x.name)); // US-045
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [banner, setBanner] = useState<string | null>(null);
   const key = useRef(newIdempotencyKey());
@@ -81,7 +85,21 @@ export function EditTransactionForm({
   const effectivePayerId =
     controllerOnly || lockGonePayer ? ownerId : personalExpense ? myMemberId : payerId;
 
+  const tagKeys = (list: string[]) => list.map(normalizeTagKey).sort().join("|");
+  const tagsChanged = tagKeys(tags) !== tagKeys(t.tags.map((x) => x.name));
+
   function payload(confirmSettledPeriod?: boolean) {
+    const financialChanged =
+      cents !== t.amountInCents ||
+      (t.account !== null && accountId !== t.account.id) ||
+      categoryId !== (t.category?.id ?? "") ||
+      date !== t.occurredOn ||
+      effectivePayerId !== (effectiveOwner(t.payer).id ?? "") ||
+      description !== t.description ||
+      (note.trim() === "" ? null : note) !== t.note ||
+      (kind === "EXPENSE" && shared !== t.isSharedExpense);
+    // SDD-016 §1: só as tags mudaram => edição NÃO financeira (não pede acerto, vale em fatura paga/parcela)
+    if (tagsChanged && !financialChanged) return { version: t.version, tags };
     return {
       version: t.version,
       ...(t.account ? { accountId } : {}),
@@ -92,6 +110,7 @@ export function EditTransactionForm({
       description,
       note: note.trim() === "" ? null : note,
       ...(kind === "EXPENSE" ? { isSharedExpense: shared } : {}),
+      ...(tagsChanged ? { tags } : {}),
       ...(confirmSettledPeriod ? { confirmSettledPeriod: true } : {}),
     };
   }
@@ -337,6 +356,15 @@ export function EditTransactionForm({
           onChange={(e) => setNote(e.target.value)}
         />
       </Field>
+      <TagInput
+        id="ed-tags"
+        value={tags}
+        onChange={(next) => {
+          setTags(next);
+          setErrors((x) => ({ ...x, tags: undefined }));
+        }}
+        error={errors.tags}
+      />
       <Button type="submit" className="w-full" disabled={update.isPending}>
         {update.isPending ? "Salvando…" : "Salvar alterações"}
       </Button>

@@ -133,6 +133,15 @@ export function LedgerRow({
                 {item.installment ? ` · ${item.installment.no}/${item.installment.count}` : ""}
               </span>
             ) : null}
+            {item.tags.map((tag) => (
+              <span
+                key={tag.id}
+                data-testid="tag-chip"
+                className="rounded-full border border-slate-200 bg-white dark:bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600"
+              >
+                {tag.name}
+              </span>
+            ))}
             {isTransfer && item.transferGroupId ? (
               <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-800 dark:text-emerald-300">
                 Mesma transferência

@@ -49,6 +49,8 @@ export function useInvalidateAfterTransactionChange() {
         ["payables"],
         ["installment-plan"],
         ["assistant-review"],
+        ["tags"], // US-045 (SDD-016 §6): lista/sugestão de tags e uso
+        ["analysis"],
         [defaultsKey[0]],
       ].map((queryKey) => qc.invalidateQueries({ queryKey })),
     );
@@ -117,8 +119,12 @@ import type { ListTransactionsResponse, TransactionDetailDTO } from "@/modules/t
 
 export function ledgerQueryString(filters: LedgerUiFilters, cursor?: string): string {
   const p = new URLSearchParams();
-  for (const [k, v] of Object.entries(filters))
-    if (v !== undefined && v !== "") p.set(k, String(v));
+  for (const [k, v] of Object.entries(filters)) {
+    if (v === undefined || v === "") continue;
+    if (Array.isArray(v))
+      for (const x of v) p.append(k, String(x)); // tagIds repetido (SDD-016 §1)
+    else p.set(k, String(v));
+  }
   if (cursor) p.set("cursor", cursor);
   return p.toString();
 }

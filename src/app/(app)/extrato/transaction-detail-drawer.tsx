@@ -1,6 +1,6 @@
 "use client";
 
-import { History, ListOrdered, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { History, ListOrdered, Pencil, RotateCcw, Tag, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -29,6 +29,7 @@ import {
   personalWriteMessage,
 } from "@/modules/transacoes/ownership";
 import type { TransactionDetailDTO } from "@/modules/transacoes/schemas";
+import { EditTagsForm } from "./edit-tags-form";
 import { EditTransactionForm } from "./edit-transaction-form";
 import { HistoryList } from "./history-list";
 
@@ -50,7 +51,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 const SIDE_PANEL =
   "lg:inset-y-0 lg:left-auto lg:right-0 lg:top-0 lg:h-full lg:max-h-none lg:w-[440px] lg:max-w-none lg:translate-x-0 lg:translate-y-0 lg:rounded-none lg:rounded-l-2xl";
 
-type Mode = "view" | "edit" | "history";
+type Mode = "view" | "edit" | "history" | "tags";
 
 export function TransactionDetailDrawer({
   id,
@@ -92,6 +93,7 @@ export function TransactionDetailDrawer({
   const planQuery = useInstallmentPlan(installment?.planId ?? null);
   const parcel = planQuery.data?.plan.installments.find((p) => p.no === installment?.no);
   const editable = t && (t.type === "EXPENSE" || t.type === "INCOME") && !installment;
+  const tagsEditable = t && (t.type === "EXPENSE" || t.type === "INCOME");
   const family = useFamily().data;
   // SEC-021 / D-GES-50: "Só meu" é alterado por quem controla (pagador, dono da conta e lançador)
   const ownershipRow = t
@@ -213,9 +215,11 @@ export function TransactionDetailDrawer({
   const title =
     mode === "edit"
       ? "Editar lançamento"
-      : mode === "history"
-        ? "Histórico"
-        : "Detalhe do lançamento";
+      : mode === "tags"
+        ? "Editar tags"
+        : mode === "history"
+          ? "Histórico"
+          : "Detalhe do lançamento";
   const isIncome = t?.type === "INCOME";
   return (
     <>
@@ -259,6 +263,10 @@ export function TransactionDetailDrawer({
           />
         ) : null}
 
+        {t && mode === "tags" ? (
+          <EditTagsForm t={t} onDone={() => setMode("view")} onConflict={setConflictMsg} />
+        ) : null}
+
         {t && mode === "history" ? (
           <div className="flex flex-col gap-3">
             <HistoryList id={t.id} />
@@ -297,6 +305,13 @@ export function TransactionDetailDrawer({
                 <Button variant="secondary" onClick={() => setMode("edit")}>
                   <Pencil size={16} aria-hidden="true" />
                   Editar
+                </Button>
+              ) : null}
+              {/* US-045: editar só as tags não é financeiro: vale em parcela, fatura paga e conta arquivada */}
+              {tagsEditable && canWrite && !t.deletedAt ? (
+                <Button variant="secondary" onClick={() => setMode("tags")}>
+                  <Tag size={16} aria-hidden="true" />
+                  Editar tags
                 </Button>
               ) : null}
               {editable && canWrite && !t.deletedAt && !t.plannedExpenseId ? (
@@ -368,6 +383,21 @@ export function TransactionDetailDrawer({
               ) : null}
               {t.type === "EXPENSE" ? (
                 <Row label="Divisão">{t.isSharedExpense ? "Dividida com a família" : "Só meu"}</Row>
+              ) : null}
+              {t.tags.length > 0 ? (
+                <Row label="Tags">
+                  <span className="flex flex-wrap justify-end gap-1" data-testid="detail-tags">
+                    {t.tags.map((tag) => (
+                      <span
+                        key={tag.id}
+                        data-testid="tag-chip"
+                        className="rounded-full border border-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700"
+                      >
+                        {tag.name}
+                      </span>
+                    ))}
+                  </span>
+                </Row>
               ) : null}
               {t.note ? <Row label="Observação">{t.note}</Row> : null}
               {t.deletedAt ? (
