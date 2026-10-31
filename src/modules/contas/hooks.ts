@@ -51,7 +51,7 @@ export function useInvalidateAfterAccountChange() {
   const qc = useQueryClient();
   return () =>
     Promise.all(
-      [["accounts"], ["transactions"], ["home"]].map((queryKey) =>
+      [["accounts"], ["transactions"], ["home"], ["payables"]].map((queryKey) =>
         qc.invalidateQueries({ queryKey }),
       ),
     );
@@ -96,7 +96,7 @@ export function useCreateTransfer(idempotencyKey: string) {
       }),
     onSuccess: () =>
       Promise.all(
-        [["accounts"], ["transactions"], ["home"], ["settlement"]].map((queryKey) =>
+        [["accounts"], ["transactions"], ["home"], ["settlement"], ["payables"]].map((queryKey) =>
           qc.invalidateQueries({ queryKey }),
         ),
       ),
@@ -120,9 +120,14 @@ export function useUndoTransfer() {
     },
     onSuccess: () =>
       Promise.all(
-        [["accounts"], ["transactions"], ["transaction"], ["home"], ["settlement"]].map(
-          (queryKey) => qc.invalidateQueries({ queryKey }),
-        ),
+        [
+          ["accounts"],
+          ["transactions"],
+          ["transaction"],
+          ["home"],
+          ["settlement"],
+          ["payables"],
+        ].map((queryKey) => qc.invalidateQueries({ queryKey })),
       ),
   });
 }

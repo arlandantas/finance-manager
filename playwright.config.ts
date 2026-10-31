@@ -19,7 +19,8 @@ const testDir = defineBddConfig({
   features: "tests/e2e/features/**/*.feature",
   steps: ["tests/e2e/steps/**/*.ts", "tests/e2e/support/**/*.ts"],
   // Cenários @integration são cobertos em tests/integration (não dependem de navegador).
-  tags: "not @integration",
+  // @pendente-us-NNN: cenário especificado cuja história de apoio ainda não foi implementada (ex.: US-089).
+  tags: "not @integration and not @pendente-us-089",
 });
 
 export default defineConfig({

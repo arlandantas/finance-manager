@@ -53,7 +53,7 @@ export const previstasDoMes: AnyTool = {
   auditParams: (i: { period?: string }) => ({ period: i.period ?? "current" }),
   prepare: (ctx, db) => ensureRecurrenceHorizonStandalone(ctx, db),
   handler: async ({ ctx, tx, input }) => {
-    const r = await listPayables(tx, ctx, { period: input.period });
+    const r = await listPayables(tx, ctx, { period: input.period }, { byAccount: false });
     return {
       period: periodOut(r.period),
       currency: "BRL" as const,

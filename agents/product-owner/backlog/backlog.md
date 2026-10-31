@@ -298,7 +298,7 @@ Origem: NEED-028..034 (feedback de uso real), **ordem e respostas Q-U15..Q-U24 a
 
 | Ordem | História | NEED | Release | Épico | MoSCoW | V/U/R | Pts | WSJF | Depende de | Estado |
 | :-: | :-- | :-- | :-: | :-: | :-: | :-: | :-: | :-: | :-- | :-- |
-| 1 | [US-060](stories/US-060-resumo-por-conta-no-a-pagar.md) **Resumo por conta no A pagar** (refinada: saldo previsto, "Sem conta definida", "Só meu" de outro membro, soma bate) | 033 | UR-1 | EPIC-17 | **Must** | 9/7/5 | **5** (TL confirma) | 4,2 | US-059, 055, 057 | **SDD pronto, aprovada p/ Dev** ([SDD-029](../../tech-lead/sdd/SDD-029-resumo-por-conta-no-a-pagar-us-060.md), TASK-054) |
+| 1 | [US-060](stories/US-060-resumo-por-conta-no-a-pagar.md) **Resumo por conta no A pagar** (refinada: saldo previsto, "Sem conta definida", "Só meu" de outro membro, soma bate) | 033 | UR-1 | EPIC-17 | **Must** | 9/7/5 | **5** (TL confirma) | 4,2 | US-059, 055, 057 | **Implementada (TASK-054), aguardando validação do Gestor** ([SDD-029](../../tech-lead/sdd/SDD-029-resumo-por-conta-no-a-pagar-us-060.md)) |
 | 2 | [US-085](stories/US-085-destaque-despesa-receita.md) Seleção despesa x receita inequívoca | 034 (item 1) | UR-1 | EPIC-19 | Should | 5/4/3 | 2 | 6,0 | — | **TL: 2 pts, sem SDD** (notas) |
 | 3 | [US-087](stories/US-087-alinhamento-das-colunas-do-extrato.md) Colunas do Extrato alinhadas | 034 (item 7) | UR-1 | EPIC-19 | Should | 6/3/3 | 3 | 4,0 | US-062, 040b | **TL: 3 pts, sem SDD** (notas; contêiner da linha) |
 | 4 | [US-086](stories/US-086-espacamento-compacto-de-formularios.md) Espaçamento compacto de formulários | 034 (item 2) | UR-1 | EPIC-19 | Should | 5/3/2 | **3 (TL)** | 5,0 | — | **TL: 3 pts (era 2), sem SDD** (notas) · cortável |

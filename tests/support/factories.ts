@@ -406,6 +406,8 @@ export async function makePlannedExpense(
     shared?: boolean;
     paidTransactionId?: string;
     note?: string;
+    /** "Pagar com" (US-059); padrão: sem conta. */
+    account?: AccountFixture;
   },
 ): Promise<PlannedFixture> {
   const db = fdb();
@@ -426,6 +428,7 @@ export async function makePlannedExpense(
       authorMemberId: author.memberId,
       isSharedExpense: o.shared ?? true,
       note: o.note ?? null,
+      ...(o.account ? { paymentAccountId: o.account.id } : {}),
       ...(o.paidTransactionId
         ? { status: "PAGO" as const, paidTransactionId: o.paidTransactionId }
         : {}),

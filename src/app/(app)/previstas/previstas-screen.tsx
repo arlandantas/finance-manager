@@ -44,6 +44,7 @@ import {
   personalWriteMessage,
 } from "@/modules/transacoes/ownership";
 import { monthLabel, shiftMonthKey } from "../extrato/filters";
+import { ByAccountBlock, ByAccountSkeleton, NO_ACCOUNT } from "./by-account-block";
 import { PayPlannedDrawer } from "./pay-drawer";
 import { PlannedDrawer } from "./planned-drawer";
 
@@ -296,6 +297,7 @@ export function PrevistasScreen() {
   const period =
     periodParam && /^\d{4}-(0[1-9]|1[0-2])$/.test(periodParam) ? periodParam : undefined;
   const [tab, setTab] = useState<Tab>("pay");
+  const [accountFilter, setAccountFilter] = useState<string | null>(null); // US-060: chave da conta
   const payables = usePayables(period);
   const paidList = usePlannedList(period, "PAGO");
   const [creating, setCreating] = useState(false);
@@ -309,6 +311,7 @@ export function PrevistasScreen() {
 
   const periodKey = payables.data?.period.key ?? period;
   const go = (delta: number) => {
+    setAccountFilter(null); // trocar de mês limpa o filtro por conta
     if (periodKey) router.replace(`/previstas?period=${shiftMonthKey(periodKey, delta)}`);
   };
 
@@ -436,6 +439,16 @@ export function PrevistasScreen() {
         </section>
       ) : null}
 
+      {tab === "pay" && payables.isPending ? <ByAccountSkeleton /> : null}
+      {tab === "pay" && payables.data ? (
+        <ByAccountBlock
+          data={payables.data.byAccount}
+          totalInCents={payables.data.totals.dueInCents}
+          filter={accountFilter}
+          onFilter={setAccountFilter}
+        />
+      ) : null}
+
       <div
         role="tablist"
         aria-label="Situação"
@@ -500,8 +513,12 @@ export function PrevistasScreen() {
                 ["Faturas", payables.data.groups.invoices],
                 ["Previstas", payables.data.groups.planned],
               ] as const
-            ).map(([label, group]) =>
-              group.length === 0 ? null : (
+            ).map(([label, all]) => {
+              const group =
+                accountFilter === null
+                  ? all
+                  : all.filter((i) => (i.paymentAccountId ?? NO_ACCOUNT) === accountFilter);
+              return group.length === 0 ? null : (
                 <section key={label} aria-label={label} className="flex flex-col gap-2">
                   <h2 className="text-sm font-semibold text-slate-700">{label}</h2>
                   <ul className="flex flex-col gap-2" aria-label={`Contas a pagar: ${label}`}>
@@ -515,8 +532,8 @@ export function PrevistasScreen() {
                     ))}
                   </ul>
                 </section>
-              ),
-            )}
+              );
+            })}
           </div>
         )
       ) : null}

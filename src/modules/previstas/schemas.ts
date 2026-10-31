@@ -119,6 +119,39 @@ export type PlannedListResponse = {
   };
 };
 
+const cents = z.number().int();
+
+/** SDD-029 §3.1: linha do resumo por conta no "A pagar" (US-060). */
+export const ByAccountRowSchema = z
+  .object({
+    /** null = linha "Sem conta definida" (previstas e faturas sem conta). */
+    account: z
+      .object({
+        id: z.uuid(),
+        name: z.string(),
+        archived: z.boolean(),
+        excludeFromAvailable: z.boolean(), // reserva (US-057)
+      })
+      .nullable(),
+    balanceInCents: cents.nullable(), // saldo de hoje; null só em "Sem conta definida"
+    dueInCents: cents.nonnegative(), // Σ amountInCents dos itens do recorte nesta conta
+    itemCount: z.number().int().nonnegative(),
+    toReceiveInCents: cents.nonnegative(), // US-051; 0 até existir
+    plannedTransfersInCents: cents, // US-100; líquido (entra − sai); 0 até existir
+    projectedInCents: cents.nullable(), // balance − due + toReceive + plannedTransfers; null sem conta
+    shortfallInCents: cents.nonnegative(), // max(0, −projected); 0 se projected null
+  })
+  .strict();
+
+export const ByAccountSchema = z
+  .object({
+    rows: z.array(ByAccountRowSchema),
+    columns: z.object({ toReceive: z.boolean(), plannedTransfers: z.boolean() }).strict(),
+  })
+  .strict();
+export type ByAccountRow = z.infer<typeof ByAccountRowSchema>;
+export type ByAccount = z.infer<typeof ByAccountSchema>;
+
 export type PayableItemDTO = {
   type: "PLANNED" | "INVOICE";
   id: string; // PLANNED: id da previsão · INVOICE: `${cardId}:${ref}`
@@ -131,6 +164,8 @@ export type PayableItemDTO = {
   invoiceStatus: "OPEN" | "CLOSED" | null; // selo da fatura (US-055); null em PLANNED
   isRecurring: boolean; // ocorrência de série (US-058)
   paymentAccountName: string | null; // "Pagar com" (US-059)
+  /** SDD-029 §3.2: chave do resumo por conta. PLANNED: FK; INVOICE: conta pagadora do cartão (US-089) ou null. */
+  paymentAccountId: string | null;
   /** D-GES-50: lançador e dono da conta "Pagar com" (controlam a prevista "Só meu" com o responsável). */
   authorId?: string;
   paymentAccountOwnerId?: string | null;
@@ -142,6 +177,7 @@ export type PayablesResponse = {
   groups: { planned: PayableItemDTO[]; invoices: PayableItemDTO[] }; // US-055: previstas e faturas separadas
   period: { key: string; start: string; end: string };
   totals: { dueInCents: number; overdueInCents: number; overdueCount: number };
+  byAccount: ByAccount; // US-060 (SDD-029): derivado dos MESMOS `items`
 };
 
 export type HomePayablesDTO = {

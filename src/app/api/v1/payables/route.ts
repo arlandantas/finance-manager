@@ -7,7 +7,12 @@ export const dynamic = "force-dynamic";
 
 // SDD-009 §3: previstas PREVISTO + faturas fechadas (agregador "Contas a pagar")
 export const GET = withApi(
-  { query: PayablesQuerySchema, prepare: ensureRecurrenceHorizonStandalone },
+  {
+    query: PayablesQuerySchema,
+    prepare: ensureRecurrenceHorizonStandalone,
+    // SDD-029 §3.4: itens e saldos do mesmo instantâneo
+    isolationLevel: "RepeatableRead",
+  },
   async ({ ctx, tx, query }) => ({
     status: 200,
     body: await listPayables(tx, ctx, query),

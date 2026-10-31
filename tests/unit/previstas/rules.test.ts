@@ -68,6 +68,7 @@ describe("US-018 Bloco 'A pagar' da Home e ordenação", () => {
       invoiceStatus: null,
       isRecurring: false,
       paymentAccountName: null,
+      paymentAccountId: null,
       href: "",
     });
     const list = [
@@ -152,6 +153,7 @@ describe("US-055 recortes do A pagar (SDD-018 §2.2)", () => {
     invoiceStatus: null,
     isRecurring: false,
     paymentAccountName: null,
+    paymentAccountId: null,
     href: "",
   });
   const items = [

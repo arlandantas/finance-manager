@@ -3,6 +3,8 @@ import { fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
 import { periodFromKey, periodOf } from "@/lib/period";
 import { listPayableInvoices, type PayableInvoice } from "@/modules/cartoes/invoice-service";
+import { listAccountBalances } from "@/modules/contas/service";
+import { buildByAccount } from "@/modules/previstas/by-account";
 import { previstasRepo } from "@/modules/previstas/repo";
 import { slicePeriod, sliceWindow } from "@/modules/previstas/rules";
 import type {
@@ -30,6 +32,7 @@ const plannedItem = (
     invoiceStatus: null,
     isRecurring: r.seriesId !== null,
     paymentAccountName: r.paymentAccount?.name ?? null,
+    paymentAccountId: r.paymentAccountId ?? null,
     authorId: r.authorMemberId,
     paymentAccountOwnerId: r.paymentAccount?.ownerMemberId ?? null,
     href: `/previstas#${r.id}`,
@@ -48,6 +51,7 @@ const invoiceItem = (i: PayableInvoice, today: string): PayableItemDTO => ({
   invoiceStatus: i.closingDate < today ? "CLOSED" : "OPEN",
   isRecurring: false,
   paymentAccountName: null,
+  paymentAccountId: null, // US-089: trocar por `i.paymentAccountId` (conta pagadora do cartão); ponto único
   href: `/cartoes/${i.cardId}?ref=${i.ref}`,
 });
 
@@ -71,6 +75,7 @@ export async function listPayables(
   tx: Tx,
   ctx: RequestContext,
   q: { period?: string | undefined },
+  opts: { byAccount?: boolean } = {},
 ): Promise<PayablesResponse> {
   const today = todayInFamilyTz(ctx.clock);
   const cutDay = await previstasRepo(tx, ctx.familyId).cutDay();
@@ -81,6 +86,10 @@ export async function listPayables(
     isCurrent: period.key === current.key,
     today,
   });
+  const byAccount =
+    opts.byAccount === false
+      ? { rows: [], columns: { toReceive: false, plannedTransfers: false } }
+      : buildByAccount(due.items, await listAccountBalances(tx, ctx));
   return {
     items: due.items,
     groups: {
@@ -93,6 +102,7 @@ export async function listPayables(
       overdueInCents: due.overdueInCents,
       overdueCount: due.overdueCount,
     },
+    byAccount,
   };
 }
 

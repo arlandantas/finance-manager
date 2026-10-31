@@ -89,6 +89,33 @@ export async function listAccounts(
   };
 }
 
+/**
+ * Saldos de todas as contas da família (ativas, arquivadas e reservas), sem as consultas de uso
+ * de `listAccounts`. Fonte do resumo por conta do "A pagar" (SDD-029 §3.3).
+ */
+export async function listAccountBalances(
+  tx: Tx,
+  ctx: RequestContext,
+): Promise<
+  Array<{
+    id: string;
+    name: string;
+    archived: boolean;
+    excludeFromAvailable: boolean;
+    balanceInCents: number;
+  }>
+> {
+  const accounts = await contasRepo(tx, ctx.familyId).list("all");
+  const balances = await accountBalances(tx, ctx.familyId);
+  return accounts.map((a) => ({
+    id: a.id,
+    name: a.name,
+    archived: a.archivedAt !== null,
+    excludeFromAvailable: a.excludeFromAvailable,
+    balanceInCents: balances.get(a.id) ?? 0,
+  }));
+}
+
 /** US-004 (SDD-004 §4.2): conta + lançamento de abertura na mesma transação. */
 export async function createAccount(
   tx: Tx,
