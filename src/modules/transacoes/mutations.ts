@@ -20,9 +20,12 @@ import {
 } from "@/modules/split/write";
 import { replaceTags, type TagSetChange } from "@/modules/tags/service";
 import {
+  adminFullPower,
   assertCanMakePersonal,
   assertCanWriteTransaction,
+  isActiveUnlinked,
   isPersonalExpense,
+  type OwnerStanding,
   ownerStanding,
   personalOwnerId,
 } from "@/modules/transacoes/ownership";
@@ -266,15 +269,21 @@ export async function updateTransaction(
   const row = await loadMutable(tx, ctx, repo, id);
   // D-GES-55: Administrador atual sobre o "Só meu" de ex-membro tem poderes plenos
   // SEC-051 (D-GES-59): o pagador ex-membro (sem retorno) é imutável também na dividida
-  const standing =
+  const standing: OwnerStanding =
     row.kind === "EXPENSE"
       ? await ownerStanding(tx, ctx, personalOwnerId(row))
-      : { ownerIsActor: false, ownerRemoved: false };
-  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved && isPersonalExpense(row);
+      : { ownerIsActor: false, ownerRemoved: false, ownerUnlinked: false };
+  // US-093b: o tutor (Admin sobre dono sem conta) tem os mesmos poderes plenos do Admin sobre ex-membro
+  const fullPower = adminFullPower(ctx, standing) && isPersonalExpense(row);
   assertCanMakePersonal(ctx, row, input, {
     fullPower,
     ownerIsActor: standing.ownerIsActor && isPersonalExpense(row), // SEC-049
     payerGone: standing.ownerRemoved,
+    // SEC-059a: pagador para/de sem conta só pelo lançador ou Administrador (nunca para si, se Admin)
+    unlinked: {
+      currentUnlinked: standing.ownerUnlinked,
+      nextUnlinked: await isActiveUnlinked(tx, ctx, input.payerMemberId),
+    },
   });
   if (row.deletedAt) {
     throw unprocessable(

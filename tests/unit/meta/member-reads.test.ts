@@ -98,4 +98,29 @@ describe("leituras de membro (SEC-058, D-033-2)", () => {
     }
     expect(bad).toEqual([]);
   });
+
+  // US-093b (SDD-034 §7.1-6)
+  it("(g) assertPersonalForSelf/assertPlannedResultAllowed só com await; ownerStanding usa FOR SHARE; MCP nunca chama o 'Só meu' em nome de outro", () => {
+    const bad: string[] = [];
+    for (const f of files) {
+      if (f.p === "src/modules/transacoes/ownership.ts") continue;
+      lines(f).forEach((l, i) => {
+        if (
+          /\b(assertPersonalForSelf|assertPlannedResultAllowed)\(/.test(l) &&
+          !/await\s+\w*\.?(assertPersonalForSelf|assertPlannedResultAllowed)\(|\bawait\s+(assertPersonalForSelf|assertPlannedResultAllowed)\(/.test(
+            l,
+          ) &&
+          !/^\s*(import|\/\/)/.test(l)
+        ) {
+          bad.push(`${f.p}:${i + 1} ${l.trim()}`);
+        }
+      });
+    }
+    expect(bad).toEqual([]);
+    const own = files.find((f) => f.p === "src/modules/transacoes/ownership.ts");
+    expect(own?.text).toMatch(/FROM members[\s\S]*?FOR SHARE/);
+    const mcp = files.filter((f) => f.p.startsWith("src/modules/mcp/"));
+    for (const f of mcp)
+      expect(f.text).not.toMatch(/assertPersonalForSelf|assertPlannedResultAllowed/);
+  });
 });

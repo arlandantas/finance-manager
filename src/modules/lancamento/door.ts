@@ -54,6 +54,11 @@ export type DoorCtx = {
   /** Parcelado com divisão ainda indisponível (US-042): não envia `isSharedExpense`. Só vale em NOW. */
   splitBlocked: boolean;
   flags: { incomePlanned: boolean };
+  /**
+   * US-093b (SDD-034 §4.2/§4.8): só para o ADMIN, os membros ATIVOS sem conta em nome de quem ele pode criar "Só meu".
+   * Ausente/vazio: "Só meu" é sempre em nome de quem lança (SEC-026).
+   */
+  unlinkedIds?: readonly string[];
 };
 
 /** Ponto de extensão da US-051: liga a receita prevista sem reescrever a porta. */
@@ -158,6 +163,7 @@ function sharedOf(s: DoorState, ctx: DoorCtx): boolean {
 /** SEC-026: "Só meu" é sempre em nome de quem lança (pagador/responsável = eu). */
 export function effectivePayerOf(s: DoorState, ctx: DoorCtx): string {
   const personal = s.kind === "EXPENSE" && !sharedOf(s, ctx);
+  if (personal && ctx.me && ctx.unlinkedIds?.includes(s.payerId)) return s.payerId; // US-093b
   return personal && ctx.me ? ctx.me : s.payerId;
 }
 

@@ -41,6 +41,7 @@ import {
   canWriteTransaction,
   controllerNames,
   effectiveOwner,
+  isUnlinkedActive,
   personalControllerIds,
   personalWriteMessage,
 } from "@/modules/transacoes/ownership";
@@ -100,6 +101,7 @@ function PayableRow({
         },
         { memberId: family.currentMemberId, role: family.currentRole },
         effectiveOwner(item.responsible).removed,
+        isUnlinkedActive(item.responsible), // US-093b: tutor
       ));
   return (
     <li
@@ -241,6 +243,7 @@ function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void
         paidRow,
         { memberId: family.currentMemberId, role: family.currentRole },
         effectiveOwner(paid.payer).removed,
+        isUnlinkedActive(paid.payer), // US-093b: tutor
       ));
   return (
     <li
@@ -287,7 +290,12 @@ function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void
             ? personalWriteMessage(
                 controllerNames(
                   personalControllerIds(paidRow),
-                  family.members.map((m) => ({ id: m.memberId, name: m.name })),
+                  family.members.map((m) => ({
+                    id: m.memberId,
+                    name: m.name,
+                    unlinked: m.unlinked,
+                  })),
+                  { adminCan: isUnlinkedActive(paid?.payer) },
                 ),
                 " (Só meu)",
               )

@@ -22,14 +22,18 @@ import type {
 import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
 import {
+  adminFullPower,
   assertCanWritePlanned,
   assertCanWriteTransaction,
   assertPersonalForSelf,
   assertPlannedControllerLimits,
   assertPlannedNoCapture,
   assertPlannedResultAllowed,
+  assertPlannedUnlinkedPayer,
   GONE_PAYER_BAIXA_MESSAGE,
+  isActiveUnlinked,
   memberRefsWithReturn,
+  type OwnerStanding,
   ownerStanding,
   PERSONAL_OWNER_ONLY_CODE,
   PERSONAL_STRUCTURE_MESSAGE,
@@ -142,7 +146,10 @@ export async function createPlannedExpense(
   const today = todayInFamilyTz(ctx.clock);
   const responsibleMemberId = input.responsibleMemberId ?? ctx.memberId;
   if (input.isSharedExpense) await assertCanShare(tx, ctx);
-  assertPlannedResultAllowed(ctx, { isSharedExpense: input.isSharedExpense, responsibleMemberId }); // SEC-026
+  await assertPlannedResultAllowed(tx, ctx, {
+    isSharedExpense: input.isSharedExpense,
+    responsibleMemberId,
+  }); // SEC-026; US-093b: exceção do Administrador para dono sem conta
   await checkCategory(repo, input.categoryId);
   if (!(await repo.findMember(responsibleMemberId))) {
     throw invalidRef("responsibleMemberId", "Responsável inválido");
@@ -242,17 +249,23 @@ export async function updatePlannedExpense(
   const repo = previstasRepo(tx, ctx.familyId);
   const row = await loadForChange(tx, ctx, repo, id, input.version);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026a: "Só meu" é só do responsável
-  assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
   // SEC-043/044: quem só controla não muda divisão, responsável nem conta; D-GES-55: Admin sobre ex-membro pode
   const standing = await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
+  // US-093b (SEC-059a): responsável para/de sem conta só pelo lançador ou Administrador (antes da captura)
+  assertPlannedUnlinkedPayer(ctx, row, input.responsibleMemberId, {
+    currentUnlinked: standing.ownerUnlinked,
+    nextUnlinked: await isActiveUnlinked(tx, ctx, input.responsibleMemberId),
+  });
+  assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
   // SEC-051 (D-GES-59): responsável ex-membro sem retorno é imutável (dividida ou "Só meu"); poder pleno só no "Só meu"
-  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved && !row.isSharedExpense;
+  const fullPower = adminFullPower(ctx, standing) && !row.isSharedExpense;
   assertPlannedControllerLimits(ctx, row, input, {
     fullPower,
     ownerIsActor: standing.ownerIsActor && !row.isSharedExpense,
     payerGone: standing.ownerRemoved,
   });
-  assertPlannedResultAllowed(
+  await assertPlannedResultAllowed(
+    tx,
     ctx,
     {
       isSharedExpense: input.isSharedExpense ?? row.isSharedExpense,
@@ -374,8 +387,8 @@ export async function payPlannedExpense(
   }
   const effective = input.amountInCents ?? toCents(row.amountInCents);
   const standing = await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
-  const personalStanding = row.isSharedExpense
-    ? { ownerIsActor: false, ownerRemoved: false }
+  const personalStanding: OwnerStanding = row.isSharedExpense
+    ? { ownerIsActor: false, ownerRemoved: false, ownerUnlinked: false }
     : standing;
   // quem voltou à família paga em nome do vínculo atual (o antigo, removido, não é pagador válido)
   const ownerId = personalStanding.ownerIsActor ? ctx.memberId : row.responsibleMemberId;
@@ -393,7 +406,7 @@ export async function payPlannedExpense(
   }
   if (!(await repo.findMember(payerMemberId))) throw invalidRef("payerMemberId", "Membro inválido");
   // SEC-044d: quem só controla (não é o responsável) só dá baixa com conta do responsável ou a sua
-  const fullPower = ctx.role === "ADMIN" && personalStanding.ownerRemoved;
+  const fullPower = adminFullPower(ctx, personalStanding); // D-GES-55; US-093b: tutor do dono sem conta
   if (!row.isSharedExpense && ownerId !== ctx.memberId && !fullPower) {
     const acc = await tx.bankAccount.findFirst({
       where: { id: input.accountId, familyId: ctx.familyId },
@@ -414,7 +427,7 @@ export async function payPlannedExpense(
     if (ownerId !== ctx.memberId && !fullPower) {
       throw forbidden(PERSONAL_STRUCTURE_MESSAGE, PERSONAL_OWNER_ONLY_CODE);
     }
-    assertPersonalForSelf(ctx, { isSharedExpense: false, payerMemberId });
+    await assertPersonalForSelf(tx, ctx, { isSharedExpense: false, payerMemberId });
   }
 
   const created = await createExpenseCore(

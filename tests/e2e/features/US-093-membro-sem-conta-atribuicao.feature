@@ -1,5 +1,5 @@
 # language: pt
-Funcionalidade: Atribuir contas e lançamentos ao membro sem conta (093a)
+Funcionalidade: Atribuir contas e lançamentos ao membro sem conta (093a e 093b)
 
   Contexto:
     Dado a "Família Silva" com "Mariana" (Administradora), "Lucas" (Membro) e o membro sem conta "Ana" para a atribuição
@@ -38,3 +38,14 @@ Funcionalidade: Atribuir contas e lançamentos ao membro sem conta (093a)
   Cenário: Filtro por quem pagou inclui o membro sem conta
     Quando Mariana abre o filtro de pessoa no Extrato
     Então "Ana · sem acesso ao app" aparece como opção
+
+  Cenário: Só meu de membro sem conta é controlado por quem lançou
+    Dado que Mariana lançou uma despesa "Só meu" com pagador "Ana"
+    Quando Lucas tenta excluir essa despesa
+    Então vê que apenas quem controla pode alterar
+    E Mariana consegue excluí-la
+
+  Cenário: Pagador sem conta só pelo lançador ou Administrador
+    Dado que Lucas lançou uma despesa
+    Quando Lucas tenta definir "Ana" como pagadora de uma despesa lançada por Mariana
+    Então vê a dica de pagador "Apenas quem lançou ou o Administrador pode definir este pagador"

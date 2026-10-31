@@ -232,3 +232,92 @@ Then("{string} aparece como opção", async ({ page }, texto: string) => {
     1,
   );
 });
+
+// ── 093b ──
+const ledgerDetail = async (page: Page, texto: string) => {
+  await gotoReady(page, "/extrato");
+  await page.getByTestId("ledger-row").filter({ hasText: texto }).first().click();
+  await expect(dlg(page, "Detalhe do lançamento")).toBeVisible();
+};
+const asUser = async (world: World, page: Page, nome: "Mariana" | "Lucas") => {
+  if (world.data.loggedAs === nome) return;
+  await loginAs(page, { email: `${nome.toLowerCase()}@exemplo.com`, name: `${nome} Silva` });
+  world.data.loggedAs = nome;
+};
+
+Given(
+  "que Mariana lançou uma despesa {string} com pagador {string}",
+  async ({ world }, _rotulo: string, pagador: string) => {
+    await makeTransaction(fx(world), {
+      account: world.data.main as AccountFixture,
+      category: "Supermercado",
+      amountInCents: 8000,
+      occurredOn: "2026-10-03",
+      author: "Mariana",
+      payer: pagador,
+      shared: false,
+      description: "Mesada da Ana",
+    });
+  },
+);
+When("Lucas tenta excluir essa despesa", async ({ world, page }) => {
+  await asUser(world, page, "Lucas");
+  await ledgerDetail(page, "Mesada da Ana");
+});
+Then("vê que apenas quem controla pode alterar", async ({ page }) => {
+  await expect(page.getByTestId("personal-readonly")).toContainText(
+    "Só Mariana e um Administrador podem alterar este lançamento",
+  );
+  await expect(
+    dlg(page, "Detalhe do lançamento").getByRole("button", { name: "Excluir", exact: true }),
+  ).toHaveCount(0);
+});
+Then("Mariana consegue excluí-la", async ({ world, page }) => {
+  await asUser(world, page, "Mariana");
+  await ledgerDetail(page, "Mesada da Ana");
+  await page.getByRole("button", { name: "Excluir", exact: true }).click();
+  await dlg(page, "Excluir lançamento?")
+    .getByRole("button", { name: "Excluir", exact: true })
+    .click();
+  await expect(page.getByText("Despesa excluída")).toBeVisible();
+});
+
+Given("que Lucas lançou uma despesa", async ({ world }) => {
+  await makeTransaction(fx(world), {
+    account: world.data.main as AccountFixture,
+    category: "Supermercado",
+    amountInCents: 3000,
+    occurredOn: "2026-10-03",
+    author: "Lucas",
+    payer: "Lucas",
+    shared: true,
+    description: "Padaria do Lucas",
+  });
+  await makeTransaction(fx(world), {
+    account: world.data.main as AccountFixture,
+    category: "Supermercado",
+    amountInCents: 9000,
+    occurredOn: "2026-10-03",
+    author: "Mariana",
+    payer: "Mariana",
+    shared: true,
+    description: "Feira da Mariana",
+  });
+});
+When(
+  "Lucas tenta definir {string} como pagadora de uma despesa lançada por Mariana",
+  async ({ world, page }, nome: string) => {
+    await asUser(world, page, "Lucas");
+    await ledgerDetail(page, "Feira da Mariana");
+    await page.getByRole("button", { name: "Editar", exact: true }).click();
+    const form = dlg(page, "Editar lançamento");
+    await expect(form).toBeVisible();
+    const option = form
+      .getByLabel("Quem pagou?")
+      .locator("option", { hasText: new RegExp(`^${nome} · `) });
+    await expect(option).toBeDisabled();
+  },
+);
+Then("vê a dica de pagador {string}", async ({ page }, texto: string) => {
+  await expect(dlg(page, "Editar lançamento").getByText(texto)).toBeVisible();
+});

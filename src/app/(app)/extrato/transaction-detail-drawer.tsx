@@ -26,6 +26,7 @@ import {
   canWriteTransaction,
   controllerNames,
   effectiveOwner,
+  isUnlinkedActive,
   personalControllerIds,
   personalWriteMessage,
 } from "@/modules/transacoes/ownership";
@@ -114,6 +115,7 @@ export function TransactionDetailDrawer({
         ownershipRow,
         { memberId: family.currentMemberId, role: family.currentRole },
         effectiveOwner(t.payer).removed,
+        isUnlinkedActive(t.payer), // US-093b: tutor
       ));
   const ownerGone = effectiveOwner(t?.payer).removed;
   const controlLine =
@@ -125,7 +127,8 @@ export function TransactionDetailDrawer({
         : personalWriteMessage(
             controllerNames(
               personalControllerIds(ownershipRow),
-              family.members.map((m) => ({ id: m.memberId, name: m.name })),
+              family.members.map((m) => ({ id: m.memberId, name: m.name, unlinked: m.unlinked })),
+              { adminCan: isUnlinkedActive(t?.payer) },
             ),
             " (Só meu)",
           )

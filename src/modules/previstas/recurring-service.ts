@@ -23,10 +23,13 @@ import { previstasRepo } from "@/modules/previstas/repo";
 import { checkCategory, checkPaymentAccount, memberMap } from "@/modules/previstas/service";
 import { assertCanShare } from "@/modules/split/guard";
 import {
+  adminFullPower,
   assertCanWritePlanned,
   assertPlannedControllerLimits,
   assertPlannedNoCapture,
   assertPlannedResultAllowed,
+  assertPlannedUnlinkedPayer,
+  isActiveUnlinked,
   ownerStanding,
   plannedWriteDecision,
 } from "@/modules/transacoes/ownership";
@@ -197,7 +200,10 @@ export async function createSeries(
   }
   const responsibleMemberId = input.responsibleMemberId ?? ctx.memberId;
   if (input.isSharedExpense) await assertCanShare(tx, ctx);
-  assertPlannedResultAllowed(ctx, { isSharedExpense: input.isSharedExpense, responsibleMemberId }); // SEC-026
+  await assertPlannedResultAllowed(tx, ctx, {
+    isSharedExpense: input.isSharedExpense,
+    responsibleMemberId,
+  }); // SEC-026; US-093b: exceção do Administrador para dono sem conta
   await checkCategory(prevRepo, input.categoryId);
   if (!(await prevRepo.findMember(responsibleMemberId))) {
     throw invalidRef("responsibleMemberId", "Responsável inválido");
@@ -255,16 +261,22 @@ export async function updateSeries(
   if (row.endedAt) throw seriesEnded();
   if (row.version !== input.version) throw await versionConflict(repo, tx, ctx, id);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026: série "Só meu" é só do responsável
-  assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
   const standing = await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
+  // US-093b (SEC-059a): responsável para/de sem conta só pelo lançador ou Administrador (antes da captura)
+  assertPlannedUnlinkedPayer(ctx, row, input.responsibleMemberId, {
+    currentUnlinked: standing.ownerUnlinked,
+    nextUnlinked: await isActiveUnlinked(tx, ctx, input.responsibleMemberId),
+  });
+  assertPlannedNoCapture(ctx, row, input); // SEC-038: ninguém "captura" a prevista dividida de outro
   // D-GES-55; SEC-051 (D-GES-59): responsável ex-membro sem retorno é imutável (dividida ou "Só meu")
-  const fullPower = ctx.role === "ADMIN" && standing.ownerRemoved && !row.isSharedExpense;
+  const fullPower = adminFullPower(ctx, standing) && !row.isSharedExpense;
   assertPlannedControllerLimits(ctx, row, input, {
     fullPower,
     ownerIsActor: standing.ownerIsActor && !row.isSharedExpense,
     payerGone: standing.ownerRemoved,
   }); // SEC-043/044
-  assertPlannedResultAllowed(
+  await assertPlannedResultAllowed(
+    tx,
     ctx,
     {
       isSharedExpense: input.isSharedExpense ?? row.isSharedExpense,

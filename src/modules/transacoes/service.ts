@@ -228,7 +228,12 @@ export async function createExpenseCore(
   const payer = await repo.findMember(payerMemberId);
   if (!payer) throw invalidRef("payerMemberId", "Membro inválido");
   if (!opts.personalFromPlanned) {
-    assertPersonalForSelf(ctx, { isSharedExpense: input.isSharedExpense, payerMemberId }); // SEC-026c
+    await assertPersonalForSelf(
+      tx,
+      ctx,
+      { isSharedExpense: input.isSharedExpense, payerMemberId },
+      { assistant: opts.assistant },
+    ); // SEC-026c; US-093b: exceção do Admin, nunca pelo MCP
   }
 
   // 3) tipo x categoria

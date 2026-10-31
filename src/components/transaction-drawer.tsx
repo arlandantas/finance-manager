@@ -196,6 +196,12 @@ export function TransactionDrawer({
   // SEC-026: "Só meu" é sempre em nome de quem lança; para registrar o gasto de outra pessoa, divida.
   const myMemberId = family.data?.currentMemberId ?? defaults.data?.payerMemberId ?? "";
   const personalExpense = kind === "EXPENSE" && !(shared && splitAvailable && !splitBlocked);
+  // US-093b: o ADMIN lança "Só meu" em nome de membro ATIVO sem conta (único caso de "Só meu" em nome de outro)
+  const unlinkedIds =
+    family.data?.currentRole === "ADMIN"
+      ? (family.data.members ?? []).filter((m) => m.unlinked).map((m) => m.memberId)
+      : [];
+  const canBeSoleOwner = (id: string) => id === myMemberId || unlinkedIds.includes(id);
 
   // Porta única (SDD-031): o estado vira DoorState e `door.ts` monta o corpo do serviço escolhido.
   const today = defaults.data?.today ?? "";
@@ -233,6 +239,7 @@ export function TransactionDrawer({
     splitAvailable,
     splitBlocked: !isLater && splitBlocked,
     flags: DOOR_FLAGS,
+    unlinkedIds,
   };
   const effectivePayerId = effectivePayerOf(doorState, doorCtx);
   const avail = availability(doorState, doorCtx);
@@ -626,13 +633,13 @@ export function TransactionDrawer({
                 aria-checked={effectivePayerId === m.memberId}
                 aria-label={m.name.split(" ")[0]}
                 aria-describedby={m.unlinked ? `tx-unlinked-${m.memberId}` : undefined}
-                aria-disabled={personalExpense && m.memberId !== myMemberId ? true : undefined}
+                aria-disabled={personalExpense && !canBeSoleOwner(m.memberId) ? true : undefined}
                 onClick={() => {
-                  if (!(personalExpense && m.memberId !== myMemberId)) setPayerId(m.memberId);
+                  if (!(personalExpense && !canBeSoleOwner(m.memberId))) setPayerId(m.memberId);
                 }}
                 className={cn(
                   "flex min-h-11 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm font-medium",
-                  personalExpense && m.memberId !== myMemberId && "opacity-50",
+                  personalExpense && !canBeSoleOwner(m.memberId) && "opacity-50",
                   effectivePayerId === m.memberId
                     ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
                     : "border-slate-200 bg-white dark:bg-slate-100 text-slate-700",
@@ -699,9 +706,10 @@ export function TransactionDrawer({
             data-testid="personal-self-payer-notice"
             className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
           >
-            Despesa "Só meu" é sempre em seu nome. Depois de salvar, só você, o dono da conta (ou do
-            cartão) e quem a lançou poderão alterá-la.
-            {splitAvailable
+            {unlinkedIds.includes(effectivePayerId)
+              ? `Só meu de ${members.find((m) => m.memberId === effectivePayerId)?.name.split(" ")[0] ?? "membro"}: só você, como Administrador, e quem lançar poderão alterá-lo.`
+              : 'Despesa "Só meu" é sempre em seu nome. Depois de salvar, só você, o dono da conta (ou do cartão) e quem a lançou poderão alterá-la.'}
+            {splitAvailable && !unlinkedIds.includes(effectivePayerId)
               ? ' Para registrar o gasto de outra pessoa, ative "Dividir com a família".'
               : ""}
           </p>

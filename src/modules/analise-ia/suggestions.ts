@@ -65,6 +65,10 @@ export async function listCategorySuggestions(
     where: { familyId: ctx.familyId },
     select: { id: true, userId: true, removedAt: true },
   });
+  // US-093b: dono ATIVO sem conta (o Administrador é o tutor, igual a `assertCanWriteTransaction`)
+  const unlinked = new Set(
+    members.filter((m) => m.removedAt === null && m.userId == null).map((m) => m.id),
+  );
   // US-092a (SEC-058): `userId` nulo nunca entra no conjunto; ex-membro sem conta é sempre "removido"
   const activeUsers = new Set(
     members.flatMap((m) => (m.removedAt === null && m.userId != null ? [m.userId] : [])),
@@ -81,7 +85,8 @@ export async function listCategorySuggestions(
     if (!key) continue;
     // SEC-021: não sugere (nem deixa aceitar) mudança em "Só meu" de outro membro
     const owner = r.payerMemberId ?? r.authorMemberId;
-    if (!mine.has(owner) && !canWriteTransaction(r, ctx, removed.has(owner))) continue;
+    if (!mine.has(owner) && !canWriteTransaction(r, ctx, removed.has(owner), unlinked.has(owner)))
+      continue;
     rows.push({
       id: r.id,
       version: r.version,

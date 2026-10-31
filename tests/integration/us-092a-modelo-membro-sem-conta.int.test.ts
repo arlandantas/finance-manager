@@ -417,8 +417,8 @@ describe("092a contagens, papel, remoção e exclusões", () => {
   });
 });
 
-describe("092a D-033-4 e leitura pelas telas", () => {
-  it("sem conta ativo: 'Só meu' em nome dele por Admin ➔ 403; dividida com ele de pagador por membro comum ➔ 201", async () => {
+describe("092a D-033-4 (revogada pela 093b) e leitura pelas telas", () => {
+  it("sem conta ativo: 'Só meu' em nome dele só pelo Admin (093b revoga o 403 da D-033-4; membro comum ➔ 403); dividida com ele de pagador por membro comum ➔ 201", async () => {
     const acc = await makeAccount(fx, {
       name: "Conta",
       owner: "Mariana",
@@ -443,8 +443,16 @@ describe("092a D-033-4 e leitura pelas telas", () => {
         categoryId: cat.id,
       }),
     );
-    expect(personal.status, JSON.stringify(personal.body)).toBe(403);
-    expect(personal.body.error.code).toBe("PERSONAL_ON_BEHALF_FORBIDDEN");
+    expect(personal.status, JSON.stringify(personal.body)).toBe(201); // 093b (SDD-034 §4.2): exceção do Admin
+    const memberPersonal = await at(() =>
+      call(as("Lucas"), "POST", "/api/v1/transactions", {
+        ...body(u.memberId, false),
+        type: "EXPENSE",
+        categoryId: cat.id,
+      }),
+    );
+    expect(memberPersonal.status).toBe(403);
+    expect(memberPersonal.body.error.code).toBe("PERSONAL_ON_BEHALF_FORBIDDEN");
     const shared = await at(() =>
       call(as("Lucas"), "POST", "/api/v1/transactions", {
         ...body(u.memberId, true),

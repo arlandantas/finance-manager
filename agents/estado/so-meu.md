@@ -1,12 +1,13 @@
 # Estado vigente: "Só meu" (propriedade e controle de lançamentos)
 
-Atualizado: 2026-10-26 (após D-GES-61). Fonte de verdade: código + testes (§f). Mudou a regra? Atualize ESTE arquivo no mesmo commit.
+Atualizado: 2026-10-31 (US-093b: dono sem conta). Fonte de verdade: código + testes (§f). Mudou a regra? Atualize ESTE arquivo no mesmo commit.
 
 ## a) Resumo para o usuário
 - "Só meu" = despesa com `isSharedExpense=false` (inclui compra no cartão, parcelas, baixa de prevista, lançamento do assistente; prevista/série pelo responsável). Receita, transferência, acerto e pagamento de fatura não são "Só meu".
 - Todos veem; altera (valor, data, descrição, categoria, observação, excluir, restaurar, estornar) quem PAGOU, o DONO DA CONTA/CARTÃO e o LANÇADOR. Só o pagador muda divisão, pagador, conta e "Pagar com".
 - Ninguém torna "Só meu" o que não é seu nem cria "Só meu" em nome de outro.
 - Dono ex-membro: só o Administrador age (poderes plenos: divisão, conta, "Pagar com"), mas o pagador de ex-membro que não voltou é imutável para todos (D-GES-59). Quem volta à família (mesmo usuário, vínculo novo) recupera o controle total do item e o Administrador perde o poder pleno sobre ele (SEC-049).
+- Membro sem conta (US-093b, [SDD-034](../tech-lead/sdd/SDD-034-membro-sem-conta-atribuicao-e-acerto-us-093.md); aguarda validação do Gestor e reteste da Segurança): o Administrador é o TUTOR do "Só meu" de dono ATIVO sem conta (mesmos poderes plenos do Admin-ex, sem assumir o pagador) e é o único que cria "Só meu" em nome dele.
 - "Só meu" alheio (dono não está nos vínculos do solicitante) nunca vai à exportação.
 - Ciclo de segurança encerrado (rodadas 1..8, D-GES-61). Aberto: SEC-054/055/056 aceitos por decisão do Gestor, sujeitos a veto do usuário; UI nunca verificada no navegador.
 - Decisões que dependem do usuário: veto a D-GES-57/61 (aceites de risco); reautenticação nas exclusões (SEC-037, recomendação: manter confirmação digitada + e-mail).
@@ -23,6 +24,10 @@ Siglas: Dono = pagador (sem pagador, autor; prevista/série: responsável). DC =
 | Mudar/assumir pagador ou responsável | sim, só em nome próprio | 403 | 403 (D-GES-59) | 403 | não |
 | Pagador/responsável ex-membro sem retorno (Só meu OU dividida) | só quem voltou | 403 | 403 | 403 | n/a |
 | Exportar "Só meu" alheio | n/a | não | não | não | não |
+
+| Tutor (US-093b, `ownerUnlinked`) | Dono ATIVO sem conta (`userId` nulo), lido com `FOR SHARE` na transação (SEC-066b): `adminFullPower` = Admin sobre ex-membro OU sobre sem conta. Admin: editar, excluir, restaurar, estornar, mudar divisão/conta/"Pagar com" = sim; assumir o pagador (para si) = 403 `UNLINKED_PAYER_FORBIDDEN`; entregá-lo a terceiro = 403 `PERSONAL_ON_BEHALF_FORBIDDEN`. Membro comum: só Lanç/DC com conta (403 "Só {nomes} e um Administrador podem alterar este lançamento."; sem conta saem da lista). O aceite/remoção desliga o tutor sem migração. |
+| Criar "Só meu" em nome de sem conta (exceção SEC-026c) | Só CRIAÇÃO (`assertPersonalForSelf`/`assertPlannedResultAllowed`, agora assíncronas), só `ctx.role=ADMIN`, só dono ativo sem conta com `FOR SHARE`, NUNCA com `opts.assistant` (MCP, SEC-067). Edição que muda o pagador/responsável de "Só meu" segue 403. Membro, Admin para membro com conta e Admin para ex-membro sem conta: 403 `PERSONAL_ON_BEHALF_FORBIDDEN`. |
+| Pagador/responsável para ou de sem conta (SEC-059a) | `violatesUnlinkedPayerChange`: só o Lanç (autor) ou o Admin; Admin não autor nunca para si (403 `UNLINKED_PAYER_FORBIDDEN`, "Você não pode se colocar como pagador no lugar de quem não tem acesso ao app. Escolha outro membro."); não autor não Admin: 403 "Apenas quem lançou ou o Administrador pode definir este pagador.". Vale em lançamento à vista/cartão/parcelado (EXPENSE), prevista e série; receita fora. Verificada ANTES da trava de captura. Torná-la "Só meu" a dividida paga por sem conta: 403 `PERSONAL_OWNER_ONLY` para todos (Q-TL-U2). |
 
 | Por tipo | Regra |
 | :-- | :-- |
@@ -63,7 +68,8 @@ Mensagens 403 (`PERSONAL_OWNER_ONLY`): lista de nomes ("Só A, B e C podem alter
 Todos sujeitos a veto do usuário.
 
 ## e) Em andamento / pendências
-- Nada em implementação. Ciclo de segurança do "Só meu" encerrado (D-GES-61); novos achados só de mudanças futuras.
+- US-093b implementada (TASK-098), aguarda validação do Gestor, revisão do TL (`ownership.ts`) e reteste da Segurança (SEC-059a, SEC-066b, SEC-067). UI do tutor/pagador (seletores desabilitados, dicas) coberta por E2E, nunca vista no navegador. DEV-163: o autor Admin de um "Só meu" de sem conta pode trocar o pagador para si (Lanç isento, SDD-034 R4).
+- Nada mais em implementação. Ciclo de segurança do "Só meu" encerrado (D-GES-61); novos achados só de mudanças futuras.
 - Verificação no navegador da UI (seletor "Quem pagou?" fixo para ex-membro, campos desabilitados, `pay-drawer` de quem só controla): NUNCA feita (D-GES-54/56/58/60).
 - Polimento citado em D-GES-54/56 (seletor vazio para Admin-ex; `pay-drawer` de quem só controla enviava pagador próprio e levava 403): não confirmado como resolvido.
 - Usuário: veto aos aceites; SEC-037 (reautenticação).
@@ -71,7 +77,7 @@ Todos sujeitos a veto do usuário.
 
 ## f) Mapa de fontes
 Código (`src/modules/`): `transacoes/ownership.ts` (regra única: `canWriteTransaction`, `assertCanWriteTransaction`, `assertCanMakePersonal`, `ownerStanding`, `isAdminOverRemovedOwner`, `canChangeStructure`, `violatesGonePayerLock`, `effectiveOwner`, planned*); `transacoes/{service,mutations,installment-manage,installment-create}.ts`; `previstas/{service,recurring-service}.ts`; `cartoes/service.ts` (`CARD_OWNER_ONLY`); `privacidade/export.ts`; `mcp/assistant-write.ts`; `analise-ia/suggestions.ts`; UI: `app/(app)/extrato/{edit-transaction-form,transaction-detail-drawer}.tsx`, `previstas/{planned-drawer,pay-drawer}.tsx`.
-Testes (`tests/`): `unit/sec021-ownership.test.ts`; `integration/` `sec021-so-meu-dono`, `us084-so-meu-controle`, `sec042-046-so-meu-reteste`, `sec047-050-reteste-rodada6`, `d-ges-55-admin-poderes-plenos`, `d-ges-59-pagador-ex-membro-imutavel`, `sec025-026-so-meu-regras`, `us-030-so-meu-por-padrao`, `sec029-032-exportacao`, `us076-lancar-direto`.
+Testes (`tests/`): `unit/sec021-ownership.test.ts`, `unit/transacoes/unlinked-payer.test.ts`, `unit/meta/member-reads.test.ts` (estático: `await`, `FOR SHARE`, MCP); `integration/us-093b-so-meu-e-pagador-sem-conta` (20; matriz, concorrência aceite×Admin); E2E `US-093-*.feature`; `integration/` `sec021-so-meu-dono`, `us084-so-meu-controle`, `sec042-046-so-meu-reteste`, `sec047-050-reteste-rodada6`, `d-ges-55-admin-poderes-plenos`, `d-ges-59-pagador-ex-membro-imutavel`, `sec025-026-so-meu-regras`, `us-030-so-meu-por-padrao`, `sec029-032-exportacao`, `us076-lancar-direto`.
 Docs: [US-084](../product-owner/backlog/stories/US-084-lancamento-so-meu-so-o-dono-altera.md); [SDD-028 §11](../tech-lead/sdd/SDD-028-correcoes-de-seguranca-grupo-b.md); [decisões D-GES-42..61](../manager/decisoes-do-gestor.md); relatórios em [`security/relatorios/`](../_historico/security/relatorios/) (`reteste-so-meu-2026-10-25`, `reteste-rodada6/7/8`); D-PO-91..98 em [decisoes-po-seguranca-sec.md](../_historico/product-owner/backlog/decisoes-po-seguranca-sec.md).
 
 | Regra | Origem |

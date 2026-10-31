@@ -308,6 +308,11 @@ describe("SEC-049 dono ativo: o mesmo usuário com vínculo ativo na mesma famí
   /** tx falso: só `member.findFirst`, com o filtro por `where` aplicado como o Prisma faria. */
   const fakeTx = (members: M[]) =>
     ({
+      // US-093b: `ownerStanding` lê o dono por `$queryRaw ... FOR SHARE` (valores: id do dono, id da família)
+      $queryRaw: async (_sql: TemplateStringsArray, ownerId: string, familyId: string) =>
+        members
+          .filter((m) => m.id === ownerId && m.familyId === familyId)
+          .map((m) => ({ removedAt: m.removedAt, userId: m.userId })),
       member: {
         findFirst: async ({ where }: { where: Record<string, unknown> }) =>
           members.find(
@@ -334,10 +339,12 @@ describe("SEC-049 dono ativo: o mesmo usuário com vínculo ativo na mesma famí
     expect(await ownerStanding(tx, actor("new", "u-lucas"), "old")).toEqual({
       ownerIsActor: true,
       ownerRemoved: false,
+      ownerUnlinked: false,
     });
     expect(await ownerStanding(tx, actor("adm", "u-adm", "ADMIN"), "old")).toEqual({
       ownerIsActor: false,
       ownerRemoved: false,
+      ownerUnlinked: false,
     });
     expect(await isAdminOverRemovedOwner(tx, actor("adm", "u-adm", "ADMIN"), "old")).toBe(false);
   });
@@ -346,6 +353,7 @@ describe("SEC-049 dono ativo: o mesmo usuário com vínculo ativo na mesma famí
     expect(await ownerStanding(tx, actor("adm", "u-adm", "ADMIN"), "bye")).toEqual({
       ownerIsActor: false,
       ownerRemoved: true,
+      ownerUnlinked: false,
     });
     expect(await isAdminOverRemovedOwner(tx, actor("adm", "u-adm", "ADMIN"), "bye")).toBe(true);
     expect(await isAdminOverRemovedOwner(tx, actor("adm", "u-adm"), "bye")).toBe(false); // Membro, não
@@ -355,6 +363,7 @@ describe("SEC-049 dono ativo: o mesmo usuário com vínculo ativo na mesma famí
     expect(await ownerStanding(tx, actor("x", "u-x"), "far")).toEqual({
       ownerIsActor: false,
       ownerRemoved: false,
+      ownerUnlinked: false,
     });
   });
   it("assertCanMakePersonal e limites da prevista: ownerIsActor age como dono", () => {
@@ -402,5 +411,40 @@ describe("SEC-049 dono ativo: o mesmo usuário com vínculo ativo na mesma famí
     expect(refs.get("old")?.activeId).toBe("new");
     expect(refs.get("bye")?.activeId).toBeUndefined();
     expect(refs.get("new")?.activeId).toBeUndefined();
+  });
+});
+
+// US-093b (SDD-034 §7.1-3): dono ATIVO sem conta, o Administrador é o tutor.
+describe("US-093b ownerUnlinked: tutor", () => {
+  it("canWriteTransaction: Admin sim; membro não; autor segue pelo ramo de controladores; ex-membro prevalece", () => {
+    expect(canWriteTransaction(row(), member("m2", "ADMIN"), false, true)).toBe(true);
+    expect(canWriteTransaction(row(), member("m2"), false, true)).toBe(false);
+    expect(canWriteTransaction(row({ authorMemberId: "m2" }), member("m2"), false, true)).toBe(
+      true,
+    );
+    // removido + unlinked (flag falso na prática: standing devolve ownerRemoved): regra de ex-membro
+    expect(canWriteTransaction(row(), member("m2"), true, false)).toBe(false);
+    expect(canWriteTransaction(row(), member("m2", "ADMIN"), true, false)).toBe(true);
+  });
+  it("canWritePlanned e canChangeStructure com ownerUnlinked", () => {
+    const planned = { isSharedExpense: false, responsibleMemberId: "m1", authorMemberId: "m3" };
+    expect(canWritePlanned(planned, member("m2", "ADMIN"), false, true)).toBe(true);
+    expect(canWritePlanned(planned, member("m2"), false, true)).toBe(false);
+    expect(canChangeStructure("m1", member("m2", "ADMIN"), false, true)).toBe(true);
+    expect(canChangeStructure("m1", member("m2"), false, true)).toBe(false);
+    expect(canChangeStructure("m1", member("m2", "ADMIN"), false, false)).toBe(false);
+  });
+  it("controllerNames: sem conta sai da lista e 'um Administrador' entra com adminCan", () => {
+    const members = [
+      { id: "mar", name: "Mariana Silva" },
+      { id: "ana", name: "Ana", unlinked: true as const },
+    ];
+    expect(controllerNames(["ana", "mar"], members)).toEqual(["Mariana"]);
+    expect(personalWriteMessage(controllerNames(["ana", "mar"], members, { adminCan: true }))).toBe(
+      "Só Mariana e um Administrador podem alterar este lançamento.",
+    );
+    expect(personalWriteMessage(controllerNames(["ana"], members, { adminCan: true }))).toBe(
+      "Só um Administrador pode alterar este lançamento.",
+    );
   });
 });

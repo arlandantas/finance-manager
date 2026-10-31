@@ -14,7 +14,12 @@ import { memberOptionLabel } from "@/modules/familia/display-name";
 import { useFamily } from "@/modules/familia/hooks";
 import { normalizeTagKey } from "@/modules/tags/normalize";
 import { useUpdateTransaction } from "@/modules/transacoes/hooks";
-import { canChangeStructure, effectiveOwner } from "@/modules/transacoes/ownership";
+import {
+  canChangeStructure,
+  effectiveOwner,
+  UNLINKED_PAYER_MESSAGE,
+  UNLINKED_PAYER_SELF_MESSAGE,
+} from "@/modules/transacoes/ownership";
 import { type TransactionDetailDTO, UpdateTransactionSchema } from "@/modules/transacoes/schemas";
 
 type FieldKey =
@@ -68,11 +73,31 @@ export function EditTransactionForm({
   const ownerId = owner.id ?? t.author.id;
   // D-GES-55/59: o Administrador atual sobre o "Só meu" de ex-membro altera divisão, conta e "Pagar com" (não o pagador)
   const ownerGone = owner.removed;
+  // US-093b (ADR-033 §5): o Administrador é o tutor do "Só meu" de dono ATIVO sem conta (mesmos poderes plenos)
+  const payerUnlinked = Boolean(t.payer?.unlinked && !t.payer.removed);
   const fullPower = canChangeStructure(
     ownerId,
     { memberId: myMemberId, role: family.data?.currentRole },
     ownerGone,
+    payerUnlinked,
   );
+  const isAdmin = family.data?.currentRole === "ADMIN";
+  const isAuthor = t.author.id === myMemberId;
+  // SEC-059a (SDD-034 §4.8): pagador para/de sem conta só pelo lançador ou Administrador, nunca o Admin para si
+  const lockUnlinkedPersonal = kind === "EXPENSE" && payerUnlinked && !t.isSharedExpense;
+  const familyHasUnlinked = (family.data?.members ?? []).some((m) => m.unlinked);
+  const unlinkedPayerHint = !payerUnlinked
+    ? familyHasUnlinked && !isAuthor && !isAdmin
+      ? UNLINKED_PAYER_MESSAGE
+      : undefined
+    : lockUnlinkedPersonal
+      ? `O pagador só muda quando ${t.payer?.name.split(" ")[0] ?? "o membro"} entrar no app.`
+      : !isAuthor && !isAdmin
+        ? UNLINKED_PAYER_MESSAGE
+        : !isAuthor
+          ? UNLINKED_PAYER_SELF_MESSAGE
+          : undefined;
+  const lockUnlinkedForMember = kind === "EXPENSE" && payerUnlinked && !isAuthor && !isAdmin;
   const controllerOnly =
     kind === "EXPENSE" &&
     !t.isSharedExpense &&
@@ -84,7 +109,11 @@ export function EditTransactionForm({
   // em "Só meu" e em dividida (a API também recusa)
   const lockGonePayer = kind === "EXPENSE" && ownerGone;
   const effectivePayerId =
-    controllerOnly || lockGonePayer ? ownerId : personalExpense ? myMemberId : payerId;
+    controllerOnly || lockGonePayer || lockUnlinkedPersonal || lockUnlinkedForMember
+      ? ownerId
+      : personalExpense
+        ? myMemberId
+        : payerId;
 
   const tagKeys = (list: string[]) => list.map(normalizeTagKey).sort().join("|");
   const tagsChanged = tagKeys(tags) !== tagKeys(t.tags.map((x) => x.name));
@@ -189,11 +218,12 @@ export function EditTransactionForm({
     label: string,
     value: string,
     set: (v: string) => void,
-    options: Array<{ id: string; name: string }>,
+    options: Array<{ id: string; name: string; disabled?: boolean }>,
     error?: string,
     disabled?: boolean,
+    hint?: string,
   ) => (
-    <Field id={id} label={label} error={error}>
+    <Field id={id} label={label} error={error} {...(hint ? { hint } : {})}>
       <select
         id={id}
         className={inputClass}
@@ -203,7 +233,7 @@ export function EditTransactionForm({
         aria-invalid={error ? true : undefined}
       >
         {options.map((o) => (
-          <option key={o.id} value={o.id}>
+          <option key={o.id} value={o.id} disabled={o.disabled === true}>
             {o.name}
           </option>
         ))}
@@ -276,7 +306,7 @@ export function EditTransactionForm({
         [
           ...(family.data?.members ?? [])
             .filter((m) =>
-              controllerOnly || lockGonePayer
+              controllerOnly || lockGonePayer || lockUnlinkedPersonal || lockUnlinkedForMember
                 ? m.memberId === ownerId
                 : !personalExpense || m.memberId === myMemberId,
             )
@@ -286,6 +316,12 @@ export function EditTransactionForm({
                 name: m.name.split(" ")[0] ?? m.name,
                 unlinked: m.unlinked,
               }),
+              // SEC-059a: sem ser o lançador, só o Administrador põe/tira o sem conta, e nunca a si mesmo
+              disabled:
+                !isAuthor &&
+                m.memberId !== ownerId &&
+                ((m.unlinked === true && !isAdmin) ||
+                  (payerUnlinked && isAdmin && m.memberId === myMemberId)),
             })),
           // o pagador atual que saiu da família continua visível como opção atual (rotulada)
           ...(ownerGone &&
@@ -300,7 +336,8 @@ export function EditTransactionForm({
             : []),
         ],
         errors.payerMemberId,
-        controllerOnly || lockGonePayer,
+        controllerOnly || lockGonePayer || lockUnlinkedPersonal || lockUnlinkedForMember,
+        unlinkedPayerHint,
       )}
       {kind === "EXPENSE" ? (
         <div className="flex min-h-11 items-center justify-between gap-3">

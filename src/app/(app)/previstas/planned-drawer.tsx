@@ -38,7 +38,10 @@ import { useDefaults } from "@/modules/transacoes/hooks";
 import {
   canChangeStructure,
   effectiveOwner,
+  UNLINKED_PAYER_MESSAGE,
+  UNLINKED_PAYER_SELF_MESSAGE,
   violatesPlannedCapture,
+  violatesUnlinkedPayerChange,
 } from "@/modules/transacoes/ownership";
 import { monthLabel } from "../extrato/filters";
 
@@ -186,24 +189,44 @@ export function PlannedDrawer({
   // SEC-049: quem voltou à família é o mesmo responsável (o vínculo antigo aponta o vínculo ativo atual)
   const owner = effectiveOwner(existing?.responsible);
   const ownerId = owner.id;
+  // US-093b (ADR-033 §5): o Administrador é o tutor do "Só meu" de responsável ATIVO sem conta
+  const responsibleUnlinked = Boolean(
+    existing?.responsible.unlinked && !existing.responsible.removed,
+  );
+  const isAdmin = family.data?.currentRole === "ADMIN";
   const fullPower =
     !!me &&
     !!existing &&
     !!ownerId &&
-    canChangeStructure(ownerId, { memberId: me, role: family.data?.currentRole }, owner.removed);
+    canChangeStructure(
+      ownerId,
+      { memberId: me, role: family.data?.currentRole },
+      owner.removed,
+      responsibleUnlinked,
+    );
+  // SEC-026c (US-093b): na CRIAÇÃO, só o ADMIN cria "Só meu" em nome de membro ativo sem conta
+  const unlinkedIds =
+    isAdmin && !existing
+      ? (family.data?.members ?? []).filter((m) => m.unlinked).map((m) => m.memberId)
+      : [];
+  const canBeSoleOwner = (id: string) => id === me || unlinkedIds.includes(id);
+  const lockUnlinkedPersonal = !!existing && responsibleUnlinked && !existing.isSharedExpense;
   const controllerOnly =
     !!me && !!existing && !existing.isSharedExpense && ownerId !== me && !fullPower;
   // D-GES-59 (SEC-048/051): o responsável ex-membro (que não voltou) é fixo para todos, inclusive o Administrador,
   // em "Só meu" e em dividida (a API também recusa)
   const goneResponsible = owner.removed ? (existing?.responsible ?? null) : null;
   const lockGoneResponsible = !!goneResponsible;
-  const effectiveResponsibleId = controllerOnly
-    ? ownerId
-    : lockGoneResponsible
-      ? goneResponsible?.id
-      : personalPlanned && me
-        ? me
-        : responsibleId;
+  const effectiveResponsibleId =
+    controllerOnly || lockUnlinkedPersonal
+      ? ownerId
+      : lockGoneResponsible
+        ? goneResponsible?.id
+        : personalPlanned && me
+          ? unlinkedIds.includes(responsibleId)
+            ? responsibleId
+            : me
+          : responsibleId;
   // SEC-038: numa dividida de outro, não dá para virar "Só meu" nem se pôr como responsável (a API também recusa)
   const capture = (next: { isSharedExpense?: boolean; responsibleMemberId?: string }) =>
     !!me &&
@@ -218,8 +241,34 @@ export function PlannedDrawer({
       next,
     );
   const cannotBePersonal = capture({ isSharedExpense: false });
+  // SEC-059a: responsável para/de sem conta só pelo lançador ou Administrador (nunca o Admin para si)
+  const unlinkedViolation = (memberId: string) =>
+    !!me && !!existing
+      ? violatesUnlinkedPayerChange(
+          { memberId: me, ...(family.data?.currentRole ? { role: family.data.currentRole } : {}) },
+          { payerId: ownerId ?? existing.responsible.id, authorMemberId: existing.author.id },
+          memberId,
+          {
+            currentUnlinked: responsibleUnlinked,
+            nextUnlinked: (family.data?.members ?? []).some(
+              (m) => m.memberId === memberId && m.unlinked === true,
+            ),
+          },
+        )
+      : false;
   const cannotTakeOver = (memberId: string) =>
-    controllerOnly || lockGoneResponsible || capture({ responsibleMemberId: memberId });
+    controllerOnly ||
+    lockUnlinkedPersonal ||
+    lockGoneResponsible ||
+    capture({ responsibleMemberId: memberId }) ||
+    unlinkedViolation(memberId) !== false;
+  const unlinkedHint = lockUnlinkedPersonal
+    ? `O responsável só muda quando ${existing?.responsible.name.split(" ")[0] ?? "o membro"} entrar no app.`
+    : (family.data?.members ?? []).some((m) => unlinkedViolation(m.memberId) === "NOT_AUTHOR")
+      ? UNLINKED_PAYER_MESSAGE
+      : (family.data?.members ?? []).some((m) => unlinkedViolation(m.memberId) === "ADMIN_SELF")
+        ? UNLINKED_PAYER_SELF_MESSAGE
+        : null;
   useEffect(() => {
     if (open && !planned && me) setResponsibleId((cur) => cur || me);
   }, [open, planned, me]);
@@ -534,17 +583,19 @@ export function PlannedDrawer({
                   aria-label={m.name.split(" ")[0]}
                   aria-describedby={m.unlinked ? `pl-unlinked-${m.memberId}` : undefined}
                   aria-disabled={
-                    (personalPlanned && m.memberId !== me) || cannotTakeOver(m.memberId)
+                    (personalPlanned && !canBeSoleOwner(m.memberId)) || cannotTakeOver(m.memberId)
                       ? true
                       : undefined
                   }
                   onClick={() => {
                     if (cannotTakeOver(m.memberId)) return;
-                    if (!(personalPlanned && m.memberId !== me)) setResponsibleId(m.memberId);
+                    if (!(personalPlanned && !canBeSoleOwner(m.memberId)))
+                      setResponsibleId(m.memberId);
                   }}
                   className={cn(
                     "flex min-h-11 items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-sm font-medium",
-                    ((personalPlanned && m.memberId !== me) || cannotTakeOver(m.memberId)) &&
+                    ((personalPlanned && !canBeSoleOwner(m.memberId)) ||
+                      cannotTakeOver(m.memberId)) &&
                       "opacity-50",
                     effectiveResponsibleId === m.memberId
                       ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
@@ -579,6 +630,11 @@ export function PlannedDrawer({
                 </button>
               ) : null}
             </div>
+            {unlinkedHint ? (
+              <p role="note" data-testid="unlinked-payer-hint" className="text-xs text-slate-600">
+                {unlinkedHint}
+              </p>
+            ) : null}
           </div>
 
           {splitAvailable ? (
