@@ -885,6 +885,24 @@ describe("9c. ordem de travas: conta (atual e nova) ANTES do dono, com a conta p
       }),
     );
   }, 90000);
+
+  it("encerrar a série: ocorrência editada com conta diferente da série (X) presa FOR UPDATE", async () => {
+    const created = await api("Mariana", "POST", "/recurring-expenses", {
+      ...(await series(ana.memberId, false)),
+      startMonth: "2026-11",
+    });
+    const s = created.body.series as { id: string; version: number };
+    const occ = await db.plannedExpense.findMany({ where: { seriesId: s.id, deletedAt: null } });
+    expect(occ.length).toBeGreaterThan(0);
+    // simula a edição da ocorrência com outra conta de pagamento (≠ conta da série)
+    await db.plannedExpense.update({
+      where: { id: (occ[0] as { id: string }).id },
+      data: { paymentAccountId: poupAna.id },
+    });
+    await scenario("encerrar série, X na ocorrência", poupAna.id, ana.memberId, () =>
+      api("Bia", "POST", `/recurring-expenses/${s.id}/end`, { version: s.version }),
+    );
+  }, 60000);
 });
 
 describe("9d. ordem de travas: cartão e conta do estorno ANTES do dono (SDD-034 R2)", () => {

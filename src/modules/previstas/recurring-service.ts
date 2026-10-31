@@ -409,15 +409,21 @@ export async function endSeries(
   if (!row) throw notFound(NOT_FOUND);
   if (row.endedAt) throw seriesEnded();
   if (row.version !== version) throw await versionConflict(repo, tx, ctx, id);
-  await assertCanWritePlanned(tx, ctx, row); // SEC-026
-  const now = ctx.clock.now();
-  const res = await repo.markEnded(id, version, ctx.memberId, now);
-  if (res.count === 0) throw await versionConflict(repo, tx, ctx, id);
+  // Ordem de travas (SDD-034 R2): contas da série e de TODAS as candidatas ANTES de qualquer leitura do dono
+  // (`assertCanWritePlanned`/`plannedWriteDecision` travam o dono com FOR SHARE); a ocorrência editada pode ter outra conta.
   const candidates = await repo.pendingOccurrences(
     id,
     monthStr(row.startMonth) as MonthISO,
     todayInFamilyTz(ctx.clock),
   );
+  await shareLockAccounts(tx, ctx.familyId, [
+    row.paymentAccountId,
+    ...candidates.map((o) => o.paymentAccountId),
+  ]);
+  await assertCanWritePlanned(tx, ctx, row); // SEC-026
+  const now = ctx.clock.now();
+  const res = await repo.markEnded(id, version, ctx.memberId, now);
+  if (res.count === 0) throw await versionConflict(repo, tx, ctx, id);
   // SEC-045: as ocorrências "Só meu" que o ator não controla ficam (encerrar não contorna a regra de excluir)
   const pending: typeof candidates = [];
   for (const o of candidates) {
