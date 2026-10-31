@@ -1,7 +1,7 @@
 # SDD-034: Membro sem conta: seletores e titular (US-093a); pagador, responsável, "Só meu" e acerto (US-093b)
 
 - **História**: [US-093](../../product-owner/backlog/stories/US-093-atribuir-contas-e-lancamentos-ao-membro-sem-conta.md) · **Necessidade**: [NEED-028](../../stakeholder/needs/NEED-028-membro-sem-conta-ativa-e-convite-posterior.md) (RN-028.1, 028.4, 028.5; Q-U16) · **Fluxo**: FLUXO-020 · **ADR**: [ADR-033](../adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md) §3, §5, §6 · **SDD anterior**: [SDD-033](SDD-033-membro-sem-conta-modelo-e-cadastro-us-092.md) (092a/092b implementadas) · **Segurança**: revisão de 2026-10-30, **SEC-059 (a, b)**, **SEC-066b**, **SEC-067** (relatório `agents/security/relatorios/revisao-adr033-2026-10-30.md`); SEC-059c fica na 094b · **Decisões**: Q-TL-U1/U2/U3 (D-GES-63), D-GES-47/50/52/55/59, D-033-4
-- **Status**: **Aprovado para Dev (ratificado D-GES-66)** · **Autor**: Agente Tech Lead · **Data**: 2026-10-31
+- **Status**: **Implementado** (093a TASK-097, b9b4d54; 093b TASK-098, 065b020 + 448558d, 463aa7e, 3842d74; 7,5 pts; ratificado D-GES-66) · **Autor**: Agente Tech Lead · **Data**: 2026-10-31
 - **Estimativa (TL)**: **7,5 pts** = 093a **3** + 093b **4,5** (ADR-033 §6 dizia 8; −0,5 pela decisão do usuário sobre SEC-059b, D-GES-66). **Executor**: Dev & QA, **Sonnet**; 093b toca o "Só meu" e o acerto: revisão final do TL (Opus) no diff de `ownership.ts`/`split/service.ts` e **reteste da Segurança** antes de fechar.
 - **Restrição**: **nenhuma migração de schema**; nenhum motor de acerto (`split/settlement*.ts`, `split-amount.ts`, `rules.ts`) muda; nenhuma linha de ledger é reescrita. S1..S16, V1..V10 e o harness de 240 famílias intactos.
 

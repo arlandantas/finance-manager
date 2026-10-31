@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-26 Previsão unificada · **UR-1 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should** · 3,3 (V5/U3/R2) · **3** |
-| Status | **Entregue e aceita pelo Gestor (D-GES-66)** (commits ef989b6, ea0559a; DEV-158..160; navegador real pendente). Antes: **SDD pronto (no SDD-031), aprovada para Dev** (2026-10-26): [SDD-031](../../../tech-lead/sdd/SDD-031-porta-unica-lancar-ou-prever-us-090-091.md) §7, **3 pts confirmados pelo TL** (reaproveita o serviço de séries) |
+| Status | **Entregue e aceita pelo Gestor (D-GES-66)** (commits ef989b6, ea0559a, ffe2178; DEV-158..160; teste do hook e navegador real feitos em ffe2178). Antes: **SDD pronto (no SDD-031), aprovada para Dev** (2026-10-26): [SDD-031](../../../tech-lead/sdd/SDD-031-porta-unica-lancar-ou-prever-us-090-091.md) §7, **3 pts confirmados pelo TL** (reaproveita o serviço de séries) |
 | Depende de | **US-090**, US-058/059 (séries, implementadas) |
 | Corte | Cortável sem afetar a US-090 (a série segue acessível pela tela "Previstas") |
 | Rastreabilidade | **NEED-031** RN-031.6 · **Q-U21 (usuário, 2026-10-26)** · NEED-004 · FLUXO-005, FLUXO-019 · D-PO-102 |
