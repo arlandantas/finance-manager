@@ -7,6 +7,7 @@ import { periodFromKey, periodOf } from "@/lib/period";
 import type { MemberRef } from "@/lib/schemas";
 import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
+import { toMemberRef } from "@/modules/familia/display-name";
 import { previstasRepo } from "@/modules/previstas/repo";
 import { isPlannedOverdue, plannedDifference } from "@/modules/previstas/rules";
 import type {
@@ -41,13 +42,7 @@ type MemberRow = Awaited<ReturnType<Repo["listMembers"]>>[number];
 
 const NOT_FOUND = "Despesa prevista não encontrada.";
 
-export const memberRefOf = (m: MemberRow): MemberRef => ({
-  id: m.id,
-  name: m.user.name ?? localPart(m.user.email),
-  image: m.user.image,
-  ...(m.removedAt ? { removed: true as const } : {}),
-  ...(m.user.deletedAt ? { deleted: true as const } : {}),
-});
+export const memberRefOf = (m: MemberRow): MemberRef => toMemberRef(m);
 
 export async function memberMap(repo: Repo): Promise<Map<string, MemberRef>> {
   return memberRefsWithReturn(await repo.listMembers(), memberRefOf);

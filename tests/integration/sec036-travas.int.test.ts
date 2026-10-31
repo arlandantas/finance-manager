@@ -13,14 +13,25 @@ beforeEach(async () => {
 });
 
 describe("SEC-036 search_path fixo nas funções de trava", () => {
-  it("todas as funções de trava têm search_path = pg_catalog, public", async () => {
+  it("TODAS as funções do schema public têm search_path = pg_catalog, public (SEC-065)", async () => {
     const rows = await db.$queryRaw<Array<{ proname: string; proconfig: string[] | null }>>`
-      SELECT proname, proconfig FROM pg_proc
-      WHERE pronamespace = 'public'::regnamespace
-        AND proname IN ('purge_family_bypass','forbid_mutation','family_events_guard','ai_consent_append_only',
-                        'mcp_audit_guard','tx_split_integrity','tx_sync_competence',
-                        'installment_plan_paid_before_immutable')`;
-    expect(rows).toHaveLength(8);
+      SELECT p.proname, p.proconfig FROM pg_proc p
+      WHERE p.pronamespace = 'public'::regnamespace`; // plpgsql e sql: toda função própria do schema
+    const names = rows.map((r) => r.proname);
+    // as 8 funções de trava de antes + o gatilho do vínculo de membro (US-092a)
+    for (const n of [
+      "purge_family_bypass",
+      "forbid_mutation",
+      "family_events_guard",
+      "ai_consent_append_only",
+      "mcp_audit_guard",
+      "tx_split_integrity",
+      "tx_sync_competence",
+      "installment_plan_paid_before_immutable",
+      "members_link_guard",
+    ]) {
+      expect(names, n).toContain(n);
+    }
     for (const r of rows) {
       expect(r.proconfig, r.proname).toContain("search_path=pg_catalog, public");
     }

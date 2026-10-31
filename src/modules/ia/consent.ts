@@ -1,5 +1,6 @@
 import { badRequest, conflict, forbidden, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
+import { memberDisplayName } from "@/modules/familia/display-name";
 import { getLlmConfig } from "@/modules/ia/config";
 import {
   AiPurposeSchema,
@@ -86,9 +87,9 @@ async function featureDto(
       at: last.createdAt.toISOString(),
       by: {
         id: last.memberId,
-        name: m ? (m.user.name ?? m.user.email.split("@")[0] ?? "Membro") : "Membro",
+        name: m ? memberDisplayName(m) : "Membro",
         former: m?.removedAt != null,
-        ...(m?.user.deletedAt ? { deleted: true as const } : {}),
+        ...(m?.user?.deletedAt ? { deleted: true as const } : {}),
       },
       textVersion: last.textVersion,
     };

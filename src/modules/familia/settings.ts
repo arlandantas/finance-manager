@@ -2,6 +2,7 @@ import { conflict } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { todayInFamilyTz } from "@/lib/dates";
 import { periodOf } from "@/lib/period";
+import { memberFirstName } from "@/modules/familia/display-name";
 import type { UpdateFamilySettingsInput } from "@/modules/familia/schemas";
 import { pendingSettlementMonths } from "@/modules/split/pending";
 
@@ -50,7 +51,7 @@ export async function updateFamilySettings(
           include: { user: true },
         })
       : null;
-    const name = (who?.user.name ?? who?.user.email.split("@")[0] ?? "outra pessoa").split(" ")[0];
+    const name = who ? memberFirstName(who) : "outra pessoa";
     throw conflict(
       "VERSION_CONFLICT",
       `A família foi alterada por ${name}. Recarregue para continuar.`,

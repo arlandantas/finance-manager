@@ -5,6 +5,7 @@ import type { RequestContext, Tx, UserContext } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import type { SessionUser } from "@/lib/auth/session";
 import { getClock } from "@/lib/clock";
+import { memberDisplayName } from "@/modules/familia/display-name";
 import {
   invitationGateState,
   listDeclinedInvitations,
@@ -128,7 +129,7 @@ async function listFamilyEvents(tx: Tx, ctx: RequestContext): Promise<FamilyDTO[
   });
   const name = (id: string) => {
     const m = members.find((x) => x.id === id);
-    return { id, name: m ? (m.user.name ?? localPart(m.user.email)) : "Membro" };
+    return { id, name: m ? memberDisplayName(m) : "Membro" };
   };
   return rows.map((r) => ({
     type: r.type,
@@ -156,19 +157,21 @@ export async function getFamily(tx: Tx, ctx: RequestContext): Promise<FamilyDTO>
     currentRole: ctx.role,
     members: members.map((m) => ({
       memberId: m.id,
-      name: m.user.name ?? localPart(m.user.email),
-      email: m.user.email,
-      image: m.user.image,
+      name: memberDisplayName(m),
+      email: m.user?.email ?? null, // sem conta: nunca e-mail (nem o pendente) para a lista de membros
+      image: m.user?.image ?? null,
       role: toRole(m.role),
       joinedAt: m.joinedAt.toISOString(),
-      canChangeRole: ctx.role === "ADMIN",
+      ...(m.user === null ? { unlinked: true as const } : {}),
+      canChangeRole: ctx.role === "ADMIN" && m.user !== null,
     })),
     exMembers: (await repos.familia.listExMembers()).map((m) => ({
       id: m.id,
-      name: m.user.name ?? localPart(m.user.email),
-      image: m.user.image,
+      name: memberDisplayName(m),
+      image: m.user?.image ?? null,
       removedAt: (m.removedAt as Date).toISOString(),
-      ...(m.user.deletedAt ? { deleted: true as const } : {}),
+      ...(m.user?.deletedAt ? { deleted: true as const } : {}),
+      ...(m.user === null ? { unlinked: true as const } : {}),
     })),
     events: await listFamilyEvents(tx, ctx),
     pendingInvitations: ctx.role === "ADMIN" ? await listPendingInvitations(tx, ctx) : [],

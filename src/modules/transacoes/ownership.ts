@@ -1,6 +1,7 @@
 import { forbidden } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import type { MemberRef } from "@/lib/schemas";
+import { type MemberNameSource, memberFirstName, samePerson } from "@/modules/familia/display-name";
 
 // SEC-021 (D-GES-42, DEV-88) revisado por D-GES-50 (DEV-120): lançamento "Só meu" é alterado (editar,
 // excluir, restaurar, estornar/dar baixa) por quem TEM CONTROLE sobre ele. Os demais membros continuam
@@ -114,7 +115,9 @@ export async function ownerStanding(
     select: { removedAt: true, userId: true },
   });
   if (!owner || owner.removedAt == null) return { ownerIsActor: false, ownerRemoved: false };
-  if (owner.userId === ctx.userId) return { ownerIsActor: true, ownerRemoved: false };
+  // US-092a (SEC-058): sem conta nunca "volta" nem é o ator; `userId: null` no `where` casaria QUALQUER cadastro ativo
+  if (owner.userId == null) return { ownerIsActor: false, ownerRemoved: true };
+  if (samePerson(owner.userId, ctx.userId)) return { ownerIsActor: true, ownerRemoved: false };
   const returned = await tx.member.findFirst({
     where: { familyId: ctx.familyId, userId: owner.userId, removedAt: null },
     select: { id: true },
@@ -124,7 +127,11 @@ export async function ownerStanding(
 
 /** SEC-049: marca (`activeId`) o vínculo removido cujo usuário voltou à família, para a UI tratá-lo como o mesmo dono. */
 export function memberRefsWithReturn<
-  R extends { id: string; userId?: string | undefined; removedAt?: Date | null | undefined },
+  R extends {
+    id: string;
+    userId?: string | null | undefined;
+    removedAt?: Date | null | undefined;
+  },
 >(rows: R[], toRef: (row: R) => MemberRef): Map<string, MemberRef> {
   const activeByUser = new Map(
     rows.filter((m) => !m.removedAt && m.userId).map((m) => [m.userId as string, m.id] as const),
@@ -158,8 +165,7 @@ export function canWriteTransaction(
   return personalControllerIds(row).includes(viewer.memberId);
 }
 
-const firstName = (m: { user: { name: string | null; email: string } }) =>
-  (m.user.name ?? m.user.email.split("@")[0] ?? "").trim().split(/\s+/)[0] || "Membro";
+const firstName = (m: MemberNameSource) => memberFirstName(m).trim() || "Membro";
 
 /** "Só Mariana, Carla e Lucas podem alterar este lançamento." (`suffix`: ex. " (Só meu)" na tela de detalhe). */
 export function personalWriteMessage(names: string[], suffix = ""): string {
@@ -208,7 +214,11 @@ async function accountOwnerOf(
 async function deny(tx: Tx, ctx: RequestContext, controllers: string[]): Promise<never> {
   const members = await tx.member.findMany({
     where: { familyId: ctx.familyId, id: { in: controllers }, removedAt: null },
-    include: { user: { select: { name: true, email: true } } },
+    select: {
+      id: true,
+      name: true,
+      user: { select: { name: true, email: true, deletedAt: true } },
+    },
   });
   const byId = new Map(members.map((m) => [m.id, firstName(m)] as const));
   const names = controllers.flatMap((id) => (byId.has(id) ? [byId.get(id) as string] : []));

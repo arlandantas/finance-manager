@@ -4,6 +4,7 @@ import { dismissalKeyOf } from "@/modules/analise-ia/build-dto";
 import type { AvoidableDismissalDTO } from "@/modules/analise-ia/dto";
 import type { RefMap } from "@/modules/analise-ia/payload";
 import type { CreateDismissalInput } from "@/modules/analise-ia/schemas";
+import { toMemberRef } from "@/modules/familia/display-name";
 
 // SDD-023 §3, §4: "Importante para nós" (US-071). O descarte é DA FAMÍLIA, vale para categoria +
 // descrição normalizada (ou série) e entra nas próximas análises como regra: o recorrente descartado
@@ -68,11 +69,8 @@ async function toDto(
       categoryName: catName.get(r.categoryId) ?? "Categoria",
       reason: r.reason,
       by: {
+        ...(m ? toMemberRef(m) : { name: "Membro", image: null }),
         id: r.byMemberId,
-        name: m ? (m.user.name ?? m.user.email.split("@")[0] ?? "Membro") : "Membro",
-        image: m?.user.image ?? null,
-        ...(m?.removedAt ? { removed: true as const } : {}),
-        ...(m?.user.deletedAt ? { deleted: true as const } : {}),
       },
       at: r.createdAt.toISOString(),
     };

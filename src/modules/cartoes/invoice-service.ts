@@ -14,6 +14,7 @@ import {
 } from "@/modules/cartoes/queries";
 import { cartoesRepo } from "@/modules/cartoes/repo";
 import type { InvoiceDTO, InvoiceSummaryDTO } from "@/modules/cartoes/schemas";
+import { type MemberRefSource, toMemberRef } from "@/modules/familia/display-name";
 import { loadTransactionDTOs } from "@/modules/transacoes/service";
 
 const CARD_NOT_FOUND = "Cartão não encontrado.";
@@ -68,19 +69,7 @@ export async function listInvoices(
   return { items: list.slice(0, 24) };
 }
 
-function memberRefOf(m: {
-  id: string;
-  removedAt?: Date | null;
-  user: { name: string | null; email: string; image: string | null; deletedAt?: Date | null };
-}): MemberRef {
-  return {
-    id: m.id,
-    name: m.user.name ?? localPart(m.user.email),
-    image: m.user.image,
-    ...(m.removedAt ? { removed: true as const } : {}),
-    ...(m.user.deletedAt ? { deleted: true as const } : {}),
-  };
-}
+const memberRefOf = (m: MemberRefSource): MemberRef => toMemberRef(m);
 
 /** GET /cards/:id/invoices/:ref (SDD-008 §3.1). 404 se a fatura não existe (nem materializada, nem a aberta). */
 export async function getInvoice(

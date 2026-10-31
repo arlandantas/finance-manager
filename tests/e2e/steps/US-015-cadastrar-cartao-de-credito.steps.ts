@@ -51,7 +51,7 @@ Then("o titular do cartão é {string}", async ({}, nome: string) => {
   const card = await db.creditCard.findFirstOrThrow({
     include: { owner: { include: { user: true } } },
   });
-  expect((card.owner.user.name ?? "").split(" ")[0]).toBe(nome);
+  expect((card.owner.user?.name ?? "").split(" ")[0]).toBe(nome);
 });
 
 When(

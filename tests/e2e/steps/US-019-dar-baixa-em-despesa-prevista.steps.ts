@@ -143,7 +143,7 @@ When("Lucas dá baixa sem alterar quem pagou", async ({ page }) => {
 
 Then("a despesa gerada tem {string}", async ({}, texto: string) => {
   const t = await lastExpense();
-  expect(`Pago por ${first(t.payer?.user.name)}`).toBe(texto);
+  expect(`Pago por ${first(t.payer?.user?.name)}`).toBe(texto);
 });
 
 When("Lucas dá baixa escolhendo {string}", async ({ page }, escolha: string) => {
@@ -156,8 +156,8 @@ Then(
   "a despesa gerada tem autor {string} e {string}",
   async ({}, autor: string, pagador: string) => {
     const t = await lastExpense();
-    expect(first(t.author.user.name)).toBe(autor);
-    expect(`Pago por ${first(t.payer?.user.name)}`).toBe(pagador);
+    expect(first(t.author.user?.name)).toBe(autor);
+    expect(`Pago por ${first(t.payer?.user?.name)}`).toBe(pagador);
   },
 );
 

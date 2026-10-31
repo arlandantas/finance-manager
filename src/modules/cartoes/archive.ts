@@ -9,6 +9,7 @@ import {
 } from "@/modules/cartoes/queries";
 import { cartoesRepo } from "@/modules/cartoes/repo";
 import { listCards } from "@/modules/cartoes/service";
+import { memberFirstName } from "@/modules/familia/display-name";
 
 type Row = {
   id: string;
@@ -33,9 +34,7 @@ async function guard(tx: Tx, ctx: RequestContext, row: Row, version: number) {
   const m = row.archivedByMemberId
     ? await cartoesRepo(tx, ctx.familyId).member(row.archivedByMemberId)
     : null;
-  const name = m
-    ? ((m.user.name ?? m.user.email.split("@")[0] ?? "").split(" ")[0] ?? "outra pessoa")
-    : "outra pessoa";
+  const name = m ? memberFirstName(m) : "outra pessoa";
   throw conflict(
     "VERSION_CONFLICT",
     `Este cartão foi alterado por ${name}. Recarregue para continuar.`,

@@ -8,6 +8,7 @@ import {
   makeCardPurchase,
   makeFamily,
   makeTransaction,
+  makeUnlinkedMember,
 } from "./factories";
 import { mulberry32 } from "./prng";
 
@@ -26,22 +27,32 @@ export type Universe = {
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
-export async function buildUniverse(seed: number): Promise<Universe> {
+export async function buildUniverse(
+  seed: number,
+  opts: { unlinked?: number } = {},
+): Promise<Universe> {
   const db = testDb();
   const rnd = mulberry32(seed);
   const int = (a: number, b: number) => a + Math.floor(rnd() * (b - a + 1));
-  const n = int(2, 4);
-  const names = ["Ana", "Beto", "Carla", "Davi"].slice(0, n);
+  const linked = int(2, 4);
+  const k = opts.unlinked ?? 0; // US-092a (SDD-033 §8.3): até 2 membros sem conta por família
+  const linkedNames = ["Ana", "Beto", "Carla", "Davi"].slice(0, linked);
   const fx = await makeFamily({
     name: `Família ${seed}`,
     uniqueEmails: true,
     splitEngine: "LEGACY",
-    members: names.map((name, i) => ({
+    members: linkedNames.map((name, i) => ({
       email: `${name.toLowerCase()}@exemplo.com`,
       name: `${name} Silva`,
       role: i === 0 ? ("ADMIN" as const) : ("MEMBER" as const),
     })),
   });
+  // sem conta: depois dos vinculados, mesma regra de ids e nomes de qualquer membro (o motor não distingue)
+  const unlinkedNames = ["Edu", "Fabi"].slice(0, k);
+  for (const name of unlinkedNames) await makeUnlinkedMember(fx, { name, register: true });
+  const names = [...linkedNames, ...unlinkedNames];
+  const n = names.length;
+  const authorOf = (p: string) => (linkedNames.includes(p) ? p : (names[0] as string)); // quem lança tem conta
   const acc: AccountFixture = await makeAccount(fx, {
     name: "Conta",
     owner: names[0] as string,
@@ -131,7 +142,7 @@ export async function buildUniverse(seed: number): Promise<Universe> {
           amountInCents: amount,
           occurredOn: on,
           payer,
-          author: payer,
+          author: authorOf(payer),
           shared,
           deleted,
           createdAt,
@@ -143,7 +154,7 @@ export async function buildUniverse(seed: number): Promise<Universe> {
           amountInCents: amount,
           occurredOn: on,
           payer,
-          author: payer,
+          author: authorOf(payer),
           shared,
           deleted,
           createdAt,
@@ -188,4 +199,48 @@ export async function buildUniverse(seed: number): Promise<Universe> {
     }
   }
   return { fx, seed, memberCount: n, months };
+}
+
+/**
+ * Fotografia da família para o antes/depois da 094b (SDD-033 §8.3): totais e acerto por mês (motor), saldos das
+ * contas, o "A pagar", as `version`s de contas/cartões/previstas/lançamentos e as contagens de membros e splits.
+ */
+export async function snapshotFamily(u: Universe, today: string) {
+  const db = testDb();
+  const familyId = u.fx.family.id;
+  const { contextOf, snapshotPeriod } = await import("@/modules/split/migrate-family");
+  const { accountBalances } = await import("@/modules/contas/ledger-queries");
+  const ctx = contextOf(familyId, today);
+  const periods = await db.$transaction(async (tx) => {
+    const out = [];
+    for (const key of u.months) out.push(await snapshotPeriod(tx, ctx, key, today));
+    return out;
+  });
+  const balances = await db.$transaction(async (tx) =>
+    [...(await accountBalances(tx as never, familyId)).entries()].sort(([a], [b]) =>
+      a.localeCompare(b),
+    ),
+  );
+  const versions = async (rows: Promise<Array<{ id: string; version: number }>>) =>
+    (await rows).map((r) => [r.id, r.version]).sort();
+  return {
+    periods,
+    balances,
+    versions: {
+      accounts: await versions(
+        db.bankAccount.findMany({ where: { familyId }, select: { id: true, version: true } }),
+      ),
+      cards: await versions(
+        db.creditCard.findMany({ where: { familyId }, select: { id: true, version: true } }),
+      ),
+      planned: await versions(
+        db.plannedExpense.findMany({ where: { familyId }, select: { id: true, version: true } }),
+      ),
+      transactions: await versions(
+        db.transaction.findMany({ where: { familyId }, select: { id: true, version: true } }),
+      ),
+    },
+    members: await db.member.count({ where: { familyId } }),
+    splits: await db.transactionSplit.count({ where: { transaction: { familyId } } }),
+  };
 }

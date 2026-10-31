@@ -21,6 +21,7 @@ import type {
   UpdateCardParsed,
 } from "@/modules/cartoes/schemas";
 import { lockAccountsForPosting } from "@/modules/contas/lock";
+import { type MemberRefSource, memberFirstName, toMemberRef } from "@/modules/familia/display-name";
 
 type CardRow = NonNullable<Awaited<ReturnType<ReturnType<typeof cartoesRepo>["findById"]>>>;
 
@@ -36,17 +37,7 @@ async function assertPayerAccount(tx: Tx, familyId: string, accountId: string) {
   await lockAccountsForPosting(tx, familyId, [accountId], "paymentAccountId");
 }
 
-const memberRef = (m: {
-  id: string;
-  removedAt?: Date | null;
-  user: { name: string | null; email: string; image: string | null; deletedAt?: Date | null };
-}): MemberRef => ({
-  id: m.id,
-  name: m.user.name ?? localPart(m.user.email),
-  image: m.user.image,
-  ...(m.removedAt ? { removed: true as const } : {}),
-  ...(m.user.deletedAt ? { deleted: true as const } : {}),
-});
+const memberRef = (m: MemberRefSource): MemberRef => toMemberRef(m);
 
 /** Monta os DTOs com as consultas derivadas (uso, fatura aberta, faturas pagáveis). */
 async function toCardDTOs(tx: Tx, ctx: RequestContext, rows: CardRow[]): Promise<CardDTO[]> {
@@ -157,9 +148,7 @@ async function versionConflict(repo: ReturnType<typeof cartoesRepo>, id: string)
   if (!fresh) return notFound(NOT_FOUND);
   const by = fresh.updatedByMemberId;
   const member = by ? await repo.member(by) : null;
-  const name = member
-    ? ((member.user.name ?? localPart(member.user.email)).split(" ")[0] ?? "outra pessoa")
-    : "outra pessoa";
+  const name = member ? memberFirstName(member) : "outra pessoa";
   return conflict(
     "VERSION_CONFLICT",
     `Este cartão foi alterado por ${name}. Recarregue para continuar.`,

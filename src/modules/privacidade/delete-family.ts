@@ -59,7 +59,13 @@ export async function deleteFamily(tx: Tx, ctx: RequestContext, body: DeleteFami
   if (!family) throw notFound("Família não encontrada.");
 
   const others = await tx.member.count({
-    where: { familyId: ctx.familyId, removedAt: null, NOT: { id: ctx.memberId } },
+    // US-092a: cadastros sem conta não impedem excluir a família (são apagados com ela)
+    where: {
+      familyId: ctx.familyId,
+      removedAt: null,
+      userId: { not: null },
+      NOT: { id: ctx.memberId },
+    },
   });
   if (others > 0) throw conflict("HAS_OTHER_MEMBERS", HAS_OTHER_MEMBERS_MSG);
   if (body.confirmFamilyName.trim() !== family.name) {
@@ -73,7 +79,7 @@ export async function deleteFamily(tx: Tx, ctx: RequestContext, body: DeleteFami
     select: { id: true, userId: true },
   });
   await tx.$executeRaw`DELETE FROM idempotency_records
-    WHERE "userId" = ANY(${members.map((m) => m.userId)}::uuid[]) AND "responseStatus" <> 0`; // 0 = a reserva desta requisição
+    WHERE "userId" = ANY(${members.flatMap((m) => (m.userId ? [m.userId] : []))}::uuid[]) AND "responseStatus" <> 0`; // 0 = a reserva desta requisição
   // SEC-039: só ids únicos (família e membros); o nome da família é texto livre e não é procurado em outras famílias
   await scrubIdempotencyMentioning(tx, {
     identifiers: [ctx.familyId, ...members.map((m) => m.id)],

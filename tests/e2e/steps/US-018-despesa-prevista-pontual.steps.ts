@@ -30,7 +30,7 @@ const names = async () =>
   new Map(
     (await db.member.findMany({ include: { user: true } })).map((m) => [
       m.id,
-      (m.user.name ?? "").split(" ")[0] as string,
+      (m.user?.name ?? "").split(" ")[0] as string,
     ]),
   );
 

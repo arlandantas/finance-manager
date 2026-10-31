@@ -1,8 +1,10 @@
 import { conflict, forbidden, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
+import { memberDisplayName, memberFirstName, samePerson } from "@/modules/familia/display-name";
 import type { UpdateFamilyInput } from "@/modules/familia/schemas";
 
+export const UNLINKED_ROLE_MSG = "Quem ainda não tem acesso ao app não pode ser Administrador.";
 export const LAST_ADMIN_MSG =
   "A família precisa de pelo menos um Administrador. Promova outro membro antes.";
 
@@ -30,7 +32,7 @@ async function nameOf(tx: Tx, familyId: string, memberId: string | null): Promis
     where: { id: memberId, familyId },
     include: { user: true },
   });
-  return (m?.user.name ?? (m ? localPart(m.user.email) : "outra pessoa")).split(" ")[0] as string;
+  return m ? memberFirstName(m) : "outra pessoa";
 }
 
 /** PATCH /family (SDD-012 §4.2): nome, com versão e `FamilyEvent`. */
@@ -97,10 +99,14 @@ export async function changeRole(
     include: { user: true },
   });
   if (!target) throw notFound("Membro não encontrado.");
+  // US-092a (SDD-033 §3.5): quem não tem conta não é Administrador; antes de qualquer escrita (e de qualquer userId nulo)
+  if (target.userId == null) {
+    throw unprocessable("UNLINKED_MEMBER_ROLE", UNLINKED_ROLE_MSG);
+  }
   const dto = (r: string) => ({
     member: {
       memberId: target.id,
-      name: target.user.name ?? localPart(target.user.email),
+      name: memberDisplayName(target),
       role: r,
     },
   });
@@ -112,7 +118,7 @@ export async function changeRole(
   }
   await tx.member.update({ where: { id: target.id }, data: { role } });
   // SEC-018 (SDD-028 §6.2): troca de papel encerra as sessões de QUEM foi afetado (não a de quem age)
-  if (target.userId !== ctx.userId)
+  if (!samePerson(target.userId, ctx.userId))
     await tx.session.deleteMany({ where: { userId: target.userId } });
   await tx.familyEvent.create({
     data: {

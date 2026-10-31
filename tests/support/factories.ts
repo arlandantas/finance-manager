@@ -180,6 +180,52 @@ export async function makeFamily(
   return { family: { id: family.id, name: family.name }, members, byName };
 }
 
+/**
+ * Membro SEM conta (US-092a, ADR-033): `userId` nulo, rótulo em `members.name`, sempre MEMBER. Por padrão NÃO entra em
+ * `fx.members`/`fx.byName` (nada nos testes antigos muda); `register: true` o registra ali (sem sessão: `as` é um
+ * stub nulo; só para o harness de motor, que nunca chama a API como ele).
+ */
+export async function makeUnlinkedMember(
+  fx: FamilyFixture,
+  o: {
+    name: string;
+    pendingEmail?: string;
+    createdBy?: string;
+    joinedAt?: Date;
+    removedAt?: Date;
+    register?: boolean;
+  },
+) {
+  const db = fdb();
+  const creator = (o.createdBy ? fx.byName[o.createdBy] : fx.members[0]) ?? fx.members[0];
+  const row = await db.member.create({
+    data: {
+      familyId: fx.family.id,
+      userId: null,
+      role: "MEMBER",
+      name: o.name,
+      createdByMemberId: creator?.memberId ?? null,
+      joinedAt: o.joinedAt ?? new Date(Date.UTC(2026, 0, 1, 12, 30)),
+      ...(o.removedAt
+        ? { removedAt: o.removedAt, removalKind: "REMOVED" as const }
+        : { pendingEmail: o.pendingEmail ?? null }),
+    },
+  });
+  if (o.register) {
+    const stub = {
+      memberId: row.id,
+      userId: "",
+      email: "",
+      name: o.name,
+      role: "MEMBER" as const,
+      as: null as unknown as FamilyFixture["members"][number]["as"],
+    };
+    fx.members.push(stub);
+    fx.byName[o.name.split(" ")[0] as string] = stub;
+  }
+  return { memberId: row.id, name: o.name };
+}
+
 export type AccountFixture = { id: string; name: string; ownerMemberId: string };
 
 /** Conta com lançamento de abertura (mesmo desenho de `createAccount`, direto no banco). */

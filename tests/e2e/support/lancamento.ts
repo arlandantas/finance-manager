@@ -77,7 +77,7 @@ export async function lastTransaction(kind: "EXPENSE" | "INCOME") {
   const names = new Map(
     (await db.member.findMany({ include: { user: true } })).map((m) => [
       m.id,
-      (m.user.name ?? "").split(" ")[0] as string,
+      (m.user?.name ?? "").split(" ")[0] as string,
     ]),
   );
   return { row, name: (id: string | null) => (id ? names.get(id) : undefined) };

@@ -67,7 +67,7 @@ Then(
     const names = new Map(
       (await db.member.findMany({ include: { user: true } })).map((m) => [
         m.id,
-        (m.user.name ?? "").split(" ")[0],
+        (m.user?.name ?? "").split(" ")[0],
       ]),
     );
     expect(names.get(row.authorMemberId)).toBe(autor);

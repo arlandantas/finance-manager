@@ -1,15 +1,16 @@
 import { forbidden, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
-import { localPart } from "@/lib/auth/dev-login-guard";
 import { endUserSessions } from "@/lib/auth/session";
 import { fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { formatBRL, toCents } from "@/lib/money";
 import { periodOf } from "@/lib/period";
 import { cardInvoiceSummaries } from "@/modules/cartoes/queries";
 import { accountBalances } from "@/modules/contas/ledger-queries";
+import { memberDisplayName } from "@/modules/familia/display-name";
 import { lockFamilyAdmins } from "@/modules/familia/manage";
 import type { RemovalReviewDTO, RemoveMemberParsed } from "@/modules/familia/schemas";
 import { revokeMemberGrants } from "@/modules/mcp/grants";
+import { scrubIdempotencyMentioning } from "@/modules/privacidade/delete-account";
 import { isSettlementEnabled } from "@/modules/split/guard";
 import { pendingSettlementMonths } from "@/modules/split/pending";
 import { splitRepo } from "@/modules/split/repo";
@@ -22,8 +23,7 @@ const ONLY_MEMBER = "Você é a única pessoa na família. Convide alguém antes
 
 type Blocker = { code: string; message: string; ids?: string[] };
 
-const nameOf = (m: { user: { name: string | null; email: string } }) =>
-  m.user.name ?? localPart(m.user.email);
+const nameOf = memberDisplayName;
 
 async function loadTarget(tx: Tx, ctx: RequestContext, memberId: string) {
   const target = await tx.member.findFirst({
@@ -80,11 +80,14 @@ async function gather(tx: Tx, ctx: RequestContext, target: Awaited<ReturnType<ty
 }
 
 function blockersOf(
-  active: Array<{ role: string }>,
-  target: { role: string },
+  active: Array<{ role: string; userId: string | null }>,
+  target: { role: string; userId: string | null },
 ): Array<"LAST_ADMIN" | "ONLY_MEMBER"> {
   const out: Array<"LAST_ADMIN" | "ONLY_MEMBER"> = [];
-  if (active.length <= 1) out.push("ONLY_MEMBER");
+  // US-092a: "única pessoa" = só ativos COM conta; remover um sem conta nunca dá ONLY_MEMBER
+  if (target.userId != null && active.filter((m) => m.userId != null).length <= 1) {
+    out.push("ONLY_MEMBER");
+  }
   if (target.role === "ADMIN" && active.filter((m) => m.role === "ADMIN").length <= 1) {
     out.push("LAST_ADMIN");
   }
@@ -100,7 +103,7 @@ export async function removalReview(
   const target = await loadTarget(tx, ctx, memberId);
   const g = await gather(tx, ctx, target);
   return {
-    member: { id: target.id, name: nameOf(target), image: target.user.image },
+    member: { id: target.id, name: nameOf(target), image: target.user?.image ?? null },
     isSelf: target.id === ctx.memberId,
     settlement: {
       enabled: g.enabled,
@@ -159,6 +162,7 @@ export async function removeMember(
   await lockFamilyAdmins(tx, ctx, kind === "REMOVED");
   const target = await loadTarget(tx, ctx, memberId);
   if (kind === "REMOVED" && ctx.role !== "ADMIN") throw forbidden();
+  if (kind === "LEFT" && target.userId == null) throw forbidden(); // sem conta não há quem "saia" (defensivo)
   const isSelf = target.id === ctx.memberId;
   const g = await gather(tx, ctx, target);
   const blockers: Blocker[] = [];
@@ -292,15 +296,32 @@ export async function removeMember(
       },
     });
   }
+  // `pendingEmail` some na MESMA linha que grava `removedAt` (a CHECK members_pending_email_chk recusa o contrário)
+  const pendingEmail = target.pendingEmail;
   await tx.member.update({
     where: { id: target.id },
-    data: { removedAt: now, removedByMemberId: ctx.memberId, removalKind: kind },
+    data: {
+      removedAt: now,
+      removedByMemberId: ctx.memberId,
+      removalKind: kind,
+      ...(target.userId == null ? { pendingEmail: null } : {}),
+    },
   });
-  // EN-006 (ADR-030 §4): sem vínculo ativo não há acesso por assistente; revoga na mesma transação.
-  await revokeMemberGrants(tx, ctx.familyId, target.id, "MEMBER_REMOVED", now, ctx.memberId);
-  // DEV-91 (US-035, SEC-018): quem foi removido perde a sessão em todos os aparelhos, na hora. Quem SAIU
-  // age sobre si mesmo e mantém a sessão atual para ver "Você saiu da família".
-  if (kind === "REMOVED") await endUserSessions(tx, target.userId, now);
+  if (target.userId != null) {
+    // EN-006 (ADR-030 §4): sem vínculo ativo não há acesso por assistente; revoga na mesma transação.
+    await revokeMemberGrants(tx, ctx.familyId, target.id, "MEMBER_REMOVED", now, ctx.memberId);
+    // DEV-91 (US-035, SEC-018): quem foi removido perde a sessão em todos os aparelhos, na hora. Quem SAIU
+    // age sobre si mesmo e mantém a sessão atual para ver "Você saiu da família".
+    if (kind === "REMOVED") await endUserSessions(tx, target.userId, now);
+  } else {
+    // Sem conta (SDD-033 §3.5, Q-TL-U5/SEC-061): sem sessão/concessão a encerrar; convites do cadastro são
+    // cancelados e perdem o e-mail; respostas de idempotência que citam o e-mail somem.
+    await tx.$executeRaw`UPDATE invitations SET status = 'CANCELED', "canceledAt" = ${now}
+      WHERE "memberId" = ${target.id}::uuid AND status = 'PENDING'`;
+    await tx.$executeRaw`UPDATE invitations SET email = ${`deleted+${target.id}@invalid.local`}
+      WHERE "memberId" = ${target.id}::uuid`;
+    if (pendingEmail) await scrubIdempotencyMentioning(tx, { identifiers: [pendingEmail] });
+  }
   await tx.familyEvent.create({
     data: {
       familyId: ctx.familyId,

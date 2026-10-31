@@ -38,6 +38,7 @@ import { ANALYSIS_PROMPT, ANALYSIS_PROMPT_VERSION } from "@/modules/analise-ia/p
 import { readableOf, sentSummary } from "@/modules/analise-ia/readable";
 import { detectRecurring } from "@/modules/analise-ia/recurring";
 import type { RequestAnalysisInput } from "@/modules/analise-ia/schemas";
+import { toMemberRef } from "@/modules/familia/display-name";
 import { getLlmConfig } from "@/modules/ia/config";
 import { getFeatureState } from "@/modules/ia/consent";
 import { costMicroBrl, estimateInputTokens, microToCentsCeil } from "@/modules/ia/pricing";
@@ -56,8 +57,11 @@ export async function memberIdentifiers(tx: Tx, familyId: string): Promise<strin
   const members = await tx.member.findMany({ where: { familyId }, include: { user: true } });
   const out: string[] = [];
   for (const m of members) {
-    if (m.user.name) out.push(m.user.name);
-    out.push(m.user.email, m.user.email.split("@")[0] ?? "");
+    if (m.name) out.push(m.name); // US-092: rótulo/nome escolhido também é PII proibida no payload
+    if (m.user) {
+      if (m.user.name) out.push(m.user.name);
+      out.push(m.user.email, m.user.email.split("@")[0] ?? "");
+    }
   }
   return out.filter(Boolean);
 }
@@ -227,13 +231,7 @@ export async function toDto(tx: Tx, ctx: RequestContext, row: DbRow): Promise<Sp
     refMap,
   };
   return toAnalysisDTO(analysis, {
-    requestedBy: {
-      id: row.requestedByMemberId,
-      name: m ? (m.user.name ?? m.user.email.split("@")[0] ?? "Membro") : "Membro",
-      image: m?.user.image ?? null,
-      ...(m?.removedAt ? { removed: true as const } : {}),
-      ...(m?.user.deletedAt ? { deleted: true as const } : {}),
-    },
+    requestedBy: m ? toMemberRef(m) : { id: row.requestedByMemberId, name: "Membro", image: null },
     categoryNames: new Map(cats.map((c) => [c.id, c.name])),
     dismissedKeys: await loadDismissedKeys(tx, ctx.familyId),
   });
@@ -375,13 +373,9 @@ export async function listAnalyses(
         id: r.id,
         period: periodDto(r.periodKey, r.partial),
         createdAt: r.createdAt.toISOString(),
-        requestedBy: {
-          id: r.requestedByMemberId,
-          name: m ? (m.user.name ?? m.user.email.split("@")[0] ?? "Membro") : "Membro",
-          image: m?.user.image ?? null,
-          ...(m?.removedAt ? { removed: true as const } : {}),
-          ...(m?.user.deletedAt ? { deleted: true as const } : {}),
-        },
+        requestedBy: m
+          ? toMemberRef(m)
+          : { id: r.requestedByMemberId, name: "Membro", image: null },
       };
     }),
   };

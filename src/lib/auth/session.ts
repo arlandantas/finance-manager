@@ -106,6 +106,8 @@ export async function endUserSessions(
   userId: string,
   now: Date,
 ): Promise<number> {
+  // SEC-058: com `userId` vazio/undefined o Prisma IGNORA o filtro e encerraria as sessões de TODOS
+  if (!userId) return 0;
   const res = await db.session.updateMany({
     where: { userId, endedAt: null },
     data: { endedAt: now },

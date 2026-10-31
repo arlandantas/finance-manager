@@ -12,6 +12,7 @@ import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
 import { lockAccountsForPosting } from "@/modules/contas/lock";
+import { type MemberRefSource, toMemberRef } from "@/modules/familia/display-name";
 import { currentRuleShares } from "@/modules/split/current-rule";
 import { assertCanShare, isSettlementEnabled } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
@@ -38,19 +39,9 @@ import type {
   TransactionDTO,
 } from "@/modules/transacoes/schemas";
 
-type MemberRow = {
-  id: string;
-  removedAt?: Date | null;
-  user: { name: string | null; email: string; image: string | null; deletedAt?: Date | null };
-};
+type MemberRow = MemberRefSource;
 
-export const memberRefOf = (m: MemberRow): MemberRef => ({
-  id: m.id,
-  name: m.user.name ?? localPart(m.user.email),
-  image: m.user.image,
-  ...(m.removedAt ? { removed: true as const } : {}),
-  ...(m.user.deletedAt ? { deleted: true as const } : {}),
-});
+export const memberRefOf = (m: MemberRow): MemberRef => toMemberRef(m);
 
 type TxRow = {
   id: string;

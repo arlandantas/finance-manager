@@ -7,6 +7,7 @@ import type { Clock } from "@/lib/clock";
 import { publicBaseUrl } from "@/lib/env";
 import { randomToken, sha256Hex } from "@/lib/ids";
 import { getMailer } from "@/lib/mail";
+import { memberDisplayName } from "@/modules/familia/display-name";
 import {
   EXPIRED_NOTICE_DAYS,
   INVITATION_TTL_DAYS,
@@ -72,7 +73,7 @@ export function toInvitationDTO(
 
 async function memberNames(tx: Tx, familyId: string): Promise<(id: string) => string> {
   const members = await convitesRepo(tx, familyId).members();
-  const map = new Map(members.map((m) => [m.id, m.user.name ?? localPart(m.user.email)] as const));
+  const map = new Map(members.map((m) => [m.id, memberDisplayName(m)] as const));
   return (id) => map.get(id) ?? "Alguém";
 }
 

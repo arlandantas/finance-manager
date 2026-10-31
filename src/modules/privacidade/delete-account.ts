@@ -144,8 +144,9 @@ export async function deleteAccount(tx: Tx, ctx: UserContext, body: DeleteAccoun
       role: active.role,
     };
     await lockFamilyAdmins(tx, rctx);
+    // US-092a (SDD-033 §3.5): cadastros sem conta não contam como "outra pessoa" na família
     const members = await tx.member.findMany({
-      where: { familyId: active.familyId, removedAt: null },
+      where: { familyId: active.familyId, removedAt: null, userId: { not: null } },
       select: { role: true },
     });
     if (members.length <= 1) throw conflict("SOLE_MEMBER", SOLE_MEMBER_MSG);
@@ -178,7 +179,8 @@ export async function deleteAccount(tx: Tx, ctx: UserContext, body: DeleteAccoun
   await tx.verificationToken.deleteMany({ where: { identifier: user.email } });
   await scrubIdempotency(tx, user.id, {
     identifiers: [user.id, user.email, ...memberIds],
-    names: [user.name ?? ""],
+    // US-092a: o nome escolhido no aceite (`members.name`) também é PII da pessoa
+    names: [user.name ?? "", ...memberships.map((m) => m.name ?? "")],
   });
 
   // (4) o e-mail antigo some de convites encerrados e dos eventos de reenvio; convites PENDENTES ficam
@@ -196,7 +198,9 @@ export async function deleteAccount(tx: Tx, ctx: UserContext, body: DeleteAccoun
     data: { removedAt: now, removalKind: "LEFT" },
   });
 
-  // (6) a identidade é anonimizada; o histórico segue apontando para esta linha
+  // (6) a identidade é anonimizada; o histórico segue apontando para esta linha. O nome escolhido no aceite
+  // (`members.name`, ADR-033 §2.2) é zerado: o nome exibido volta a ser o de `users.name` ("Conta excluída").
+  await tx.$executeRaw`UPDATE members SET name = NULL WHERE "userId" = ${user.id}::uuid AND name IS NOT NULL`;
   await tx.user.update({
     where: { id: user.id },
     data: {

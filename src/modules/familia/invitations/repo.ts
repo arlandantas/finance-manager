@@ -1,6 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import type { Tx } from "@/lib/api/types";
 import { getDb } from "@/lib/db";
+import { memberDisplayName } from "@/modules/familia/display-name";
 
 export const readDb = (): Pick<Tx, "invitation" | "member" | "session"> => getDb();
 
@@ -108,6 +109,6 @@ export const loginInvitations = {
     }),
   memberName: async (tx: Pick<Tx, "member">, memberId: string): Promise<string> => {
     const m = await tx.member.findUnique({ where: { id: memberId }, include: { user: true } });
-    return m?.user.name ?? m?.user.email.split("@")[0] ?? "Alguém";
+    return m ? memberDisplayName(m) : "Alguém";
   },
 };

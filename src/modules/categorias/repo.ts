@@ -1,4 +1,5 @@
 import type { Tx } from "@/lib/api/types";
+import { memberFirstName as firstNameOf } from "@/modules/familia/display-name";
 
 const memberWithUser = { user: true } as const;
 
@@ -61,8 +62,7 @@ export function categoriasRepo(tx: Tx, familyId: string) {
         where: { id: memberId, familyId },
         include: memberWithUser,
       });
-      const full = m?.user.name ?? m?.user.email.split("@")[0] ?? "";
-      return full.split(" ")[0] || "outra pessoa";
+      return (m ? firstNameOf(m) : "") || "outra pessoa";
     },
   };
 }

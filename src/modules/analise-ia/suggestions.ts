@@ -14,6 +14,7 @@ import {
 } from "@/modules/analise-ia/rules-category-suggestion";
 import type { AcceptSuggestionInput, DismissSuggestionInput } from "@/modules/analise-ia/schemas";
 import { recordRevision } from "@/modules/contas/ledger";
+import { samePerson } from "@/modules/familia/display-name";
 import { splitRepo } from "@/modules/split/repo";
 import { periodPredicate } from "@/modules/transacoes/ledger-where";
 import { assertCanWriteTransaction, canWriteTransaction } from "@/modules/transacoes/ownership";
@@ -64,11 +65,16 @@ export async function listCategorySuggestions(
     where: { familyId: ctx.familyId },
     select: { id: true, userId: true, removedAt: true },
   });
-  const activeUsers = new Set(members.filter((m) => m.removedAt === null).map((m) => m.userId));
-  const removed = new Set(
-    members.filter((m) => m.removedAt !== null && !activeUsers.has(m.userId)).map((m) => m.id),
+  // US-092a (SEC-058): `userId` nulo nunca entra no conjunto; ex-membro sem conta é sempre "removido"
+  const activeUsers = new Set(
+    members.flatMap((m) => (m.removedAt === null && m.userId != null ? [m.userId] : [])),
   );
-  const mine = new Set(members.filter((m) => m.userId === ctx.userId).map((m) => m.id));
+  const removed = new Set(
+    members
+      .filter((m) => m.removedAt !== null && (m.userId == null || !activeUsers.has(m.userId)))
+      .map((m) => m.id),
+  );
+  const mine = new Set(members.filter((m) => samePerson(m.userId, ctx.userId)).map((m) => m.id));
   const rows: SuggestionRow[] = [];
   for (const r of raw) {
     const key = normalizeDescription(r.description);

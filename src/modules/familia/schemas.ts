@@ -77,10 +77,12 @@ export type MeDTO = {
 export type MemberDTO = {
   memberId: string;
   name: string;
-  email: string;
+  /** Nulo para membro sem conta (US-092): o e-mail pendente nunca sai nesta lista. */
+  email: string | null;
   image: string | null;
   role: Role;
   joinedAt: string;
+  unlinked?: true;
 };
 
 export type InvitationDTO = {
@@ -115,6 +117,9 @@ export type FamilyEventDTO = {
     | "MEMBER_JOINED"
     | "CARD_OWNER_CHANGED"
     | "CARD_PAYER_ACCOUNT_CHANGED" // US-089
+    | "MEMBER_CREATED" // US-092 (SDD-033): sem uso até a 092b
+    | "MEMBER_UPDATED" // US-095
+    | "MEMBER_LINKED" // US-094b
     | "TAG_RENAMED" // US-046 (SDD-016): gestão de tags
     | "TAG_MERGED"
     | "TAG_DELETED";
@@ -135,6 +140,7 @@ export type FamilyDTO = {
     image: string | null;
     removedAt: string;
     deleted?: true;
+    unlinked?: true;
   }>; // histórico (sem e-mail)
   events: FamilyEventDTO[]; // últimos 20 (trilha simples: autor e data)
   pendingInvitations: InvitationDTO[]; // [] para quem não é ADMIN

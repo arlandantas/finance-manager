@@ -4,6 +4,7 @@ import { accountBalances, neverUsedAccountIds } from "@/modules/contas/ledger-qu
 import { contasRepo } from "@/modules/contas/repo";
 import type { AccountDTO } from "@/modules/contas/schemas";
 import { listAccounts } from "@/modules/contas/service";
+import { memberFirstName } from "@/modules/familia/display-name";
 
 type Row = {
   id: string;
@@ -29,7 +30,7 @@ async function whoChanged(tx: Tx, ctx: RequestContext, row: Row): Promise<string
     where: { id: row.archivedByMemberId, familyId: ctx.familyId },
     include: { user: true },
   });
-  return (m?.user.name ?? m?.user.email.split("@")[0] ?? "outra pessoa").split(" ")[0] as string;
+  return m ? memberFirstName(m) : "outra pessoa";
 }
 
 async function versionGuard(tx: Tx, ctx: RequestContext, row: Row, version: number) {

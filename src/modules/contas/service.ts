@@ -17,23 +17,14 @@ import type {
   CreateAccountInput,
   RenameAccountInput,
 } from "@/modules/contas/schemas";
+import { type MemberRefSource, toMemberRef } from "@/modules/familia/display-name";
 
 type AccountRow = NonNullable<Awaited<ReturnType<ReturnType<typeof contasRepo>["findById"]>>>;
 
 const DUPLICATE_NAME = "Já existe uma conta com este nome";
 
-export function memberRef(m: {
-  id: string;
-  removedAt?: Date | null;
-  user: { name: string | null; email: string; image: string | null; deletedAt?: Date | null };
-}): MemberRef {
-  return {
-    id: m.id,
-    name: m.user.name ?? localPart(m.user.email),
-    image: m.user.image,
-    ...(m.removedAt ? { removed: true as const } : {}),
-    ...(m.user.deletedAt ? { deleted: true as const } : {}),
-  };
+export function memberRef(m: MemberRefSource): MemberRef {
+  return toMemberRef(m);
 }
 
 function toDTO(

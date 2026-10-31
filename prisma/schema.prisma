@@ -229,6 +229,9 @@ enum FamilyEventType {
   MEMBER_JOINED // SEC-004: entrou por convite (aceite explícito)
   CARD_OWNER_CHANGED // SEC-042: troca de titular de cartão (quem trocou, de quem para quem)
   CARD_PAYER_ACCOUNT_CHANGED // US-089: conta pagadora padrão do cartão
+  MEMBER_CREATED // US-092 (SDD-033): cadastro de membro sem conta (092b)
+  MEMBER_UPDATED // US-095 (sem uso até lá)
+  MEMBER_LINKED // US-094b (sem uso até lá)
   TAG_RENAMED // US-046 (SDD-016): gestão de tags (sem uso nesta fatia)
   TAG_MERGED
   TAG_DELETED
@@ -254,9 +257,16 @@ model FamilyEvent {
 model Member {
   id       String   @id @default(uuid()) @db.Uuid
   familyId String   @db.Uuid
-  userId   String   @db.Uuid
+  // US-092 (ADR-033): nulo = membro cadastrado SEM conta (só metadado). NOT NULL caiu; CHECKs/gatilho em SQL cru
+  // (members_unlinked_*_chk, members_pending_email_chk, members_name_len_chk, members_link_guard).
+  userId   String?  @db.Uuid
   role     Role
   joinedAt DateTime @default(now()) @db.Timestamptz(3)
+  // US-092: rótulo do cadastro (sem conta) ou nome escolhido no aceite (094b); zerado ao excluir a conta
+  name              String?
+  pendingEmail      String? // e-mail do cadastro sem conta; só ADMIN vê; apagado na remoção
+  linkedAt          DateTime? @db.Timestamptz(3)
+  createdByMemberId String?   @db.Uuid // FK composta em SQL cru
 
   // US-035 (ADR-019): ex-membro. Nunca se apaga `Member`; "ativo" = removedAt nulo
   removedAt         DateTime?          @db.Timestamptz(3)
@@ -267,7 +277,8 @@ model Member {
   assistantReviewedAt DateTime?        @db.Timestamptz(3)
 
   family Family @relation(fields: [familyId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+  invitations Invitation[]
   assistantLimits MemberAssistantLimits?
 
   ownedAccounts                BankAccount[]
@@ -315,8 +326,11 @@ model Invitation {
   declinedByUserId  String?          @db.Uuid
   resendCount       Int              @default(0) // 0..3 (CHECK em SQL cru)
   lastSentAt        DateTime?        @db.Timestamptz(3)
+  // US-092 (ADR-033): convite vinculado a um cadastro sem conta (uso a partir da 094a)
+  memberId          String?          @db.Uuid
 
-  family Family @relation(fields: [familyId], references: [id])
+  family Family  @relation(fields: [familyId], references: [id])
+  member Member? @relation(fields: [familyId, memberId], references: [familyId, id])
 
   @@index([familyId, status])
   @@index([email, status])

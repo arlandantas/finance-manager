@@ -1,7 +1,7 @@
 import { ApiError } from "@/lib/api/errors";
 import type { Tx, UserContext } from "@/lib/api/types";
-import { localPart } from "@/lib/auth/dev-login-guard";
 import { fromDbDate } from "@/lib/dates";
+import { memberDisplayName } from "@/modules/familia/display-name";
 import {
   EXPORT_MAX_BYTES,
   type ExportFile,
@@ -20,9 +20,10 @@ type MemberWithUser = {
   id: string;
   role: "ADMIN" | "MEMBER";
   removedAt: Date | null;
-  user: { name: string | null; email: string };
+  name: string | null;
+  user: { name: string | null; email: string; deletedAt: Date | null } | null;
 };
-const displayName = (m: MemberWithUser) => m.user.name ?? localPart(m.user.email);
+const displayName = (m: MemberWithUser) => memberDisplayName(m);
 
 type TxRow = Awaited<ReturnType<typeof loadTransactions>>[number];
 
@@ -109,7 +110,7 @@ async function currentFamily(tx: Tx, familyId: string, memberId: string, myIds: 
   const family = await tx.family.findUniqueOrThrow({ where: { id: familyId } });
   const members = await tx.member.findMany({
     where: { familyId },
-    include: { user: { select: { name: true, email: true } } },
+    include: { user: { select: { name: true, email: true, deletedAt: true } } },
     orderBy: [{ joinedAt: "asc" }, { id: "asc" }],
   });
   // "Só meu" de OUTRA pessoa (despesa não dividida, prevista ou recorrente) é dado pessoal dela: não sai no
@@ -119,9 +120,14 @@ async function currentFamily(tx: Tx, familyId: string, memberId: string, myIds: 
   // SEC-050 (D-GES-57): a observação de um "Só meu" de ex-membro que o Administrador tornou dividido não vai para o
   // arquivo dos demais (a descrição vai, é necessária ao acerto). Ex-membro = saiu e o usuário não tem vínculo ativo
   // na família (quem voltou é o próprio dono, SEC-049).
-  const activeUsers = new Set(members.filter((m) => m.removedAt === null).map((m) => m.userId));
+  // US-092a (SEC-058): `userId` nulo nunca entra no conjunto (um cadastro ativo sem conta não faz o ex-membro "voltar")
+  const activeUsers = new Set(
+    members.flatMap((m) => (m.removedAt === null && m.userId != null ? [m.userId] : [])),
+  );
   const gone = new Set(
-    members.filter((m) => m.removedAt !== null && !activeUsers.has(m.userId)).map((m) => m.id),
+    members
+      .filter((m) => m.removedAt !== null && (m.userId == null || !activeUsers.has(m.userId)))
+      .map((m) => m.id),
   );
   const foreignGone = (memberId: string | null, authorId: string | null) =>
     memberId !== null &&
@@ -249,7 +255,7 @@ async function formerFamily(tx: Tx, familyId: string, mine: string[]) {
   const family = await tx.family.findUniqueOrThrow({ where: { id: familyId } });
   const members = await tx.member.findMany({
     where: { familyId },
-    include: { user: { select: { name: true, email: true } } },
+    include: { user: { select: { name: true, email: true, deletedAt: true } } },
     orderBy: [{ joinedAt: "asc" }, { id: "asc" }],
   });
   // SEC-029: o ex-membro segue a mesma regra do ativo: "Só meu" de OUTRA pessoa não sai, nem a observação
