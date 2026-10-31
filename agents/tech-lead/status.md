@@ -2,6 +2,17 @@
 
 *Atualizado: 2026-10-24 · Ciclos: **SEC Grupo B** (ADR-032, SDD-028 — abaixo), **R4-D v2** (Vercel, alternativas ao OAuth, lançamento direto, POC — abaixo), **R4-D** (MCP), **R4**, **R2.1 e R3**, **R1/R2***
 
+## Ciclo uso real (TL-U7/U8/U9, 2026-10-30): US-089..091 **SDD pronto, aprovadas para Dev**; US-085..088 **estimadas (sem SDD)**
+| Artefato | Cobre |
+| :--- | :--- |
+| [SDD-030 Conta pagadora padrão do cartão](sdd/SDD-030-conta-pagadora-padrao-do-cartao-us-089.md) | US-089: `CreditCard.paymentAccountId` anulável (FK composta, 2 migrações isoladas, sem backfill), só **sugere** (pré-seleção no pagar fatura; `accountId` segue obrigatório), arquivar a conta **mantém** o vínculo (tela vazia + aviso; reativar restaura), excluir **limpa**, evento `CARD_PAYER_ACCOUNT_CHANGED`, ordem de lock conta -> cartão, fatura soma na pagadora **ativa** no `byAccount` (SDD-029), "Sai da conta X", MCP inalterado, export LGPD, testes |
+| [SDD-031 Porta única "Já aconteceu / Vai acontecer" e "Repetir todo mês"](sdd/SDD-031-porta-unica-lancar-ou-prever-us-090-091.md) | US-090/091: **orquestração no cliente**, sem rota nova nem mudança de serviço (`door.ts` puro + `useDoorSubmit`); mapa estado -> corpo dos 3 serviços (lançamento, prevista, série); "Vai acontecer" indisponível no cartão e na receita (flag da US-051); chave de idempotência por serviço; botão "Salvar despesa/receita" e "Salvar previsão"; `PlannedDrawer` mantido; extensão para US-051/096/100; testes e passos E2E afetados |
+| [Notas técnicas US-085..088](architecture/notas-polimento-us-085-088.md) (TL-U9, sem SDD) | `SegmentedChoice` genérico (radio/tabs), tokens `--space-field/--space-group` com slot de erro da US-039 mantido, grade do Extrato (valor fixo + contêiner da linha), "Ver compra" no rodapé do card; riscos a11y/tema/mobile; ordem 085 -> 087 -> 088 -> 086 |
+
+**Pontos:** US-089 **3** (API/DB 1 · UI 1 · testes 1) · US-090 **5** + US-091 **3** = **8** (confirmam o PO) · US-085 **2** · US-086 **3** (era 2) · US-087 **3** · US-088 **1** = **9**. UR-1 = **25 pts** (PO prelim. 24). **Riscos:** US-086 (meta 375x667 pode virar "Salvar sempre visível"); `TransactionDrawer` de 700 linhas (extrair `door.ts`); `contas -> credit_cards` sem importar `cartoes` (ciclo); passos E2E da US-006. **PO (sem bloquear):** Gherkin da US-090 (botão, mensagem de data), "data" em "Mais detalhes" (US-086). **Nenhuma decisão do usuário pendente.** SDD-030/031 usam parte da faixa 030..032 reservada; **SDD-032 livre**.
+
+---
+
 ## Ciclo uso real (TL-U4, 2026-10-26): US-060 **SDD pronto, aprovada para Dev**
 | Artefato | Cobre |
 | :--- | :--- |
