@@ -112,8 +112,8 @@ body {
 .source-dot {
   display: inline-block;
   flex: none;
-  width: 10px;
-  height: 10px;
+  width: var(--dot, 10px);
+  height: var(--dot, 10px);
   border-radius: 9999px;
   background: var(--source-gray);
   border: 1px solid var(--color-slate-600);

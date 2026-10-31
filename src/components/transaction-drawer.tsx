@@ -10,6 +10,7 @@ import { RepeatFields, WhenSwitch } from "@/components/door-parts";
 import { InstallmentPreviewText } from "@/components/installment-preview";
 import { useFormatMoney } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
+import { SourceSelect } from "@/components/source-select";
 import { TagInput } from "@/components/tag-input";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -387,9 +388,13 @@ export function TransactionDrawer({
           label={kind === "EXPENSE" ? "Pagar com" : "Receber em"}
           error={errors.source}
         >
-          <select
+          <SourceSelect
             id="tx-account"
-            className={inputClass}
+            color={
+              effectiveSource.startsWith("card:")
+                ? cardList.find((c) => `card:${c.id}` === effectiveSource)?.color
+                : accounts.data?.items.find((a) => `acc:${a.id}` === effectiveSource)?.color
+            }
             value={effectiveSource}
             onChange={(e) => {
               setSource(e.target.value);
@@ -420,7 +425,7 @@ export function TransactionDrawer({
                 ))}
               </optgroup>
             ) : null}
-          </select>
+          </SourceSelect>
         </Field>
         {kind === "EXPENSE" && !isLater && cards.data && cardList.length === 0 ? (
           <Link

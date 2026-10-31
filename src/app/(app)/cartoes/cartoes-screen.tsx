@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Money } from "@/components/money";
+import { SourceBadge } from "@/components/source-badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
@@ -92,7 +93,7 @@ function CardItem({
           href={`/cartoes/${card.id}`}
           className="block truncate font-semibold text-slate-900 hover:underline"
         >
-          {card.name}
+          <SourceBadge color={card.color} name={card.name} />
         </Link>
         <p className="break-words text-sm text-slate-500">
           {card.institution} · {card.owner.name.split(" ")[0]}
@@ -214,7 +215,7 @@ function ArchivedCards({
             data-testid="archived-card"
             className="flex items-center justify-between gap-3 py-2 text-sm"
           >
-            <span className="min-w-0 truncate text-slate-800">{c.name}</span>
+            <SourceBadge color={c.color} name={c.name} className="text-slate-800" />
             <Button variant="secondary" disabled={busyId === c.id} onClick={() => onReactivate(c)}>
               <RotateCcw size={16} aria-hidden="true" />
               Reativar

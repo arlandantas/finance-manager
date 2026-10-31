@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CategoryIcon } from "@/components/category-icon";
 import { MoneyInput } from "@/components/money-input";
+import { SourceSelect } from "@/components/source-select";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
@@ -682,9 +683,9 @@ export function PlannedDrawer({
             error={errors.paymentAccountId}
             hint={source.reasonText || undefined}
           >
-            <select
+            <SourceSelect
               id="pl-account"
-              className={inputClass}
+              color={accounts.data?.items.find((a) => a.id === source.accountId)?.color}
               value={source.accountId}
               disabled={controllerOnly}
               onChange={(e) => {
@@ -699,7 +700,7 @@ export function PlannedDrawer({
                   {a.name}
                 </option>
               ))}
-            </select>
+            </SourceSelect>
           </Field>
 
           {!editing ? (

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
+import type { AccountColor } from "@/modules/contas/colors";
 import type {
   AccountDTO,
   AccountsResponse,
@@ -51,9 +52,15 @@ export function useInvalidateAfterAccountChange() {
   const qc = useQueryClient();
   return () =>
     Promise.all(
-      [["accounts"], ["transactions"], ["home"], ["payables"], ["cards"], ["card"]].map(
-        (queryKey) => qc.invalidateQueries({ queryKey }),
-      ),
+      [
+        ["accounts"],
+        ["transactions"],
+        ["home"],
+        ["payables"],
+        ["cards"],
+        ["card"],
+        ["installment-plan"],
+      ].map((queryKey) => qc.invalidateQueries({ queryKey })),
     );
 }
 
@@ -73,12 +80,18 @@ export function useRenameAccount() {
       id: string;
       name?: string;
       excludeFromAvailable?: boolean;
+      color?: AccountColor;
       version: number;
       idempotencyKey: string;
     }) =>
       apiFetch<AccountDTO>(`/api/v1/accounts/${a.id}`, {
         method: "PATCH",
-        body: { name: a.name, excludeFromAvailable: a.excludeFromAvailable, version: a.version },
+        body: {
+          name: a.name,
+          excludeFromAvailable: a.excludeFromAvailable,
+          color: a.color,
+          version: a.version,
+        },
         idempotencyKey: a.idempotencyKey,
       }),
     onSuccess: invalidate,

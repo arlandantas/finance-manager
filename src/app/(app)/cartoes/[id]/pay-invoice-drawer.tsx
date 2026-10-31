@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Money, useFormatMoney } from "@/components/money";
+import { SourceSelect } from "@/components/source-select";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
@@ -177,9 +178,9 @@ export function PayInvoiceDrawer({
         </div>
 
         <Field id="pi-account" label="Conta de origem" error={errors.accountId}>
-          <select
+          <SourceSelect
             id="pi-account"
-            className={inputClass}
+            color={accounts.data?.items.find((a) => a.id === accountId)?.color}
             value={accountId}
             onChange={(e) => source.pick(e.target.value)}
             aria-invalid={errors.accountId ? true : undefined}
@@ -193,7 +194,7 @@ export function PayInvoiceDrawer({
                 {source.optionSuffix(a)}
               </option>
             ))}
-          </select>
+          </SourceSelect>
           {source.reasonText ? (
             <p data-testid="source-reason" className="mt-1 text-xs text-slate-600">
               {source.reasonText}

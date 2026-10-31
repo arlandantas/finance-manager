@@ -7,6 +7,7 @@ import { useState } from "react";
 import { monthLabel, shiftMonthKey } from "@/app/(app)/extrato/filters";
 import { Money, useMoneyText } from "@/components/money";
 import { useQuickAdd } from "@/components/quick-add";
+import { SourceBadge } from "@/components/source-badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -397,7 +398,7 @@ function BalancesCard({ b }: { b: HomeDTO["balances"] }) {
                       data-testid="home-account"
                       className="flex min-h-11 items-center justify-between gap-3 text-sm"
                     >
-                      <span className="min-w-0 truncate text-slate-800">{a.name}</span>
+                      <SourceBadge color={a.color} name={a.name} className="text-slate-800" />
                       <span
                         className={cn(
                           "font-semibold tabular-nums",

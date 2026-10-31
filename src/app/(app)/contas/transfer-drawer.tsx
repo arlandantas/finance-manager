@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Money } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
+import { SourceSelect } from "@/components/source-select";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
@@ -147,9 +148,9 @@ export function TransferDrawer({
     error?: string,
   ) => (
     <Field id={id} label={label} error={error}>
-      <select
+      <SourceSelect
         id={id}
-        className={inputClass}
+        color={items.find((a) => a.id === value)?.color}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={error ? true : undefined}
@@ -159,7 +160,7 @@ export function TransferDrawer({
             {a.name}
           </option>
         ))}
-      </select>
+      </SourceSelect>
     </Field>
   );
 

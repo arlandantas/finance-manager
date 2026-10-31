@@ -4,6 +4,7 @@ import { Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Money } from "@/components/money";
+import { SourceBadge } from "@/components/source-badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
@@ -158,7 +159,8 @@ export function InstallmentPlanDialog({
             <header className="flex flex-col gap-1">
               <h3 className="text-base font-semibold text-slate-900">{plan.description}</h3>
               <p className="text-sm text-slate-600">
-                {plan.category.name} · {plan.card.name} · {plan.count}x
+                {plan.category.name} · <SourceBadge color={plan.card.color} name={plan.card.name} />{" "}
+                · {plan.count}x
               </p>
               <p
                 data-testid="plan-total"

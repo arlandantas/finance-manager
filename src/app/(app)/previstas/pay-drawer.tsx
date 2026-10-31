@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Money, useFormatMoney } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
+import { SourceSelect } from "@/components/source-select";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
@@ -213,9 +214,9 @@ export function PayPlannedDrawer({
           </p>
 
           <Field id="pay-account" label="Conta" error={errors.accountId}>
-            <select
+            <SourceSelect
               id="pay-account"
-              className={inputClass}
+              color={accounts.data?.items.find((a) => a.id === accountId)?.color}
               value={accountId}
               onChange={(e) => source.pick(e.target.value)}
               aria-invalid={errors.accountId ? true : undefined}
@@ -229,7 +230,7 @@ export function PayPlannedDrawer({
                   {source.optionSuffix(a)}
                 </option>
               ))}
-            </select>
+            </SourceSelect>
             {planned?.paymentAccount?.archived ? (
               <p data-testid="archived-account-note" className="mt-1 text-xs text-slate-700">
                 A conta prevista ({planned.paymentAccount.name}) foi arquivada. Escolha outra.

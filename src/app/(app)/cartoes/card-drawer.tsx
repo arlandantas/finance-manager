@@ -3,7 +3,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ColorPicker } from "@/components/color-picker";
 import { MoneyInput } from "@/components/money-input";
+import { SourceSelect } from "@/components/source-select";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass, TextInput } from "@/components/ui/field";
@@ -11,8 +13,10 @@ import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { cycleExplanation } from "@/modules/cartoes/cycle";
 import { useCreateCard, useUpdateCard } from "@/modules/cartoes/hooks";
 import { type CardDTO, CreateCardSchema, UpdateCardSchema } from "@/modules/cartoes/schemas";
+import type { AccountColor } from "@/modules/contas/colors";
 import { useAccounts } from "@/modules/contas/hooks";
 import { INSTITUTION_SUGGESTIONS } from "@/modules/contas/schemas";
+import { useSuggestedColor } from "@/modules/contas/use-suggested-color";
 import { memberOptionLabel } from "@/modules/familia/display-name";
 import { useFamily } from "@/modules/familia/hooks";
 
@@ -23,7 +27,8 @@ type FieldKey =
   | "dueDay"
   | "ownerMemberId"
   | "institution"
-  | "paymentAccountId";
+  | "paymentAccountId"
+  | "color";
 
 const CYCLE_LOCKED_HINT =
   "Os dias de fechamento e vencimento não podem ser alterados porque já há compras neste cartão";
@@ -50,6 +55,9 @@ export function CardDrawer({
   const [due, setDue] = useState("");
   const [payerId, setPayerId] = useState("");
   const [payerTouched, setPayerTouched] = useState(false);
+  const suggested = useSuggestedColor();
+  const [picked, setPicked] = useState<AccountColor | null>(null);
+  const color = picked ?? card?.color ?? suggested;
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [banner, setBanner] = useState<string | null>(null);
   const [conflict, setConflict] = useState<string | null>(null);
@@ -65,6 +73,7 @@ export function CardDrawer({
     setBanner(null);
     setConflict(null);
     setPayerTouched(false);
+    setPicked(null);
     setKey(newIdempotencyKey());
     if (card) {
       setName(card.name);
@@ -134,6 +143,7 @@ export function CardDrawer({
       institution,
       ...(ownerId ? { ownerMemberId: ownerId } : {}),
       limitInCents: limit,
+      color,
       ...(closingDay !== undefined ? { closingDay } : {}),
       ...(dueDay !== undefined ? { dueDay } : {}),
       // só envia quando o usuário mexeu (evita PATCH e evento falsos)
@@ -333,6 +343,7 @@ export function CardDrawer({
               A conta {card.paymentAccount.name} foi arquivada. Escolha outra ou deixe sem conta.
             </p>
           ) : null}
+          <ColorPicker id="card-color" value={color} onChange={setPicked} error={errors.color} />
           <Field
             id="card-payer"
             label="Conta que paga a fatura"
@@ -343,9 +354,9 @@ export function CardDrawer({
                 : "Só sugere: você confirma a conta ao pagar."
             }
           >
-            <select
+            <SourceSelect
               id="card-payer"
-              className={inputClass}
+              color={accounts.data?.items.find((a) => a.id === payerId)?.color}
               value={payerId}
               disabled={accounts.isPending}
               aria-invalid={errors.paymentAccountId ? true : undefined}
@@ -366,7 +377,7 @@ export function CardDrawer({
                   ))}
                 </>
               )}
-            </select>
+            </SourceSelect>
           </Field>
           <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white dark:bg-slate-100 p-4">
             <Button type="submit" className="w-full" disabled={pending}>

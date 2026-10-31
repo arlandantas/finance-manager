@@ -3,10 +3,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ColorPicker } from "@/components/color-picker";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, TextInput } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import type { AccountColor } from "@/modules/contas/colors";
 import { useRenameAccount } from "@/modules/contas/hooks";
 import { type AccountDTO, RenameAccountSchema } from "@/modules/contas/schemas";
 import { ReserveSwitch } from "./reserve-switch";
@@ -20,6 +22,7 @@ export function RenameAccountDialog({
 }) {
   const [name, setName] = useState("");
   const [reserve, setReserve] = useState(false);
+  const [color, setColor] = useState<AccountColor>("BLUE");
   const [error, setError] = useState<string | undefined>();
   const [conflict, setConflict] = useState<string | null>(null);
   const key = useRef(newIdempotencyKey());
@@ -30,6 +33,7 @@ export function RenameAccountDialog({
     if (account) {
       setName(account.name);
       setReserve(account.excludeFromAvailable);
+      setColor(account.color);
       setError(undefined);
       setConflict(null);
       key.current = newIdempotencyKey();
@@ -41,6 +45,7 @@ export function RenameAccountDialog({
     const parsed = RenameAccountSchema.safeParse({
       name,
       excludeFromAvailable: reserve,
+      color,
       version: account.version,
     });
     if (!parsed.success) {
@@ -53,6 +58,7 @@ export function RenameAccountDialog({
         id: account.id,
         ...(parsed.data.name !== undefined ? { name: parsed.data.name } : {}),
         excludeFromAvailable: reserve,
+        color,
         version: account.version,
         idempotencyKey: key.current,
       },
@@ -106,6 +112,7 @@ export function RenameAccountDialog({
               aria-invalid={error ? true : undefined}
             />
           </Field>
+          <ColorPicker id="rename-color" value={color} onChange={setColor} />
           <ReserveSwitch checked={reserve} onChange={setReserve} />
           <Button type="submit" disabled={rename.isPending}>
             {rename.isPending ? "Salvando…" : "Salvar"}

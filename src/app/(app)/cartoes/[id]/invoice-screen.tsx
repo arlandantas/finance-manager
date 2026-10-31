@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { InstallmentPlanDialog } from "@/components/installment-plan-dialog";
 import { Money } from "@/components/money";
+import { SourceBadge } from "@/components/source-badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
@@ -161,7 +162,9 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
       {c && inv ? (
         <>
           <header className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-4">
-            <h1 className="text-2xl font-semibold text-slate-900">{c.name}</h1>
+            <h1 className="text-2xl font-semibold text-slate-900">
+              <SourceBadge color={c.color} name={c.name} />
+            </h1>
             <p className="text-sm text-slate-600">{cycleSentence(c.closingDay, c.dueDay)}</p>
             <PayerLine card={c} />
             <div className="mt-3 flex flex-wrap justify-between gap-x-3 text-sm">

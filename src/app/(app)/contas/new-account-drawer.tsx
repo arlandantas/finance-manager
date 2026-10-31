@@ -5,11 +5,13 @@ import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { ColorPicker } from "@/components/color-picker";
 import { MoneyInput } from "@/components/money-input";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass, TextInput } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import type { AccountColor } from "@/modules/contas/colors";
 import { useCreateAccount } from "@/modules/contas/hooks";
 import {
   ACCOUNT_TYPE_LABELS,
@@ -17,6 +19,7 @@ import {
   CreateAccountSchema,
   INSTITUTION_SUGGESTIONS,
 } from "@/modules/contas/schemas";
+import { useSuggestedColor } from "@/modules/contas/use-suggested-color";
 import { memberOptionLabel } from "@/modules/familia/display-name";
 import { useFamily } from "@/modules/familia/hooks";
 import { ReserveSwitch } from "./reserve-switch";
@@ -44,6 +47,9 @@ export function NewAccountDrawer({
   const [institutionChoice, setInstitutionChoice] = useState<string>("Outro");
   const [customInstitution, setCustomInstitution] = useState("");
   const submitting = useRef(false);
+  const suggested = useSuggestedColor();
+  const [picked, setPicked] = useState<AccountColor | null>(null);
+  const color = picked ?? suggested;
 
   const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(CreateAccountSchema),
@@ -65,6 +71,7 @@ export function NewAccountDrawer({
       setBanner(null);
       setInstitutionChoice("Outro");
       setCustomInstitution("");
+      setPicked(null);
     }
   }, [open, form]);
 
@@ -80,29 +87,32 @@ export function NewAccountDrawer({
       if (submitting.current) return;
       submitting.current = true;
       setBanner(null);
-      create.mutate(values as FormInput, {
-        onSuccess: () => {
-          toast.success("Conta cadastrada com sucesso!");
-          onOpenChange(false);
+      create.mutate(
+        { ...(values as FormInput), color },
+        {
+          onSuccess: () => {
+            toast.success("Conta cadastrada com sucesso!");
+            onOpenChange(false);
+          },
+          onError: (e) => {
+            if (e instanceof NetworkError) setBanner(e.message);
+            else if (e instanceof ApiClientError && e.code === "DUPLICATE_ACCOUNT_NAME") {
+              form.setError("name", { message: e.message });
+            } else if (
+              e instanceof ApiClientError &&
+              e.code === "VALIDATION_ERROR" &&
+              Array.isArray(e.details)
+            ) {
+              for (const d of e.details as Array<{ path: string; message: string }>) {
+                form.setError(d.path as keyof FormInput, { message: d.message });
+              }
+            } else setBanner(e instanceof Error ? e.message : "Erro inesperado. Tente novamente.");
+          },
+          onSettled: () => {
+            submitting.current = false;
+          },
         },
-        onError: (e) => {
-          if (e instanceof NetworkError) setBanner(e.message);
-          else if (e instanceof ApiClientError && e.code === "DUPLICATE_ACCOUNT_NAME") {
-            form.setError("name", { message: e.message });
-          } else if (
-            e instanceof ApiClientError &&
-            e.code === "VALIDATION_ERROR" &&
-            Array.isArray(e.details)
-          ) {
-            for (const d of e.details as Array<{ path: string; message: string }>) {
-              form.setError(d.path as keyof FormInput, { message: d.message });
-            }
-          } else setBanner(e instanceof Error ? e.message : "Erro inesperado. Tente novamente.");
-        },
-        onSettled: () => {
-          submitting.current = false;
-        },
-      });
+      );
     },
     (invalid) => {
       const first = Object.keys(invalid)[0];
@@ -213,6 +223,8 @@ export function NewAccountDrawer({
             )}
           />
         </Field>
+
+        <ColorPicker id="account-color" value={color} onChange={setPicked} />
 
         <Controller
           control={form.control}

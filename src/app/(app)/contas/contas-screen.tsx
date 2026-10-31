@@ -12,6 +12,7 @@ import {
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Money } from "@/components/money";
+import { SourceBadge } from "@/components/source-badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
@@ -62,7 +63,7 @@ function AccountCard({
       <Avatar name={account.owner.name} image={account.owner.image} size={40} />
       <div className="min-w-0">
         <p className="flex items-center gap-2 font-semibold text-slate-900">
-          <span className="truncate">{account.name}</span>
+          <SourceBadge color={account.color} name={account.name} className="font-semibold" />
           {account.excludeFromAvailable ? (
             <span
               data-testid="reserve-badge"
@@ -151,7 +152,7 @@ function ArchivedSection({
             data-testid="archived-account"
             className="flex items-center justify-between gap-3 py-2 text-sm"
           >
-            <span className="min-w-0 truncate text-slate-800">{a.name}</span>
+            <SourceBadge color={a.color} name={a.name} className="text-slate-800" />
             <Button variant="secondary" disabled={busyId === a.id} onClick={() => onReactivate(a)}>
               <RotateCcw size={16} aria-hidden="true" />
               Reativar

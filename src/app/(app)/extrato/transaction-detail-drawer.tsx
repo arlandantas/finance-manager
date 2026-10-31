@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { InstallmentPlanDialog } from "@/components/installment-plan-dialog";
 import { Money } from "@/components/money";
+import { SourceBadge } from "@/components/source-badge";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -377,8 +378,16 @@ export function TransactionDetailDrawer({
                   {t.category.archived ? `${t.category.name} (arquivada)` : t.category.name}
                 </Row>
               ) : null}
-              {t.account ? <Row label="Conta">{t.account.name}</Row> : null}
-              {t.card ? <Row label="Cartão">{t.card.name}</Row> : null}
+              {t.account ? (
+                <Row label="Conta">
+                  <SourceBadge color={t.account.color} name={t.account.name} />
+                </Row>
+              ) : null}
+              {t.card ? (
+                <Row label="Cartão">
+                  <SourceBadge color={t.card.color} name={t.card.name} />
+                </Row>
+              ) : null}
               {t.invoice ? (
                 <Row label="Fatura">
                   {formatInvoiceLabel(t.invoice.ref)} · fecha {brDate(t.invoice.closingDate)} ·

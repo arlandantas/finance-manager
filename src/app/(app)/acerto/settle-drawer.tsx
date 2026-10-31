@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Money, useFormatMoney } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
+import { SourceSelect } from "@/components/source-select";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
@@ -125,9 +126,9 @@ export function SettleDrawer({
     err?: string,
   ) => (
     <Field id={id} label={label} error={err}>
-      <select
+      <SourceSelect
         id={id}
-        className={inputClass}
+        color={items.find((a) => a.id === value)?.color}
         value={value}
         onChange={(e) => set(e.target.value)}
         aria-invalid={err ? true : undefined}
@@ -137,7 +138,7 @@ export function SettleDrawer({
             {a.name}
           </option>
         ))}
-      </select>
+      </SourceSelect>
     </Field>
   );
 

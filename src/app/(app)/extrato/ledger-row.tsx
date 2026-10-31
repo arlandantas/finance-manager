@@ -3,6 +3,7 @@
 import { ArrowLeftRight, ListOrdered } from "lucide-react";
 import { CategoryIcon } from "@/components/category-icon";
 import { Money } from "@/components/money";
+import { SourceBadge } from "@/components/source-badge";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
@@ -56,6 +57,10 @@ export function LedgerRow({
   const sourceName =
     (isPayment ? (item.account?.name ?? "") : (item.card?.name ?? item.account?.name ?? "")) +
     archivedMark;
+  const sourceColor = isPayment
+    ? (item.account?.color ?? null)
+    : (item.card?.color ?? item.account?.color ?? null);
+  const source = sourceColor ? <SourceBadge color={sourceColor} name={sourceName} /> : sourceName;
   const kindLabel = item.category?.name ?? (isPayment ? "Pagamento de fatura" : "Transferência");
   const signedCents = income ? item.amountInCents : -item.amountInCents;
   return (
@@ -118,7 +123,7 @@ export function LedgerRow({
               data-testid="ledger-date"
               className="block break-words text-xs text-slate-500 md:hidden"
             >
-              {shortDate(item.occurredOn)} · {kindLabel} · {sourceName}
+              {shortDate(item.occurredOn)} · {kindLabel} · {source}
             </span>
             <span className="mt-1 flex flex-wrap gap-1">
               {item.type === "EXPENSE" ? (
@@ -176,7 +181,7 @@ export function LedgerRow({
           <span className="hidden truncate text-sm text-slate-700 md:block">
             {item.category?.name ?? "—"}
           </span>
-          <span className="hidden truncate text-sm text-slate-700 md:block">{sourceName}</span>
+          <span className="hidden min-w-0 truncate text-sm text-slate-700 md:block">{source}</span>
           {/* avatar: célula sempre presente (vazia sem pagador) para manter a coluna */}
           <span className="flex items-center justify-center">
             {item.payer ? (

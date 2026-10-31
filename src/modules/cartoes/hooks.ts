@@ -75,9 +75,15 @@ function useInvalidateAfterCardChange() {
   const qc = useQueryClient();
   return () =>
     Promise.all(
-      [["cards"], ["card"], ["invoice"], ["home"], ["payables"]].map((queryKey) =>
-        qc.invalidateQueries({ queryKey }),
-      ),
+      [
+        ["cards"],
+        ["card"],
+        ["invoice"],
+        ["home"],
+        ["payables"],
+        ["transactions"], // US-050: a cor do cartão aparece nos DTOs de lançamento
+        ["installment-plan"],
+      ].map((queryKey) => qc.invalidateQueries({ queryKey })),
     );
 }
 
