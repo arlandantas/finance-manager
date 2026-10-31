@@ -31,8 +31,8 @@ agents/
 │   ├── sdd/                       # Especificações SDD (Specification-Driven Development)
 │   ├── adrs/                      # Architecture Decision Records (ADRs)
 │   └── architecture/              # Diagramas, modelos de dados e visão sistêmica
-└── developer/                     # 4. Agente Desenvolvedor & QA (Dono da Implementação & Qualidade)
-    ├── README.md                  # Instruções de operação do Desenvolvedor & QA
+└── developer/                     # 4. Dev (implementação e testes) + 5. QA executor (Haiku) e QA exploratório (Sonnet)
+    ├── README.md                  # Instruções de operação do Dev e dos dois papéis de QA
     └── tasks/                     # Acompanhamento de execução técnica e checklist de QA
 ```
 
@@ -49,7 +49,8 @@ sequenceDiagram
     actor Stk as Stakeholder
     actor PO as Product Owner
     actor TL as Tech Lead
-    actor Dev as Desenvolvedor & QA
+    actor Dev as Dev (código e testes)
+    actor QA as QA executor / exploratório
 
     Gestor->>Stk: Inicia ciclo / Define objetivos de negócio
     Note over Stk,PO: Parceria: Stakeholder traz valor e dores,<br/>PO fatia o MVP e desenha o Roadmap
@@ -59,8 +60,10 @@ sequenceDiagram
     TL->>Gestor: Registra decisões e SDD em agents/tech-lead/
     Note over Gestor,PO: Gestor consolida cronograma com base nas<br/>estimativas do TL/Dev e metas do Stakeholder
     Gestor->>Dev: Libera sprint / tarefas para implementação e testes
-    Note over Dev: Implementa código seguindo o SDD<br/>e executa plano completo de QA (testes unitários e BDD)
-    Dev->>Gestor: Submete código e relatório de testes para validação
+    Note over Dev: Implementa código seguindo o SDD<br/>e escreve testes unitários, de integração e BDD/E2E
+    Dev->>Gestor: Submete código e testes focados
+    Gestor->>QA: Aciona suítes completas (e exploratório se houver UI)
+    QA->>Gestor: Devolve lista curta de falhas/achados
     Gestor->>Stk: Apresenta entrega para homologação de valor
 ```
 
@@ -80,7 +83,7 @@ Auditor **independente** (não faz parte da sequência Stakeholder ➔ PO ➔ TL
 
 ## 👥 Matriz de Responsabilidades & Decisões Estratégicas
 
-| Decisão / Domínio | Stakeholder | Product Owner (PO) | Tech Lead / Dev & QA | Gestor do Projeto |
+| Decisão / Domínio | Stakeholder | Product Owner (PO) | Tech Lead / Dev | Gestor do Projeto |
 | :--- | :---: | :---: | :---: | :---: |
 | **Identificação do Problema e Dores** | **Dono Principal** | Apoia entendimento | Analisa contexto | Garante alinhamento |
 | **Definição do Escopo do MVP** | Informa a dor vital inegociável | **Lidera o fatiamento (*Scope Slicing*)** | Avalia complexidade técnica | Valida viabilidade |
@@ -98,13 +101,13 @@ Enquanto o **BDD e os Fluxos do PO** orientam *a experiência e o comportamento 
 2. **Contratos de API e Serviços**: Métodos HTTP, rotas, payloads, headers de idempotência e códigos de retorno.
 3. **Resolução de Gaps Técnicos**: Decisão de arredondamento de centavos (`amountInCents`), concorrência, fuse de timezones e estados de erro.
 4. **Estados Técnicos da Interface**: Definição de skeletons de loading, fallbacks e invalidação de cache.
-5. **Guia de Testes para o QA**: O Tech Lead especifica exatamente quais testes o Desenvolvedor & QA precisa criar.
+5. **Guia de Testes para o QA**: O Tech Lead especifica exatamente quais testes o Dev precisa criar.
 
 ---
 
 ## 🧪 Estratégia de QA (Quality Assurance)
 
-A responsabilidade de QA fica concentrada no **Desenvolvedor & QA**:
+A qualidade é dividida em três papéis: o **Dev** escreve os testes; o **QA executor** roda as suítes; o **QA exploratório** verifica a interface no navegador (detalhes em `agents/developer/README.md`). Do Dev:
 - O desenvolvedor programa com mentalidade de engenharia da qualidade desde o início.
 - Antes de marcar qualquer tarefa como concluída, o desenvolvedor deve:
   - Validar todos os cenários **BDD** criados pelo PO.
@@ -122,7 +125,7 @@ A responsabilidade de QA fica concentrada no **Desenvolvedor & QA**:
    - Mantenha um arquivo de status ou log atualizado para que os outros agentes e o Gestor saibam em que estágio você está.
 3. **Rastreabilidade Obrigatória**:
    Todo trabalho deve ter rastreabilidade cruzada:
-   - Exemplo: Requisito `NEED-001` (Stakeholder) ➔ Fluxo `FLUXO-001` / História `US-001` (PO) ➔ Especificação `SDD-001` / Decisão `ADR-001` (Tech Lead) ➔ Tarefa `TASK-001` / Código e Testes (Desenvolvedor & QA).
+   - Exemplo: Requisito `NEED-001` (Stakeholder) ➔ Fluxo `FLUXO-001` / História `US-001` (PO) ➔ Especificação `SDD-001` / Decisão `ADR-001` (Tech Lead) ➔ Tarefa `TASK-001` / Código e Testes (Dev).
 4. **Respeito aos Critérios de Conclusão (Definition of Done - DoD)**:
    Nenhuma etapa é considerada concluída sem que os entregáveis estejam documentados, testados e validados pelo Gestor.
 5. **Comunicação com o Gestor**:
@@ -134,6 +137,7 @@ A responsabilidade de QA fica concentrada no **Desenvolvedor & QA**:
    Ao invocar ou atuar como agente, avalie a complexidade da tarefa e use o **menor modelo capaz de entregá-la com qualidade**. Não use modelos mais complexos (e caros) para tarefas simples.
    - **Modelo leve** (ex.: Haiku): buscas e leituras no repositório, ajustes de documentação/status, edições mecânicas, formatação, rodar comandos e relatar resultado.
    - **Modelo intermediário** (ex.: Sonnet): implementação seguindo um SDD já pronto, testes, refatorações localizadas, correção de bugs conhecidos.
+   - **QA**: o **QA executor** (rodar suítes e E2E, relatar falhas) usa Haiku; o **QA exploratório** (navegador real, só em entregas de interface) usa Sonnet. Nenhum dos dois edita código.
    - **Modelo avançado** (ex.: Opus): decisões de arquitetura/ADR, SDD de domínio crítico (rateio, centavos, concorrência, migração de dados), depuração difícil e revisões de risco.
    - Na dúvida, comece pelo modelo menor e escale apenas se o resultado for insuficiente. Registre a escolha e o motivo na tarefa quando não for óbvia.
    - O **Gestor** é responsável por aplicar esta regra ao delegar: escolhe o modelo de cada subagente, briefs enxutos, delegando buscas amplas a modelos leves e reservando o avançado a decisões críticas.
@@ -165,7 +169,8 @@ Todos os commits no repositório devem seguir rigorosamente duas regras fundamen
    - **Stakeholder**: `Co-authored-by: Agente Stakeholder <stakeholder@finance-manager.local>`
    - **Product Owner**: `Co-authored-by: Agente Product Owner <po@finance-manager.local>`
    - **Tech Lead**: `Co-authored-by: Agente Tech Lead <tech-lead@finance-manager.local>`
-   - **Desenvolvedor & QA**: `Co-authored-by: Agente Desenvolvedor & QA <dev-qa@finance-manager.local>`
+   - **Dev**: `Co-authored-by: Agente Desenvolvedor & QA <dev-qa@finance-manager.local>`
+   - **QA (executor e exploratório)**: `Co-authored-by: Agente QA <qa@finance-manager.local>`
    - **Segurança da Informação**: `Co-authored-by: Agente de Segurança <security@finance-manager.local>`
 
 

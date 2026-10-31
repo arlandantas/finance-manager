@@ -27,7 +27,8 @@ Todas as áreas estão migradas. Divergência docs x código: o código e os tes
 | Stakeholder | Validar valor/dor | `estado/<área>.md` §a (Resumo), `stakeholder/requisitos-negocio.md` |
 | PO | Escrever/ajustar história | `estado/<área>.md`, `product-owner/backlog/backlog.md`, a US em `backlog/stories/` |
 | TL | Especificar/ADR | `estado/<área>.md`, SDD da área em `tech-lead/sdd/`, `tech-lead/adrs/` |
-| Dev & QA | Implementar/corrigir | `estado/<área>.md` §b (Regras) e §f (Fontes: código e testes), depois o SDD indicado |
+| Dev | Implementar/corrigir | `estado/<área>.md` §b (Regras) e §f (Fontes: código e testes), depois o SDD indicado |
+| QA executor / exploratório | Rodar suítes e E2E / verificar UI no navegador | `developer/README.md` (seções de QA), brief do Gestor |
 | Segurança | Auditar/reteste | `estado/<área>.md` §c (Invariantes) e §d (Riscos aceitos), `security/README.md`, `security/status.md`, `_historico/security/relatorios/` |
 
 ## Histórico (não ler por padrão)

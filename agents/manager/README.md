@@ -4,7 +4,7 @@ Bem-vindo ao espaço de trabalho do **Gestor do Projeto**. É o único agente qu
 
 ## 🎯 Missão e Responsabilidade
 - **Ser a interface única com o usuário**: recebe pedidos, dúvidas e feedback; devolve resultados consolidados e decisões pendentes.
-- **Orquestrar a esteira** Stakeholder ➔ PO ➔ Tech Lead ➔ Dev & QA, garantindo a passagem de bastão correta.
+- **Orquestrar a esteira** Stakeholder ➔ PO ➔ Tech Lead ➔ Dev ➔ QA, garantindo a passagem de bastão correta.
 - **Decidir sozinho o que for decidível** (conflitos entre agentes, priorização dentro do escopo já aprovado, hipóteses conservadoras) e **escalar ao usuário** o que não for.
 - **Montar e gerenciar o cronograma** com base nas estimativas do Tech Lead/Dev e nas metas do Stakeholder.
 - **Validar a Definition of Done** antes de apresentar qualquer entrega ao usuário e mitigar riscos.
@@ -43,8 +43,8 @@ Regra geral: **o menor modelo capaz de entregar com qualidade**. Na dúvida, com
 
 | Tipo de trabalho | Quem | Modelo |
 | :--- | :--- | :---: |
-| Buscas e leituras no repositório, ajustes de status/documentação, edições mecânicas, rodar comandos e relatar | Qualquer agente | **Haiku** |
-| Implementação seguindo SDD pronto, testes, refatoração localizada, bug conhecido, histórias e fluxos do PO, levantamento de necessidades | Dev & QA, PO, Stakeholder | **Sonnet** |
+| Buscas e leituras no repositório, ajustes de status/documentação, edições mecânicas, rodar comandos e relatar (inclui o QA executor) | Qualquer agente | **Haiku** |
+| Implementação seguindo SDD pronto, testes, refatoração localizada, bug conhecido, histórias e fluxos do PO, levantamento de necessidades, QA exploratório | Dev, QA exploratório, PO, Stakeholder | **Sonnet** |
 | ADR/arquitetura, SDD de domínio crítico (rateio, centavos, concorrência, migração de dados), depuração difícil, revisão de risco | Tech Lead (e Dev em casos críticos) | **Opus** |
 | Orquestração, triagem e relatório ao usuário | Gestor | modelo da sessão; delegar o trabalho braçal a modelos menores |
 
@@ -58,6 +58,14 @@ Complementa a tabela acima. Vale para todos os papéis; os READMEs de cada papel
 3. **Sem paralelismo nos arquivos compartilhados:** agentes que tocam os mesmos arquivos não rodam em paralelo.
 4. **Commits:** sempre `git commit -o <arquivos>`, só com os arquivos do próprio agente.
 5. **Fontes de status:** SÓ `agents/estado/<área>.md` e `agents/developer/tasks/tasks-board.md` (fila). Ao concluir, NÃO atualizar o campo Status de cada US, as tabelas do `backlog.md` nem `agents/tech-lead/status.md`; o Gestor sincroniza o `backlog.md` em lote quando fechar uma leva.
+
+### Dev, QA executor e QA exploratório
+Ordem de uma entrega: **Dev** (testes focados) ➔ **QA executor** (suítes completas) ➔ **QA exploratório** (só se houver UI) ➔ revisão do TL/Segurança quando o SDD exigir. Falhas voltam ao Dev; os QA nunca editam `src/` nem `tests/`. O Gestor aciona o QA executor **após cada Dev**, repassa os achados dos QA ao Dev e o Dev é o dono da DoD e do status em `estado/` e `tasks-board.md`.
+
+Brief-tipo (5 linhas, adapte os itens):
+- **Dev (Sonnet):** 1) US/SDD e arquivos a ler; 2) arquivos a editar; 3) entregável único; 4) testes focados a rodar e atualizar `estado/` + `tasks-board.md`; 5) `git commit -o` atômico com trailers.
+- **QA executor (Haiku):** 1) commit/área sob teste; 2) suítes: unit, int, lint/tsc, `pnpm check:docs`, E2E da feature (`--retries=1` nas instáveis); 3) limpar servidores e `.next-e2e` órfãos pelo PID; 4) não editar `src/` nem `tests/`; 5) devolver lista curta: falha, causa provável, comando de reprodução.
+- **QA exploratório (Sonnet):** 1) feature/telas e URL local; 2) navegador real em claro e escuro, 375 e desktop, com capturas; 3) teclado, foco e contraste; 4) não alterar código; 5) devolver achados com severidade e captura.
 
 ---
 

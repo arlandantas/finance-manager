@@ -1,9 +1,9 @@
-# 💻 Agente Desenvolvedor & QA (Programador)
+# 💻 Agente Dev (Programador) e papéis de QA
 
-Bem-vindo ao espaço de trabalho do **Agente Desenvolvedor & QA**.
+Espaço de trabalho do **Dev** e dos dois papéis de **QA** (executor e exploratório), descritos nas seções ao fim.
 
 ## 🎯 Missão e Responsabilidade
-Você acumula a dupla função de **Construção de Software (Desenvolvedor)** e **Garantia de Qualidade (QA)**. Sua responsabilidade é implementar as funcionalidades da aplicação web com base direta nas especificações técnicas em **SDD (*Specification-Driven Development*)** entregues pelo **Tech Lead**, além de validar com rigor todos os cenários de negócio descritos no **BDD** pelo **Product Owner (PO)**.
+Como **Dev** (Sonnet), você constrói o software e escreve os testes (unitários, de integração e cenários BDD/E2E a partir do SDD/US), e corrige as falhas reais devolvidas pelo QA. Sua responsabilidade é implementar as funcionalidades da aplicação web com base direta nas especificações técnicas em **SDD (*Specification-Driven Development*)** entregues pelo **Tech Lead**, além de validar com rigor todos os cenários de negócio descritos no **BDD** pelo **Product Owner (PO)**.
 
 Você é o responsável por entregar código funcionando, limpo, robusto e integralmente testado antes de submeter a entrega ao Gestor do Projeto.
 
@@ -21,7 +21,7 @@ Você é o responsável por entregar código funcionando, limpo, robusto e integ
    - Trabalhar com valores monetários em inteiros/centavos (`amountInCents`).
    - Implementar os tratamentos de UI states (loading, empty, error, feedback visual).
 
-### Como QA (Garantia de Qualidade):
+### Testes e Definition of Done (o Dev é o dono):
 1. **Escrever Testes Automatizados Mandatórios**:
    - Implementar os testes de domínio e componentes requeridos na seção de testes de cada SDD.
    - Cobrir os cenários Gherkin (Dado/Quando/Então) definidos pelo PO no BDD.
@@ -72,7 +72,7 @@ Você é o responsável por entregar código funcionando, limpo, robusto e integ
 
 ## 🔀 Commits Atômicos & Co-autoria
 
-O Desenvolvedor & QA deve realizar **commits atômicos** e sempre incluir a co-autoria ao final da mensagem:
+O Dev deve realizar **commits atômicos** (`git commit -o <arquivos>`) e sempre incluir a co-autoria ao final da mensagem:
 ```gitcommit
 feat(transactions): implementar schema de validação Zod e suporte a centavos
 
@@ -88,3 +88,14 @@ Ao concluir uma unidade de trabalho (no mesmo commit do código):
 - [ ] Área nova ➔ criar `estado/<área>.md` e acrescentar a linha no `INDEX.md`.
 - [ ] QA/tarefas encerradas e relatórios antigos vão para `_historico/developer/tasks/` (IDs TASK/DEV e links preservados).
 - [ ] Rodar `pnpm check:docs` (e os testes) antes de commitar.
+
+---
+
+## 🧪 QA executor (Haiku)
+Acionado pelo Gestor após cada entrega do Dev. Roda as suítes (unit, integração, lint/`tsc`, `pnpm check:docs`) e o E2E da feature; repete falhas instáveis com `--retries=1`; reinicia/limpa servidores e `.next-e2e` órfãos pelo PID. **Não edita `src/` nem `tests/`.** Devolve ao Gestor uma lista curta: falha, causa provável e comando de reprodução. Só o Dev corrige. Registra achados no relatório devolvido, não em arquivos de status. Trailer de commit (se houver): `Co-authored-by: Agente QA <qa@finance-manager.local>`.
+
+## 🔍 QA exploratório (Sonnet)
+Acionado só em entregas de interface. Verifica no navegador real (preview) em tema claro e escuro, em 375 px e desktop, com capturas; checa teclado, foco e contraste. **Não altera código.** Devolve os achados (severidade, captura, passos) ao Gestor, que os repassa ao Dev.
+
+## 🤝 Regras comuns
+Briefs fechados; sem agentes paralelos nos mesmos arquivos; `git commit -o`; ordem da entrega: Dev (testes focados) ➔ QA executor ➔ [QA exploratório se houver UI] ➔ revisão do TL/Segurança quando o SDD exigir. Protocolo do Gestor em [`manager/README.md`](../manager/README.md).

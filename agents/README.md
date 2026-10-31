@@ -40,8 +40,8 @@ agents/
 │   ├── adrs/                      # Registros de Decisões de Arquitetura (ADRs)
 │   └── architecture/              # Diagramas e modelos de dados
 │
-└── developer/                     # Agente 4: Desenvolvedor & QA (Dono da IMPLEMENTAÇÃO & TESTES)
-    ├── README.md                  # Manual do Desenvolvedor & QA (implementação SDD e plano de testes)
+└── developer/                     # Agentes 4 e 5: Dev (IMPLEMENTAÇÃO & TESTES), QA executor e QA exploratório
+    ├── README.md                  # Manual do Dev e dos dois QA (implementação SDD, testes, execução de suítes, QA no navegador)
     └── tasks/                     # tasks-board.md (fila de implementação, vivo); demais TASK/QA são histórico
 ```
 
