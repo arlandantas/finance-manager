@@ -1,7 +1,7 @@
 # SDD-033: Membro sem conta: modelo/migração (US-092a) e cadastro (US-092b)
 
 - **História**: [US-092](../../product-owner/backlog/stories/US-092-cadastrar-membro-sem-conta.md) · **Necessidade**: [NEED-028](../../stakeholder/needs/NEED-028-membro-sem-conta-ativa-e-convite-posterior.md) (Q-U15, Q-U17) · **Fluxo**: [FLUXO-020](../../product-owner/flows/FLUXO-020-membro-sem-conta-e-convite-posterior.md) §2.1-2.2 · **ADR**: [ADR-033](../adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md) (Aceito, condições da revisão da Segurança incorporadas) · **Segurança**: revisão de 2026-10-30 (SEC-058..068; relatório em `agents/security/relatorios/`) · **Decisões**: Q-TL-U1..U5 (usuário, 2026-10-30, D-GES-63) · D-PO-103
-- **Status**: **SDD pronto, aprovado para Dev** (092a pode ir à produção sozinha; 092b depois dela) · **Autor**: Agente Tech Lead · **Data**: 2026-10-30
+- **Status**: **092a implementada** (TASK-093; aceita pelo Gestor, D-GES-65; revisão final do TL aprovada em a73c88e); **092b aprovada para Dev** (092a pode ir à produção sozinha; 092b depois dela) · **Autor**: Agente Tech Lead · **Data**: 2026-10-30
 - **Estimativa (TL)**: **5 pts** = 092a **3** + 092b **2** (confirma o ADR-033 §6). **Executor**: Dev & QA, modelo **Sonnet** (092a toca o modelo de membro: revisão final do TL/Opus no diff da migração e do gatilho).
 - **Numeração**: SDD-030..032 ficam reservados aos SDDs das US-089/090/091 (TL-2, em paralelo); este usa o número do ADR-033.
 - **Próximos SDDs (fora deste)**: **093a** (seletores com selo, filtros, titular de conta/cartão só ADMIN, acerto), **093b** (matriz "Só meu" ADR-033 §5, `ownerUnlinked`, exceção SEC-026c com os limites SEC-066b/067, pagador e acerto SEC-059), **094a** (convite vinculado `POST /members/{id}/invitations`, guardas §4 1-6, `INVITATION_RESENT` sem e-mail SEC-061), **094b** (aceite que assume, nome escolhido ADR-033 §2.2, prévia com contagens, propriedade de reconciliação, SEC-062(1,2)/063/064/066a), **095** (editar nome/e-mail, `MEMBER_UPDATED`, polimento da remoção).
@@ -207,6 +207,8 @@ export async function ownerStanding(tx, ctx, ownerId) {
 | 500 (bug) | `check_violation` do gatilho/CHECK | Só se o código violar o modelo; mapeado a 500 genérico, logado | — |
 
 ## 4. Fatia 092b: cadastrar membro sem conta (2 pts)
+
+**Escopo acrescido:** incluir CHECK linkedAt IS NULL OR userId IS NOT NULL (revisão TL a73c88e).
 
 ### 4.1 Rota `POST /api/v1/members` (arquivo novo `src/app/api/v1/members/route.ts`)
 `withApi({ role: "ADMIN", body: CreateUnlinkedMemberSchema })`, igual a `POST /invitations` (a idempotência por `Idempotency-Key` é a do `withApi`). Resposta **201** `CreateUnlinkedMemberResponse`.

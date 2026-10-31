@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-17 Visão do Mês · **UR-1 (uso real, 1ª da fila)** — antes "v0 alpha (Should)" |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Must** (subiu de Should; prioridade 1 do usuário, 2026-10-26) · 4,2 (V9/U7/R5) · **5** (era 3: ganhou a coluna de saldo previsto por conta, a linha "Sem conta definida" e a regra do "Só meu") |
-| Status | **Implementada (TASK-054), aguardando validação do Gestor** (2026-10-30): [SDD-029](../../../tech-lead/sdd/SDD-029-resumo-por-conta-no-a-pagar-us-060.md). 8 dos 9 cenários verdes; "Fatura entra na conta pagadora" fica `@pendente-us-089` |
+| Status | **Entregue e aceita pelo Gestor (D-GES-65)** (TASK-054) (2026-10-30): [SDD-029](../../../tech-lead/sdd/SDD-029-resumo-por-conta-no-a-pagar-us-060.md). 8 dos 9 cenários verdes; "Fatura entra na conta pagadora" fica `@pendente-us-089` |
 | Depende de | US-059, US-055, US-057 (todas implementadas). **Completa-se com** US-089 (fatura na conta pagadora), US-051 (receita prevista) e US-100 (transferência prevista): sem elas as linhas ficam como abaixo, sem quebrar |
 | Corte | Não cortar: é a 1ª do pacote do uso real |
 | Rastreabilidade | **NEED-033** (RN-033.1..7) · **Q-U24 (usuário, 2026-10-26)** · feedback-usuario-v0 U3 · escopo-v0-alpha (d) · NEED-003, NEED-004, NEED-011 · FLUXO-018 · D-PO-99 |

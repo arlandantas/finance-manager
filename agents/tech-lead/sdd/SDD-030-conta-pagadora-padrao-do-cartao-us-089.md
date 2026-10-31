@@ -2,7 +2,7 @@
 
 - **História**: [US-089](../../product-owner/backlog/stories/US-089-conta-pagadora-padrao-do-cartao.md) · **Necessidade**: [NEED-032](../../stakeholder/needs/NEED-032-conta-que-paga-a-fatura-no-cartao.md) (Q-U22, Q-U23) · **Fluxo**: [FLUXO-004](../../product-owner/flows/FLUXO-004-cartao-e-fatura.md) §7 · **Pedido**: TL-U8 ([`pedidos-ao-tech-lead-uso-real.md`](../../product-owner/backlog/pedidos-ao-tech-lead-uso-real.md))
 - **Base**: SDD-008 (cartão/fatura), SDD-012 §4.1 (protocolo de lock de contas), SDD-013 §6 (US-023, conta de origem), SDD-029 (`byAccount`, gancho `invoiceItem.paymentAccountId`), ADR-025 (FK composta da prevista como molde).
-- **Status**: **SDD pronto, aprovado para Dev** · **Autor**: Agente Tech Lead · **Data**: 2026-10-26
+- **Status**: **Implementado** (TASK-092; aceito pelo Gestor, D-GES-65) · **Autor**: Agente Tech Lead · **Data**: 2026-10-26
 - **Estimativa (TL)**: **3 pts** (confirma o PO; §8). **Executor**: Dev & QA, modelo **Sonnet**. **Com migração** (expand, 2 arquivos), sem job, sem rota nova.
 - **Restrição**: o campo **só sugere**. Nenhum pagamento, saldo, limite, total de fatura, extrato, acerto ou Resumo muda. O pagamento da fatura (US-017b) continua exigindo `accountId` explícito no corpo.
 

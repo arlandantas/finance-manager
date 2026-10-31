@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-20 Cartão Completo (polimento) · **UR-1 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Could** · 4,0 (V2/U1/R1) · **1** |
-| Status | **Implementada (TASK-090), aguardando validação do Gestor** (2026-10-30): botão de ícone `ListOrdered` no rodapé do `ledger-card`, `aria-label` e `title` "Ver compra", alvo 44 px, alinhado à esquerda (à direita o botão flutuante `+` o cobria no celular) |
+| Status | **Entregue e aceita pelo Gestor (D-GES-65)** (TASK-090) (2026-10-30): botão de ícone `ListOrdered` no rodapé do `ledger-card`, `aria-label` e `title` "Ver compra", alvo 44 px, alinhado à esquerda (à direita o botão flutuante `+` o cobria no celular) |
 | Depende de | US-040b (já implementada), US-087 (mesma linha; pode andar junto) |
 | Corte | **1ª a cortar do polimento** (Could) |
 | Rastreabilidade | **NEED-034** item 10 (RN-034.4, 034.5) · NEED-003 · FLUXO-014 · D-PO-100 |

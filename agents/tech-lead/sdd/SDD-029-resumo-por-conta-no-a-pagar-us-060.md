@@ -2,7 +2,7 @@
 
 - **História**: [US-060](../../product-owner/backlog/stories/US-060-resumo-por-conta-no-a-pagar.md) · **Necessidade**: [NEED-033](../../stakeholder/needs/NEED-033-visao-sintetica-por-conta-em-contas-a-pagar.md) (Q-U24) · **Fluxo**: [FLUXO-018](../../product-owner/flows/FLUXO-018-visao-por-conta-em-a-pagar.md) · **Pedido**: TL-U4 ([`pedidos-ao-tech-lead-uso-real.md`](../../product-owner/backlog/pedidos-ao-tech-lead-uso-real.md))
 - **Substitui**: SDD-019 §7 (resumo de 1 linha, desatualizado: dizia "faturas não entram" e "3 pts"). **Base**: SDD-018 §2 (`collectOpenPayables`, `slicePeriod`), SDD-009 §4.6, SDD-010 §4.2, D-PO-42.
-- **Status**: **SDD pronto, aprovado para Dev** (TASK-054) · **Autor**: Agente Tech Lead · **Data**: 2026-10-26
+- **Status**: **Implementado** (TASK-054; aceito pelo Gestor, D-GES-65) · **Autor**: Agente Tech Lead · **Data**: 2026-10-26
 - **Estimativa (TL)**: **5 pts** (confirma o PO; §9). **Executor**: Dev & QA, modelo **Sonnet**. Sem migração, sem índice novo, sem rota nova.
 - **Restrição**: nada grava. Saldo, extrato, totais, acerto e Resumo não mudam (regressão S1..S16 intacta). `GET /api/v1/payables` só **ganha campos** (aditivo).
 

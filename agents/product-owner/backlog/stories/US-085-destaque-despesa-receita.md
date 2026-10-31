@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-19 Ergonomia e Preferências · **UR-1 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should** · 6,0 (V5/U4/R3) · **2** |
-| Status | **Implementada (TASK-088), aguardando validação do Gestor** (2026-10-30): `SegmentedChoice` genérico em `components/ui/segmented-choice.tsx` (radio/tabs), usado no lançamento, em Categorias (abas) e em "Nova categoria" |
+| Status | **Entregue e aceita pelo Gestor (D-GES-65)** (TASK-088) (2026-10-30): `SegmentedChoice` genérico em `components/ui/segmented-choice.tsx` (radio/tabs), usado no lançamento, em Categorias (abas) e em "Nova categoria" |
 | Depende de | — (pode andar em paralelo com a US-060) |
 | Corte | 3º a cortar das quatro do polimento (antes: US-088; depois: US-086) |
 | Rastreabilidade | **NEED-034** item 1 (RN-034.1, 034.2, 034.5) · NEED-017 (cor nunca é o único sinal) · NEED-022 · FLUXO-001, FLUXO-019 · D-PO-100 |

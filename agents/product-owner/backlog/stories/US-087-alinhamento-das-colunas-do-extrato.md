@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-19 Ergonomia e Preferências (conferência do Extrato) · **UR-1 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should** · 4,0 (V6/U3/R3) · **3** (toca todos os tipos de linha) |
-| Status | **Implementada (TASK-089), aguardando validação do Gestor** (2026-10-30): colunas de avatar e valor com largura fixa, contêiner `ledger-card` no `<li>` (pré-requisito da US-088), descrição com `line-clamp` |
+| Status | **Entregue e aceita pelo Gestor (D-GES-65)** (TASK-089) (2026-10-30): colunas de avatar e valor com largura fixa, contêiner `ledger-card` no `<li>` (pré-requisito da US-088), descrição com `line-clamp` |
 | Depende de | US-062 (filtros do Extrato) e US-040b (linha de parcela), sem bloqueio |
 | Corte | 1ª a ser mantida do polimento (vem logo após a US-085) |
 | Rastreabilidade | **NEED-034** item 7 (RN-034.3, 034.5) · NEED-016, NEED-022 · FLUXO-013 · D-PO-100 |

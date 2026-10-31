@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-19 Ergonomia e Preferências · **UR-1 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should** · 5,0 (V5/U3/R2) · **2** |
-| Status | **Implementada (TASK-091), aguardando validação do Gestor** (2026-10-30), com **desvio DEV-148**: tokens e categorias menores entregues, mas a meta "sem rolagem em 375 × 667" não fecha (corpo de 1259 px contra 545 px visíveis); vale a alternativa do TL: campos principais alcançáveis com o "Salvar" sempre visível (rodapé fixo já existente). **PO confirma** se a data fica em "Mais detalhes" e se aceita a meta alternativa |
+| Status | **Entregue e aceita pelo Gestor (D-GES-65)** (TASK-091) (2026-10-30), com **desvio DEV-148**: tokens e categorias menores entregues, mas a meta "sem rolagem em 375 × 667" não fecha (corpo de 1259 px contra 545 px visíveis); vale a alternativa do TL: campos principais alcançáveis com o "Salvar" sempre visível (rodapé fixo já existente). **PO confirma** se a data fica em "Mais detalhes" e se aceita a meta alternativa |
 | Depende de | — |
 | Corte | 2º a cortar das quatro do polimento |
 | Rastreabilidade | **NEED-034** item 2 (RN-034.1, 034.5) · NEED-022 (lançar em < 10 s) · FLUXO-001, FLUXO-010 · D-PO-100 |
