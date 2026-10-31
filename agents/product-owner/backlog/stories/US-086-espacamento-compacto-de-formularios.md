@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-19 Ergonomia e Preferências · **UR-1 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should** · 5,0 (V5/U3/R2) · **2** |
-| Status | Proposta pelo PO em 2026-10-26; sem SDD (tokens de espaçamento; o TL só confirma a estimativa) |
+| Status | **Reestimada pelo TL: 3 pts (era 2), sem SDD** (2026-10-26): [notas técnicas](../../../tech-lead/architecture/notas-polimento-us-085-088.md) — a meta 375x667 exige rodapé fixo e tiles menores, além dos tokens; slot de erro da US-039 mantido; **PO confirma se "data" fica em "Mais detalhes"**; aprovada para Dev |
 | Depende de | — |
 | Corte | 2º a cortar das quatro do polimento |
 | Rastreabilidade | **NEED-034** item 2 (RN-034.1, 034.5) · NEED-022 (lançar em < 10 s) · FLUXO-001, FLUXO-010 · D-PO-100 |

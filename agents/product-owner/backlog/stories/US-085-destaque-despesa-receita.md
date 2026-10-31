@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-19 Ergonomia e Preferências · **UR-1 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should** · 6,0 (V5/U4/R3) · **2** |
-| Status | Proposta pelo PO em 2026-10-26; sem SDD (mudança de apresentação; o TL só confirma a estimativa) |
+| Status | **Estimativa confirmada pelo TL (2 pts), sem SDD** (2026-10-26): [notas técnicas](../../../tech-lead/architecture/notas-polimento-us-085-088.md) — `SegmentedChoice` genérico (radio/tabs); atualizar 3 passos E2E da US-006; aprovada para Dev |
 | Depende de | — (pode andar em paralelo com a US-060) |
 | Corte | 3º a cortar das quatro do polimento (antes: US-088; depois: US-086) |
 | Rastreabilidade | **NEED-034** item 1 (RN-034.1, 034.2, 034.5) · NEED-017 (cor nunca é o único sinal) · NEED-022 · FLUXO-001, FLUXO-019 · D-PO-100 |

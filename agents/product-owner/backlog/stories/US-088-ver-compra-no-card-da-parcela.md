@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-20 Cartão Completo (polimento) · **UR-1 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Could** · 4,0 (V2/U1/R1) · **1** |
-| Status | Proposta pelo PO em 2026-10-26; sem SDD (mover o controle dentro do card e trocar por ícone com rótulo) |
+| Status | **Estimativa confirmada pelo TL (1 pt, após a US-087), sem SDD** (2026-10-26): [notas técnicas](../../../tech-lead/architecture/notas-polimento-us-085-088.md) — rodapé do card com ícone + rótulo; mantém `data-testid`; aprovada para Dev |
 | Depende de | US-040b (já implementada), US-087 (mesma linha; pode andar junto) |
 | Corte | **1ª a cortar do polimento** (Could) |
 | Rastreabilidade | **NEED-034** item 10 (RN-034.4, 034.5) · NEED-003 · FLUXO-014 · D-PO-100 |

@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-19 Ergonomia e Preferências (conferência do Extrato) · **UR-1 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should** · 4,0 (V6/U3/R3) · **3** (toca todos os tipos de linha) |
-| Status | Proposta pelo PO em 2026-10-26; o TL confirma se basta CSS/grade ou se muda a estrutura da linha (`ledger-row.tsx`) |
+| Status | **Estimativa confirmada pelo TL (3 pts), sem SDD** (2026-10-26): [notas técnicas](../../../tech-lead/architecture/notas-polimento-us-085-088.md) — CSS de grade (coluna do valor fixa) **mais** contêiner no `<li>` (pré-requisito da US-088); aprovada para Dev |
 | Depende de | US-062 (filtros do Extrato) e US-040b (linha de parcela), sem bloqueio |
 | Corte | 1ª a ser mantida do polimento (vem logo após a US-085) |
 | Rastreabilidade | **NEED-034** item 7 (RN-034.3, 034.5) · NEED-016, NEED-022 · FLUXO-013 · D-PO-100 |
