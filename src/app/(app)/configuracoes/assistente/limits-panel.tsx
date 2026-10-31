@@ -171,7 +171,7 @@ function LimitsForm({ data }: { data: AssistantLimitsDTO }) {
 
   return (
     <form
-      className="flex flex-col gap-4"
+      className="form-stack"
       data-testid="limits-form"
       onSubmit={(e) => {
         e.preventDefault();

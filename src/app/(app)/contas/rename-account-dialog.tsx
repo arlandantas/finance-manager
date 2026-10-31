@@ -90,7 +90,7 @@ export function RenameAccountDialog({
         </div>
       ) : (
         <form
-          className="flex flex-col gap-4"
+          className="form-stack"
           noValidate
           onSubmit={(e) => {
             e.preventDefault();

@@ -275,7 +275,7 @@ export function TransactionDrawer({
     <Drawer open={open} onOpenChange={onOpenChange} title={text.title} initialFocusId="tx-amount">
       <form
         noValidate
-        className="flex flex-col gap-5"
+        className="form-stack"
         onSubmit={(e) => {
           e.preventDefault();
           submit();
@@ -473,7 +473,7 @@ export function TransactionDrawer({
             aria-labelledby="tx-category-label"
             aria-invalid={errors.categoryId ? true : undefined}
             className={cn(
-              "grid grid-cols-3 gap-2 rounded-xl",
+              "grid grid-cols-4 gap-1.5 rounded-xl",
               errors.categoryId && "ring-2 ring-red-600 ring-offset-2",
             )}
           >
@@ -482,7 +482,7 @@ export function TransactionDrawer({
                   <div
                     key={i}
                     aria-hidden="true"
-                    className="h-[72px] animate-pulse rounded-xl bg-slate-200"
+                    className="h-14 animate-pulse rounded-xl bg-slate-200"
                   />
                 ))
               : (categories.data?.items ?? []).map((c) => (
@@ -496,7 +496,7 @@ export function TransactionDrawer({
                       setErrors((e) => ({ ...e, categoryId: undefined }));
                     }}
                     className={cn(
-                      "flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl border px-1 py-2 text-center text-xs font-medium",
+                      "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl border px-1 py-1.5 text-center text-xs font-medium",
                       categoryId === c.id
                         ? "border-brand-700 bg-brand-50 text-brand-800 dark:text-emerald-300"
                         : "border-slate-200 bg-white dark:bg-slate-100 text-slate-700 hover:bg-slate-50",

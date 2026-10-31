@@ -211,7 +211,7 @@ function RenameDialog({
     >
       <form
         noValidate
-        className="flex flex-col gap-4"
+        className="form-stack"
         onSubmit={(e) => {
           e.preventDefault();
           save();
@@ -262,7 +262,7 @@ function RoleDialog({
       {member ? (
         <form
           noValidate
-          className="flex flex-col gap-4"
+          className="form-stack"
           onSubmit={(e) => {
             e.preventDefault();
             if (change.isPending) return;

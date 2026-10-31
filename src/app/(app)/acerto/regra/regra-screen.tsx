@@ -155,7 +155,7 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
   return (
     <form
       noValidate
-      className="flex flex-col gap-5"
+      className="form-stack"
       onSubmit={(e) => {
         e.preventDefault();
         submit();

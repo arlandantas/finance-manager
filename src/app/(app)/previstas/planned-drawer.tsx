@@ -410,7 +410,7 @@ export function PlannedDrawer({
       ) : (
         <form
           noValidate
-          className="flex flex-col gap-5"
+          className="form-stack"
           onSubmit={(e) => {
             e.preventDefault();
             submit();

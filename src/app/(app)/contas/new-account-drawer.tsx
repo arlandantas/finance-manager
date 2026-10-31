@@ -111,7 +111,7 @@ export function NewAccountDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange} title="Nova conta">
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+      <form onSubmit={onSubmit} noValidate className="form-stack">
         {banner ? (
           <p
             role="alert"

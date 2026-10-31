@@ -57,7 +57,7 @@ export function EditTagsForm({
   return (
     <form
       noValidate
-      className="flex flex-col gap-4"
+      className="form-stack"
       onSubmit={(e) => {
         e.preventDefault();
         submit();
