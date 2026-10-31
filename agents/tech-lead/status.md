@@ -11,7 +11,17 @@
 
 ---
 
-## Ciclo uso real (TL-U1/U2/U3, 2026-10-26): membro sem conta **ADR proposto, SDD pendente**
+## Ciclo uso real (NEED-028, 2026-10-30): membro sem conta **ADR aceito (revisão da Segurança incorporada), SDD da US-092 pronto**
+| Artefato | Cobre |
+| :--- | :--- |
+| [ADR-033](adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md) (Aceito, revisão da Segurança incorporada) | Respostas Q-TL-U1..U5 (D-GES-63). **Q-TL-U4 mudou:** a pessoa escolhe o próprio nome no aceite (§2.2: `members.name` sobrescrito no vínculo, nunca `User.name`; nomes nunca em `family_events`; exclusão de conta zera `members.name`) |
+| [SDD-033 Membro sem conta: modelo e cadastro](sdd/SDD-033-membro-sem-conta-modelo-e-cadastro-us-092.md) | 092a: 2 migrações (enum; colunas, CHECKs, gatilho `members_link_guard`, `invitations.memberId`), `memberDisplayName`, `MemberRef.unlinked`, correção `ownerStanding`/exportação com `userId` nulo, contagens, remoção mínima com anonimização (U5), `UNLINKED_MEMBER_ROLE`. 092b: `POST /members`, unicidade nome/e-mail sob lock, guarda no convite comum, drawer com aviso EQUAL (U1), selo, `MEMBER_CREATED`. Guia de testes (harness com sem conta, S1..S16/V1..V10, LGPD) |
+
+**Pontos:** US-092 **5** (092a 3 + 092b 2); NEED-028 segue **23**. **Numeração:** SDD-030..032 reservados ao TL-2 (US-089/090/091). **Próximos:** SDD de 093a/093b, 094a/094b, 095 (seguindo o mapa de achados SEC-058..068 do SDD-033 §5). **Segurança:** revisão SEC-058..068 incorporada (ADR §2-§5, SDD §3.1/§3.4/§4/§5); pendentes do usuário SEC-060 e SEC-062(3). **Riscos:** troca mecânica de ~76 leituras de `user`; comparação de pessoa com `NULL`; `EMAIL_BELONGS_TO_UNLINKED_MEMBER` sem saída na UI entre 092b e 094a/095 (R3).
+
+---
+
+## Ciclo uso real (TL-U1/U2/U3, 2026-10-26): membro sem conta (histórico) ADR proposto
 | Artefato | Cobre |
 | :--- | :--- |
 | [ADR-033 Membro sem conta e convite vinculado](adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md) | US-092..095 (NEED-028): `Member.userId` anulável (+ `name`, `pendingEmail`, `linkedAt`), CHECKs e gatilho `members_link_guard`, migração expand sem reescrita; efeitos em acerto (motores intactos), "Só meu" (estado `ownerUnlinked`, Admin tutor), LGPD, sessões; convite vinculado (`invitations.memberId`) e aceite atômico que só faz `UPDATE members`; matriz TL-U3; testes (reconciliação do aceite no harness) |

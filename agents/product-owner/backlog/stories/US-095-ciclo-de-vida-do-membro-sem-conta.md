@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-18 Manutenção de Cadastros · **UR-2 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should** · 3,5 (V3/U2/R2) · **2** |
-| Status | Proposta pelo PO em 2026-10-26; depende do spike do TL (TL-U1); **2026-10-26 (TL): spike concluído no [ADR-033](../../../tech-lead/adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md) (proposto); tamanho TL 2 (TL, ADR-033, confirma o PO); SDD aguarda Q-TL-U1..U5 e revisão da Segurança** |
+| Status | Proposta pelo PO em 2026-10-26; depende do spike do TL (TL-U1); **2026-10-26 (TL): spike concluído no [ADR-033](../../../tech-lead/adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md) (proposto); tamanho TL 2 (TL, ADR-033, confirma o PO); SDD aguarda Q-TL-U1..U5 e revisão da Segurança**; **2026-10-30: Q-TL-U5 aceita pelo usuário (remoção anonimiza o e-mail dos convites do cadastro, sujeita à Segurança; já entra na 092a, SDD-033); editar o nome só enquanto sem conta (depois do aceite: 409 `MEMBER_IS_LINKED`); SDD próprio depois da 094** |
 | Depende de | **US-092, US-093**; US-035 (remoção com revisão de pendências) |
 | Corte | 1ª a cortar da NEED-028 |
 | Rastreabilidade | **NEED-028** (RN-028.6, 028.8) · **Q-U15 (usuário)** · NEED-020 · FLUXO-011, FLUXO-020 · D-PO-103 |
