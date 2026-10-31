@@ -53,7 +53,7 @@ Atualizado: 2026-10-31 (US-092b implementada; 093a em diante não iniciadas). Fo
 | R3 | Até a 094a o e-mail cadastrado não convida pela UI (409; editar/remover e-mail é 095) | Ordem 092b ➔ 093 ➔ 094a |
 
 ## e) Em andamento / pendências
-- **092b implementada (TASK-094), aguarda validação do Gestor.** Próximas 093a (selo nos seletores/filtros, titular só ADMIN), 093b ("Só meu", SEC-059/066b/067), 094a (convite vinculado, SEC-061), 094b (aceite, nome escolhido, SEC-062/063/064), 095 (editar). SDDs 093..095 por escrever (TL).
+- **092b implementada (TASK-094), aguarda validação do Gestor.** Próximas 093a (selo nos seletores/filtros, titular só ADMIN), 093b ("Só meu", SEC-059/066b/067), 094a (convite vinculado, SEC-061), 094b (aceite, nome escolhido, SEC-062/063/064), 095 (editar). **SDD-034 (093a/093b) proposto em 2026-10-31** (titular sem conta só ADMIN; Admin nunca vira pagador no lugar do sem conta; revoga D-033-4 ao ser implementado); SDDs 094..095 por escrever (TL).
 - D-GES-63: nome do cadastro é rótulo provisório; o aceite grava o nome escolhido em `members.name` (nunca em eventos); só o Admin cria "Só meu" em nome do sem conta; remoção/edição anonimiza e-mails dos convites do cadastro.
 - Usuário (não bloqueiam): SEC-060 "Entra na divisão?" (hipótese: só o aviso), SEC-062(3) "Desvincular conta" (hipótese: não), `ALLOWED_SIGNUP_EMAILS`, SEC-037. LGPD: titular sem conta (talvez criança, art. 14) exerce direitos via Admin; citar em `/privacidade` (Gestor).
 - Fase 2 da SEC-018 (`prisma/pending/20261027000000_*`, checklist 9.7).

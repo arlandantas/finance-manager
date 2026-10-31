@@ -93,6 +93,7 @@ Unidades: valores em centavos inteiros (`amountInCents`); percentuais em basis p
 - R3-A (EN-002a/b, TASK-046/047) implementada; "janela de reversão em curso" (tasks-board.md): >= 7 dias desde a migração em produção, `pnpm migrate:split --verify` limpo e um fechamento de mês conferido pelo Stakeholder. Não há registro de que a janela tenha sido encerrada nem de que `migrate:split` rodou em produção (o build só roda `prisma migrate deploy`; a migração de dados é manual).
 - Bloqueados pela janela: US-042 (parcela dividida), US-043 (modo CUSTOM, "De outro jeito"), US-044 (por categoria), migração de contrato `us043_modo_custom` (CHECK `isSharedExpense = (splitMode<>NONE)`, `splitMode` em previstas; ainda inexistente em `prisma/migrations`). Reversão nível 2 (`--rollback --purge`) só enquanto não houver CUSTOM, parcela dividida nem contrato.
 - Gestor deve decidir encerrar a janela (e o usuário confirmar o fechamento de mês conferido).
+- Membro sem conta (US-093, [SDD-034](../tech-lead/sdd/SDD-034-membro-sem-conta-atribuicao-e-acerto-us-093.md), não implementado): motores intactos (sem conta é membro comum); 093b acrescenta ao A1 o 422 `SETTLEMENT_DESTINATION_IS_DEBTOR` (credor sem conta, destino do devedor; SEC-059b). Destino final depende do usuário (Q-TL-93-1).
 - Previstas/séries: `splitMode`/`splitShares` em previstas ainda não existem; baixa de prevista dividida usa `createExpenseCore` (Pela regra na data da baixa).
 
 ## f) Mapa de fontes
