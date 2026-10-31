@@ -9,6 +9,7 @@ import { formatInvoiceLabel, invoiceRefFor } from "@/modules/cartoes/cycle";
 import { INSTALLMENT_SPLIT_RELEASED } from "@/modules/cartoes/installments";
 import { getOrCreateInvoice } from "@/modules/cartoes/invoices";
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
+import type { AccountColor } from "@/modules/contas/colors";
 import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
 import { lockAccountsForPosting } from "@/modules/contas/lock";
@@ -89,8 +90,8 @@ export const categoryRefOf = (c: {
 export function toTransactionDTO(
   row: TxRow,
   ctx: {
-    account: { id: string; name: string; archived?: boolean } | null;
-    card?: { id: string; name: string; archived?: boolean } | null;
+    account: { id: string; name: string; color: AccountColor; archived?: boolean } | null;
+    card?: { id: string; name: string; color: AccountColor; archived?: boolean } | null;
     invoice?: { ref: string; closingDate: string; dueDate: string } | null;
     plannedExpenseId?: string | null;
     accountOwnerId?: string | null;
@@ -310,7 +311,7 @@ export async function createExpenseCore(
   const dto = toTransactionDTO(row, {
     tags,
     account,
-    card: card ? { id: card.id, name: card.name } : null,
+    card: card ? { id: card.id, name: card.name, color: card.color } : null,
     invoice: invoice
       ? { ref: invoice.ref, closingDate: invoice.closingDate, dueDate: invoice.dueDate }
       : null,
@@ -451,10 +452,20 @@ function dtoFromLoaded(
 ): TransactionDTO {
   const dto = toTransactionDTO(r, {
     account: r.account
-      ? { id: r.account.id, name: r.account.name, archived: r.account.archivedAt !== null }
+      ? {
+          id: r.account.id,
+          name: r.account.name,
+          color: r.account.color,
+          archived: r.account.archivedAt !== null,
+        }
       : null,
     card: r.card
-      ? { id: r.card.id, name: r.card.name, archived: r.card.archivedAt !== null }
+      ? {
+          id: r.card.id,
+          name: r.card.name,
+          color: r.card.color,
+          archived: r.card.archivedAt !== null,
+        }
       : null,
     invoice: r.invoice
       ? {

@@ -1,5 +1,6 @@
 import type { Tx } from "@/lib/api/types";
 import { fromCents } from "@/lib/money";
+import type { AccountColor } from "@/modules/contas/colors";
 
 const withOwner = {
   owner: { include: { user: true } },
@@ -49,6 +50,7 @@ export function cartoesRepo(tx: Tx, familyId: string) {
       closingDay: number;
       dueDay: number;
       paymentAccountId?: string | null;
+      color: AccountColor;
       updatedByMemberId: string;
     }) =>
       tx.creditCard.create({
@@ -66,6 +68,7 @@ export function cartoesRepo(tx: Tx, familyId: string) {
         closingDay?: number;
         dueDay?: number;
         paymentAccountId?: string | null;
+        color?: AccountColor;
         updatedByMemberId: string;
       },
     ) =>
@@ -79,6 +82,7 @@ export function cartoesRepo(tx: Tx, familyId: string) {
           ...(d.closingDay !== undefined ? { closingDay: d.closingDay } : {}),
           ...(d.dueDay !== undefined ? { dueDay: d.dueDay } : {}),
           ...(d.paymentAccountId !== undefined ? { paymentAccountId: d.paymentAccountId } : {}),
+          ...(d.color !== undefined ? { color: d.color } : {}),
           updatedByMemberId: d.updatedByMemberId,
           version: { increment: 1 },
         },

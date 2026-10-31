@@ -2,6 +2,7 @@ import { z } from "zod";
 import { dateISOSchema } from "@/lib/dates";
 import { amountInCentsSchema, MAX_AMOUNT_IN_CENTS } from "@/lib/money";
 import { type MemberRef, uuidSchema, versionSchema } from "@/lib/schemas";
+import { type AccountColor, accountColorSchema } from "@/modules/contas/colors";
 
 // Tipos: CHECKING = Conta corrente · SAVINGS = Poupança · CASH = Dinheiro/carteira
 export const INSTITUTION_SUGGESTIONS = [
@@ -45,6 +46,7 @@ export const CreateAccountSchema = z
       .default(0), // pode ser negativo
     openingDate: dateISOSchema.optional(), // padrão: hoje (servidor)
     excludeFromAvailable: z.boolean().optional(), // US-057: reserva
+    color: accountColorSchema.optional(), // US-050: ausente => pickNextColor
   })
   .strict();
 export type CreateAccountInput = z.input<typeof CreateAccountSchema>;
@@ -53,12 +55,16 @@ export const RenameAccountSchema = z
   .object({
     name: accountName.optional(),
     excludeFromAvailable: z.boolean().optional(), // US-057
+    color: accountColorSchema.optional(), // US-050: pode repetir a de outra conta
     version: versionSchema,
   })
   .strict()
-  .refine((v) => v.name !== undefined || v.excludeFromAvailable !== undefined, {
-    message: "Informe o que alterar",
-  });
+  .refine(
+    (v) => v.name !== undefined || v.excludeFromAvailable !== undefined || v.color !== undefined,
+    {
+      message: "Informe o que alterar",
+    },
+  );
 export const UpdateAccountSchema = RenameAccountSchema;
 export type RenameAccountInput = z.infer<typeof RenameAccountSchema>;
 
@@ -80,6 +86,7 @@ export type AccountDTO = {
   archived: boolean; // US-032
   archivedAt: string | null;
   excludeFromAvailable: boolean; // US-057: reserva
+  color: AccountColor; // US-050
   neverUsed: boolean; // base de "Excluir" (a UI só mostra a ação a ADMIN)
   createdAt: string;
   /** US-089: cartões ATIVOS que usam esta conta como pagadora (aviso ao arquivar/excluir). */

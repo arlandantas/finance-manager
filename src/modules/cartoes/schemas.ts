@@ -2,6 +2,7 @@ import { z } from "zod";
 import { dateISOSchema } from "@/lib/dates";
 import { amountInCentsSchema, MAX_AMOUNT_IN_CENTS } from "@/lib/money";
 import { type MemberRef, periodKeySchema, uuidSchema, versionSchema } from "@/lib/schemas";
+import { type AccountColor, accountColorSchema } from "@/modules/contas/colors";
 import type { TransactionDTO } from "@/modules/transacoes/schemas";
 
 // SDD-008 §2 (Zod 4).
@@ -33,6 +34,7 @@ export const CreateCardSchema = z
     closingDay: dayOfMonth(CLOSING_MSG),
     dueDay: dayOfMonth(DUE_MSG),
     paymentAccountId: payerAccount.optional(),
+    color: accountColorSchema.optional(), // US-050: ausente => pickNextColor
   })
   .strict();
 export type CreateCardInput = z.input<typeof CreateCardSchema>;
@@ -48,6 +50,7 @@ export const UpdateCardSchema = z
     closingDay: dayOfMonth(CLOSING_MSG).optional(),
     dueDay: dayOfMonth(DUE_MSG).optional(),
     paymentAccountId: payerAccount.optional(), // undefined = não mexe; null = remove
+    color: accountColorSchema.optional(), // US-050: sem efeito de ciclo
   })
   .strict()
   .refine((v) => Object.keys(v).some((k) => k !== "version"), { message: "Nada para alterar" });
@@ -113,6 +116,7 @@ export type CardDTO = {
   archived: boolean; // US-033
   archivedAt: string | null;
   neverUsed: boolean; // base de "Excluir" (sem nenhuma compra)
+  color: AccountColor; // US-050
   version: number;
   createdAt: string;
   /** US-089: conta pagadora padrão (só sugere). `archived` = a UI avisa e deixa o seletor vazio. */

@@ -1,5 +1,6 @@
 import type { MemberRef } from "@/lib/schemas";
 import { invoiceDates, invoiceRefFor } from "@/modules/cartoes/cycle";
+import type { AccountColor } from "@/modules/contas/colors";
 import type {
   CreateTransactionInput,
   ListTransactionsResponse,
@@ -107,8 +108,14 @@ export function insertPending(
 export type PendingLookups = {
   today: string;
   me: MemberRef;
-  accounts: Array<{ id: string; name: string }>;
-  cards?: Array<{ id: string; name: string; closingDay: number; dueDay: number }>;
+  accounts: Array<{ id: string; name: string; color: AccountColor }>;
+  cards?: Array<{
+    id: string;
+    name: string;
+    color: AccountColor;
+    closingDay: number;
+    dueDay: number;
+  }>;
   categories: Array<{
     id: string;
     name: string;
@@ -150,7 +157,7 @@ export function buildPendingItem(
     // chips provisórios (sem id real até o servidor responder)
     tags: (input.tags ?? []).map((name) => ({ id: `pending-tag-${name}`, name })),
     account: card ? null : account,
-    card: card ? { id: card.id, name: card.name } : null,
+    card: card ? { id: card.id, name: card.name, color: card.color } : null,
     invoice: ref && dates ? { ref, closingDate: dates.closingDate, dueDate: dates.dueDate } : null,
     category: {
       id: category.id,

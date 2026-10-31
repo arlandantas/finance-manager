@@ -376,6 +376,9 @@ model BankAccount {
   updatedAt            DateTime        @updatedAt @db.Timestamptz(3)
   // US-057: reserva — movimentável, mas fora do saldo disponível (SDD-019 §2)
   excludeFromAvailable Boolean         @default(false)
+  // US-050 (SDD-017): cor do marcador; DEFAULT só mantém a migração compatível com a versão anterior
+  // (expand); o serviço sempre grava a cor (escolhida ou `pickNextColor`).
+  color                AccountColor    @default(BLUE)
 
   // US-032: arquivada some das listas; excluída (lógica, terminal) some de tudo e libera o nome
   archivedAt         DateTime? @db.Timestamptz(3)
@@ -392,6 +395,19 @@ model BankAccount {
 
   @@unique([familyId, id])
   @@map("bank_accounts")
+}
+
+enum AccountColor {
+  BLUE
+  GREEN
+  PURPLE
+  ORANGE
+  PINK
+  TEAL
+  RED
+  YELLOW
+  GRAY
+  BROWN
 }
 
 // ───────── Cartões de crédito (US-015, SDD-008, ADR-014) ─────────
@@ -417,6 +433,9 @@ model CreditCard {
 
   // US-089: conta que paga a fatura (só sugere; nunca decide pagamento)
   paymentAccountId String? @db.Uuid
+
+  // US-050 (SDD-017): cor do marcador (ver BankAccount.color)
+  color AccountColor @default(BLUE)
 
   family           Family            @relation(fields: [familyId], references: [id])
   owner            Member            @relation(fields: [familyId, ownerMemberId], references: [familyId, id])

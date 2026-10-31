@@ -20,7 +20,9 @@ import type {
   CreateCardParsed,
   UpdateCardParsed,
 } from "@/modules/cartoes/schemas";
+import { pickNextColor } from "@/modules/contas/colors";
 import { lockAccountsForPosting } from "@/modules/contas/lock";
+import { contasRepo } from "@/modules/contas/repo";
 import {
   type MemberRefSource,
   memberFirstName,
@@ -98,6 +100,7 @@ async function toCardDTOs(tx: Tx, ctx: RequestContext, rows: CardRow[]): Promise
       archived: c.archivedAt !== null,
       archivedAt: c.archivedAt?.toISOString() ?? null,
       neverUsed: !usedIds.has(c.id),
+      color: c.color,
       version: c.version,
       createdAt: c.createdAt.toISOString(),
       paymentAccount: c.paymentAccount
@@ -155,6 +158,7 @@ export async function createCard(
       closingDay: input.closingDay,
       dueDay: input.dueDay,
       paymentAccountId: input.paymentAccountId ?? null,
+      color: input.color ?? pickNextColor(await contasRepo(tx, ctx.familyId).usedColors()),
       updatedByMemberId: ctx.memberId,
     });
   } catch (e) {
@@ -226,6 +230,7 @@ export async function updateCard(
     ...(input.paymentAccountId !== undefined && input.paymentAccountId !== row.paymentAccountId
       ? { paymentAccountId: input.paymentAccountId }
       : {}),
+    ...(input.color !== undefined && input.color !== row.color ? { color: input.color } : {}),
   };
   if (Object.keys(wanted).length === 0) {
     if (input.version !== row.version) throw await versionConflict(repo, id);

@@ -11,8 +11,8 @@ import type { TransactionDTO } from "@/modules/transacoes/schemas";
 
 const lucas = { id: "m-lucas", name: "Lucas Silva", image: null };
 const mariana = { id: "m-mariana", name: "Mariana Silva", image: null };
-const nubank = { id: "a-nubank", name: "Nubank Conjunta" };
-const itau = { id: "a-itau", name: "Itaú Mariana" };
+const nubank = { id: "a-nubank", name: "Nubank Conjunta", color: "BLUE" as const };
+const itau = { id: "a-itau", name: "Itaú Mariana", color: "GREEN" as const };
 const mercado = {
   id: "c-mercado",
   name: "Supermercado",

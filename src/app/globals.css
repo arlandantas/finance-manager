@@ -83,6 +83,72 @@ body {
   outline-color: var(--focus-ring);
 }
 
+/* US-050 (SDD-017 §4.2): cor de origem (conta/cartão). O ponto é sempre acompanhado do nome.
+   Contraste >= 3:1 contra os fundos de cada tema (tests/unit/ui/colors-contrast.test.ts lê estes tokens). */
+:root {
+  --source-blue: #2563eb;
+  --source-green: #16a34a;
+  --source-purple: #7c3aed;
+  --source-orange: #ea580c;
+  --source-pink: #db2777;
+  --source-teal: #0d9488;
+  --source-red: #dc2626;
+  --source-yellow: #a16207;
+  --source-gray: #6b7280;
+  --source-brown: #92400e;
+}
+:root[data-theme="dark"] {
+  --source-blue: #60a5fa;
+  --source-green: #4ade80;
+  --source-purple: #a78bfa;
+  --source-orange: #fb923c;
+  --source-pink: #f472b6;
+  --source-teal: #2dd4bf;
+  --source-red: #f87171;
+  --source-yellow: #facc15;
+  --source-gray: #9ca3af;
+  --source-brown: #d6a77a;
+}
+.source-dot {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: var(--source-gray);
+  border: 1px solid var(--color-slate-600);
+}
+.source-dot[data-color="BLUE"] {
+  background: var(--source-blue);
+}
+.source-dot[data-color="GREEN"] {
+  background: var(--source-green);
+}
+.source-dot[data-color="PURPLE"] {
+  background: var(--source-purple);
+}
+.source-dot[data-color="ORANGE"] {
+  background: var(--source-orange);
+}
+.source-dot[data-color="PINK"] {
+  background: var(--source-pink);
+}
+.source-dot[data-color="TEAL"] {
+  background: var(--source-teal);
+}
+.source-dot[data-color="RED"] {
+  background: var(--source-red);
+}
+.source-dot[data-color="YELLOW"] {
+  background: var(--source-yellow);
+}
+.source-dot[data-color="GRAY"] {
+  background: var(--source-gray);
+}
+.source-dot[data-color="BROWN"] {
+  background: var(--source-brown);
+}
+
 /* US-086: coluna de campos com o vão padrão (use em todo <form>; nunca gap-4/gap-5 soltos). */
 @utility form-stack {
   display: flex;

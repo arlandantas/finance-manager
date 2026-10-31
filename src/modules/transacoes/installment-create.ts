@@ -209,7 +209,7 @@ export async function createInstallmentPurchase(
   const transaction = toTransactionDTO(first, {
     tags,
     account: null,
-    card: { id: card.id, name: card.name },
+    card: { id: card.id, name: card.name, color: card.color },
     invoice: { ref: inv1.ref, closingDate: inv1.closingDate, dueDate: inv1.dueDate },
     category: categoryRefOf(category),
     members,

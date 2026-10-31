@@ -1,6 +1,7 @@
 import type { Tx } from "@/lib/api/types";
 import { toDbDate } from "@/lib/dates";
 import { fromCents } from "@/lib/money";
+import type { AccountColor } from "@/modules/contas/colors";
 
 const withOwner = { owner: { include: { user: true } } } as const;
 
@@ -22,6 +23,14 @@ export function contasRepo(tx: Tx, familyId: string) {
         include: withOwner,
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       }),
+    /** Cores em uso (contas e cartões NÃO excluídos, inclusive arquivados) para `pickNextColor` (SDD-017 §4.3). */
+    usedColors: async (): Promise<AccountColor[]> => {
+      const rows = await tx.$queryRaw<Array<{ color: AccountColor }>>`
+        SELECT "color" FROM "bank_accounts" WHERE "familyId" = ${familyId}::uuid AND "deletedAt" IS NULL
+        UNION ALL
+        SELECT "color" FROM "credit_cards" WHERE "familyId" = ${familyId}::uuid AND "deletedAt" IS NULL`;
+      return rows.map((r) => r.color);
+    },
     findById: (id: string) =>
       tx.bankAccount.findFirst({ where: { id, familyId, deletedAt: null }, include: withOwner }),
     /** Titular candidato (ativo, da família): `userId == null` = sem conta (US-093a, SDD-034 §3.2). */
@@ -36,11 +45,12 @@ export function contasRepo(tx: Tx, familyId: string) {
       type: "CHECKING" | "SAVINGS" | "CASH";
       ownerMemberId: string;
       excludeFromAvailable?: boolean;
+      color: AccountColor;
     }) => tx.bankAccount.create({ data: { ...data, familyId }, include: withOwner }),
     /** Atualização com controle otimista: 0 linhas => versão antiga ou inexistente. */
     rename: (
       id: string,
-      patch: { name?: string; excludeFromAvailable?: boolean },
+      patch: { name?: string; excludeFromAvailable?: boolean; color?: AccountColor },
       version: number,
     ) =>
       tx.bankAccount.updateMany({

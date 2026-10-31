@@ -4,6 +4,7 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import { addDays, compareDate, todayInFamilyTz } from "@/lib/dates";
 import type { MemberRef } from "@/lib/schemas";
+import { pickNextColor } from "@/modules/contas/colors";
 import { recordRevision } from "@/modules/contas/ledger";
 import {
   accountBalances,
@@ -50,6 +51,7 @@ function toDTO(
     archived: a.archivedAt !== null,
     archivedAt: a.archivedAt?.toISOString() ?? null,
     excludeFromAvailable: a.excludeFromAvailable,
+    color: a.color,
     neverUsed,
     version: a.version,
     createdAt: a.createdAt.toISOString(),
@@ -173,6 +175,7 @@ export async function createAccount(
       type: input.type,
       ownerMemberId,
       excludeFromAvailable: input.excludeFromAvailable ?? false,
+      color: input.color ?? pickNextColor(await repo.usedColors()),
     });
   } catch (e) {
     if (isUniqueViolation(e)) throw conflict("DUPLICATE_ACCOUNT_NAME", DUPLICATE_NAME);
@@ -230,6 +233,7 @@ export async function renameAccount(
         ...(input.excludeFromAvailable !== undefined
           ? { excludeFromAvailable: input.excludeFromAvailable }
           : {}),
+        ...(input.color !== undefined ? { color: input.color } : {}),
       },
       input.version,
     );

@@ -81,7 +81,7 @@ export async function loadInstallmentPlanDTO(
     id: plan.id,
     description: plan.description,
     note: plan.note,
-    card: { id: plan.card.id, name: plan.card.name },
+    card: { id: plan.card.id, name: plan.card.name, color: plan.card.color },
     category: { id: plan.category.id, name: plan.category.name, icon: plan.category.icon },
     payer: ref(plan.payerMemberId),
     author: ref(plan.authorMemberId),

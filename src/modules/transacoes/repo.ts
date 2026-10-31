@@ -4,8 +4,8 @@ import { fromCents } from "@/lib/money";
 import { notFutureFilter } from "@/modules/transacoes/ledger-where";
 
 const loadInclude = {
-  account: { select: { id: true, name: true, archivedAt: true, ownerMemberId: true } },
-  card: { select: { id: true, name: true, archivedAt: true, ownerMemberId: true } },
+  account: { select: { id: true, name: true, color: true, archivedAt: true, ownerMemberId: true } },
+  card: { select: { id: true, name: true, color: true, archivedAt: true, ownerMemberId: true } },
   invoice: { select: { referenceMonth: true, closingDate: true, dueDate: true } },
   category: true,
   group: true,
@@ -29,7 +29,14 @@ export function transacoesRepo(tx: Tx, familyId: string) {
     findCard: (id: string) =>
       tx.creditCard.findFirst({
         where: { id, familyId },
-        select: { id: true, name: true, closingDay: true, dueDay: true, limitInCents: true },
+        select: {
+          id: true,
+          name: true,
+          color: true,
+          closingDay: true,
+          dueDay: true,
+          limitInCents: true,
+        },
       }),
     /**
      * Cartão para POSTAR uma compra: trava a linha (FOR SHARE) ANTES de ler os dias de fechamento e vencimento.
@@ -40,11 +47,21 @@ export function transacoesRepo(tx: Tx, familyId: string) {
       await tx.$executeRaw`SELECT 1 FROM credit_cards WHERE id = ${id}::uuid AND "familyId" = ${familyId}::uuid FOR SHARE`;
       return tx.creditCard.findFirst({
         where: { id, familyId },
-        select: { id: true, name: true, closingDay: true, dueDay: true, limitInCents: true },
+        select: {
+          id: true,
+          name: true,
+          color: true,
+          closingDay: true,
+          dueDay: true,
+          limitInCents: true,
+        },
       });
     },
     findAccount: (id: string) =>
-      tx.bankAccount.findFirst({ where: { id, familyId }, select: { id: true, name: true } }),
+      tx.bankAccount.findFirst({
+        where: { id, familyId },
+        select: { id: true, name: true, color: true },
+      }),
     countMembers: () => tx.member.count({ where: { familyId, removedAt: null } }),
     /** Ativo: referência de pagador/responsável (ex-membro => INVALID_REFERENCE). */
     findMember: (id: string) =>

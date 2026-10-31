@@ -1,5 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { createDevSession } from "@/lib/auth/dev-login";
+import type { AccountColor } from "@/modules/contas/colors";
 import { DEFAULT_CATEGORIES } from "@/modules/familia/default-categories";
 import { insertSplitRows, resolveRuleSplit } from "@/modules/split/write";
 import type { Caller } from "./call";
@@ -238,7 +239,7 @@ export async function makeAccount(
     institution?: string;
     openingBalanceInCents?: number;
     openingDate?: string;
-    color?: string; // aceito desde já (US-050); ignorado até lá
+    color?: AccountColor; // US-050 (padrão do banco: BLUE)
   },
 ): Promise<AccountFixture> {
   const db = fdb();
@@ -252,6 +253,7 @@ export async function makeAccount(
       institution: o.institution ?? "Outro",
       type: o.type ?? "CHECKING",
       ownerMemberId: owner.memberId,
+      ...(o.color ? { color: o.color } : {}),
     },
   });
   const opening = await db.transaction.create({
@@ -293,7 +295,7 @@ export async function makeCard(
     closingDay?: number;
     dueDay?: number;
     institution?: string;
-    color?: string; // aceito desde já (US-050); ignorado até lá
+    color?: AccountColor; // US-050 (padrão do banco: BLUE)
     paymentAccount?: { id: string }; // US-089: conta pagadora padrão
   },
 ): Promise<CardFixture> {
@@ -310,6 +312,7 @@ export async function makeCard(
       closingDay: o.closingDay ?? 25,
       dueDay: o.dueDay ?? 5,
       ...(o.paymentAccount ? { paymentAccountId: o.paymentAccount.id } : {}),
+      ...(o.color ? { color: o.color } : {}),
       updatedByMemberId: owner.memberId,
     },
   });

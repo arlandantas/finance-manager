@@ -85,10 +85,11 @@ export function useCreateTransaction(idempotencyKey: string) {
         const pending = buildPendingItem(input, {
           today: defaults.today,
           me: { id: me.memberId, name: me.name, image: me.image },
-          accounts: accounts.items.map((a) => ({ id: a.id, name: a.name })),
+          accounts: accounts.items.map((a) => ({ id: a.id, name: a.name, color: a.color })),
           cards: (cards?.items ?? []).map((c) => ({
             id: c.id,
             name: c.name,
+            color: c.color,
             closingDay: c.closingDay,
             dueDay: c.dueDay,
           })),

@@ -4,6 +4,7 @@ import { amountInCentsSchema } from "@/lib/money";
 import { type MemberRef, periodKeySchema, uuidSchema, versionSchema } from "@/lib/schemas";
 import type { InvoiceStatus } from "@/modules/cartoes/cycle";
 import { addMonthsClamped, MAX_INSTALLMENTS } from "@/modules/cartoes/installments";
+import type { AccountColor } from "@/modules/contas/colors";
 import { TagNamesSchema, type TagRef } from "@/modules/tags/schemas";
 
 /** Mensagem única de descrição inválida em despesa/receita/cartão (SDD-013 §1; previstas mantêm as suas). */
@@ -119,8 +120,8 @@ export type TransactionDTO = {
   description: string;
   note: string | null;
   tags: TagRef[]; // US-045: chips ordenados por nome ([] fora de despesa/receita)
-  account: { id: string; name: string; archived?: boolean } | null; // null em compra no cartão; `archived` marca "(arquivada)"
-  card: { id: string; name: string; archived?: boolean } | null; // compra no cartão e pagamento de fatura
+  account: { id: string; name: string; color: AccountColor; archived?: boolean } | null; // null em compra no cartão; `archived` marca "(arquivada)"
+  card: { id: string; name: string; color: AccountColor; archived?: boolean } | null; // compra no cartão e pagamento de fatura
   invoice: { ref: string; closingDate: string; dueDate: string } | null;
   category: {
     id: string;
@@ -172,7 +173,7 @@ export type InstallmentPlanDTO = {
   id: string;
   description: string;
   note: string | null;
-  card: { id: string; name: string };
+  card: { id: string; name: string; color: AccountColor };
   category: { id: string; name: string; icon: string };
   payer: MemberRef;
   author: MemberRef;
