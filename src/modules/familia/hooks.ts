@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
 import type {
   CreateInvitationResponse,
+  CreateUnlinkedMemberResponse,
   FamilyDTO,
   InvitationDTO,
   RemovalReviewDTO,
@@ -171,5 +172,24 @@ export function useRotateInvitation() {
         idempotencyKey: a.idempotencyKey,
       }),
     onSuccess: invalidate,
+  });
+}
+
+/** POST /members (US-092b): cadastra membro sem conta; regra de divisão, acerto, contas e Home dependem do novo membro. */
+export function useCreateUnlinkedMember(idempotencyKey: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name: string; email?: string }) =>
+      apiFetch<CreateUnlinkedMemberResponse>("/api/v1/members", {
+        method: "POST",
+        body: input,
+        idempotencyKey,
+      }),
+    onSuccess: () =>
+      Promise.all(
+        ["family", "me", "split-rule", "settlement", "accounts", "home"].map((k) =>
+          qc.invalidateQueries({ queryKey: [k] }),
+        ),
+      ),
   });
 }

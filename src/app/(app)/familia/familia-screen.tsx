@@ -8,6 +8,7 @@ import {
   UserCog,
   UserMinus,
   UserPlus,
+  UserRoundPlus,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -34,6 +35,7 @@ import {
   useUpdateFamilySettings,
 } from "@/modules/familia/hooks";
 import type { FamilyDTO, InvitationDTO, Role } from "@/modules/familia/schemas";
+import { AddMemberDrawer } from "./add-member-drawer";
 import { RemoveMemberDialog } from "./remove-member-dialog";
 
 const ROLE_LABEL = { ADMIN: "Administrador", MEMBER: "Membro" } as const;
@@ -160,7 +162,7 @@ const EVENT_TEXT: Record<FamilyDTO["events"][number]["type"], string> = {
   MEMBER_JOINED: "entrou na família",
   CARD_OWNER_CHANGED: "trocou o titular de um cartão",
   CARD_PAYER_ACCOUNT_CHANGED: "definiu a conta pagadora de um cartão",
-  MEMBER_CREATED: "cadastrou um membro sem acesso ao app",
+  MEMBER_CREATED: "cadastrou",
   MEMBER_UPDATED: "atualizou o cadastro de",
   MEMBER_LINKED: "vinculou a conta de",
   TAG_RENAMED: "renomeou uma tag",
@@ -385,6 +387,7 @@ export function FamiliaScreen() {
   const family = useFamily();
   const cancel = useCancelInvitation();
   const [inviting, setInviting] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [canceling, setCanceling] = useState<InvitationDTO | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [removing, setRemoving] = useState<{
@@ -404,10 +407,16 @@ export function FamiliaScreen() {
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-slate-900">Família</h1>
         {isAdmin ? (
-          <Button onClick={() => setInviting(true)}>
-            <UserPlus size={18} aria-hidden="true" />
-            Convidar membro
-          </Button>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" onClick={() => setAdding(true)}>
+              <UserRoundPlus size={18} aria-hidden="true" />
+              Cadastrar membro
+            </Button>
+            <Button onClick={() => setInviting(true)}>
+              <UserPlus size={18} aria-hidden="true" />
+              Convidar membro
+            </Button>
+          </div>
         ) : null}
       </header>
 
@@ -467,15 +476,34 @@ export function FamiliaScreen() {
                   <Avatar name={m.name} image={m.image} size={40} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-slate-900">{m.name}</p>
-                    <p className="truncate text-sm text-slate-500">{m.email}</p>
+                    {m.unlinked ? (
+                      m.pendingEmail ? (
+                        <p
+                          data-testid="member-pending-email"
+                          className="truncate text-sm text-slate-500"
+                        >
+                          {m.pendingEmail}
+                        </p>
+                      ) : null
+                    ) : (
+                      <p className="truncate text-sm text-slate-500">{m.email}</p>
+                    )}
                   </div>
+                  {m.unlinked ? (
+                    <span
+                      data-testid="member-unlinked"
+                      className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200"
+                    >
+                      Sem acesso ao app
+                    </span>
+                  ) : null}
                   <span
                     data-testid="member-role"
                     className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
                   >
                     {ROLE_LABEL[m.role]}
                   </span>
-                  {m.canChangeRole || m.memberId === data.currentMemberId ? (
+                  {m.canChangeRole || m.memberId === data.currentMemberId || isAdmin ? (
                     <Menu
                       label={`Ações de ${m.name.split(" ")[0]}`}
                       trigger={<MoreHorizontal size={20} aria-hidden="true" />}
@@ -581,7 +609,8 @@ export function FamiliaScreen() {
                   <li key={`${e.at}-${i}`} data-testid="family-event">
                     {e.actor.name.split(" ")[0]} {EVENT_TEXT[e.type]}
                     {e.target ? ` ${e.target.name.split(" ")[0]}` : ""}
-                    {eventDetail(e)} ·{" "}
+                    {eventDetail(e)}
+                    {e.type === "MEMBER_CREATED" ? " (sem acesso ao app)" : ""} ·{" "}
                     {new Date(e.at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                   </li>
                 ))}
@@ -697,6 +726,12 @@ export function FamiliaScreen() {
         target={removing}
         familyName={data?.family.name ?? ""}
         onClose={() => setRemoving(null)}
+      />
+
+      <AddMemberDrawer
+        open={adding}
+        onOpenChange={setAdding}
+        settlementEnabled={data?.family.settlementEnabled ?? false}
       />
 
       <Drawer open={inviting} onOpenChange={setInviting} title="Convidar membro">
