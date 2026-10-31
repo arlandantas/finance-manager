@@ -94,7 +94,7 @@ function CardItem({
         >
           {card.name}
         </Link>
-        <p className="truncate text-sm text-slate-500">
+        <p className="break-words text-sm text-slate-500">
           {card.institution} · {card.owner.name.split(" ")[0]}
           {card.owner.unlinked && !card.owner.removed ? (
             <UnlinkedBadge className="ml-1 px-1.5 py-0.5 text-[11px]" />

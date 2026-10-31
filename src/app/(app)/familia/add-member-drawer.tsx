@@ -19,7 +19,8 @@ const NAME_MAX = 60;
 function SplitNotice({ name }: { name: string }) {
   const rule = useSplitRule();
   const kind = rule.data?.current.kind;
-  if (!kind) return null;
+  // Reserva a altura enquanto a regra carrega ou não há nome, para o botão não se deslocar.
+  if (!kind || !name) return <div aria-hidden="true" className="min-h-28" />;
   return (
     <p
       data-testid="split-notice"
@@ -58,7 +59,8 @@ export function AddMemberDrawer({
   const [key, setKey] = useState(newIdempotencyKey);
   const submitting = useRef(false);
   const create = useCreateUnlinkedMember(key);
-  const shown = name.trim().replace(/\s+/g, " ") || "A pessoa";
+  const typed = name.trim().replace(/\s+/g, " ");
+  const shown = typed || "A pessoa";
 
   function reset() {
     setName("");
@@ -115,7 +117,12 @@ export function AddMemberDrawer({
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange} title="Cadastrar membro">
+    <Drawer
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Cadastrar membro"
+      returnFocusId="add-member-btn"
+    >
       <form
         noValidate
         className="form-stack"
@@ -169,7 +176,7 @@ export function AddMemberDrawer({
         <p className="text-sm text-slate-600">
           {shown} não terá acesso ao app nem receberá e-mail.
         </p>
-        {settlementEnabled ? <SplitNotice name={shown} /> : null}
+        {settlementEnabled ? <SplitNotice name={typed} /> : null}
         <Button type="submit" disabled={create.isPending}>
           {create.isPending ? "Cadastrando…" : "Cadastrar"}
         </Button>

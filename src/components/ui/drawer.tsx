@@ -18,6 +18,7 @@ export function Drawer({
   children,
   className,
   initialFocusId,
+  returnFocusId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,6 +28,8 @@ export function Drawer({
   className?: string;
   /** id do elemento que recebe o foco ao abrir (padrão do Radix: primeiro focável). */
   initialFocusId?: string;
+  /** id do elemento que recebe o foco ao fechar (padrão do Radix: o gatilho, se houver). */
+  returnFocusId?: string;
 }) {
   const z = dialogZ(useDialogDepth(open));
   return (
@@ -39,6 +42,12 @@ export function Drawer({
             if (!initialFocusId) return;
             e.preventDefault();
             document.getElementById(initialFocusId)?.focus();
+          }}
+          onCloseAutoFocus={(e) => {
+            const el = returnFocusId ? document.getElementById(returnFocusId) : null;
+            if (!el) return;
+            e.preventDefault();
+            el.focus();
           }}
           className={cn(
             "fixed inset-x-0 bottom-0 flex max-h-[92vh] flex-col rounded-t-2xl bg-white dark:bg-slate-100 shadow-xl outline-none",

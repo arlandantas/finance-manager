@@ -111,13 +111,17 @@ Then(
     const payers = drawer(page).getByRole("radiogroup", {
       name: pagou,
     });
-    await expect(payers.getByRole("radio", { name: n, exact: true })).toBeVisible();
+    await expect(
+      payers.getByRole("radio", { name: new RegExp(`^${n}( \\(sem acesso ao app\\))?$`) }),
+    ).toBeVisible();
     await page.keyboard.press("Escape");
     await gotoReady(page, "/previstas");
     await page.getByRole("button", { name: "Nova despesa prevista" }).first().click();
     const dd = page.getByRole("dialog", { name: "Nova despesa prevista" });
     await expect(
-      dd.getByRole("radiogroup", { name: resp }).getByRole("radio", { name: n, exact: true }),
+      dd
+        .getByRole("radiogroup", { name: resp })
+        .getByRole("radio", { name: new RegExp(`^${n}( \\(sem acesso ao app\\))?$`) }),
     ).toBeVisible();
     world.data.checked = true;
   },

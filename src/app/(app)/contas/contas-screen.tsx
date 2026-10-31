@@ -72,7 +72,7 @@ function AccountCard({
             </span>
           ) : null}
         </p>
-        <p className="truncate text-sm text-slate-500">
+        <p className="break-words text-sm text-slate-500">
           {account.institution} · {ACCOUNT_TYPE_LABELS[account.type]} ·{" "}
           {account.owner.name.split(" ")[0]}
           {account.owner.unlinked && !account.owner.removed ? (

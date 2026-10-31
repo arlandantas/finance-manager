@@ -59,6 +59,7 @@ Atualizado: 2026-10-31 (US-092b, 093a e 093b implementadas; 094a em diante não 
 - D-GES-63: nome do cadastro é rótulo provisório; o aceite grava o nome escolhido em `members.name` (nunca em eventos); só o Admin cria "Só meu" em nome do sem conta; remoção/edição anonimiza e-mails dos convites do cadastro.
 - Usuário (não bloqueiam): SEC-060 "Entra na divisão?" (hipótese: só o aviso), SEC-062(3) "Desvincular conta" (hipótese: não), `ALLOWED_SIGNUP_EMAILS`, SEC-037. LGPD: titular sem conta (talvez criança, art. 14) exerce direitos via Admin; citar em `/privacidade` (Gestor).
 - Fase 2 da SEC-018 (`prisma/pending/20261027000000_*`, checklist 9.7).
+- UI da 092b/093 verificada no navegador (QA exploratório): selo "Sem acesso ao app" quebra de linha no mobile (/familia, /contas, /cartões); aviso de divisão do cadastro só com nome e com altura reservada; `Drawer` ganhou `returnFocusId` (Esc devolve o foco ao botão "Cadastrar membro"); aria-label do pagador/responsável inclui "(sem acesso ao app)" (E2E usa regex).
 - Não verificado: UI do aviso da remoção (SEC-046); migração `20261031000000` fora de produção.
 
 ## f) Mapa de fontes

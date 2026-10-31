@@ -147,7 +147,7 @@ When(
     const nome = quem.replace(/^Quem pagou\?:\s*/, "");
     await drawer(page)
       .getByRole("radiogroup", { name: "Quem pagou?" })
-      .getByRole("radio", { name: nome, exact: true })
+      .getByRole("radio", { name: new RegExp(`^${nome}( \\(sem acesso ao app\\))?$`) })
       .click();
     await save(page, "Salvar despesa");
     await waitSaved(page);
@@ -203,7 +203,7 @@ When(
     await fillPlanned(d, { description: desc, amount: valor, category: "Moradia", shared: true });
     await d
       .getByRole("radiogroup", { name: "Responsável pelo pagamento" })
-      .getByRole("radio", { name: resp, exact: true })
+      .getByRole("radio", { name: new RegExp(`^${resp}( \\(sem acesso ao app\\))?$`) })
       .click();
     await d.getByRole("button", { name: "Salvar", exact: true }).click();
     await expect(dlg(page, "Nova despesa prevista")).toBeHidden();

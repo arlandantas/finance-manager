@@ -409,7 +409,7 @@ export function FamiliaScreen() {
         <h1 className="text-2xl font-semibold text-slate-900">Família</h1>
         {isAdmin ? (
           <div className="flex flex-wrap justify-end gap-2">
-            <Button variant="secondary" onClick={() => setAdding(true)}>
+            <Button id="add-member-btn" variant="secondary" onClick={() => setAdding(true)}>
               <UserRoundPlus size={18} aria-hidden="true" />
               Cadastrar membro
             </Button>
@@ -478,19 +478,21 @@ export function FamiliaScreen() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium text-slate-900">{m.name}</p>
                     {m.unlinked ? (
-                      m.pendingEmail ? (
-                        <p
-                          data-testid="member-pending-email"
-                          className="truncate text-sm text-slate-500"
-                        >
-                          {m.pendingEmail}
-                        </p>
-                      ) : null
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <UnlinkedBadge />
+                        {m.pendingEmail ? (
+                          <p
+                            data-testid="member-pending-email"
+                            className="min-w-0 truncate text-sm text-slate-500"
+                          >
+                            {m.pendingEmail}
+                          </p>
+                        ) : null}
+                      </div>
                     ) : (
                       <p className="truncate text-sm text-slate-500">{m.email}</p>
                     )}
                   </div>
-                  {m.unlinked ? <UnlinkedBadge /> : null}
                   <span
                     data-testid="member-role"
                     className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"

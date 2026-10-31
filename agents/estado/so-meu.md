@@ -9,7 +9,7 @@ Atualizado: 2026-10-31 (US-093b: dono sem conta). Fonte de verdade: código + te
 - Dono ex-membro: só o Administrador age (poderes plenos: divisão, conta, "Pagar com"), mas o pagador de ex-membro que não voltou é imutável para todos (D-GES-59). Quem volta à família (mesmo usuário, vínculo novo) recupera o controle total do item e o Administrador perde o poder pleno sobre ele (SEC-049).
 - Membro sem conta (US-093b, [SDD-034](../tech-lead/sdd/SDD-034-membro-sem-conta-atribuicao-e-acerto-us-093.md); aguarda validação do Gestor e reteste da Segurança): o Administrador é o TUTOR do "Só meu" de dono ATIVO sem conta (mesmos poderes plenos do Admin-ex, sem assumir o pagador) e é o único que cria "Só meu" em nome dele.
 - "Só meu" alheio (dono não está nos vínculos do solicitante) nunca vai à exportação.
-- Ciclo de segurança encerrado (rodadas 1..8, D-GES-61). Aberto: SEC-054/055/056 aceitos por decisão do Gestor, sujeitos a veto do usuário; UI nunca verificada no navegador.
+- Ciclo de segurança encerrado (rodadas 1..8, D-GES-61). Aberto: SEC-054/055/056 aceitos por decisão do Gestor, sujeitos a veto do usuário; UI da US-093b verificada pelo QA exploratório (achados 1-6 corrigidos, 2026-10-31).
 - Decisões que dependem do usuário: veto a D-GES-57/61 (aceites de risco); reautenticação nas exclusões (SEC-037, recomendação: manter confirmação digitada + e-mail).
 
 ## b) Regras vigentes
@@ -70,9 +70,9 @@ Mensagens 403 (`PERSONAL_OWNER_ONLY`): lista de nomes ("Só A, B e C podem alter
 Todos sujeitos a veto do usuário.
 
 ## e) Em andamento / pendências
-- US-093b implementada (TASK-098), aguarda validação do Gestor, revisão do TL (`ownership.ts`) e reteste da Segurança (SEC-059a, SEC-066b, SEC-067). UI do tutor/pagador (seletores desabilitados, dicas) coberta por E2E, nunca vista no navegador. DEV-163: o autor Admin de um "Só meu" de sem conta pode trocar o pagador para si (Lanç isento, SDD-034 R4).
+- US-093b implementada (TASK-098), aguarda validação do Gestor, revisão do TL (`ownership.ts`) e reteste da Segurança (SEC-059a, SEC-066b, SEC-067). UI do tutor/pagador (seletores desabilitados, dicas) coberta por E2E e verificada no navegador pelo QA exploratório (achados corrigidos). DEV-163: o autor Admin de um "Só meu" de sem conta pode trocar o pagador para si (Lanç isento, SDD-034 R4).
 - Nada mais em implementação. Ciclo de segurança do "Só meu" encerrado (D-GES-61); novos achados só de mudanças futuras.
-- Verificação no navegador da UI (seletor "Quem pagou?" fixo para ex-membro, campos desabilitados, `pay-drawer` de quem só controla): NUNCA feita (D-GES-54/56/58/60).
+- Verificação no navegador da UI (seletor "Quem pagou?" fixo para ex-membro, campos desabilitados, `pay-drawer` de quem só controla): feita só para o selo/seletor de pagador da US-093b; o seletor fixo de ex-membro e o `pay-drawer` de quem só controla seguem sem verificação (D-GES-54/56/58/60).
 - Polimento citado em D-GES-54/56 (seletor vazio para Admin-ex; `pay-drawer` de quem só controla enviava pagador próprio e levava 403): não confirmado como resolvido.
 - Usuário: veto aos aceites; SEC-037 (reautenticação).
 - Pergunta ao usuário (pendente): os agregados enviados à IA (D-GES-29) INCLUEM despesas "Só meu" de outros membros (as consultas não filtram `isSharedExpense`; vai só rótulo de categoria e total, sem identificar quem lançou). Recomendação: excluir "Só meu" alheio dos agregados. Detalhe em [ia-assistente-mcp.md](ia-assistente-mcp.md) §d.

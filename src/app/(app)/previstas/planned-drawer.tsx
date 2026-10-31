@@ -580,8 +580,11 @@ export function PlannedDrawer({
                   type="button"
                   role="radio"
                   aria-checked={effectiveResponsibleId === m.memberId}
-                  aria-label={m.name.split(" ")[0]}
-                  aria-describedby={m.unlinked ? `pl-unlinked-${m.memberId}` : undefined}
+                  aria-label={
+                    m.unlinked
+                      ? `${m.name.split(" ")[0]} (sem acesso ao app)`
+                      : m.name.split(" ")[0]
+                  }
                   aria-disabled={
                     (personalPlanned && !canBeSoleOwner(m.memberId)) || cannotTakeOver(m.memberId)
                       ? true
