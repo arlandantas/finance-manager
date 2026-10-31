@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight } from "lucide-react";
+import { ArrowLeftRight, ListOrdered } from "lucide-react";
 import { CategoryIcon } from "@/components/category-icon";
 import { Money } from "@/components/money";
 import { Avatar } from "@/components/ui/avatar";
@@ -195,16 +195,21 @@ export function LedgerRow({
           </span>
         </button>
         {item.installment && onViewPlan ? (
-          <button
-            type="button"
-            data-testid="view-plan"
-            onClick={() =>
-              onViewPlan((item.installment as NonNullable<typeof item.installment>).planId)
-            }
-            className="mt-1 flex min-h-11 items-center px-3 text-sm font-medium text-brand-800 dark:text-emerald-300 underline"
-          >
-            Ver compra
-          </button>
+          // US-088: ação do próprio card (irmã da linha clicável, não filha: não aninha button em button)
+          <div className="flex justify-start border-t border-slate-200 px-2 py-1">
+            <button
+              type="button"
+              data-testid="view-plan"
+              aria-label="Ver compra"
+              title="Ver compra"
+              onClick={() =>
+                onViewPlan((item.installment as NonNullable<typeof item.installment>).planId)
+              }
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-brand-800 hover:bg-slate-100 dark:text-emerald-300"
+            >
+              <ListOrdered size={20} aria-hidden="true" />
+            </button>
+          </div>
         ) : null}
       </div>
     </li>
