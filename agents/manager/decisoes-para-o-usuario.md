@@ -10,7 +10,7 @@
 | Q-19 | Dias de fechamento/vencimento **travados** após a primeira compra do cartão. | Travados; nome, limite e titular editáveis | Exigiria ciclo versionado por vigência |
 | Q-21 | Pagamento de fatura **integral**; sem parcial, juros ou antecipação. | Integral, só fatura fechada | Parcial/juros iria para AP1/AP2 |
 | Q-22 | "Dividir com a família" nas despesas previstas é decidido no cadastro, padrão **ligado**. | Ligado | Ajuste de formulário |
-| Q-01 | Dependentes sem login (ex.: filhos) como responsáveis por gasto. | **Fora do MVP** (US-021) | Novo épico, mexe no modelo de membros |
+| Q-01 | Dependentes sem login (ex.: filhos) como responsáveis por gasto. | **Fora do MVP** (US-021). **Reaberta e respondida** pela NEED-028 (Q-U15, D-GES-62) e pelo ADR-033 (Q-TL-U1..U5, D-GES-63, seção H) | Novo épico, mexe no modelo de membros |
 | D-PO-01 | Um único campo "Quem pagou?" no lançamento. | Aprovada | Formulário e modelo (`payerMemberId`) |
 | D-PO-02 | Todos os membros veem e lançam em todas as contas e cartões. | Aprovada | Exigiria permissões granulares (US-020) |
 
@@ -59,3 +59,21 @@ Todas as hipóteses do Stakeholder foram aprovadas em 2026-10-26, **exceto Q-U20
 | Q-U22 | Pagar a fatura sozinho na data | Não: o app só sugere a conta e avisa o vencimento |
 | Q-U23 | Conta pagadora obrigatória no cartão | Opcional |
 | Q-U24 | Saldo previsto por conta inclui previstas "Só meu" de outro membro | Sim |
+
+## H. Membro sem conta: Q-TL-U1..U5 do ADR-033 (2026-10-30) — RESPONDIDAS pelo usuário
+Q-TL-U1..U5 respondidas; a revisão da Segurança (SEC-058..068, 2026-10-30) concordou com U2/U5 e com U3/U4 sob condições já incorporadas no ADR. **Restam 2 perguntas novas da Segurança (abaixo, pendentes; não bloqueiam a 092a).** Registro: D-GES-63; modelo em `tech-lead/adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md`.
+
+| ID | Decisão | Resposta (usuário, 2026-10-30) |
+| :-- | :-- | :-- |
+| Q-TL-U1 | Cadastrar alguém inclui a pessoa na divisão igual das despesas novas? | Sim, com aviso no cadastro; quem não divide usa proporcional com 0% |
+| Q-TL-U2 | Alguém pode tornar "Só meu" uma dividida paga pelo membro sem conta? | Ninguém, até ele assumir o cadastro |
+| Q-TL-U3 | Quem cria "Só meu" em nome do membro sem conta | Só o Administrador |
+| Q-TL-U4 | O nome do cadastro continua valendo depois que a pessoa assume? | **Não: a pessoa escolhe o próprio nome ao assumir; o do cadastro é provisório** (muda a recomendação do TL) |
+| Q-TL-U5 | Anonimizar o e-mail dos convites do cadastro removido na hora | Sim (a Segurança concorda e amplia: também ao editar o e-mail e sem e-mail no histórico de reenvio) |
+
+**Pendentes (revisão da Segurança, 2026-10-30):**
+
+| ID | Decisão | Hipótese adotada | Impacto se mudar |
+| :-- | :-- | :-- | :-- |
+| SEC-060 | O cadastro deve perguntar "Entra na divisão das despesas?" (escolha obrigatória; "não" grava a divisão proporcional com 0%)? A Segurança recomenda sim | Vale a resposta da Q-TL-U1: só o aviso no cadastro | +1 pt na US-092 |
+| SEC-062(3) | Criar "Desvincular conta" (só Administrador, até 7 dias após o aceite) para desfazer um convite aceito pela pessoa errada? | Não por ora; aviso na criação do convite e e-mail aos Administradores quando o cadastro é assumido | Nova fatia (~3 pts) |
