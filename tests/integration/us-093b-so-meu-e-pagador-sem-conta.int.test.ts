@@ -886,3 +886,96 @@ describe("9c. ordem de travas: conta (atual e nova) ANTES do dono, com a conta p
     );
   }, 90000);
 });
+
+describe("9d. ordem de travas: cartão e conta do estorno ANTES do dono (SDD-034 R2)", () => {
+  const url = () => (process.env.TEST_DATABASE_URL as string).replace(/\?schema=.*$/, "");
+
+  /**
+   * A (papel do removal): BEGIN + conta X FOR UPDATE. `kick` dispara o pedido do tutor SEM aguardar; esperamos ele
+   * bloquear numa trava de linha; C pega a linha do dono com FOR UPDATE NOWAIT: tem de CONSEGUIR (o pedido não pode
+   * estar segurando o dono, senão o UPDATE members do removal fecharia o ciclo). Depois COMMIT em A e o pedido termina.
+   */
+  async function scenario(
+    label: string,
+    xId: string,
+    ownerId: string,
+    table: "bank_accounts" | "credit_cards",
+    kick: () => Promise<{ status: number; body?: unknown }>,
+  ) {
+    const a = new Client({ connectionString: url() });
+    const c = new Client({ connectionString: url() });
+    await a.connect();
+    await c.connect();
+    try {
+      await a.query("BEGIN");
+      await a.query(`SELECT id FROM ${table} WHERE id = $1 FOR UPDATE`, [xId]);
+      const pending = kick();
+      let blocked = false;
+      for (let i = 0; i < 50 && !blocked; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+        const q = await c.query(
+          "SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND pid <> pg_backend_pid()",
+        );
+        blocked = (q.rows[0]?.n ?? 0) > 0;
+      }
+      expect(blocked, `${label}: o pedido deveria bloquear na conta`).toBe(true);
+      await c.query("BEGIN");
+      await c.query("SELECT 1 FROM members WHERE id = $1 FOR UPDATE NOWAIT", [ownerId]); // lança 55P03 se o pedido segura o dono
+      await c.query("ROLLBACK");
+      await a.query("COMMIT");
+      const res = await pending;
+      expect(res.status, `${label}: ${JSON.stringify(res.body)}`).toBeLessThan(300);
+    } finally {
+      await a.query("ROLLBACK").catch(() => undefined);
+      await c.end();
+      await a.end();
+    }
+  }
+
+  const buy = async (cardId: string, installments?: number) => ({
+    type: "EXPENSE",
+    cardId,
+    categoryId: await catId("Supermercado"),
+    amountInCents: 30000,
+    payerMemberId: ana.memberId,
+    isSharedExpense: false,
+    ...(installments ? { installments } : {}),
+  });
+
+  it("criação pelo Admin no cartão preso FOR UPDATE: parcelada e à vista", async () => {
+    const card = await makeCard(fx, { name: "Cartão", owner: "Mariana" });
+    await scenario("parcelada", card.id, ana.memberId, "credit_cards", async () =>
+      api("Mariana", "POST", "/transactions", await buy(card.id, 3)),
+    );
+    await scenario("à vista", card.id, ana.memberId, "credit_cards", async () =>
+      api("Mariana", "POST", "/transactions", await buy(card.id)),
+    );
+  }, 60000);
+
+  it("estorno da baixa: conta da despesa gerada (diferente da da prevista) presa FOR UPDATE", async () => {
+    const created = await api("Mariana", "POST", "/planned-expenses", {
+      ...(await planned(ana.memberId, false)),
+      paymentAccountId: poupAna.id,
+    });
+    const p = created.body.plannedExpense as { id: string; version: number };
+    const paid = await api("Bia", "POST", `/planned-expenses/${p.id}/pay`, {
+      version: p.version,
+      accountId: main.id,
+    });
+    expect(paid.status, JSON.stringify(paid.body)).toBeLessThan(300);
+    const after = await db.plannedExpense.findUniqueOrThrow({ where: { id: p.id } });
+    await scenario("estorno", main.id, ana.memberId, "bank_accounts", () =>
+      api("Bia", "POST", `/planned-expenses/${p.id}/undo-payment`, { version: after.version }),
+    );
+  }, 60000);
+
+  it("edição/exclusão de compra no cartão de Ana (Só meu) com o cartão preso", async () => {
+    const card = await makeCard(fx, { name: "Cartão", owner: "Mariana" });
+    const r = await api("Mariana", "POST", "/transactions", await buy(card.id));
+    expect(r.status, JSON.stringify(r.body)).toBe(201);
+    const tid = r.body.transaction.id as string;
+    await scenario("edição no cartão", card.id, ana.memberId, "credit_cards", () =>
+      api("Bia", "PATCH", `/transactions/${tid}`, { version: 1, amountInCents: 31000 }),
+    );
+  }, 60000);
+});

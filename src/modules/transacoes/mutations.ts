@@ -12,6 +12,7 @@ import {
   assertAccountsEditable,
   lockAccountsForPosting,
   shareLockAccounts,
+  shareLockCards,
 } from "@/modules/contas/lock";
 import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
@@ -69,6 +70,7 @@ async function loadMutable(
   if (!row) throw notFound("Lançamento não encontrado.");
   // SDD-034 R2: contas (atual e nova) ANTES de qualquer leitura do dono (conta ➔ membro, como o removal.ts)
   await shareLockAccounts(tx, familyId, [row.accountId, ...extraAccountIds]);
+  await shareLockCards(tx, familyId, [row.cardId]);
   await assertCanWriteTransaction(tx, ctx, row); // SEC-021: "Só meu" é só do dono
   await assertAccountsEditable(tx, familyId, [row.accountId]); // conta arquivada: lançamento travado
   if (row.kind === "INVOICE_PAYMENT") throw unprocessable("NOT_EDITABLE", PAYMENT_NOT_EDITABLE);
@@ -283,7 +285,13 @@ export async function updateTransaction(
   // SEC-051 (D-GES-59): o pagador ex-membro (sem retorno) é imutável também na dividida
   const standing: OwnerStanding =
     row.kind === "EXPENSE"
-      ? await ownerStanding(tx, ctx, personalOwnerId(row), [row.accountId, input.accountId])
+      ? await ownerStanding(
+          tx,
+          ctx,
+          personalOwnerId(row),
+          [row.accountId, input.accountId],
+          [row.cardId],
+        )
       : { ownerIsActor: false, ownerRemoved: false, ownerUnlinked: false };
   // US-093b: o tutor (Admin sobre dono sem conta) tem os mesmos poderes plenos do Admin sobre ex-membro
   const fullPower = adminFullPower(ctx, standing) && isPersonalExpense(row);

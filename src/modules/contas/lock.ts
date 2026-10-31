@@ -43,6 +43,22 @@ export async function assertAccountsEditable(tx: Tx, familyId: string, ids: Arra
   }
 }
 
+/** Cartões FOR SHARE em ordem de id (SDD-034 R2): vêm DEPOIS das contas e ANTES do dono, como no `removal.ts`. */
+export async function shareLockCards(
+  tx: Tx,
+  familyId: string,
+  ids: Array<string | null | undefined>,
+): Promise<void> {
+  const unique = [
+    ...new Set(ids.filter((i): i is string => typeof i === "string" && i !== "")),
+  ].sort();
+  if (unique.length === 0) return;
+  await tx.$queryRaw`
+    SELECT id FROM credit_cards
+    WHERE "familyId" = ${familyId}::uuid AND id = ANY(${unique}::uuid[])
+    ORDER BY id FOR SHARE`;
+}
+
 /**
  * Trava compartilhada SEM checagem de arquivada (SDD-034 §4.1/R2, ordem de travas): quem vai ler o dono com
  * `FOR SHARE` em `members` trava ANTES as contas envolvidas (a mesma ordem de `familia/removal.ts`: conta ➔ membro),

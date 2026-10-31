@@ -1,7 +1,7 @@
 import { forbidden } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import type { MemberRef } from "@/lib/schemas";
-import { shareLockAccounts } from "@/modules/contas/lock";
+import { shareLockAccounts, shareLockCards } from "@/modules/contas/lock";
 import { type MemberNameSource, memberFirstName, samePerson } from "@/modules/familia/display-name";
 
 // SEC-021 (D-GES-42, DEV-88) revisado por D-GES-50 (DEV-120): lançamento "Só meu" é alterado (editar,
@@ -170,8 +170,10 @@ export async function ownerStanding(
   ownerId: string,
   /** Contas do item: travadas (FOR SHARE) ANTES do dono, na ordem do `removal.ts` (conta ➔ membro). */
   accountIds: Array<string | null | undefined> = [],
+  cardIds: Array<string | null | undefined> = [],
 ): Promise<OwnerStanding> {
   await shareLockAccounts(tx, ctx.familyId, accountIds);
+  await shareLockCards(tx, ctx.familyId, cardIds); // conta ➔ cartão ➔ dono (ordem do removal.ts)
   const none = { ownerIsActor: false, ownerRemoved: false, ownerUnlinked: false };
   if (ownerId === ctx.memberId) return { ...none, ownerIsActor: true };
   const [owner] = await tx.$queryRaw<Array<{ removedAt: Date | null; userId: string | null }>>`
@@ -326,9 +328,13 @@ export async function assertCanWriteTransaction(
   if (!isPersonalExpense(row)) return;
   const ownerId = personalOwnerId(row);
   if (ownerId === ctx.memberId) return;
-  const { ownerIsActor, ownerRemoved, ownerUnlinked } = await ownerStanding(tx, ctx, ownerId, [
-    row.accountId,
-  ]); // SEC-049
+  const { ownerIsActor, ownerRemoved, ownerUnlinked } = await ownerStanding(
+    tx,
+    ctx,
+    ownerId,
+    [row.accountId],
+    [row.cardId],
+  ); // SEC-049
   if (ownerIsActor) return;
   if (!ownerRemoved && row.authorMemberId === ctx.memberId) return;
   if (ownerRemoved && ctx.role === "ADMIN") return; // D-GES-52

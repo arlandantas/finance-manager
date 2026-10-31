@@ -201,6 +201,7 @@ export async function createSeries(
   }
   const responsibleMemberId = input.responsibleMemberId ?? ctx.memberId;
   if (input.isSharedExpense) await assertCanShare(tx, ctx);
+  await shareLockAccounts(tx, ctx.familyId, [input.paymentAccountId]); // SDD-034 R2
   await assertPlannedResultAllowed(tx, ctx, {
     isSharedExpense: input.isSharedExpense,
     responsibleMemberId,

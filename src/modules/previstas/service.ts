@@ -7,7 +7,7 @@ import { periodFromKey, periodOf } from "@/lib/period";
 import type { MemberRef } from "@/lib/schemas";
 import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
-import { shareLockAccounts } from "@/modules/contas/lock";
+import { shareLockAccounts, shareLockCards } from "@/modules/contas/lock";
 import { toMemberRef } from "@/modules/familia/display-name";
 import { previstasRepo } from "@/modules/previstas/repo";
 import { isPlannedOverdue, plannedDifference } from "@/modules/previstas/rules";
@@ -151,6 +151,7 @@ export async function createPlannedExpense(
   const today = todayInFamilyTz(ctx.clock);
   const responsibleMemberId = input.responsibleMemberId ?? ctx.memberId;
   if (input.isSharedExpense) await assertCanShare(tx, ctx);
+  await shareLockAccounts(tx, ctx.familyId, [input.paymentAccountId]); // SDD-034 R2: a FK da criação também trava a conta
   await assertPlannedResultAllowed(tx, ctx, {
     isSharedExpense: input.isSharedExpense,
     responsibleMemberId,
@@ -498,6 +499,9 @@ export async function undoPlannedPayment(
     where: { id: row.paidTransactionId, familyId: ctx.familyId },
   });
   if (!t) throw notFound(NOT_FOUND);
+  // SDD-034 R2: contas e cartão da prevista e da despesa gerada ANTES de qualquer leitura do dono
+  await shareLockAccounts(tx, ctx.familyId, [row.paymentAccountId, t.accountId]);
+  await shareLockCards(tx, ctx.familyId, [t.cardId]);
   await assertCanWritePlanned(tx, ctx, row); // SEC-044d: o estorno checa também o controle da prevista
   await assertCanWriteTransaction(tx, ctx, t); // SEC-021: estornar a baixa de um "Só meu" é só do dono
   if (!t.deletedAt) {
