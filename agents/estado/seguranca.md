@@ -1,9 +1,9 @@
 # Estado vigente: Segurança (transversal)
 
-Atualizado: 2026-10-30 (revisão do ADR-033). Fonte de verdade: código + testes (§f). Mudou proteção, achado ou regra de deploy? Atualize ESTE arquivo no mesmo commit. A regra do "Só meu" está em [so-meu.md](so-meu.md) (não repetida aqui).
+Atualizado: 2026-10-31 (reteste do ADR-033/US-093). Fonte de verdade: código + testes (§f). Mudou proteção, achado ou regra de deploy? Atualize ESTE arquivo no mesmo commit. A regra do "Só meu" está em [so-meu.md](so-meu.md) (não repetida aqui).
 
 ## a) Resumo para o usuário
-- 68 achados SEC (levantamento + 8 retestes/revisões). 0 Crítica aberta. SEC-058..068 são de PROJETO (ADR-033, membro sem conta, nada implementado): 2 Média, 7 Baixa, 2 Info; o resto está corrigido, aceito ou aguarda o usuário.
+- 69 achados SEC (levantamento + 9 retestes/revisões). 0 Crítica aberta. Reteste 2026-10-31 (092a..093b implementadas): SEC-058, 059a, 065, 066b, 067, 068 conformes; 059b risco aceito; 061/063 abertos só para a 094a/094b (convite vinculado e aceite); SEC-069 (Info) novo; o resto está corrigido, aceito ou aguarda o usuário. [Relatório](../security/relatorios/reteste-adr033-us093-2026-10-31.md).
 - ADR-033 pode ser Aceito com condições: o TL emenda §2.3/§2.5/§2.8/§3/§5/§9 (SEC-058, 059, 061, 063, 065). Q-TL-U2, U3, U5 e U4: Segurança concorda com condições ([relatório](../security/relatorios/revisao-adr033-2026-10-30.md)).
 - Ciclo do "Só meu" encerrado (D-GES-61). Novos achados só de mudanças futuras.
 - Decisões que dependem do usuário: Q-TL-U1/SEC-060 ("Entra na divisão?" no cadastro); SEC-062 (criar "Desvincular conta"); veto a SEC-054/055/056 (aceites do Gestor); SEC-037 (reautenticação nas exclusões; hoje: confirmação digitada + e-mail de aviso); validação jurídica dos prazos/texto LGPD (U5).
@@ -42,7 +42,7 @@ Severidade entre parênteses. "Reteste" = confirmado pelo Agente de Segurança.
 | 041 | Balde de falhas do `/token` fraco | Risco aceito (desprezível: segredos de 256 bits; D-GES-49) |
 | 042..051 | "Só meu" (cartão, limites, ex-membro, exportação, baixa) | Corrigido; detalhes em [so-meu.md](so-meu.md) |
 | 052, 053 | Admin com cartão após remoção; acerto duplo de quem voltou | Risco aceito (info, D-GES-59) |
-| 058..068 | ADR-033 (membro sem conta): `userId` nulo nas comparações de pessoa; pagador/acerto do sem conta; EQUAL; e-mail em `INVITATION_RESENT`; captura irreversível; nome escolhido (U4); prévia; gatilho; corridas; exceção SEC-026c; LGPD do `pendingEmail` | Abertos (projeto); detalhe e local na [revisão](../security/relatorios/revisao-adr033-2026-10-30.md) |
+| 058..069 | ADR-033 (membro sem conta; reteste 2026-10-31: 058, 059a, 065, 066b, 067, 068 conformes; 061 e 063 pendentes 094a/094b; 069 Info: `pendingEmail` na idempotência 24 h, limpar na US-095): `userId` nulo nas comparações de pessoa; pagador/acerto do sem conta; EQUAL; e-mail em `INVITATION_RESENT`; captura irreversível; nome escolhido (U4); prévia; gatilho; corridas; exceção SEC-026c; LGPD do `pendingEmail` | Parcial; detalhe na [revisão](../security/relatorios/revisao-adr033-2026-10-30.md) |
 | 054, 055, 056 | Excluir/relançar, estornar/baixar, acerto com ex-membro movem crédito | Risco aceito pelo Gestor (D-GES-61): inerente ao livro-caixa; defesa = histórico. Sujeito a veto do usuário |
 | 057 | Editar série de removido devolve ocorrências | Só registrado; "encerrar e criar outra" resolve |
 
@@ -90,7 +90,7 @@ Pendências abertas: veto a D-GES-57/61; SEC-037 reauth; validação jurídica L
 ## f) Processo de reteste e mapa de fontes
 Processo ([security/README.md](../security/README.md)): Gestor aciona a Segurança; ela só lê e prova em ambiente local (`127.0.0.1`, banco descartável no `db-test`, apagado ao final), nunca produção nem terceiros, sem credenciais reais; registra em `security/relatorios/` e atualiza `security/status.md`; achado ➔ Gestor ➔ usuário ➔ tarefa (TL ➔ Dev) ➔ reteste. Reverter `tsconfig.json`/`AGENTS.md` reescritos pelo `next dev`. Revisão curta antes de liberar história sensível (autenticação, dado pessoal, integração, endpoint novo).
 
-Relatórios ([pasta](../_historico/security/relatorios/)): `levantamento-2026-10-24` (SEC-001..024), `reteste-2026-10-25` (025..028), `revisao-lgpd-2026-10-25` (029..037), `reteste-final-2026-10-25` (038..041), `reteste-so-meu-2026-10-25` (042..046), `reteste-rodada6/7/8-2026-10-26` (047..057). Aberto (em `security/relatorios/`): [`revisao-adr033-2026-10-30`](../security/relatorios/revisao-adr033-2026-10-30.md) (058..068).
+Relatórios ([pasta](../_historico/security/relatorios/)): `levantamento-2026-10-24` (SEC-001..024), `reteste-2026-10-25` (025..028), `revisao-lgpd-2026-10-25` (029..037), `reteste-final-2026-10-25` (038..041), `reteste-so-meu-2026-10-25` (042..046), `reteste-rodada6/7/8-2026-10-26` (047..057). Em `security/relatorios/`: [`revisao-adr033-2026-10-30`](../security/relatorios/revisao-adr033-2026-10-30.md) (058..068) e [`reteste-adr033-us093-2026-10-31`](../security/relatorios/reteste-adr033-us093-2026-10-31.md) (069).
 Decisões: [D-GES-40..61](../manager/decisoes-do-gestor.md) (40 escopo; 41 Grupo A; 42 Grupo B e U1..U6; 44 fase 2/7 dias; 45..49 LGPD e rodadas; 50..61 "Só meu"). Design: [SDD-028](../tech-lead/sdd/SDD-028-correcoes-de-seguranca-grupo-b.md), [ADR-032](../tech-lead/adrs/ADR-032-correcoes-de-seguranca-grupo-b.md), ADR-008 (login de teste), ADR-013, ADR-019, ADR-029, ADR-030, ADR-031; SDD-024..027 (MCP). D-PO-91..98 em [decisoes-po-seguranca-sec.md](../_historico/product-owner/backlog/decisoes-po-seguranca-sec.md). Pedidos DEV-88..135 em [pedidos-ao-gestor.md](../manager/pedidos-ao-gestor.md).
 Testes (`tests/integration/`): `sec009`, `sec011`, `sec013`, `sec017a..d`, `sec018`, `sec024`, `sec029-032`, `sec030-033`, `sec031`, `sec036`, `sec037`, `sec038`, `sec039`, `sec040`, mais os do "Só meu" (ver so-meu.md).
 

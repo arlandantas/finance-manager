@@ -1,6 +1,6 @@
 # Status — Agente de Segurança da Informação
 
-**Última atualização:** 2026-10-30 · **Estágio:** revisão do modelo de ameaças do ADR-033 (membro sem conta) entregue; 11 achados de projeto (SEC-058..068) aguardam Gestor/usuário e a emenda do ADR pelo TL. Estado vigente dos achados, proteções e riscos aceitos: [../estado/seguranca.md](../estado/seguranca.md) (fonte de verdade; este arquivo é o quadro histórico).
+**Última atualização:** 2026-10-31 · **Estágio:** reteste do ADR-033/US-093 (092a..093b) entregue: SEC-058, 059a, 065, 066b, 067, 068 conformes, SEC-069 (Info) novo; 061/063 seguem para 094a/094b. Antes: revisão do modelo de ameaças do ADR-033 (membro sem conta) entregue; 11 achados de projeto (SEC-058..068) aguardam Gestor/usuário e a emenda do ADR pelo TL. Estado vigente dos achados, proteções e riscos aceitos: [../estado/seguranca.md](../estado/seguranca.md) (fonte de verdade; este arquivo é o quadro histórico).
 
 ## Entregas
 | Data | Entrega | Resultado |
@@ -13,9 +13,10 @@
 | 2026-10-26 | [Reteste da rodada 7](../_historico/security/relatorios/reteste-rodada7-2026-10-26.md) (`20bfdfe`..`0d33261`, D-GES-57/58) | SEC-047, 049, 050 Corrigidos; SEC-048 Corrigido no passo único, contornável em dois (SEC-051); resíduo DEV-132 quantificado (Admin +V·(n−1)/n); 3 novos: SEC-051 (Baixa), 052, 053 (Info); int 1094/1094 (1 skip) |
 | 2026-10-26 | [Reteste da rodada 8](../_historico/security/relatorios/reteste-rodada8-2026-10-26.md) (`55c46b5`..`a0415d6`, D-GES-59/60) | SEC-051 e resíduo DEV-132 Corrigidos no `PATCH`; DEV-135 conforme; SEC-049/050 mantidos; 4 novos: SEC-054, 055, 056 (Baixa), 057 (Info); int 1106/1106 (1 skip) |
 | 2026-10-30 | [Revisão do ADR-033](relatorios/revisao-adr033-2026-10-30.md) (membro sem conta, convite vinculado; HEAD `c12496b`) | Revisão de projeto, sem execução; 11 novos: SEC-058, 059 (Média), 060..066 (Baixa), 067, 068 (Info). ADR pode ser Aceito com condições; U2, U3, U5, U4: concordo com condições |
+| 2026-10-31 | [Reteste ADR-033/US-093](relatorios/reteste-adr033-us093-2026-10-31.md) (`62fdff2`..`065b020`) | 092a, 092b, 093a, 093b conformes; SEC-059b registrado como risco aceito; 1 novo: SEC-069 (Info); int 57/57 |
 | 2026-10-25 | [Reteste final](../_historico/security/relatorios/reteste-final-2026-10-25.md) (`b494e0c`..`849008c`) | 14 Corrigidos, 1 Parcial (SEC-026), 0 Não corrigidos, 0 regressões em achados antigos; 4 novos: SEC-038, 039 (Baixa), SEC-040, 041 (Info); suítes 359/359 |
 
-## Quadro consolidado (SEC-001..068; 058..068 da revisão do ADR-033)
+## Quadro consolidado (SEC-001..069; 058..068 da revisão do ADR-033)
 | SEC | Sev. | Estado final | Nota |
 | :-- | :-- | :-- | :-- |
 | 001 | — | Risco aceito | D-GES-40 |
@@ -78,17 +79,18 @@
 | 055 | Baixa | Risco aceito (D-GES-61; sujeito a veto do usuário) | estornar a baixa paga pelo ex-membro e dar nova baixa move o crédito (Admin: resíduo DEV-132) |
 | 056 | Baixa | Risco aceito (D-GES-61; sujeito a veto do usuário) | acerto com ex-membro credor aceita qualquer conta de destino da família |
 | 057 | Info | Registrado (D-GES-61) | série do removido fica com ele; editar a série desfaz a reatribuição |
-| 058 | Média | Aberto | `userId` nulo: `ownerStanding` (`IS NULL`), `Set.has(null)` em exportação/sugestões, `undefined` no `where` (sessões) |
-| 059 | Média | 059a Aberto (SDD-034 §4.3); **059b Risco aceito pelo usuário** (decisão do usuário 2026-10-31, D-GES-66) | Admin-tutor se põe como pagador do sem conta (reabre DEV-132, contorna U2); 059b: acerto com destino na conta do devedor, mantido como hoje (Q-TL-93-1 = (c)) |
+| 058 | Média | Corrigido (reteste 2026-10-31) | `userId` nulo: `ownerStanding` (`IS NULL`), `Set.has(null)` em exportação/sugestões, `undefined` no `where` (sessões) |
+| 059 | Média | 059a Corrigido (reteste 2026-10-31); **059b Risco aceito pelo usuário** (decisão do usuário 2026-10-31, D-GES-66) | Admin-tutor se põe como pagador do sem conta (reabre DEV-132, contorna U2); 059b: acerto com destino na conta do devedor, mantido como hoje (Q-TL-93-1 = (c)) |
 | 060 | Baixa | Aberto (usuário, Q-TL-U1) | EQUAL inclui o cadastro: dívida de quem não contesta |
-| 061 | Baixa | Aberto | e-mail do convite em `INVITATION_RESENT` (append-only) e na idempotência |
+| 061 | Baixa | 092b conforme; `INVITATION_RESENT` ainda grava e-mail: pendente 094a | e-mail do convite em `INVITATION_RESENT` (append-only) e na idempotência |
 | 062 | Baixa | Aberto (usuário: desvincular) | captura por e-mail errado/ex-membro é irreversível |
-| 063 | Baixa | Aberto | Q-TL-U4: `Member.name`, unicidade/normalização, exclusão de conta apaga, só o próprio renomeia |
+| 063 | Baixa | 063b conforme (092b); aceite/exclusão/renomeação pendentes 094b/095 | Q-TL-U4: `Member.name`, unicidade/normalização, exclusão de conta apaga, só o próprio renomeia |
 | 064 | Baixa | Aberto | prévia (nome/contagens) só em `/convites`; nunca no link público nem no e-mail |
-| 065 | Baixa | Aberto | gatilho com `IS DISTINCT FROM`; teste SEC-036 com lista fixa; GUC `app.link_member` |
-| 066 | Baixa | Aberto | lock antes do `claim`; TOCTOU de `ownerUnlinked` |
-| 067 | Info | Registrado | limites da exceção à SEC-026c |
-| 068 | Info | Registrado | LGPD do `pendingEmail`, oráculo por família, teto de cadastros |
+| 065 | Baixa | Corrigido (reteste 2026-10-31) | gatilho com `IS DISTINCT FROM`; teste SEC-036 com lista fixa; GUC `app.link_member` |
+| 066 | Baixa | 066b Corrigido (reteste); 066a (lock no aceite) pendente 094b | lock antes do `claim`; TOCTOU de `ownerUnlinked` |
+| 067 | Info | Registrado; conforme (reteste 2026-10-31) | limites da exceção à SEC-026c |
+| 068 | Info | Registrado; conforme na 092b (reteste 2026-10-31) | LGPD do `pendingEmail`, oráculo por família, teto de cadastros |
+| 069 | Info | Registrado | `pendingEmail` na idempotência por 24 h; a US-095 deve limpar ao editar/remover o e-mail |
 
 ## Pendências e bloqueios
 - ADR-033: TL emendar §2.3/§2.5/§2.8/§3/§5/§9 (SEC-058, 059, 061, 063, 065) antes de Aceito; perguntas ao usuário: Q-TL-U1/SEC-060 e "Desvincular conta" (SEC-062). Reteste nas fatias 092a..095.
@@ -104,3 +106,4 @@
 - 2026-10-25 — Reteste do "Só meu" ampliado (`bdd9ed1`..`672ea70`): leitura de código, 19 cenários de prova (handlers em processo, arquivo só no scratchpad) e suítes `sec021`/`sec025-026`/`sec038`/`us-030`/`us084` (47/47) no banco descartável `finance_sec_somu` no `db-test` (apagado). Sem `next dev` (nada a reverter). Relatório e status commitados (regra do README).
 - 2026-10-26 — Reteste da rodada 6 + D-GES-55 (`adc6946`..`ac946e9`): revisão do diff, suítes do projeto (8 arquivos, 100/100) e 9 cenários de prova (só no scratchpad) no banco descartável `finance_sec_r6` no `db-test` (apagado). Sem `next dev` (nada a reverter). Relatório e status commitados (regra do README).
 - 2026-10-30 — Revisão do modelo de ameaças do ADR-033 (HEAD `c12496b`): só leitura de código e do ADR; nada executado (o modelo não existe no schema). Relatório e status commitados; ADR, SDDs e código (em edição por TL/Dev) não foram tocados.
+- 2026-10-31 — Reteste do ADR-033/US-093 (`62fdff2`..`065b020`): leitura de código e 4 suítes (57/57) no `finance_test` do `db-test` (sem banco descartável novo; nada apagado). Sem `next dev`. Relatório e status commitados.
