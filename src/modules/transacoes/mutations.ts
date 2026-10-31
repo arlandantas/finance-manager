@@ -271,7 +271,7 @@ export async function updateTransaction(
   // SEC-051 (D-GES-59): o pagador ex-membro (sem retorno) é imutável também na dividida
   const standing: OwnerStanding =
     row.kind === "EXPENSE"
-      ? await ownerStanding(tx, ctx, personalOwnerId(row))
+      ? await ownerStanding(tx, ctx, personalOwnerId(row), [row.accountId, input.accountId])
       : { ownerIsActor: false, ownerRemoved: false, ownerUnlinked: false };
   // US-093b: o tutor (Admin sobre dono sem conta) tem os mesmos poderes plenos do Admin sobre ex-membro
   const fullPower = adminFullPower(ctx, standing) && isPersonalExpense(row);

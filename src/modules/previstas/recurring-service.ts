@@ -261,7 +261,10 @@ export async function updateSeries(
   if (row.endedAt) throw seriesEnded();
   if (row.version !== input.version) throw await versionConflict(repo, tx, ctx, id);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026: série "Só meu" é só do responsável
-  const standing = await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
+  const standing = await ownerStanding(tx, ctx, row.responsibleMemberId, [
+    row.paymentAccountId,
+    input.paymentAccountId,
+  ]); // SEC-049
   // US-093b (SEC-059a): responsável para/de sem conta só pelo lançador ou Administrador (antes da captura)
   assertPlannedUnlinkedPayer(ctx, row, input.responsibleMemberId, {
     currentUnlinked: standing.ownerUnlinked,

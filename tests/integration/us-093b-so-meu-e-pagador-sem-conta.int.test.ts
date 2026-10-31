@@ -310,6 +310,29 @@ describe("2. controle do 'Só meu' de Ana (tutor)", () => {
     expect(paid.payerMemberId).toBe(ana.memberId);
   });
 
+  it("baixa do 'Só meu' de Ana pelo Admin: pagador diferente de Ana => 403 (para si: UNLINKED_PAYER_FORBIDDEN; terceiro: PERSONAL_ON_BEHALF)", async () => {
+    const created = await api(
+      "Mariana",
+      "POST",
+      "/planned-expenses",
+      await planned(ana.memberId, false),
+    );
+    const p = created.body.plannedExpense as { id: string; version: number };
+    const pay = (payerMemberId: string) =>
+      api("Bia", "POST", `/planned-expenses/${p.id}/pay`, {
+        version: p.version,
+        accountId: main.id,
+        payerMemberId,
+      });
+    const self = await pay(id("Bia"));
+    expect(self.status).toBe(403);
+    expect(self.body.error.code).toBe("UNLINKED_PAYER_FORBIDDEN");
+    const third = await pay(id("Lucas"));
+    expect(third.status).toBe(403);
+    expect(third.body.error.code).toBe("PERSONAL_ON_BEHALF_FORBIDDEN");
+    expect((await pay(ana.memberId)).status).toBeLessThan(300);
+  });
+
   it("série 'Só meu' de Ana: Lucas 403; Bia (Admin) edita", async () => {
     const created = await api(
       "Mariana",
@@ -562,8 +585,8 @@ describe("7. concorrência: aceite simulado × Admin criando 'Só meu' (SEC-066b
     expect(res.body.error.code).toBe("PERSONAL_ON_BEHALF_FORBIDDEN");
   }, 60000);
 
-  it("ordem inversa: o 'Só meu' confirma primeiro; o aceite espera e o item passa a ser de Ana com conta; sem deadlock em 20 repetições", async () => {
-    for (let i = 0; i < 20; i++) {
+  it("ordem inversa: o 'Só meu' confirma primeiro; o aceite espera e o item passa a ser de Ana com conta; sem deadlock em 50 repetições", async () => {
+    for (let i = 0; i < 50; i++) {
       const [mine] = await Promise.all([
         api("Mariana", "POST", "/transactions", await expense(ana.memberId, false)),
         (async () => {
@@ -589,7 +612,7 @@ describe("7. concorrência: aceite simulado × Admin criando 'Só meu' (SEC-066b
         where: { payerMemberId: ana.memberId, kind: "EXPENSE", isSharedExpense: false },
       });
     }
-  }, 120000);
+  }, 300000);
 });
 
 describe("8. regressão: ex-membro sem conta (Edu) segue as regras de ex-membro", () => {
@@ -618,4 +641,120 @@ describe("8. regressão: ex-membro sem conta (Edu) segue as regras de ex-membro"
     expect(lucas.status).toBe(403);
     expect(lucas.body.error.message).not.toContain("um Administrador");
   });
+});
+
+describe("9. ordem de travas: edição/baixa de 'Só meu' × remoção do membro dono da conta (sem deadlock, R2)", () => {
+  const N = 20;
+  for (const kind of ["edição", "baixa"] as const) {
+    it(`${kind} do 'Só meu' de Lucas (conta dele) × Admin removendo Lucas: nenhum 500/40P01, ${N} repetições`, async () => {
+      for (let i = 0; i < N; i++) {
+        const f = await makeFamily({ uniqueEmails: true });
+        const acc = await makeAccount(f, {
+          name: "Itaú Lucas",
+          owner: "Lucas",
+          openingBalanceInCents: 100000,
+        });
+        const lucasAs = f.byName.Lucas?.as ?? null;
+        const mar = f.byName.Mariana?.as ?? null;
+        let attempt: Promise<{ status: number }>;
+        if (kind === "edição") {
+          const t = await makeTransaction(f, {
+            account: acc,
+            category: "Supermercado",
+            amountInCents: 5000,
+            occurredOn: "2026-10-02",
+            payer: "Lucas",
+            shared: false,
+          });
+          attempt = at(() =>
+            call(lucasAs, "PATCH", `/api/v1/transactions/${t.id}`, {
+              version: 1,
+              amountInCents: 6000,
+            }),
+          );
+        } else {
+          const pe = await db.plannedExpense.create({
+            data: {
+              familyId: f.family.id,
+              description: "Plano",
+              amountInCents: BigInt(5000),
+              dueOn: new Date("2026-10-10T00:00:00Z"),
+              categoryId: (
+                await db.category.findFirstOrThrow({
+                  where: { familyId: f.family.id, name: "Moradia" },
+                })
+              ).id,
+              responsibleMemberId: f.byName.Lucas?.memberId as string,
+              authorMemberId: f.byName.Lucas?.memberId as string,
+              isSharedExpense: false,
+              paymentAccountId: acc.id,
+            },
+          });
+          attempt = at(() =>
+            call(lucasAs, "POST", `/api/v1/planned-expenses/${pe.id}/pay`, {
+              version: 1,
+              accountId: acc.id,
+            }),
+          );
+        }
+        const removal = at(() =>
+          call(mar, "POST", `/api/v1/members/${f.byName.Lucas?.memberId}/remove`, {}),
+        );
+        const [a, r] = await Promise.all([attempt, removal]);
+        expect(a.status, `${kind} ${i}`).toBeLessThan(500);
+        expect(r.status, `remoção ${i}`).toBeLessThan(500);
+      }
+    }, 300000);
+  }
+});
+
+describe("9b. ordem de travas determinística (conta ➔ membro, como removal.ts)", () => {
+  it("T1 (remoção simulada) trava a conta FOR UPDATE e depois faz UPDATE members; a edição do 'Só meu' do dono da conta não vira deadlock", async () => {
+    const t = await makeTransaction(fx, {
+      account: poupAna,
+      category: "Supermercado",
+      amountInCents: 5000,
+      occurredOn: "2026-10-02",
+      payer: "Lucas",
+      author: "Lucas",
+      shared: false,
+    });
+    const acc = await makeAccount(fx, {
+      name: "Itaú Lucas",
+      owner: "Lucas",
+      openingBalanceInCents: 100000,
+    });
+    const own = await makeTransaction(fx, {
+      account: acc,
+      category: "Supermercado",
+      amountInCents: 5000,
+      occurredOn: "2026-10-02",
+      payer: "Caio",
+      author: "Caio",
+      shared: false,
+    });
+    void t;
+    let started!: () => void;
+    const startedP = new Promise<void>((r) => {
+      started = r;
+    });
+    const t1 = db.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT id FROM bank_accounts WHERE id = ${acc.id}::uuid FOR UPDATE`;
+        started();
+        await new Promise((r) => setTimeout(r, 800));
+        await tx.$executeRaw`UPDATE members SET "removedAt" = now(), "removalKind" = 'REMOVED' WHERE id = ${id("Lucas")}::uuid`;
+      },
+      { timeout: 30000 },
+    );
+    await startedP;
+    const t0 = Date.now();
+    const edit = await api("Caio", "PATCH", `/transactions/${own.id}`, {
+      version: 1,
+      amountInCents: 6000,
+    });
+    await t1; // não pode lançar 40P01
+    expect(edit.status, JSON.stringify(edit.body)).toBe(200);
+    expect(Date.now() - t0).toBeGreaterThan(500); // esperou a trava da conta (T1)
+  }, 60000);
 });

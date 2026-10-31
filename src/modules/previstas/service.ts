@@ -35,8 +35,12 @@ import {
   memberRefsWithReturn,
   type OwnerStanding,
   ownerStanding,
+  PERSONAL_ON_BEHALF_CODE,
+  PERSONAL_ON_BEHALF_MESSAGE,
   PERSONAL_OWNER_ONLY_CODE,
   PERSONAL_STRUCTURE_MESSAGE,
+  UNLINKED_PAYER_CODE,
+  UNLINKED_PAYER_SELF_MESSAGE,
 } from "@/modules/transacoes/ownership";
 import { createExpenseCore } from "@/modules/transacoes/service";
 
@@ -250,7 +254,10 @@ export async function updatePlannedExpense(
   const row = await loadForChange(tx, ctx, repo, id, input.version);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026a: "Só meu" é só do responsável
   // SEC-043/044: quem só controla não muda divisão, responsável nem conta; D-GES-55: Admin sobre ex-membro pode
-  const standing = await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
+  const standing = await ownerStanding(tx, ctx, row.responsibleMemberId, [
+    row.paymentAccountId,
+    input.paymentAccountId,
+  ]); // SEC-049
   // US-093b (SEC-059a): responsável para/de sem conta só pelo lançador ou Administrador (antes da captura)
   assertPlannedUnlinkedPayer(ctx, row, input.responsibleMemberId, {
     currentUnlinked: standing.ownerUnlinked,
@@ -386,7 +393,10 @@ export async function payPlannedExpense(
     throw unprocessable("FUTURE_DATE_NOT_ALLOWED", message, [{ path: "paidOn", message }]);
   }
   const effective = input.amountInCents ?? toCents(row.amountInCents);
-  const standing = await ownerStanding(tx, ctx, row.responsibleMemberId); // SEC-049
+  const standing = await ownerStanding(tx, ctx, row.responsibleMemberId, [
+    row.paymentAccountId,
+    input.accountId,
+  ]); // SEC-049
   const personalStanding: OwnerStanding = row.isSharedExpense
     ? { ownerIsActor: false, ownerRemoved: false, ownerUnlinked: false }
     : standing;
@@ -405,6 +415,13 @@ export async function payPlannedExpense(
     throw invalidRef("accountId", "Escolha a conta do pagamento");
   }
   if (!(await repo.findMember(payerMemberId))) throw invalidRef("payerMemberId", "Membro inválido");
+  // US-093b (D-034-2/D-034-4, I-1; SDD-034 §4.2): a baixa do "Só meu" de dono sem conta mantém o pagador original;
+  // o tutor não assume o pagamento (para si) nem o entrega a outro.
+  if (!row.isSharedExpense && personalStanding.ownerUnlinked && payerMemberId !== ownerId) {
+    throw payerMemberId === ctx.memberId
+      ? forbidden(UNLINKED_PAYER_SELF_MESSAGE, UNLINKED_PAYER_CODE)
+      : forbidden(PERSONAL_ON_BEHALF_MESSAGE, PERSONAL_ON_BEHALF_CODE);
+  }
   // SEC-044d: quem só controla (não é o responsável) só dá baixa com conta do responsável ou a sua
   const fullPower = adminFullPower(ctx, personalStanding); // D-GES-55; US-093b: tutor do dono sem conta
   if (!row.isSharedExpense && ownerId !== ctx.memberId && !fullPower) {
