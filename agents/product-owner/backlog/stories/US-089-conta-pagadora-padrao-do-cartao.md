@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-6 Cartões de Crédito (fase 2) · **UR-1 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should** · 4,3 (V6/U4/R3) · **3** |
-| Status | Proposta pelo PO em 2026-10-26; precisa de SDD curto do TL (campo no cartão, migração, aviso de vencimento) |
+| Status | **SDD pronto, aprovada para Dev** (2026-10-26): [SDD-030](../../../tech-lead/sdd/SDD-030-conta-pagadora-padrao-do-cartao-us-089.md), **3 pts confirmados pelo TL** (2 migrações, só sugere; arquivar mantém o vínculo, excluir limpa) |
 | Depende de | US-015, US-017b, US-033 (implementadas). Alimenta a US-060 (fatura na conta pagadora) |
 | Corte | Cortável antes da US-090/091; a US-060 funciona sem ela ("Sem conta definida") |
 | Rastreabilidade | **NEED-032** (RN-032.1..6) · **Q-U22, Q-U23 (usuário, 2026-10-26)** · NEED-003 · FLUXO-004 · D-PO-101 |
