@@ -17,7 +17,7 @@ import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
-import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import { ApiClientError, NetworkError } from "@/lib/http";
 import { addMonthsToRef, formatInvoiceLabel, invoiceHint } from "@/modules/cartoes/cycle";
 import { useCards } from "@/modules/cartoes/hooks";
 import {
@@ -48,7 +48,7 @@ import {
   validateDateForWhen,
   validateSubmission,
 } from "@/modules/lancamento/door";
-import { successText, useDoorSubmit } from "@/modules/lancamento/use-door-submit";
+import { successText, useDoorKey, useDoorSubmit } from "@/modules/lancamento/use-door-submit";
 import { addMonths, type MonthISO, monthOf } from "@/modules/previstas/recurrence";
 import { splitSwitchLabel } from "@/modules/split/shares-label";
 import { useDefaults } from "@/modules/transacoes/hooks";
@@ -101,7 +101,6 @@ export function TransactionDrawer({
   const [banner, setBanner] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   // ADR-009: a chave nasce ao abrir o drawer e é reaproveitada nos reenvios até o sucesso.
-  const [key, setKey] = useState(newIdempotencyKey);
   const submitting = useRef(false);
   const categoryRef = useRef<HTMLDivElement>(null);
 
@@ -111,6 +110,8 @@ export function TransactionDrawer({
   const cards = useCards();
   const family = useFamily();
   const categories = useCategories(kind);
+  const doorService = serviceOf({ kind, when, repeat: kind === "EXPENSE" ? repeat : "NONE" });
+  const { key, renew: renewKey } = useDoorKey(doorService, unknownOutcome);
   const door = useDoorSubmit(key);
 
   // Nova abertura: estado limpo e nova chave.
@@ -140,18 +141,8 @@ export function TransactionDrawer({
     setDetailsOpen(false);
     setSource("");
     setPayerId("");
-    setKey(newIdempotencyKey());
-  }, [open, initialKind]);
-
-  // ADR-009 + SDD-031 §5.1: uma chave por abertura E por serviço; regerada ao mudar de serviço, salvo
-  // depois de falha de rede com resultado desconhecido (aí o seletor fica travado).
-  const doorService = serviceOf({ kind, when, repeat: kind === "EXPENSE" ? repeat : "NONE" });
-  const lastService = useRef(doorService);
-  useEffect(() => {
-    if (lastService.current === doorService) return;
-    lastService.current = doorService;
-    if (!unknownOutcome) setKey(newIdempotencyKey());
-  }, [doorService, unknownOutcome]);
+    renewKey();
+  }, [open, initialKind, renewKey]);
 
   // Padrões vindos do servidor (última conta usada; quem pagou = logado).
   useEffect(() => {

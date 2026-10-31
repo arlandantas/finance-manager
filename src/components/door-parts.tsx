@@ -104,15 +104,20 @@ export function RepeatFields({
 }) {
   return (
     <>
-      <SegmentedChoice
-        label="Repetir"
-        value={repeat}
-        onChange={onRepeat}
-        options={[
-          { value: "NONE", label: "Não", disabled: locked && repeat !== "NONE" },
-          { value: "MONTHLY", label: "Todo mês", disabled: locked && repeat !== "MONTHLY" },
-        ]}
-      />
+      <div className="flex flex-col gap-1.5">
+        <span aria-hidden="true" className="text-sm font-medium text-slate-800">
+          Repetir
+        </span>
+        <SegmentedChoice
+          label="Repetir"
+          value={repeat}
+          onChange={onRepeat}
+          options={[
+            { value: "NONE", label: "Não", disabled: locked && repeat !== "NONE" },
+            { value: "MONTHLY", label: "Todo mês", disabled: locked && repeat !== "MONTHLY" },
+          ]}
+        />
+      </div>
       {repeat === "MONTHLY" ? (
         <div className="flex flex-col gap-4 rounded-lg border border-slate-200 p-3">
           <Field

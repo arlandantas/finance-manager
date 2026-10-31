@@ -758,7 +758,7 @@ Verificada no código (`src/`, `prisma/schema.prisma`, `prisma/migrations`, `tes
 | :-- | :-- | :-- | :-: | :-- |
 | TASK-054 / US-060 (resumo por conta no A pagar) | **Aceita pelo Gestor** (D-GES-65; SDD-029); fatura na conta pagadora ligada pela US-089 | — | 5 | — |
 | TASK-093 / US-092a (membro sem conta: modelo e leitura) | **Aceita pelo Gestor** (D-GES-65; revisão final do TL aprovada em a73c88e; SDD-033 §3); nenhum caminho cria sem conta ainda | Migrações `20261030020000/020100` a aplicar em produção (expand, antes do código) | 3 | — |
-| TASK-095 / US-090 + TASK-096 / US-091 (porta única e "Repetir todo mês") | **Aceitas pelo Gestor** (D-GES-66; SDD-031; sem migração) | Pendentes: verificação em navegador real e teste do hook `useDoorSubmit` | 5 / 3 | DEV-158..160 em `estado/previstas-series.md` §e |
+| TASK-095 / US-090 + TASK-096 / US-091 (porta única e "Repetir todo mês") | **Aceitas pelo Gestor** (D-GES-66; SDD-031; sem migração) | Fechadas: teste de `useDoorSubmit`/`useDoorKey` e verificação em navegador real (2026-10-31); falta só o aceite visual do Gestor | 5 / 3 | DEV-158..160 em `estado/previstas-series.md` §e |
 | TASK-094 / US-092b (cadastrar membro sem conta) | **Implementada, aguarda validação do Gestor** (SDD-033 §4) | Migração `20261031000000` a aplicar em produção junto com a 092a | 2 | Gestor valida; próximo 093a (SDD do TL) |
 | TASK-092 / US-089 (conta pagadora padrão do cartão) | **Aceita pelo Gestor** (D-GES-65; SDD-030) | Migrações `20261030010000/010100` a aplicar em produção | 3 | — |
 | TASK-055 (produção, ADR-026) | Encerrada: superada pela TASK-064 (ADR-031) | Nenhuma; `docker build` e restore viram itens de `agents/estado/hospedagem-producao.md` §d | 5 | Gestor registra o encerramento |
