@@ -8,7 +8,11 @@ import { getOrCreateInvoice, lockInvoices } from "@/modules/cartoes/invoices";
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { type Change, recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
-import { assertAccountsEditable, lockAccountsForPosting } from "@/modules/contas/lock";
+import {
+  assertAccountsEditable,
+  lockAccountsForPosting,
+  shareLockAccounts,
+} from "@/modules/contas/lock";
 import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
 import { splitRepo } from "@/modules/split/repo";
@@ -53,10 +57,18 @@ const invalidRef = (path: string, message: string) =>
 type Repo = ReturnType<typeof transacoesRepo>;
 type Row = NonNullable<Awaited<ReturnType<Repo["findById"]>>>;
 
-async function loadMutable(tx: Tx, ctx: RequestContext, repo: Repo, id: string): Promise<Row> {
+async function loadMutable(
+  tx: Tx,
+  ctx: RequestContext,
+  repo: Repo,
+  id: string,
+  extraAccountIds: Array<string | null | undefined> = [],
+): Promise<Row> {
   const familyId = ctx.familyId;
   const row = await repo.findById(id);
   if (!row) throw notFound("Lançamento não encontrado.");
+  // SDD-034 R2: contas (atual e nova) ANTES de qualquer leitura do dono (conta ➔ membro, como o removal.ts)
+  await shareLockAccounts(tx, familyId, [row.accountId, ...extraAccountIds]);
   await assertCanWriteTransaction(tx, ctx, row); // SEC-021: "Só meu" é só do dono
   await assertAccountsEditable(tx, familyId, [row.accountId]); // conta arquivada: lançamento travado
   if (row.kind === "INVOICE_PAYMENT") throw unprocessable("NOT_EDITABLE", PAYMENT_NOT_EDITABLE);
@@ -266,7 +278,7 @@ export async function updateTransaction(
   const engine = await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: primeira trava
   const repo = transacoesRepo(tx, ctx.familyId);
   if (isTagsOnly(input)) return updateTagsOnly(tx, ctx, repo, id, input);
-  const row = await loadMutable(tx, ctx, repo, id);
+  const row = await loadMutable(tx, ctx, repo, id, [input.accountId]);
   // D-GES-55: Administrador atual sobre o "Só meu" de ex-membro tem poderes plenos
   // SEC-051 (D-GES-59): o pagador ex-membro (sem retorno) é imutável também na dividida
   const standing: OwnerStanding =

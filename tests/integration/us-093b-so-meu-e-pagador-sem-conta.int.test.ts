@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { Client } from "pg";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { RequestContext } from "@/lib/api/types";
 import { withClock } from "@/lib/clock";
@@ -757,4 +758,131 @@ describe("9b. ordem de travas determinística (conta ➔ membro, como removal.ts
     expect(edit.status, JSON.stringify(edit.body)).toBe(200);
     expect(Date.now() - t0).toBeGreaterThan(500); // esperou a trava da conta (T1)
   }, 60000);
+});
+
+describe("9c. ordem de travas: conta (atual e nova) ANTES do dono, com a conta presa como o removal.ts faz", () => {
+  const url = () => (process.env.TEST_DATABASE_URL as string).replace(/\?schema=.*$/, "");
+
+  /**
+   * A (papel do removal): BEGIN + conta X FOR UPDATE. `kick` dispara o pedido do tutor SEM aguardar; esperamos ele
+   * bloquear numa trava de linha; C pega a linha do dono com FOR UPDATE NOWAIT: tem de CONSEGUIR (o pedido não pode
+   * estar segurando o dono, senão o UPDATE members do removal fecharia o ciclo). Depois COMMIT em A e o pedido termina.
+   */
+  async function scenario(
+    label: string,
+    xId: string,
+    ownerId: string,
+    kick: () => Promise<{ status: number; body?: unknown }>,
+  ) {
+    const a = new Client({ connectionString: url() });
+    const c = new Client({ connectionString: url() });
+    await a.connect();
+    await c.connect();
+    try {
+      await a.query("BEGIN");
+      await a.query("SELECT id FROM bank_accounts WHERE id = $1 FOR UPDATE", [xId]);
+      const pending = kick();
+      let blocked = false;
+      for (let i = 0; i < 50 && !blocked; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+        const q = await c.query(
+          "SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock' AND pid <> pg_backend_pid()",
+        );
+        blocked = (q.rows[0]?.n ?? 0) > 0;
+      }
+      expect(blocked, `${label}: o pedido deveria bloquear na conta`).toBe(true);
+      await c.query("BEGIN");
+      await c.query("SELECT 1 FROM members WHERE id = $1 FOR UPDATE NOWAIT", [ownerId]); // lança 55P03 se o pedido segura o dono
+      await c.query("ROLLBACK");
+      await a.query("COMMIT");
+      const res = await pending;
+      expect(res.status, `${label}: ${JSON.stringify(res.body)}`).toBeLessThan(300);
+    } finally {
+      await a.query("ROLLBACK").catch(() => undefined);
+      await c.end();
+      await a.end();
+    }
+  }
+
+  it("edição do lançamento: X como conta ATUAL e como conta NOVA", async () => {
+    const onX = await mk("Ana", "Mariana", false, poupAna);
+    await scenario("edição, X atual", poupAna.id, ana.memberId, () =>
+      api("Bia", "PATCH", `/transactions/${onX.id}`, { version: 1, amountInCents: 6000 }),
+    );
+    const onMain = await mk("Ana", "Mariana", false, main);
+    await scenario("edição, X nova", poupAna.id, ana.memberId, () =>
+      api("Bia", "PATCH", `/transactions/${onMain.id}`, { version: 1, accountId: poupAna.id }),
+    );
+  }, 60000);
+
+  it("baixa da prevista: X como conta atual e como conta do pagamento", async () => {
+    const cat = await catId("Moradia");
+    const mk2 = async (paymentAccountId: string | null) => {
+      const r = await api("Mariana", "POST", "/planned-expenses", {
+        ...(await planned(ana.memberId, false)),
+        categoryId: cat,
+        ...(paymentAccountId ? { paymentAccountId } : {}),
+      });
+      return r.body.plannedExpense as { id: string; version: number };
+    };
+    const p1 = await mk2(poupAna.id);
+    await scenario("baixa, X atual", poupAna.id, ana.memberId, () =>
+      api("Bia", "POST", `/planned-expenses/${p1.id}/pay`, {
+        version: p1.version,
+        accountId: main.id,
+      }),
+    );
+    const p2 = await mk2(null);
+    await scenario("baixa, X nova", poupAna.id, ana.memberId, () =>
+      api("Bia", "POST", `/planned-expenses/${p2.id}/pay`, {
+        version: p2.version,
+        accountId: poupAna.id,
+      }),
+    );
+  }, 60000);
+
+  it("edição da prevista e da série: X como conta atual e como conta nova", async () => {
+    const mkP = async (paymentAccountId: string) => {
+      const r = await api("Mariana", "POST", "/planned-expenses", {
+        ...(await planned(ana.memberId, false)),
+        paymentAccountId,
+      });
+      return r.body.plannedExpense as { id: string; version: number };
+    };
+    const pa = await mkP(poupAna.id);
+    await scenario("prevista, X atual", poupAna.id, ana.memberId, () =>
+      api("Bia", "PATCH", `/planned-expenses/${pa.id}`, {
+        version: pa.version,
+        amountInCents: 7000,
+      }),
+    );
+    const pb = await mkP(main.id);
+    await scenario("prevista, X nova", poupAna.id, ana.memberId, () =>
+      api("Bia", "PATCH", `/planned-expenses/${pb.id}`, {
+        version: pb.version,
+        paymentAccountId: poupAna.id,
+      }),
+    );
+    const mkS = async (paymentAccountId: string) => {
+      const r = await api("Mariana", "POST", "/recurring-expenses", {
+        ...(await series(ana.memberId, false)),
+        paymentAccountId,
+      });
+      return r.body.series as { id: string; version: number };
+    };
+    const sa = await mkS(poupAna.id);
+    await scenario("série, X atual", poupAna.id, ana.memberId, () =>
+      api("Bia", "PATCH", `/recurring-expenses/${sa.id}`, {
+        version: sa.version,
+        amountInCents: 7000,
+      }),
+    );
+    const sb = await mkS(main.id);
+    await scenario("série, X nova", poupAna.id, ana.memberId, () =>
+      api("Bia", "PATCH", `/recurring-expenses/${sb.id}`, {
+        version: sb.version,
+        paymentAccountId: poupAna.id,
+      }),
+    );
+  }, 90000);
 });

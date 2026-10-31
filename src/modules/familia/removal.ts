@@ -250,6 +250,9 @@ export async function removeMember(
 
   const now = ctx.clock.now();
   // arquivar o que sobrou sem pendência (Q-F07), sob FOR UPDATE
+  // ordem crescente de id: mesma ordem dos que travam contas (SDD-034 R2, sem ciclo)
+  archiveAccounts.sort();
+  archiveCards.sort();
   for (const id of archiveAccounts) {
     await tx.$queryRaw`SELECT id FROM bank_accounts WHERE id = ${id}::uuid FOR UPDATE`;
     const balance = (await accountBalances(tx, ctx.familyId, [id])).get(id) ?? 0;

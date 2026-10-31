@@ -7,6 +7,7 @@ import { periodFromKey, periodOf } from "@/lib/period";
 import type { MemberRef } from "@/lib/schemas";
 import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
+import { shareLockAccounts } from "@/modules/contas/lock";
 import { toMemberRef } from "@/modules/familia/display-name";
 import { previstasRepo } from "@/modules/previstas/repo";
 import { isPlannedOverdue, plannedDifference } from "@/modules/previstas/rules";
@@ -252,6 +253,8 @@ export async function updatePlannedExpense(
 ): Promise<{ plannedExpense: PlannedExpenseDTO }> {
   const repo = previstasRepo(tx, ctx.familyId);
   const row = await loadForChange(tx, ctx, repo, id, input.version);
+  // SDD-034 R2: contas (atual e nova) ANTES de qualquer leitura do dono (conta ➔ membro, como o removal.ts)
+  await shareLockAccounts(tx, ctx.familyId, [row.paymentAccountId, input.paymentAccountId]);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026a: "Só meu" é só do responsável
   // SEC-043/044: quem só controla não muda divisão, responsável nem conta; D-GES-55: Admin sobre ex-membro pode
   const standing = await ownerStanding(tx, ctx, row.responsibleMemberId, [
@@ -385,6 +388,7 @@ export async function payPlannedExpense(
   if (row.status === "PAGO") {
     throw conflict("PLANNED_ALREADY_PAID", "Esta despesa prevista já foi paga");
   }
+  await shareLockAccounts(tx, ctx.familyId, [row.paymentAccountId, input.accountId]); // SDD-034 R2
   await assertCanWritePlanned(tx, ctx, row); // SEC-026b: dar baixa num "Só meu" é só do responsável
   const today = todayInFamilyTz(ctx.clock);
   const paidOn = input.paidOn ?? today;

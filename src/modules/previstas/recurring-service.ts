@@ -4,6 +4,7 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 import { fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
 import type { MemberRef } from "@/lib/schemas";
+import { shareLockAccounts } from "@/modules/contas/lock";
 import {
   addMonths,
   endMonthFromCount,
@@ -260,6 +261,7 @@ export async function updateSeries(
   if (!row) throw notFound(NOT_FOUND);
   if (row.endedAt) throw seriesEnded();
   if (row.version !== input.version) throw await versionConflict(repo, tx, ctx, id);
+  await shareLockAccounts(tx, ctx.familyId, [row.paymentAccountId, input.paymentAccountId]); // SDD-034 R2
   await assertCanWritePlanned(tx, ctx, row); // SEC-026: série "Só meu" é só do responsável
   const standing = await ownerStanding(tx, ctx, row.responsibleMemberId, [
     row.paymentAccountId,
