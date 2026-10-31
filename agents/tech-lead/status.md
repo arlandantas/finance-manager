@@ -31,6 +31,8 @@
 
 **Pontos:** US-092 **5** (092a 3 + 092b 2); NEED-028 segue **23**. **Numeração:** SDD-030..032 reservados ao TL-2 (US-089/090/091). **Próximos:** SDD de 093a/093b, 094a/094b, 095 (seguindo o mapa de achados SEC-058..068 do SDD-033 §5). **Segurança:** revisão SEC-058..068 incorporada (ADR §2-§5, SDD §3.1/§3.4/§4/§5); pendentes do usuário SEC-060 e SEC-062(3). **Riscos:** troca mecânica de ~76 leituras de `user`; comparação de pessoa com `NULL`; `EMAIL_BELONGS_TO_UNLINKED_MEMBER` sem saída na UI entre 092b e 094a/095 (R3).
 
+**Revisão final da US-093 (TL, 2026-10-31): APROVADA** (commits 448558d, 463aa7e, 3842d74). Ordem de travas `lockFamilySplit` ➔ contas (atual e nova) ➔ cartões ➔ FOR SHARE do dono confere em todos os chamadores de `ownerStanding` (edição, baixa, estorno, série, criação com conta/cartão); baixa do "Só meu" de dono sem conta exige o pagador original; testes 9c/9d determinísticos (NOWAIT no dono). **Baixa (não bloqueante):** `endSeries` (`recurring-service.ts:~424`) avalia `plannedWriteDecision` por ocorrência após travar o dono; ocorrência editada com conta diferente da série trava essa conta depois do dono (travar as contas dos candidatos antes de `:412`).
+
 **Revisão final 092a: aprovada** (2026-10-31, commit 62fdff2; migrações `20261030020000`/`20261030020100`). Observações sem bloqueio: (a) Baixa, para a 092b: falta `CHECK ("linkedAt" IS NULL OR "userId" IS NOT NULL)` (o gatilho só cobre UPDATE; o INSERT de 092b grava `linkedAt` nulo); (b) Info, para a 094b: a GUC `app.link_member` deve ser ligada com `set_config(..., true)` (local à transação); o gatilho é trava contra caminho acidental, não contra o papel dono da tabela (igual ao padrão SEC-017d/036).
 
 ---
