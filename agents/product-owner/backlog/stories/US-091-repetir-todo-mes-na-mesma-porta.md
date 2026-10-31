@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-26 Previsão unificada · **UR-1 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should** · 3,3 (V5/U3/R2) · **3** |
-| Status | Proposta pelo PO em 2026-10-26; sem SDD novo se só reaproveitar o serviço de séries (TL confirma) |
+| Status | **SDD pronto (no SDD-031), aprovada para Dev** (2026-10-26): [SDD-031](../../../tech-lead/sdd/SDD-031-porta-unica-lancar-ou-prever-us-090-091.md) §7, **3 pts confirmados pelo TL** (reaproveita o serviço de séries) |
 | Depende de | **US-090**, US-058/059 (séries, implementadas) |
 | Corte | Cortável sem afetar a US-090 (a série segue acessível pela tela "Previstas") |
 | Rastreabilidade | **NEED-031** RN-031.6 · **Q-U21 (usuário, 2026-10-26)** · NEED-004 · FLUXO-005, FLUXO-019 · D-PO-102 |
