@@ -82,6 +82,6 @@ Complementa a tabela acima. Vale para todos os papéis; os READMEs de cada papel
 ## 🗂 Manutenção da Estrutura (checklist do Gestor)
 - [ ] Antes de dar uma entrega por concluída: `estado/<área>.md` atualizado no mesmo commit (regra, divergências docs×código, pendências).
 - [ ] Manter a **"Fila de implementação"** (e o "ponto de retomada") do `tasks-board.md` em dia a cada entrega ou mudança de prioridade; trechos antigos de "ponto de retomada" ficam marcados como superados.
-- [ ] Nova área ➔ criar `estado/<área>.md` (molde em [`_brief-estado.md`](../_brief-estado.md)) e adicionar a linha no `INDEX.md` (o Gestor é o dono do INDEX).
+- [ ] Nova área ➔ criar `estado/<área>.md` (molde em [`estado/so-meu.md`](../estado/so-meu.md)) e adicionar a linha no `INDEX.md` (o Gestor é o dono do INDEX).
 - [ ] Mover o que fechou (relatórios, QA, respostas, decisões antigas) para `_historico/`, preservando IDs e corrigindo links.
 - [ ] Rodar `pnpm check:docs` antes de commitar; briefs de delegação mandam o agente ler INDEX ➔ estado e citar o estado na entrega.

@@ -12,7 +12,6 @@ Neste diretório, cada agente possui uma pasta exclusiva para documentar suas an
 agents/
 ├── README.md                      # Este arquivo guia
 ├── INDEX.md                       # PRIMEIRA LEITURA: mapa por área/tarefa e regra de manutenção
-├── _brief-estado.md               # Brief para consolidar/atualizar um arquivo de estado
 │
 ├── estado/                        # Estado vigente por área (10 arquivos, densos): fonte da regra atual
 │
@@ -66,6 +65,6 @@ agents/
 Mapa e regra de manutenção ficam no [`INDEX.md`](INDEX.md) (não duplicar aqui). Checklist ao concluir uma unidade de trabalho:
 - [ ] Atualizei `estado/<área>.md` (regra vigente, divergências docs×código, pendências) **no mesmo commit** da mudança; o arquivo continua com ~1500 palavras ou menos.
 - [ ] Se couber ao meu papel, atualizei a "Fila de implementação" do `tasks-board.md`. Status por US e `backlog.md` não se atualizam por tarefa (protocolo em [`manager/README.md`](manager/README.md)).
-- [ ] Se a área é nova: criei `estado/<área>.md` (molde em [`_brief-estado.md`](_brief-estado.md)) e acrescentei a linha no `INDEX.md`.
+- [ ] Se a área é nova: criei `estado/<área>.md` (molde em [`estado/so-meu.md`](estado/so-meu.md)) e acrescentei a linha no `INDEX.md`.
 - [ ] Item fechado (relatório, QA, resposta, decisão antiga) vai para `_historico/` com a mesma subestrutura, mantendo IDs e corrigindo os links que apontavam para o caminho antigo.
 - [ ] Rodei `pnpm check:docs` antes de commitar.
