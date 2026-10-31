@@ -385,3 +385,79 @@ describe("US-035 ex-membro no motor (ADR-019 §6, S14..S16)", () => {
     expect(withX).toEqual(sem);
   });
 });
+
+// US-093a (SDD-034 §5, U1..U4): o membro sem conta é um MemberInput comum, nos DOIS motores (`computeSettlement`
+// compara LEGACY e STORED). Nenhuma asserção de S1..S16 muda.
+describe("US-093a membro sem conta no motor (U1..U4)", () => {
+  const A: MemberInput = { id: "a", ordinal: 2, joinedOn: "2026-01-01" }; // Ana, sem conta
+  it("U1: 300,00 pagos por Ana entre três: Ana +200,00; Mariana e Lucas -100,00; sugestões para Ana", () => {
+    const r = computeSettlement(base({ members: [M, L, A], expenses: [exp("a", 30000)] }));
+    expect(row(r, "a")).toMatchObject({ balanceInCents: 20000, quotaInCents: 10000 });
+    expect(row(r, "m").balanceInCents).toBe(-10000);
+    expect(row(r, "l").balanceInCents).toBe(-10000);
+    expect(r.suggestions).toEqual([
+      { fromMemberId: "m", toMemberId: "a", amountInCents: 10000 },
+      { fromMemberId: "l", toMemberId: "a", amountInCents: 10000 },
+    ]);
+  });
+
+  it("U2: 100,00 EQUAL pagos por Ana (3 membros): cota de Ana 33,34; Ana +66,66; demais -33,33", () => {
+    // O motor LEGACY/backfill dá o centavo de sobra ao menor ordinal (o pagador só o recebe no rateio
+    // gravado na criação: ver split-amount.test.ts U2). Com Ana no ordinal 0 os dois coincidem.
+    const A0: MemberInput = { ...A, ordinal: 0 };
+    const r = computeSettlement(
+      base({
+        members: [A0, { ...M, ordinal: 1 }, { ...L, ordinal: 2 }],
+        expenses: [exp("a", 10000)],
+      }),
+    );
+    expect(row(r, "a")).toMatchObject({ quotaInCents: 3334, balanceInCents: 6666 });
+    expect(row(r, "m")).toMatchObject({ quotaInCents: 3333, balanceInCents: -3333 });
+    expect(row(r, "l")).toMatchObject({ quotaInCents: 3333, balanceInCents: -3333 });
+  });
+
+  it("U3: 100,01 PROPORTIONAL 50/50/0, pago por Ana: Ana sem cota; 50,01 ao menor ordinal; Ana +100,01", () => {
+    const r = computeSettlement(
+      base({
+        members: [M, L, A],
+        rules: [
+          prop("p", "1970-01-01", [
+            ["m", 5000],
+            ["l", 5000],
+            ["a", 0],
+          ]),
+        ],
+        expenses: [exp("a", 10001)],
+      }),
+    );
+    expect(row(r, "a")).toMatchObject({ quotaInCents: 0, balanceInCents: 10001 });
+    expect(row(r, "m").quotaInCents).toBe(5001);
+    expect(row(r, "l").quotaInCents).toBe(5000);
+  });
+
+  it("U4: entrada de Ana (EQUAL): o período antes da entrada tem 2 partes; o seguinte, 3; o anterior não muda", () => {
+    // O motor decide a participação por PERÍODO (joinedOn <= fim do período), não pela data da despesa.
+    const Aj: MemberInput = { ...A, joinedOn: "2026-10-15" };
+    const sept = computeSettlement(
+      base({
+        period: periodFromKey("2026-09"),
+        members: [M, L, Aj],
+        expenses: [exp("m", 30000, "2026-09-10")],
+      }),
+    );
+    expect(sept.members.map((m) => m.quotaInCents)).toEqual([15000, 15000, 0]);
+    expect(row(sept, "a")).toMatchObject({ quotaInCents: 0, balanceInCents: 0 });
+    const oct = computeSettlement(
+      base({ members: [M, L, Aj], expenses: [exp("m", 30000, "2026-10-20")] }),
+    );
+    expect(oct.members.map((m) => m.quotaInCents)).toEqual([10000, 10000, 10000]);
+    const septAgain = computeSettlement(
+      base({
+        period: periodFromKey("2026-09"),
+        members: [M, L, Aj],
+        expenses: [exp("m", 30000, "2026-09-10")],
+      }),
+    );
+    expect(septAgain).toEqual(sept);
+  });
+});

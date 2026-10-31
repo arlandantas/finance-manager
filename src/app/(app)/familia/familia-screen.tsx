@@ -23,6 +23,7 @@ import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
 import { memberLabel } from "@/lib/deleted-account";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import {
@@ -489,14 +490,7 @@ export function FamiliaScreen() {
                       <p className="truncate text-sm text-slate-500">{m.email}</p>
                     )}
                   </div>
-                  {m.unlinked ? (
-                    <span
-                      data-testid="member-unlinked"
-                      className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-900 dark:bg-amber-900/40 dark:text-amber-200"
-                    >
-                      Sem acesso ao app
-                    </span>
-                  ) : null}
+                  {m.unlinked ? <UnlinkedBadge /> : null}
                   <span
                     data-testid="member-role"
                     className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"

@@ -21,7 +21,13 @@ import type {
   UpdateCardParsed,
 } from "@/modules/cartoes/schemas";
 import { lockAccountsForPosting } from "@/modules/contas/lock";
-import { type MemberRefSource, memberFirstName, toMemberRef } from "@/modules/familia/display-name";
+import {
+  type MemberRefSource,
+  memberFirstName,
+  toMemberRef,
+  UNLINKED_OWNER_ADMIN_ONLY,
+  UNLINKED_OWNER_ADMIN_ONLY_MESSAGE,
+} from "@/modules/familia/display-name";
 
 type CardRow = NonNullable<Awaited<ReturnType<ReturnType<typeof cartoesRepo>["findById"]>>>;
 
@@ -29,6 +35,25 @@ const NOT_FOUND = "Cartão não encontrado.";
 const DUPLICATE_NAME = "Já existe um cartão com este nome";
 export const CARD_OWNER_ONLY_CODE = "CARD_OWNER_ONLY";
 export const CARD_OWNER_ONLY_MESSAGE = "Só o titular do cartão pode trocar o titular.";
+export const CARD_OWNER_UNLINKED_MESSAGE =
+  "Só um Administrador pode trocar o titular deste cartão.";
+
+/** Titular candidato: inexistente => 422 `INVALID_REFERENCE`; sem conta e ator não ADMIN => 422 `UNLINKED_OWNER_ADMIN_ONLY`. */
+function assertOwnerAllowed(
+  ctx: RequestContext,
+  candidate: { userId: string | null } | null,
+): void {
+  if (!candidate) {
+    throw unprocessable("INVALID_REFERENCE", "Titular inválido.", [
+      { path: "ownerMemberId", message: "Titular inválido." },
+    ]);
+  }
+  if (candidate.userId == null && ctx.role !== "ADMIN") {
+    throw unprocessable(UNLINKED_OWNER_ADMIN_ONLY, UNLINKED_OWNER_ADMIN_ONLY_MESSAGE, [
+      { path: "ownerMemberId", message: UNLINKED_OWNER_ADMIN_ONLY_MESSAGE },
+    ]);
+  }
+}
 export const CYCLE_LOCKED_MESSAGE =
   "Os dias de fechamento e vencimento não podem ser alterados porque já há compras neste cartão";
 
@@ -118,11 +143,7 @@ export async function createCard(
 ): Promise<{ card: CardDTO }> {
   const repo = cartoesRepo(tx, ctx.familyId);
   const ownerMemberId = input.ownerMemberId ?? ctx.memberId;
-  if (!(await repo.memberExists(ownerMemberId))) {
-    throw unprocessable("INVALID_REFERENCE", "Titular inválido.", [
-      { path: "ownerMemberId", message: "Titular inválido." },
-    ]);
-  }
+  assertOwnerAllowed(ctx, await repo.ownerCandidate(ownerMemberId));
   if (input.paymentAccountId) await assertPayerAccount(tx, ctx.familyId, input.paymentAccountId);
   let row: CardRow;
   try {
@@ -175,18 +196,18 @@ export async function updateCard(
 
   // SEC-042/047 (D-GES-57): o titular do cartão virou papel de autorização ("Só meu"); só o titular ATUAL o troca.
   // O Administrador só reatribui na remoção/saída de membro (familia/removal.ts), que não passa por aqui.
+  // US-093a (D-034-6): exceção, titular ATUAL sem conta ativo (ninguém com sessão o troca): só ADMIN.
   if (
     input.ownerMemberId !== undefined &&
     input.ownerMemberId !== row.ownerMemberId &&
     row.ownerMemberId !== ctx.memberId
   ) {
-    throw forbidden(CARD_OWNER_ONLY_MESSAGE, CARD_OWNER_ONLY_CODE);
+    const current = await repo.ownerCandidate(row.ownerMemberId);
+    const unlinkedActive = current !== null && current.userId == null;
+    if (!unlinkedActive) throw forbidden(CARD_OWNER_ONLY_MESSAGE, CARD_OWNER_ONLY_CODE);
+    if (ctx.role !== "ADMIN") throw forbidden(CARD_OWNER_UNLINKED_MESSAGE, CARD_OWNER_ONLY_CODE);
   }
-  if (input.ownerMemberId && !(await repo.memberExists(input.ownerMemberId))) {
-    throw unprocessable("INVALID_REFERENCE", "Titular inválido.", [
-      { path: "ownerMemberId", message: "Titular inválido." },
-    ]);
-  }
+  if (input.ownerMemberId) assertOwnerAllowed(ctx, await repo.ownerCandidate(input.ownerMemberId));
   const wanted = {
     ...(input.name !== undefined && input.name !== row.name ? { name: input.name } : {}),
     ...(input.institution !== undefined && input.institution !== row.institution

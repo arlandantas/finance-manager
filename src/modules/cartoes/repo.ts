@@ -33,8 +33,12 @@ export function cartoesRepo(tx: Tx, familyId: string) {
     lockForShare: async (id: string) => {
       await tx.$queryRaw`SELECT id FROM credit_cards WHERE id = ${id}::uuid AND "familyId" = ${familyId}::uuid FOR SHARE`;
     },
-    memberExists: async (memberId: string) =>
-      (await tx.member.count({ where: { id: memberId, familyId, removedAt: null } })) > 0,
+    /** Titular candidato (ativo, da família): `userId == null` = sem conta (US-093a, SDD-034 §3.2). */
+    ownerCandidate: (memberId: string) =>
+      tx.member.findFirst({
+        where: { id: memberId, familyId, removedAt: null },
+        select: { id: true, userId: true },
+      }),
     member: (memberId: string) =>
       tx.member.findFirst({ where: { id: memberId, familyId }, include: { user: true } }),
     insert: (d: {

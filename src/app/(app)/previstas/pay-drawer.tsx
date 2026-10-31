@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
+import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useSourceAccount } from "@/modules/contas/use-source-account";
@@ -266,6 +267,7 @@ export function PayPlannedDrawer({
                   role="radio"
                   aria-checked={effectivePayerId === m.memberId}
                   aria-label={m.name.split(" ")[0]}
+                  aria-describedby={m.unlinked ? `pay-unlinked-${m.memberId}` : undefined}
                   aria-disabled={personalPay && m.memberId !== myMemberId ? true : undefined}
                   onClick={() => {
                     if (!(personalPay && m.memberId !== myMemberId)) setPayerId(m.memberId);
@@ -280,6 +282,12 @@ export function PayPlannedDrawer({
                 >
                   <Avatar name={m.name} image={m.image} size={32} />
                   {m.name.split(" ")[0]}
+                  {m.unlinked ? (
+                    <UnlinkedBadge
+                      id={`pay-unlinked-${m.memberId}`}
+                      className="px-1.5 py-0.5 text-[11px]"
+                    />
+                  ) : null}
                 </button>
               ))}
             </div>

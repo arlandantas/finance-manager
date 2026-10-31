@@ -1,6 +1,6 @@
 # Estado vigente: Acerto de contas e divisão (rateio, centavos, acerto, mês acertado, desfazer)
 
-Atualizado: 2026-10-26. Fonte de verdade: código + testes (§f). Mudou a regra? Atualize ESTE arquivo no mesmo commit. "Só meu" (fora do acerto) está em [so-meu.md](so-meu.md); parcelamento em [parcelamento.md](parcelamento.md).
+Atualizado: 2026-10-31 (US-093a). Fonte de verdade: código + testes (§f). Mudou a regra? Atualize ESTE arquivo no mesmo commit. "Só meu" (fora do acerto) está em [so-meu.md](so-meu.md); parcelamento em [parcelamento.md](parcelamento.md).
 
 ## a) Resumo para o usuário
 - Despesa dividida ("comum") entra no acerto do mês; "Só meu", receita, transferência, acerto e pagamento de fatura não entram. Compra parcelada nunca é dividida hoje (`INSTALLMENT_SPLIT_RELEASED=false`): parcela é "Só meu" e o Acerto avisa.
@@ -93,7 +93,7 @@ Unidades: valores em centavos inteiros (`amountInCents`); percentuais em basis p
 - R3-A (EN-002a/b, TASK-046/047) implementada; "janela de reversão em curso" (tasks-board.md): >= 7 dias desde a migração em produção, `pnpm migrate:split --verify` limpo e um fechamento de mês conferido pelo Stakeholder. Não há registro de que a janela tenha sido encerrada nem de que `migrate:split` rodou em produção (o build só roda `prisma migrate deploy`; a migração de dados é manual).
 - Bloqueados pela janela: US-042 (parcela dividida), US-043 (modo CUSTOM, "De outro jeito"), US-044 (por categoria), migração de contrato `us043_modo_custom` (CHECK `isSharedExpense = (splitMode<>NONE)`, `splitMode` em previstas; ainda inexistente em `prisma/migrations`). Reversão nível 2 (`--rollback --purge`) só enquanto não houver CUSTOM, parcela dividida nem contrato.
 - Gestor deve decidir encerrar a janela (e o usuário confirmar o fechamento de mês conferido).
-- Membro sem conta (US-093, [SDD-034](../tech-lead/sdd/SDD-034-membro-sem-conta-atribuicao-e-acerto-us-093.md), não implementado): motores intactos (sem conta é membro comum); 093b acrescenta ao A1 o 422 `SETTLEMENT_DESTINATION_IS_DEBTOR` (credor sem conta, destino do devedor; SEC-059b). Destino final depende do usuário (Q-TL-93-1).
+- Membro sem conta (US-093a implementada, [SDD-034](../tech-lead/sdd/SDD-034-membro-sem-conta-atribuicao-e-acerto-us-093.md); aguarda validação do Gestor): motores intactos, o sem conta é `MemberInput` comum; tela do Acerto/Regra mostra o selo "Sem acesso ao app". Destino do acerto LIVRE (decisão do usuário, D-GES-66): sem `SETTLEMENT_DESTINATION_IS_DEBTOR` (SEC-059b, risco aceito). Provado por `us-093a-titular-e-seletores` (U1, U5, U6), `us-093a-harness-acerto-sem-conta` (240 famílias, 2 sem conta) e unit U1..U4. Divergência SDD-034 §5: U2 (sobra ao pagador) vale só no rateio gravado na criação (`splitAmount`); LEGACY/backfill dá o centavo ao menor ordinal; U4: entrada vale por PERÍODO (`joinedOn <= fim`), não pela data da despesa (DEV-161).
 - Previstas/séries: `splitMode`/`splitShares` em previstas ainda não existem; baixa de prevista dividida usa `createExpenseCore` (Pela regra na data da baixa).
 
 ## f) Mapa de fontes

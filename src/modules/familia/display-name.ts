@@ -75,3 +75,16 @@ export function toMemberRef(m: MemberRefSource): MemberRef {
     ...(m.user === null ? { unlinked: true as const } : {}),
   };
 }
+
+/** US-093a (SDD-034 §3.1): selo e rótulo de membro sem conta nos seletores e telas. */
+export const UNLINKED_BADGE = "Sem acesso ao app";
+
+/** Texto de <option>/<radio> (não cabe selo dentro de <option>): "Ana · sem acesso ao app". */
+export function memberOptionLabel(m: { name: string; unlinked?: true | undefined }): string {
+  return m.unlinked ? `${m.name} · sem acesso ao app` : m.name;
+}
+
+/** US-093a (SDD-034 §3.2, D-034-6): titular sem conta (conta ou cartão) só por ADMIN. */
+export const UNLINKED_OWNER_ADMIN_ONLY = "UNLINKED_OWNER_ADMIN_ONLY";
+export const UNLINKED_OWNER_ADMIN_ONLY_MESSAGE =
+  "Só um Administrador pode pôr como titular quem não tem acesso ao app.";

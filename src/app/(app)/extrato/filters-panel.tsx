@@ -5,6 +5,7 @@ import { Field, inputClass } from "@/components/ui/field";
 import { useCards } from "@/modules/cartoes/hooks";
 import { useAllCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
+import { memberOptionLabel } from "@/modules/familia/display-name";
 import { useFamily } from "@/modules/familia/hooks";
 import type { LedgerUiFilters } from "@/modules/transacoes/optimistic";
 import { TagFilter } from "./tag-filter";
@@ -109,7 +110,7 @@ export function FiltersPanel({
           <option value="">Todos</option>
           {(family.data?.members ?? []).map((m) => (
             <option key={m.memberId} value={m.memberId}>
-              {m.name.split(" ")[0]}
+              {memberOptionLabel({ name: m.name.split(" ")[0] as string, unlinked: m.unlinked })}
             </option>
           ))}
         </select>

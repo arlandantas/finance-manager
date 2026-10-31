@@ -10,6 +10,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
 import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
 import { ApiClientError } from "@/lib/http";
 import { INSTALLMENT_SPLIT_NOTICE, parcelasLabel } from "@/modules/cartoes/installment-copy";
@@ -142,6 +143,9 @@ function MemberCard({
       <div className="flex items-center gap-3">
         <Avatar name={row.member.name} image={row.member.image} size={36} />
         <p className="font-semibold text-slate-900">{firstName(row.member.name)}</p>
+        {row.member.unlinked && !row.member.removed ? (
+          <UnlinkedBadge className="ml-1 px-1.5 py-0.5 text-[11px]" />
+        ) : null}
       </div>
       <dl className="grid grid-cols-2 gap-3">
         {cell("Pagou", <Money cents={row.paidInCents} />, undefined, "paid")}

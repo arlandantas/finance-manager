@@ -216,3 +216,28 @@ describe("splitAmount com peso exato (EQUAL com 3 membros; DEV-49)", () => {
     });
   });
 });
+
+// US-093a (SDD-034 §5): o membro sem conta é um membro comum para os centavos (nenhum motor muda).
+describe("splitAmount com pagador sem conta (SDD-034 U2, U3)", () => {
+  it("U2: 100,00 a três iguais pagos por Ana (sem conta): cotas 33,34 / 33,33 / 33,33; a sobra fica com ela", () => {
+    const shares: ShareInput[] = ["ana", "mariana", "lucas"].map((memberId, ordinal) => ({
+      memberId,
+      bps: ordinal === 0 ? 3334 : 3333,
+      ordinal,
+      weight: 1,
+    }));
+    const r = splitAmount({ amountInCents: 10000, shares, payerMemberId: "ana" });
+    expect(r).toEqual({ ana: 3334, mariana: 3333, lucas: 3333 });
+    expect(10000 - (r.ana as number)).toBe(6666); // crédito de Ana
+  });
+
+  it("U3: 100,01 PROPORTIONAL Mariana 50 / Lucas 50 / Ana 0, pago por Ana: Ana sem linha; 50,01 ao menor ordinal", () => {
+    const r = splitAmount({
+      amountInCents: 10001,
+      shares: sh(["mariana", 5000], ["lucas", 5000]),
+      payerMemberId: "ana",
+    });
+    expect(r).toEqual({ mariana: 5001, lucas: 5000 });
+    expect("ana" in r).toBe(false);
+  });
+});

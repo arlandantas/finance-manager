@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   memberDisplayName,
   memberFirstName,
+  memberOptionLabel,
   nameKey,
   RESERVED_NAME_KEYS,
   samePerson,
   sanitizeMemberName,
   toMemberRef,
+  UNLINKED_BADGE,
 } from "@/modules/familia/display-name";
 
 const user = (o: { name?: string | null; email?: string; deletedAt?: Date | null } = {}) => ({
@@ -79,5 +81,13 @@ describe("US-092a toMemberRef e samePerson", () => {
     expect(samePerson(null, null)).toBe(false);
     expect(samePerson(undefined, undefined)).toBe(false);
     expect(samePerson(null, "a")).toBe(false);
+  });
+});
+
+describe("US-093a memberOptionLabel", () => {
+  it("sem conta ganha o sufixo textual; com conta fica só o nome", () => {
+    expect(memberOptionLabel({ name: "Ana", unlinked: true })).toBe("Ana · sem acesso ao app");
+    expect(memberOptionLabel({ name: "Lucas" })).toBe("Lucas");
+    expect(UNLINKED_BADGE).toBe("Sem acesso ao app");
   });
 });

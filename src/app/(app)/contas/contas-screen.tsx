@@ -18,6 +18,7 @@ import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { useAccountAction, useAccounts, useArchivedAccounts } from "@/modules/contas/hooks";
 import { ACCOUNT_TYPE_LABELS, type AccountDTO } from "@/modules/contas/schemas";
@@ -74,6 +75,9 @@ function AccountCard({
         <p className="truncate text-sm text-slate-500">
           {account.institution} · {ACCOUNT_TYPE_LABELS[account.type]} ·{" "}
           {account.owner.name.split(" ")[0]}
+          {account.owner.unlinked && !account.owner.removed ? (
+            <UnlinkedBadge className="ml-1 px-1.5 py-0.5 text-[11px]" />
+          ) : null}
         </p>
       </div>
       <Balance

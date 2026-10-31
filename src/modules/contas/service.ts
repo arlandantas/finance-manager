@@ -17,7 +17,12 @@ import type {
   CreateAccountInput,
   RenameAccountInput,
 } from "@/modules/contas/schemas";
-import { type MemberRefSource, toMemberRef } from "@/modules/familia/display-name";
+import {
+  type MemberRefSource,
+  toMemberRef,
+  UNLINKED_OWNER_ADMIN_ONLY,
+  UNLINKED_OWNER_ADMIN_ONLY_MESSAGE,
+} from "@/modules/familia/display-name";
 
 type AccountRow = NonNullable<Awaited<ReturnType<ReturnType<typeof contasRepo>["findById"]>>>;
 
@@ -139,9 +144,16 @@ export async function createAccount(
 ): Promise<AccountDTO> {
   const repo = contasRepo(tx, ctx.familyId);
   const ownerMemberId = input.ownerMemberId ?? ctx.memberId;
-  if (!(await repo.memberExists(ownerMemberId))) {
+  const candidate = await repo.ownerCandidate(ownerMemberId);
+  if (!candidate) {
     throw unprocessable("INVALID_REFERENCE", "Titular inválido.", [
       { path: "ownerMemberId", message: "Titular inválido." },
+    ]);
+  }
+  // US-093a (D-034-6): titular sem conta só por ADMIN.
+  if (candidate.userId == null && ctx.role !== "ADMIN") {
+    throw unprocessable(UNLINKED_OWNER_ADMIN_ONLY, UNLINKED_OWNER_ADMIN_ONLY_MESSAGE, [
+      { path: "ownerMemberId", message: UNLINKED_OWNER_ADMIN_ONLY_MESSAGE },
     ]);
   }
   const today = todayInFamilyTz(ctx.clock);

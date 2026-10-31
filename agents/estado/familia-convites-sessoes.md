@@ -1,6 +1,6 @@
 # Estado vigente: Família, convites, membros e sessões
 
-Atualizado: 2026-10-31 (US-092b implementada; 093a em diante não iniciadas). Fonte de verdade: código + testes (§f).
+Atualizado: 2026-10-31 (US-092b e 093a implementadas; 093b em diante não iniciadas). Fonte de verdade: código + testes (§f).
 
 ## a) Resumo para o usuário
 - Login só com Google; `ALLOWED_SIGNUP_EMAILS` preenchida restringe quem cria conta (ação do usuário na Vercel, 9.1).
@@ -34,6 +34,7 @@ Atualizado: 2026-10-31 (US-092b implementada; 093a em diante não iniciadas). Fo
 | 23 | **Sem conta nas leituras (092a)** | `ONLY_MEMBER`/`SOLE_MEMBER`/`HAS_OTHER_MEMBERS` contam só ativos COM conta; remover sem conta zera `pendingEmail` com `removedAt`, anonimiza convites do cadastro (`deleted+<id>@invalid.local`) e apaga idempotência com o e-mail; `ownerStanding`, exportação e sugestões ignoram `userId` nulo (SEC-050/058); `endUserSessions("")` = 0; excluir a conta zera `members.name`. D-033-4: até a 093b o sem conta é "outro membro" no "Só meu" (Admin em nome dele: 403 `PERSONAL_ON_BEHALF_FORBIDDEN`) | `removal.ts`, `ownership.ts`, `privacidade/*` |
 | 24 | **Cadastrar sem conta (092b)** | `POST /api/v1/members` `{name, email?}` (`.strict()`, 201), só ADMIN, sob `lockFamilyAdmins`, `Idempotency-Key`; na família do ator, `joinedAt` do servidor. Nome saneado (NFKC, sem invisíveis), 2..60, único entre ativos sem caixa/acentos (inclui nome de quem tem conta): 409 `NAME_TAKEN`; reservados ("Conta excluída", "Administrador", "Sem acesso ao app"...): 422 `NAME_RESERVED`; 20 sem conta ativos: 422 `UNLINKED_MEMBER_LIMIT`. E-mail opcional: de membro com conta 409 `DUPLICATE_MEMBER`; de outro cadastro 409 `EMAIL_BELONGS_TO_OTHER_MEMBER` (inclui corrida); convite comum pendente 409 `EMAIL_HAS_PENDING_INVITATION` (vencido vira EXPIRED); de ex-membro ou de OUTRA família é permitido. Sem e-mail, cota, sessão ou concessão. `MEMBER_CREATED` com `{hasEmail}` apenas. Erro de corpo (Zod) = 400 `VALIDATION_ERROR` | `familia/members.ts` |
 | 25 | **Convite x cadastro (092b)** | `createInvitation` ganhou `lockFamilyAdmins` e recusa, sem gastar cota, o e-mail que é `pendingEmail` de um ativo: 409 `EMAIL_BELONGS_TO_UNLINKED_MEMBER`. Cadastro e convite simultâneos do mesmo e-mail: um só sobrevive | `invitations/service.ts` |
+| 27 | **Titular e selo (093a)** | Titular sem conta (conta ou cartão) só por ADMIN: não-ADMIN 422 `UNLINKED_OWNER_ADMIN_ONLY` (`path: ownerMemberId`) em `createAccount`/`createCard`/troca de titular do cartão; titular candidato = ativo da família (outra família ou ex-membro: 422 `INVALID_REFERENCE`). Cartão cujo titular ATUAL é sem conta ativo: só ADMIN troca (não-ADMIN 403 `CARD_OWNER_ONLY` "Só um Administrador pode trocar o titular deste cartão."; `CARD_OWNER_CHANGED` com o ator real); `CARD_OWNER_ONLY` vem antes. Selo `UnlinkedBadge` ("Sem acesso ao app", `member-unlinked`) e `memberOptionLabel` ("Ana · sem acesso ao app") nos seletores (Nova conta/cartão com opção `disabled` "(só Administrador)" para MEMBER; filtro Membro; edição), chips de pagador/responsável, Contas, Cartões, A pagar, detalhe, Acerto e Regra; ex-membro sem conta não leva selo | `display-name.ts`, `contas|cartoes/service.ts`, `components/ui/unlinked-badge.tsx` |
 | 26 | **Leitura e tela (092b)** | `GET /family`: `pendingEmail` só para ADMIN e só em sem conta (chave ausente para MEMBER); `email: null`, `canChangeRole: false`. Botão "Cadastrar membro" (só ADMIN) abre drawer (Nome, E-mail opcional, nota "não terá acesso ao app", aviso de divisão com acerto ligado: EQUAL inclui o cadastrado nas despesas NOVAS; PROPORTIONAL fica `stale`, 0% permitido); selo "Sem acesso ao app"; menu só com Remover; histórico "{ator} cadastrou {alvo} (sem acesso ao app)" | `add-member-drawer.tsx`, `familia-screen.tsx` |
 
 ## c) Invariantes
@@ -50,10 +51,11 @@ Atualizado: 2026-10-31 (US-092b implementada; 093a em diante não iniciadas). Fo
 | SEC-046/052 | Remoção dá ao Admin controle dos "Só meu" reatribuídos | Aviso na revisão |
 | SEC-037 | Exclusões pedem só confirmação digitada | Decisão do usuário pendente |
 | U5 | Dados de ex-membro mantidos até excluir a conta | Preserva histórico; LGPD a validar |
+| R7 | Membro com conta (não ADMIN) não passa o próprio cartão a um sem conta (SDD-034 R7): arquiva e o ADMIN recria | TL-093-4 |
 | R3 | Até a 094a o e-mail cadastrado não convida pela UI (409; editar/remover e-mail é 095) | Ordem 092b ➔ 093 ➔ 094a |
 
 ## e) Em andamento / pendências
-- **092b implementada (TASK-094), aguarda validação do Gestor.** Próximas 093a (selo nos seletores/filtros, titular só ADMIN), 093b ("Só meu", SEC-059/066b/067), 094a (convite vinculado, SEC-061), 094b (aceite, nome escolhido, SEC-062/063/064), 095 (editar). **SDD-034 (093a/093b) proposto em 2026-10-31** (titular sem conta só ADMIN; Admin nunca vira pagador no lugar do sem conta; revoga D-033-4 ao ser implementado); SDDs 094..095 por escrever (TL).
+- **092b implementada (TASK-094), aguarda validação do Gestor.** 093a implementada (TASK-097, aguarda validação). Próximas 093b ("Só meu", SEC-059/066b/067), 094a (convite vinculado, SEC-061), 094b (aceite, nome escolhido, SEC-062/063/064), 095 (editar). **SDD-034 (093a/093b) proposto em 2026-10-31** (titular sem conta só ADMIN; Admin nunca vira pagador no lugar do sem conta; revoga D-033-4 ao ser implementado); SDDs 094..095 por escrever (TL).
 - D-GES-63: nome do cadastro é rótulo provisório; o aceite grava o nome escolhido em `members.name` (nunca em eventos); só o Admin cria "Só meu" em nome do sem conta; remoção/edição anonimiza e-mails dos convites do cadastro.
 - Usuário (não bloqueiam): SEC-060 "Entra na divisão?" (hipótese: só o aviso), SEC-062(3) "Desvincular conta" (hipótese: não), `ALLOWED_SIGNUP_EMAILS`, SEC-037. LGPD: titular sem conta (talvez criança, art. 14) exerce direitos via Admin; citar em `/privacidade` (Gestor).
 - Fase 2 da SEC-018 (`prisma/pending/20261027000000_*`, checklist 9.7).
@@ -61,7 +63,7 @@ Atualizado: 2026-10-31 (US-092b implementada; 093a em diante não iniciadas). Fo
 
 ## f) Mapa de fontes
 Código: `src/modules/familia/{service,manage,removal,repo,schemas,hooks,settings,members,display-name}.ts`, `familia/invitations/*`, `src/lib/auth/*`, `src/proxy.ts`, `modules/cron/retention.ts`; rotas `src/app/api/v1/{families,family,members,invitations,me/invitations,me/sessions/revoke-others}`; telas `src/app/{convites,(app)/familia,(public)/convite/[token]}`; `privacidade/delete-*`.
-Testes: int `us-092b-cadastrar-membro` (14), `us-092a-*` (20 + harness 240), `sec036-travas`, `us-00{1,2,3}-*`, `u6-*`, `us-039-*`, `sec040-*`, `us-034-*`, `us-035-*`, `sec018-sessao`, `sec017d-*`; unit `familia/{display-name,create-unlinked-member-schema}`, `meta/member-reads`, `auth/auth-pure`; E2E `US-092-cadastrar-membro-sem-conta.feature`.
+Testes: int `us-093a-titular-e-seletores` (10) e `us-093a-harness-acerto-sem-conta`, `us-092b-cadastrar-membro` (14), `us-092a-*` (20 + harness 240), `sec036-travas`, `us-00{1,2,3}-*`, `u6-*`, `us-039-*`, `sec040-*`, `us-034-*`, `us-035-*`, `sec018-sessao`, `sec017d-*`; unit `familia/{display-name,create-unlinked-member-schema}`, `meta/member-reads`, `auth/auth-pure`; E2E `US-092-cadastrar-membro-sem-conta.feature`, `US-093-membro-sem-conta-atribuicao.feature` (7 cenários da 093a).
 Docs: [ADR-033](../tech-lead/adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md), [SDD-033](../tech-lead/sdd/SDD-033-membro-sem-conta-modelo-e-cadastro-us-092.md); SDD-003/012/028; ADR-012/019; "Só meu": [so-meu.md](so-meu.md).
 
 Divergências docs x código (código vence):
@@ -70,3 +72,4 @@ Divergências docs x código (código vence):
 3. SDD-003: sem teto por pessoa; vigente família E pessoa (SEC-040).
 4. SDD-028 §6: o schema ainda mantém `sessionToken` (fase 2 pendente).
 5. SDD-033: erro de corpo 422 e `NAME_RESERVED` no Zod; o código: 400 no Zod, 422 `NAME_RESERVED` no serviço.
+6. SDD-034 §3.1/§7.4: o Extrato só tem o filtro "Membro" (não existe "Quem pagou" separado); o selo/rótulo entra nele (DEV-162). SDD-034 §5 U2/U4 divergem do motor (DEV-161, ver acerto-divisao).

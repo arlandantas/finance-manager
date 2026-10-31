@@ -23,6 +23,7 @@ import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { useFamily } from "@/modules/familia/hooks";
 import {
@@ -196,6 +197,9 @@ function PayableRow({
               <span className="flex items-center gap-1 text-xs text-slate-600">
                 <Avatar name={item.responsible.name} image={item.responsible.image} size={20} />
                 {first(item.responsible.name)}
+                {item.responsible.unlinked && !item.responsible.removed ? (
+                  <UnlinkedBadge className="ml-1 px-1.5 py-0.5 text-[11px]" />
+                ) : null}
               </span>
             ) : null}
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">

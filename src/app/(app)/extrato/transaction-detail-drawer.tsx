@@ -9,6 +9,7 @@ import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
 import { UndoTransferDialog } from "@/components/undo-transfer-dialog";
 import { memberLabel } from "@/lib/deleted-account";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
@@ -424,6 +425,9 @@ export function TransactionDetailDrawer({
               {t.payer ? (
                 <p>
                   {isIncome ? "Recebido por" : "Pago por"} <strong>{memberLabel(t.payer)}</strong>
+                  {t.payer.unlinked && !t.payer.removed ? (
+                    <UnlinkedBadge className="ml-1 px-1.5 py-0.5 text-[11px]" />
+                  ) : null}
                 </p>
               ) : null}
               <p>

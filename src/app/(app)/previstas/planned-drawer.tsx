@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
+import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
@@ -531,6 +532,7 @@ export function PlannedDrawer({
                   role="radio"
                   aria-checked={effectiveResponsibleId === m.memberId}
                   aria-label={m.name.split(" ")[0]}
+                  aria-describedby={m.unlinked ? `pl-unlinked-${m.memberId}` : undefined}
                   aria-disabled={
                     (personalPlanned && m.memberId !== me) || cannotTakeOver(m.memberId)
                       ? true
@@ -551,6 +553,12 @@ export function PlannedDrawer({
                 >
                   <Avatar name={m.name} image={m.image} size={32} />
                   {m.name.split(" ")[0]}
+                  {m.unlinked ? (
+                    <UnlinkedBadge
+                      id={`pl-unlinked-${m.memberId}`}
+                      className="px-1.5 py-0.5 text-[11px]"
+                    />
+                  ) : null}
                 </button>
               ))}
               {goneResponsible && !members.some((m) => m.memberId === goneResponsible.id) ? (

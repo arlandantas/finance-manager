@@ -17,6 +17,7 @@ import {
   CreateAccountSchema,
   INSTITUTION_SUGGESTIONS,
 } from "@/modules/contas/schemas";
+import { memberOptionLabel } from "@/modules/familia/display-name";
 import { useFamily } from "@/modules/familia/hooks";
 import { ReserveSwitch } from "./reserve-switch";
 
@@ -180,8 +181,13 @@ export function NewAccountDrawer({
         <Field id="account-owner" label="Titular" error={errors.ownerMemberId?.message}>
           <select id="account-owner" className={inputClass} {...form.register("ownerMemberId")}>
             {(family.data?.members ?? []).map((m) => (
-              <option key={m.memberId} value={m.memberId}>
-                {m.name.split(" ")[0]}
+              <option
+                key={m.memberId}
+                value={m.memberId}
+                disabled={m.unlinked && family.data?.currentRole !== "ADMIN"}
+              >
+                {memberOptionLabel({ name: m.name.split(" ")[0] as string, unlinked: m.unlinked })}
+                {m.unlinked && family.data?.currentRole !== "ADMIN" ? " (só Administrador)" : ""}
               </option>
             ))}
           </select>

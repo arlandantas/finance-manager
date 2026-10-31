@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Field, inputClass } from "@/components/ui/field";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { usePutSplitRule, useRulePreview, useSplitRule } from "@/modules/split/hooks";
 import { suggestBpsFromIncomes } from "@/modules/split/preview";
@@ -225,6 +226,9 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
             >
               <div className="flex items-center gap-3">
                 <Avatar name={m.name} image={m.image} size={32} />
+                {m.unlinked && !m.removed ? (
+                  <UnlinkedBadge className="ml-1 px-1.5 py-0.5 text-[11px]" />
+                ) : null}
                 <input
                   id={`pct-${m.id}`}
                   inputMode="decimal"

@@ -10,6 +10,7 @@ import { Field, inputClass } from "@/components/ui/field";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
+import { memberOptionLabel } from "@/modules/familia/display-name";
 import { useFamily } from "@/modules/familia/hooks";
 import { normalizeTagKey } from "@/modules/tags/normalize";
 import { useUpdateTransaction } from "@/modules/transacoes/hooks";
@@ -281,7 +282,10 @@ export function EditTransactionForm({
             )
             .map((m) => ({
               id: m.memberId,
-              name: m.name.split(" ")[0] ?? m.name,
+              name: memberOptionLabel({
+                name: m.name.split(" ")[0] ?? m.name,
+                unlinked: m.unlinked,
+              }),
             })),
           // o pagador atual que saiu da família continua visível como opção atual (rotulada)
           ...(ownerGone &&

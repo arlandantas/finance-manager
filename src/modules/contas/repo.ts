@@ -24,8 +24,12 @@ export function contasRepo(tx: Tx, familyId: string) {
       }),
     findById: (id: string) =>
       tx.bankAccount.findFirst({ where: { id, familyId, deletedAt: null }, include: withOwner }),
-    memberExists: async (memberId: string) =>
-      (await tx.member.count({ where: { id: memberId, familyId, removedAt: null } })) > 0,
+    /** Titular candidato (ativo, da família): `userId == null` = sem conta (US-093a, SDD-034 §3.2). */
+    ownerCandidate: (memberId: string) =>
+      tx.member.findFirst({
+        where: { id: memberId, familyId, removedAt: null },
+        select: { id: true, userId: true },
+      }),
     insert: (data: {
       name: string;
       institution: string;

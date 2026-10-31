@@ -13,6 +13,7 @@ import { useCreateCard, useUpdateCard } from "@/modules/cartoes/hooks";
 import { type CardDTO, CreateCardSchema, UpdateCardSchema } from "@/modules/cartoes/schemas";
 import { useAccounts } from "@/modules/contas/hooks";
 import { INSTITUTION_SUGGESTIONS } from "@/modules/contas/schemas";
+import { memberOptionLabel } from "@/modules/familia/display-name";
 import { useFamily } from "@/modules/familia/hooks";
 
 type FieldKey =
@@ -241,18 +242,38 @@ export function CardDrawer({
               />
             </Field>
           ) : null}
-          <Field id="card-owner" label="Titular" error={errors.ownerMemberId}>
+          <Field
+            id="card-owner"
+            label="Titular"
+            error={errors.ownerMemberId}
+            {...(card?.owner.unlinked && !card.owner.removed && family.data?.currentRole !== "ADMIN"
+              ? { hint: "Só um Administrador pode trocar o titular." }
+              : {})}
+          >
             <select
               id="card-owner"
               className={inputClass}
               value={ownerId}
-              // SEC-042/047: só o titular atual troca o titular (o Administrador só na remoção de membro)
-              disabled={!!card && !!family.data && card.owner.id !== family.data.currentMemberId}
+              // SEC-042/047: só o titular atual troca o titular; US-093a: titular sem conta ativo, só o Administrador
+              disabled={
+                !!card &&
+                !!family.data &&
+                card.owner.id !== family.data.currentMemberId &&
+                !(card.owner.unlinked && !card.owner.removed && family.data.currentRole === "ADMIN")
+              }
               onChange={(e) => setOwnerId(e.target.value)}
             >
               {(family.data?.members ?? []).map((m) => (
-                <option key={m.memberId} value={m.memberId}>
-                  {m.name.split(" ")[0]}
+                <option
+                  key={m.memberId}
+                  value={m.memberId}
+                  disabled={m.unlinked && family.data?.currentRole !== "ADMIN"}
+                >
+                  {memberOptionLabel({
+                    name: m.name.split(" ")[0] as string,
+                    unlinked: m.unlinked,
+                  })}
+                  {m.unlinked && family.data?.currentRole !== "ADMIN" ? " (só Administrador)" : ""}
                 </option>
               ))}
             </select>
