@@ -77,3 +77,12 @@ Q-TL-U1..U5 respondidas; a revisão da Segurança (SEC-058..068, 2026-10-30) con
 | :-- | :-- | :-- |
 | SEC-060 | Cadastro perguntar "Entra na divisão das despesas?" | Não: vale só o aviso da Q-TL-U1 |
 | SEC-062(3) | Criar "Desvincular conta" agora | Não por ora; só o aviso aos Administradores quando o cadastro é assumido |
+
+## I. Achado do QA exploratório da US-093 (2026-10-31): conta de membro sem conta no acerto
+Origem: QA exploratório (item 8). Hipótese adotada: manter o comportamento atual (tutor Admin tem poder sobre as contas do membro sem conta) até o usuário decidir; nada bloqueado.
+
+| ID | Decisão | Hipótese adotada | Impacto se mudar |
+| :-- | :-- | :-- | :-- |
+| Q-U25 | No acerto "Vovó transfere", a origem pode ser qualquer conta da família ou só as contas do titular sem conta? | Qualquer conta (consistente com o poder do tutor) | Restringir a origem às contas do titular; ajustar seletor e validação do acerto |
+| Q-U26 | Conta CASH de membro sem conta pode ficar negativa após o acerto, sem aviso na confirmação? | Pode, sem aviso | Aviso de saldo negativo na confirmação, ou bloqueio |
+| Q-U27 | "Conta que paga a fatura" de um cartão de Mariana pode ser conta de membro sem conta? | Pode | Limitar às contas do titular do cartão |
