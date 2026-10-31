@@ -5,6 +5,7 @@
     "includes": [
       "**",
       "!agents",
+      "!design",
       "!src/generated",
       "!.next",
       "!.next-e2e",
