@@ -1,8 +1,8 @@
 # SDD-034: Membro sem conta: seletores e titular (US-093a); pagador, responsável, "Só meu" e acerto (US-093b)
 
 - **História**: [US-093](../../product-owner/backlog/stories/US-093-atribuir-contas-e-lancamentos-ao-membro-sem-conta.md) · **Necessidade**: [NEED-028](../../stakeholder/needs/NEED-028-membro-sem-conta-ativa-e-convite-posterior.md) (RN-028.1, 028.4, 028.5; Q-U16) · **Fluxo**: FLUXO-020 · **ADR**: [ADR-033](../adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md) §3, §5, §6 · **SDD anterior**: [SDD-033](SDD-033-membro-sem-conta-modelo-e-cadastro-us-092.md) (092a/092b implementadas) · **Segurança**: revisão de 2026-10-30, **SEC-059 (a, b)**, **SEC-066b**, **SEC-067** (relatório `agents/security/relatorios/revisao-adr033-2026-10-30.md`); SEC-059c fica na 094b · **Decisões**: Q-TL-U1/U2/U3 (D-GES-63), D-GES-47/50/52/55/59, D-033-4
-- **Status**: **Proposto, pronto para Dev após ratificação das hipóteses TL-093-x pelo Gestor** · **Autor**: Agente Tech Lead · **Data**: 2026-10-31
-- **Estimativa (TL)**: **8 pts** = 093a **3** + 093b **5** (confirma o ADR-033 §6). **Executor**: Dev & QA, **Sonnet**; 093b toca o "Só meu" e o acerto: revisão final do TL (Opus) no diff de `ownership.ts`/`split/service.ts` e **reteste da Segurança** antes de fechar.
+- **Status**: **Aprovado para Dev (ratificado D-GES-66)** · **Autor**: Agente Tech Lead · **Data**: 2026-10-31
+- **Estimativa (TL)**: **7,5 pts** = 093a **3** + 093b **4,5** (ADR-033 §6 dizia 8; −0,5 pela decisão do usuário sobre SEC-059b, D-GES-66). **Executor**: Dev & QA, **Sonnet**; 093b toca o "Só meu" e o acerto: revisão final do TL (Opus) no diff de `ownership.ts`/`split/service.ts` e **reteste da Segurança** antes de fechar.
 - **Restrição**: **nenhuma migração de schema**; nenhum motor de acerto (`split/settlement*.ts`, `split-amount.ts`, `rules.ts`) muda; nenhuma linha de ledger é reescrita. S1..S16, V1..V10 e o harness de 240 famílias intactos.
 
 ## 1. Verificação no código (o código vence a doc)
@@ -17,19 +17,19 @@
 | `assertPersonalForSelf` é **síncrona** e chamada em `transacoes/service.ts:231` (`createExpenseCore`), `installment-create.ts:55` e `previstas/service.ts:417` (baixa); previstas/séries usam `assertPlannedResultAllowed` (`previstas/service.ts:145`, `recurring-service.ts:200`). | Exceção SEC-026c (Q-TL-U3) só nesses pontos de **criação** (§4.2), virando assíncrona (precisa ler o dono na transação). |
 | O MCP (`mcp/assistant-write.ts:185-200`) chama `createExpenseCore` com `isSharedExpense: false` e **sem** `payerMemberId` (pagador = ator) e com `opts.assistant`. | A exceção recusa quando `opts.assistant` existe (SEC-067(4)); hoje já é impossível pelo corpo, a trava é defesa em profundidade. |
 | `deny()` (`ownership.ts:214`) lista os nomes dos controladores ativos: um dono/titular sem conta apareceria em "Só Ana pode alterar", mas Ana não tem acesso. | Nomes de sem conta saem da lista; com `ownerUnlinked` entra "um Administrador" (§4.4). |
-| `registerSettlement` (`split/service.ts:425`) valida membros, contas da família, A2 e A3; `repo.findAccount` seleciona só `{ id, name }`. Nenhuma regra sobre o titular da conta de destino. | SEC-059b: `findAccount` passa a trazer `ownerMemberId`; 422 `SETTLEMENT_DESTINATION_IS_DEBTOR` (§4.5). |
+| `registerSettlement` (`split/service.ts:425`) valida membros, contas da família, A2 e A3; `repo.findAccount` seleciona só `{ id, name }`. Nenhuma regra sobre o titular da conta de destino. | **Sem mudança** (Q-TL-93-1 = (c), decisão do usuário 2026-10-31: qualquer conta da família, como hoje; SEC-059b risco aceito, D-GES-66). |
 | Motores (`split/inputs.ts` `memberInputsOf`) usam só `id/joinedAt/removedAt`; `userId` não entra. Harness `buildUniverse(seed, { unlinked: k })` (`tests/support/split-universe.ts:32`) e `makeUnlinkedMember` (`tests/support/factories.ts:188`) existem. | Acerto e centavos: **nenhuma mudança**; só testes novos (§5). |
 
 ## 2. Decisões
 | ID | Decisão |
 | :-- | :-- |
-| D-034-1 | **Fatiamento** (brief do Gestor, ajusta o ADR-033 §6): **093a** = selo nos seletores/filtros/telas, titular de conta/cartão só ADMIN, acerto **sem mudar motor** (só prova por testes e exibição). **093b** = matriz §5 (`ownerUnlinked`, poderes do tutor), exceção SEC-026c com os limites SEC-066b/067, pagador/responsável `UNLINKED_PAYER_FORBIDDEN` (SEC-059a) e destino do acerto (SEC-059b). Ver TL-093-1. |
+| D-034-1 | **Fatiamento** (brief do Gestor, ajusta o ADR-033 §6): **093a** = selo nos seletores/filtros/telas, titular de conta/cartão só ADMIN, acerto **sem mudar motor** (só prova por testes e exibição). **093b** = matriz §5 (`ownerUnlinked`, poderes do tutor), exceção SEC-026c com os limites SEC-066b/067 e pagador/responsável `UNLINKED_PAYER_FORBIDDEN` (SEC-059a). O destino do acerto **não muda** (D-034-7). Ver TL-093-1. |
 | D-034-2 | **O Administrador nunca vira pagador/responsável no lugar do sem conta** (SEC-059a; D-GES-47 vale para ele). O Admin pode passar o item do sem conta a um **terceiro** (dividida); em "Só meu" nem isso (seria "entregar", SEC-026c/SEC-067(1)). Só o **Lanç** (autor) troca livremente, como correção do que lançou. |
 | D-034-3 | `ownerUnlinked` = dono **ativo** (`removedAt IS NULL`) **e** `userId IS NULL`, lido na transação com `SELECT ... FOR SHARE` (SEC-066b). Removido sem conta continua `ownerRemoved` (regras de ex-membro, D-GES-52/55/59 intactas). |
 | D-034-4 | Poder do tutor (Admin sobre dono `ownerUnlinked`) = o mesmo `fullPower` do Admin-ex (D-GES-55): editar, excluir, restaurar, estornar, mudar divisão/conta/"Pagar com" do "Só meu", **sem** assumir o pagador (D-034-2). |
 | D-034-5 | Exceção SEC-026c (Q-TL-U3): **só criação**, só `ctx.role === "ADMIN"`, só para dono `ownerUnlinked` lido com `FOR SHARE`, nunca com `opts.assistant` (MCP), nunca no ramo `payerChanges` de `assertCanMakePersonal` nem em `assertPlannedResultAllowed` com `current` (edição). |
 | D-034-6 | Titular sem conta (conta ou cartão) só por ADMIN: 422 `UNLINKED_OWNER_ADMIN_ONLY`. Troca de titular de cartão cujo titular é sem conta ativo: só ADMIN (exceção ao `CARD_OWNER_ONLY`). |
-| D-034-7 | Acerto com **credor** sem conta: a conta de destino não pode ter como titular o devedor (mesmo vínculo ou mesma pessoa, `samePerson`): 422 `SETTLEMENT_DESTINATION_IS_DEBTOR`. A UI pré-seleciona uma conta do próprio sem conta, se houver. Regra única para todos que podem registrar (devedor, credor, ADMIN). Ver Q-TL-93-1. |
+| D-034-7 | Acerto com **credor** sem conta: **sem validação nova do destino** (Q-TL-93-1 = (c), decisão do usuário 2026-10-31, D-GES-66): vale qualquer conta da família, como hoje. A SEC-059b fica como **risco aceito pelo usuário**. Nenhum erro novo, `findAccount` e `settle-drawer` inalterados. |
 | D-034-8 | Sem schema novo e sem campo novo em DTO: a UI deriva "dono sem conta" de `MemberRef.unlinked === true && !removed` (já entregue na 092a). |
 
 ## 3. Fatia 093a: seletores, selo, titular e acerto visível (3 pts)
@@ -101,7 +101,7 @@ Ordem de checagem no cartão: `CARD_OWNER_ONLY` (403) antes de `UNLINKED_OWNER_A
 | Cache | Sem chave nova; `familyKey` já invalida ao cadastrar (092b) |
 | Acessibilidade | `UnlinkedBadge` com texto visível (não só cor); `<option>` com o texto no rótulo |
 
-## 4. Fatia 093b: pagador, responsável, "Só meu" e acerto (5 pts)
+## 4. Fatia 093b: pagador, responsável, "Só meu" (4,5 pts)
 
 ### 4.1 `ownerStanding` com três estados (SEC-066b)
 ```ts
@@ -212,28 +212,8 @@ export function violatesUnlinkedPayerChange(
 
 Depois do aceite (094b) o `ownerStanding` devolve `ownerUnlinked: false` e o tutor perde os poderes (regras normais; o próprio membro é o dono). Após a remoção do sem conta valem as de ex-membro.
 
-### 4.5 Destino do acerto com credor sem conta (SEC-059b)
-```ts
-// split/repo.ts
-findAccount: (id: string) =>
-  tx.bankAccount.findFirst({ where: { id, familyId }, select: { id: true, name: true, ownerMemberId: true } }),
-
-// split/service.ts registerSettlement, depois de A2 e ANTES de lockPeriod/A3:
-const to = members.find((m) => m.id === input.toMemberId)!;
-if (to.userId == null && to.removedAt == null) {                       // credor sem conta ativo
-  const dest = await repo.findAccount(input.toAccountId);              // já validada (404) acima
-  const debtor = members.find((m) => m.id === input.fromMemberId)!;
-  const owner = members.find((m) => m.id === dest!.ownerMemberId);
-  if (dest!.ownerMemberId === debtor.id || samePerson(owner?.userId, debtor.userId)) {
-    throw unprocessable("SETTLEMENT_DESTINATION_IS_DEBTOR",
-      `A conta de destino não pode ser de quem está pagando. Escolha a conta de ${firstName(to)} ou outra conta.`,
-      [{ path: "toAccountId", message: "A conta de destino não pode ser de quem está pagando." }]);
-  }
-}
-```
-- Vale para quem registra (devedor, credor não existe como ator, ADMIN). Credor **ex-membro** sem conta: fora desta regra (SEC-056 aceita, L4 do acerto).
-- `CreateSettlementSchema` **não muda** (contrato HTTP idêntico; só um erro novo).
-- Desfazer acerto (A6) inalterado.
+### 4.5 Destino do acerto com credor sem conta (sem mudança)
+Q-TL-93-1 = (c), decisão do usuário em 2026-10-31 (D-GES-66): o destino do acerto continua sendo qualquer conta da família, inclusive a de quem paga. **Não há** `SETTLEMENT_DESTINATION_IS_DEBTOR`, nem `findAccount` com `ownerMemberId`, nem filtro/pré-seleção no `settle-drawer`. SEC-059b: risco aceito pelo usuário. `CreateSettlementSchema` e o motor não mudam; desfazer acerto (A6) inalterado.
 
 ### 4.6 Contratos alterados (resumo para o Dev)
 | Símbolo | Antes | Depois |
@@ -244,8 +224,7 @@ if (to.userId == null && to.removedAt == null) {                       // credor
 | `assertCanMakePersonal` / `assertPlannedControllerLimits` | `opts { fullPower, ownerIsActor, payerGone }` | `+ unlinked?: { currentUnlinked: boolean; nextUnlinked: boolean }` e `viewer.role` lido de `ctx` |
 | `canWriteTransaction` / `canWritePlanned` / `canChangeStructure` | 3 parâmetros | 4º opcional `ownerUnlinked = false` (UI passa `payer.unlinked && !payer.removed`) |
 | `deny` | `(tx, ctx, ids)` | `(tx, ctx, ids, { adminCan?: boolean })` |
-| `split/repo.findAccount` | `{ id, name }` | `{ id, name, ownerMemberId }` |
-| Erros novos | — | 403 `UNLINKED_PAYER_FORBIDDEN`, 422 `SETTLEMENT_DESTINATION_IS_DEBTOR` (+ 093a: 422 `UNLINKED_OWNER_ADMIN_ONLY`) |
+| Erros novos | — | 403 `UNLINKED_PAYER_FORBIDDEN` (+ 093a: 422 `UNLINKED_OWNER_ADMIN_ONLY`) |
 
 Nenhum schema Zod de entrada muda (`CreateTransactionSchema`, `UpdateTransactionSchema`, previstas, séries, `CreateSettlementSchema`, contas, cartões): as regras são de autorização no serviço.
 
@@ -256,7 +235,6 @@ Nenhum schema Zod de entrada muda (`CreateTransactionSchema`, `UpdateTransaction
 | 403 | `UNLINKED_PAYER_FORBIDDEN` | ADMIN (não autor) se põe no lugar do sem conta | "Você não pode se colocar como pagador no lugar de quem não tem acesso ao app. Escolha outro membro." |
 | 403 | `PERSONAL_ON_BEHALF_FORBIDDEN` | fora da exceção §4.2 | texto atual |
 | 403 | `PERSONAL_OWNER_ONLY` | quem não controla escreve no "Só meu" do sem conta | "Só {nomes} e um Administrador podem alterar este lançamento." |
-| 422 | `SETTLEMENT_DESTINATION_IS_DEBTOR` | credor sem conta e destino do devedor | "A conta de destino não pode ser de quem está pagando. Escolha a conta de {nome} ou outra conta." |
 
 ### 4.8 Estados de UI da 093b
 | Tela | Estado | Comportamento |
@@ -269,7 +247,6 @@ Nenhum schema Zod de entrada muda (`CreateTransactionSchema`, `UpdateTransaction
 | | ator ADMIN (não autor), pagador atual sem conta | a própria opção `disabled` com `UNLINKED_PAYER_SELF_MESSAGE`; em "Só meu", seletor `disabled` ("O pagador só muda quando {nome} entrar no app.") |
 | | ator ADMIN sobre "Só meu" do sem conta | ações Editar/Excluir/Restaurar/Estornar e interruptor "Dividir"/conta/"Pagar com" habilitados (`canWriteTransaction`/`canChangeStructure` com `ownerUnlinked`) |
 | | ator sem controle | ações ocultas como hoje; mensagem com "um Administrador" (§4.4) |
-| Registrar acerto (`settle-drawer.tsx`) | credor sem conta | "Conta de destino": contas cujo `owner.id` é o devedor saem da lista (ou `disabled` com "É de quem está pagando"); pré-seleciona a 1ª conta ativa do credor, se houver; dica "{nome} não tem acesso ao app: confira a conta que recebe." |
 | | 422 do servidor | mensagem no campo "Conta de destino"; drawer aberto |
 | Qualquer 403 inesperado (estado mudou: aceite concorrente) | toast com a mensagem do servidor e `invalidate` de `familyKey` + lista afetada |
 | Responsivo | 375 e 1280 px; dicas abaixo do campo, nunca só em tooltip |
@@ -278,7 +255,7 @@ Nenhum schema Zod de entrada muda (`CreateTransactionSchema`, `UpdateTransaction
 - **Motores**: zero mudança. O sem conta é `MemberInput` por `id`; o crédito dele aparece em `balance` como o de qualquer membro (M4). `Σ saldo = 0`, `Σ cotas = total comum` e `Σ amount = valor` por lançamento (trigger `tx_split_integrity`) seguem válidos.
 - **Rateio na criação** (STORED): `resolveRuleShares` inclui o sem conta se ele está presente na data (EQUAL) ou tem `bps > 0` (PROPORTIONAL). Pagador sem conta com `bps > 0` recebe a sobra (R2).
 - **Edição de pagador** (R6 `rewriteSplitAmounts`): quando permitida (Lanç/Admin-terceiro), recalcula centavos com os mesmos `bps`; a sobra muda de dono junto com o pagador (comportamento vigente).
-- **Registrar acerto**: única mudança é a validação §4.5, **antes** de A3 (não altera `dueInCents` nem sugestões).
+- **Registrar acerto**: sem mudança (§4.5); o credor sem conta aparece no acerto como membro comum.
 - **Exemplos obrigatórios** (dois motores):
 
 | Caso | Entrada | Esperado |
@@ -287,7 +264,7 @@ Nenhum schema Zod de entrada muda (`CreateTransactionSchema`, `UpdateTransaction
 | U2 (sobra) | 100,00 EQUAL pagos por Ana (3 membros) | cotas Ana 33,34 / 33,33 / 33,33; Ana +66,66; demais −33,33 |
 | U3 (0%) | 100,01 PROPORTIONAL Mariana 50 / Lucas 50 / Ana 0, pago por Ana | Ana sem linha de split; cotas 50,01 (Mariana, menor ordinal) / 50,00; Ana +100,01 |
 | U4 (entrada) | EQUAL; despesa antes e depois do `joinedOn` de Ana | antes: 2 partes; depois: 3 partes; splits antigos intactos |
-| U5 (acerto parcial) | U1 + Mariana registra 50,00 para Ana, destino conta de Ana | Ana +150, Mariana −50; com destino conta de Mariana ⇒ 422 |
+| U5 (acerto parcial) | U1 + Mariana registra 50,00 para Ana, destino conta de Ana | Ana +150, Mariana −50; destino livre (§4.5) |
 | U6 (desligado) | `settlementEnabled=false` | Home sem linha de acerto com Ana; `/settlements` 409 |
 
 ## 6. Invariantes (para o código e o reteste da Segurança)
@@ -326,7 +303,7 @@ Família: Mariana (ADMIN), Lucas (MEMBER), Bia (MEMBER), Ana (sem conta), Edu (e
 3. **Pagador** (dividida de 300 paga por Ana, lançada por Mariana): Lucas troca pagador para si ⇒ 403 `UNLINKED_PAYER_FORBIDDEN` (`NOT_AUTHOR`); Lucas troca para Bia ⇒ 403 `NOT_AUTHOR`; Bia como ADMIN (não autora) troca para si ⇒ 403 `ADMIN_SELF`; Bia ADMIN troca para Lucas ⇒ 200 (revisão com ator Bia); Mariana (autora) troca para si ⇒ 200. Dividida paga por Lucas lançada por Lucas: Bia (MEMBER) troca para Ana ⇒ 403; Lucas (autor) ⇒ 200. Mesmo conjunto para `responsibleMemberId` de prevista e série.
 4. **Captura (Q-TL-U2)**: tornar "Só meu" a dividida paga por Ana ⇒ 403 `PERSONAL_OWNER_ONLY` para Mariana (ADMIN), Lucas e o autor não-dono; dois passos (ADMIN não autor: pagador para si) ⇒ barrado no 1º passo.
 5. **Tutor sem assumir**: Admin no "Só meu" de Ana muda divisão e conta ⇒ 200; muda pagador para si ⇒ 403 `ADMIN_SELF`; para Lucas ⇒ 403 `PERSONAL_ON_BEHALF_FORBIDDEN`.
-6. **Acerto SEC-059b**: U1; Mariana (devedora) registra para Ana com destino conta de Mariana ⇒ 422 `SETTLEMENT_DESTINATION_IS_DEBTOR`; destino "Poupança Ana" ⇒ 201; destino conta de Lucas (terceiro) ⇒ 201 (Q-TL-93-1); ADMIN Bia registrando Lucas➔Ana com destino conta de Lucas ⇒ 422; destino conta de vínculo **antigo** do devedor (ex-membro que voltou, `samePerson`) ⇒ 422; credor com conta: regra antiga (qualquer conta) intacta.
+6. **Acerto (Q-TL-93-1 = (c))**: U1; Mariana (devedora) registra para Ana com destino conta de Mariana, "Poupança Ana" ou conta de Lucas (terceiro) ⇒ 201 nos três (sem validação nova; teste de caracterização do comportamento atual); credor com conta: regra antiga intacta.
 7. **Concorrência (SEC-066b)**: com 2 conexões, T1 (aceite simulado: `set_config('app.link_member', id, true)` + `UPDATE members SET "userId"=..., "linkedAt"=now(), name=...`, sem commit) e T2 (Admin cria "Só meu" para Ana): T2 bloqueia no `FOR SHARE`; T1 confirma ⇒ T2 recebe 403 `PERSONAL_ON_BEHALF_FORBIDDEN`. Ordem inversa (T2 primeiro): T1 espera e, ao confirmar, o "Só meu" criado passa a ser de Ana com conta (comportamento desejado, ADR-033 §4.6). Sem deadlock em 50 repetições.
 8. **Regressão R2/D-GES-59**: Edu (ex-membro sem conta) com outro sem conta ativo: pagador imutável para todos, Admin-ex com `fullPower`; mensagens antigas idênticas.
 9. **Regressão completa obrigatória** (sem alterar asserções): toda a suíte do "Só meu" (`sec021*`, `sec025-026*`, `sec038*`, `sec042-046*`, `sec047-050*`, `d-ges-55*`, `d-ges-59*`, `us-084*`), `us-092a-*`, `us-092b-*`, `us-009-acerto`, `us-011-registrar-acerto`, `us-013b-mes-acertado`, `us-028-acerto-opcional`, `en002-*`, `tests/unit/split/*`, `lock-coverage`.
@@ -350,14 +327,14 @@ Mais (093b, fora da US): Admin no registrar acerto não vê a própria conta com
 | Fatia | Pts | Conteúdo | Pode ir à produção |
 | :-- | :-: | :-- | :-- |
 | 093a | **3** | Titular só ADMIN em conta/cartão + exceção de troca do cartão (1); selo/rótulo em ~10 telas (1); testes de acerto U1..U6, harness, BDD/E2E dos 7 cenários (1) | Sim, depois da 092b |
-| 093b | **5** | `ownerStanding` 3 estados com `FOR SHARE` e tutor nos 6 consumidores (1,5); exceção SEC-026c em 5 pontos de criação + MCP (1); `UNLINKED_PAYER_FORBIDDEN` em lançamento/prevista/série + UI (1); SEC-059b + settle-drawer (0,5); matriz de testes, concorrência, E2E (1) | Sim, depois da 093a; **reteste da Segurança** antes do aceite do Gestor |
-| **Total** | **8** | | |
+| 093b | **4,5** | `ownerStanding` 3 estados com `FOR SHARE` e tutor nos 6 consumidores (1,5); exceção SEC-026c em 5 pontos de criação + MCP (1); `UNLINKED_PAYER_FORBIDDEN` em lançamento/prevista/série + UI (1); matriz de testes, concorrência, E2E (1) | Sim, depois da 093a; **reteste da Segurança** antes do aceite do Gestor |
+| **Total** | **7,5** | | |
 
 ## 9. Ordem de implementação (Dev)
 1. 093a: `memberOptionLabel` + `UnlinkedBadge`; `ownerCandidate` e travas de titular; telas; testes §7.2; E2E dos 7 cenários.
 2. 093b, testes primeiro (§7.3 vermelhos): `ownerStanding` ➔ `adminFullPower` ➔ `deny` ➔ `assertPersonalForSelf`/`assertPlannedResultAllowed` assíncronas (o `tsc` aponta os chamadores) ➔ `violatesUnlinkedPayerChange` nos 3 serviços ➔ `registerSettlement` ➔ UI §4.8.
 3. Suíte inteira verde (unit + int + E2E).
-4. Estado no mesmo commit: `estado/so-meu.md` (matriz com `ownerUnlinked`, exceção SEC-026c, `UNLINKED_PAYER_FORBIDDEN`), `estado/acerto-divisao.md` (A1/A2 + `SETTLEMENT_DESTINATION_IS_DEBTOR`; M5 "sem conta é membro comum"), `estado/familia-convites-sessoes.md` (D-033-4 revogado pela 093b; titular só ADMIN).
+4. Estado no mesmo commit: `estado/so-meu.md` (matriz com `ownerUnlinked`, exceção SEC-026c, `UNLINKED_PAYER_FORBIDDEN`), `estado/acerto-divisao.md` (A1/A2; M5 "sem conta é membro comum"), `estado/familia-convites-sessoes.md` (D-033-4 revogado pela 093b; titular só ADMIN).
 
 ## 10. Riscos (inclui migração)
 | # | Risco | Mitigação |
@@ -367,27 +344,28 @@ Mais (093b, fora da US): Admin no registrar acerto não vê a própria conta com
 | R3 | Mudança de assinatura (síncrona ➔ assíncrona; 4º parâmetro opcional) esquece um chamador ou a UI não passa `ownerUnlinked` | `tsc` aponta os síncronos; estático §7.1.6; UI coberta por E2E da matriz |
 | R4 | Crédito em nome de quem não contesta: Lanç corrige o pagador para si e depois torna "Só meu" | Aceito pela SEC-059a ("exceto o próprio Lanç"); histórico registra o ator; SEC-059c (094b) mostra ao sem conta, no aceite, quantas alterações outros fizeram |
 | R5 | Admin-tutor divide o "Só meu" do sem conta (cria dívida dos outros para ele) | Aceito pela SEC-067 (membros com conta veem e contestam pelo histórico) |
-| R6 | Acerto: devedor registra para credor sem conta com destino na conta de um **terceiro** (não do devedor) | Fora da SEC-059b; histórico + Q-TL-93-1 |
+| R6 | Acerto: devedor registra para credor sem conta com destino em qualquer conta, inclusive a própria (SEC-059b) | **Risco aceito pelo usuário** (Q-TL-93-1 = (c), 2026-10-31, D-GES-66); mitigação: histórico do acerto e desfazer (A6) |
 | R7 | Titular de cartão: membro com conta (não ADMIN) não consegue passar o próprio cartão ao filho sem conta, e o ADMIN não pode trocar o cartão alheio (`CARD_OWNER_ONLY`) | TL-093-4: aceito (caminho: membro arquiva e o ADMIN cria o cartão com titular sem conta); reavaliar se aparecer no uso real |
 | R8 | Mensagens 403 citando "um Administrador" mudam textos esperados em testes antigos | Só quando o dono é sem conta; mensagens dos demais casos idênticas (§7.3.9) |
 
-### Hipóteses para ratificação do Gestor (nenhuma bloqueia o início da 093a)
+### Hipóteses (TL-093-1,2,3,5,6,8,9 ratificadas e TL-093-4 aceita pelo Gestor/usuário em D-GES-66; TL-093-7 removida)
 | ID | Data | História | Lacuna / desvio | Hipótese adotada | Impacto se mudar |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| TL-093-1 | 2026-10-31 | US-093 | ADR-033 §6 punha "acerto" na 093a; o brief do Gestor põe pagador/acerto na 093b | 093a = acerto só exibido/provado (motor intacto); SEC-059b na 093b | Mover SEC-059b para 093a: +0,5 na 093a, −0,5 na 093b |
+| TL-093-1 | 2026-10-31 | US-093 | ADR-033 §6 punha "acerto" na 093a; o brief do Gestor põe pagador/acerto na 093b | 093a = acerto só exibido/provado (motor intacto); SEC-059b sem código (D-GES-66) | Nenhum (SEC-059b não gera código) |
 | TL-093-2 | 2026-10-31 | US-093 | Pagador atual **com conta** (não autor) quer passar o crédito ao sem conta (só se prejudica) | **Recusado** (`NOT_AUTHOR`), literal à US ("só o lançador ou o Administrador") | Liberar: uma condição a mais em `violatesUnlinkedPayerChange` (0 pt) |
 | TL-093-3 | 2026-10-31 | US-093b | SEC-066b admite `FOR SHARE` **ou** lock da família | `FOR SHARE` na linha do dono, sempre que o dono não é o ator (mais barato que serializar a família) | Lock da família: +0,5 pt e contenção maior |
 | TL-093-4 | 2026-10-31 | US-093a | Troca de titular de cartão **para** sem conta | Só ADMIN e, além disso, a regra `CARD_OWNER_ONLY` (titular atual, ou ADMIN se o atual é sem conta) | Liberar ao titular atual não-ADMIN: 0 pt |
 | TL-093-5 | 2026-10-31 | US-093a | Conta não troca de titular fora da remoção | Titular sem conta só na criação da conta (e na reatribuição da remoção, já ADMIN) | Troca de titular de conta é história própria |
 | TL-093-6 | 2026-10-31 | US-093b | Receita com "Quem recebeu?" sem conta | Trava de pagador só para `EXPENSE`, prevista e série (receita não entra no acerto) | Estender à receita: 0 pt |
-| TL-093-7 | 2026-10-31 | US-093b | SEC-059b fala em "titular é o devedor" | Também recusa conta do **vínculo antigo** do devedor (`samePerson`) | Nenhum |
 | TL-093-8 | 2026-10-31 | US-093a | Onde mostrar o selo | Seletores, filtros, Acerto, Regra, detalhe, titular/responsável; linhas de listas e relatórios só com o nome | Selo em toda linha: +0,5 pt |
 | TL-093-9 | 2026-10-31 | US-093b | Texto do 403 quando o Admin tenta se pôr no lugar do sem conta | `UNLINKED_PAYER_SELF_MESSAGE` (§4.7); PO pode ajustar | Só texto |
 
 ### Perguntas ao usuário (regra financeira; registradas, não bloqueiam)
 | ID | Pergunta | Recomendação do TL | Hipótese até a resposta | Impacto se mudar |
 | :-- | :-- | :-- | :-- | :-- |
-| Q-TL-93-1 | Quando alguém registra o acerto **para** quem não tem acesso ao app (ex.: "Mariana pagou R$ 100 à Ana"), para quais contas o dinheiro pode ir? (a) qualquer conta da família **exceto** a de quem paga; (b) só contas da própria Ana (e, se ela não tiver nenhuma, qualquer conta exceto a de quem paga); (c) qualquer conta, como hoje | **(a)**, que fecha o caso grave (a dívida some sem o dinheiro sair) e aceita os demais pelo histórico; a tela já sugere a conta da Ana | (a) (SEC-059b) | (b): +0,5 pt na 093b (lista de destino filtrada pelo credor); (c): reabre SEC-059b, exige aceite de risco do usuário |
+| Q-TL-93-1 | Quando alguém registra o acerto **para** quem não tem acesso ao app (ex.: "Mariana pagou R$ 100 à Ana"), para quais contas o dinheiro pode ir? (a) qualquer conta da família **exceto** a de quem paga; (b) só contas da própria Ana (e, se ela não tiver nenhuma, qualquer conta exceto a de quem paga); (c) qualquer conta, como hoje | **(a)**, que fecha o caso grave (a dívida some sem o dinheiro sair) e aceita os demais pelo histórico; a tela já sugere a conta da Ana | (c) | (b): +0,5 pt na 093b (lista de destino filtrada pelo credor); (c): reabre SEC-059b, exige aceite de risco do usuário |
+
+**Respondida pelo usuário em 2026-10-31: opção (c), "qualquer conta, como hoje" (D-GES-66).** SEC-059b risco aceito; TL-093-7 removida.
 
 ## 11. Rastreabilidade
-NEED-028 (RN-028.1, 028.4, 028.5; Q-U16) ➔ FLUXO-020 ➔ US-093 ➔ ADR-033 §3, §5, §6, §8.3-8.5 ➔ **SDD-034** ➔ TASK (Dev cria; 093a e 093b separadas) ➔ `tests/integration/us-093a-*`, `us-093b-*`, `tests/unit/transacoes/unlinked-payer.test.ts`, `tests/e2e/features/US-093-*`. Segurança: SEC-059a/b, SEC-066b, SEC-067 (reteste após a 093b). Estado: [so-meu.md](../../estado/so-meu.md), [acerto-divisao.md](../../estado/acerto-divisao.md), [familia-convites-sessoes.md](../../estado/familia-convites-sessoes.md).
+NEED-028 (RN-028.1, 028.4, 028.5; Q-U16) ➔ FLUXO-020 ➔ US-093 ➔ ADR-033 §3, §5, §6, §8.3-8.5 ➔ **SDD-034** ➔ TASK (Dev cria; 093a e 093b separadas) ➔ `tests/integration/us-093a-*`, `us-093b-*`, `tests/unit/transacoes/unlinked-payer.test.ts`, `tests/e2e/features/US-093-*`. Segurança: SEC-059a (SEC-059b risco aceito, D-GES-66), SEC-066b, SEC-067 (reteste após a 093b). Estado: [so-meu.md](../../estado/so-meu.md), [acerto-divisao.md](../../estado/acerto-divisao.md), [familia-convites-sessoes.md](../../estado/familia-convites-sessoes.md).

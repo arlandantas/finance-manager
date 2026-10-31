@@ -69,7 +69,7 @@ Ameaças consideradas: (1) IDOR/BOLA entre famílias e entre membros; (2) captur
 
 Invariantes exigidas para o membro sem conta (ADR-033; valem para o SDD e o reteste):
 1. Comparação de pessoa só com `userId` não nulo (`samePerson`); nunca `userId: <expr>` nem `undefined` em `where` do Prisma; `Set` de `userId` sem `null` (SEC-058).
-2. Ninguém além do Lanç se põe como pagador/responsável no lugar do sem conta, nem o Admin (D-GES-47 mantido); ninguém o torna "Só meu" (U2); acerto com credor sem conta não vai para conta do devedor (SEC-059).
+2. Ninguém além do Lanç se põe como pagador/responsável no lugar do sem conta, nem o Admin (D-GES-47 mantido); ninguém o torna "Só meu" (U2); acerto com credor sem conta: **SEC-059b risco aceito pelo usuário** (qualquer conta de destino, como hoje; decisão do usuário 2026-10-31, D-GES-66), só a parte 059a (pagador/responsável) segue exigida.
 3. `pendingEmail` nunca em `family_events`, `MemberRef`, MCP, exportação nem logs; anonimizado na remoção e na edição (U5, SEC-061).
 4. Nome escolhido no aceite em `Member.name`, único e normalizado sob o lock; só o próprio renomeia; a exclusão de conta o apaga (U4, SEC-063).
 5. Só o aceite grava `userId` (gatilho com `IS DISTINCT FROM`, `search_path` fixo, GUC do aceite); lock da família antes do `claim` (SEC-065/066).

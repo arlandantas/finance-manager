@@ -79,7 +79,7 @@
 | 056 | Baixa | Risco aceito (D-GES-61; sujeito a veto do usuário) | acerto com ex-membro credor aceita qualquer conta de destino da família |
 | 057 | Info | Registrado (D-GES-61) | série do removido fica com ele; editar a série desfaz a reatribuição |
 | 058 | Média | Aberto | `userId` nulo: `ownerStanding` (`IS NULL`), `Set.has(null)` em exportação/sugestões, `undefined` no `where` (sessões) |
-| 059 | Média | Aberto | Admin-tutor se põe como pagador do sem conta (reabre DEV-132, contorna U2); acerto com destino próprio |
+| 059 | Média | 059a Aberto (SDD-034 §4.3); **059b Risco aceito pelo usuário** (decisão do usuário 2026-10-31, D-GES-66) | Admin-tutor se põe como pagador do sem conta (reabre DEV-132, contorna U2); 059b: acerto com destino na conta do devedor, mantido como hoje (Q-TL-93-1 = (c)) |
 | 060 | Baixa | Aberto (usuário, Q-TL-U1) | EQUAL inclui o cadastro: dívida de quem não contesta |
 | 061 | Baixa | Aberto | e-mail do convite em `INVITATION_RESENT` (append-only) e na idempotência |
 | 062 | Baixa | Aberto (usuário: desvincular) | captura por e-mail errado/ex-membro é irreversível |

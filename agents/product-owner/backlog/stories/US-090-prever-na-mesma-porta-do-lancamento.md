@@ -4,7 +4,7 @@
 | :-- | :-- |
 | Épico / Release | EPIC-26 Previsão unificada (novo; liga EPIC-3 e EPIC-7) · **UR-1 (uso real)** |
 | MoSCoW · WSJF · Tamanho (PO prelim.) | **Should** · 3,2 (V8/U5/R3) · **5** (limite; fatiar em commits) |
-| Status | **SDD pronto, aprovada para Dev** (2026-10-26): [SDD-031](../../../tech-lead/sdd/SDD-031-porta-unica-lancar-ou-prever-us-090-091.md), **5 pts confirmados pelo TL** (orquestração no cliente; botão "Salvar despesa/receita" em vez de "Salvar lançamento", **PO ajusta o Gherkin**) |
+| Status | **Entregue e aceita pelo Gestor (D-GES-66)** (commits ef989b6, ea0559a; DEV-158..160; navegador real e teste do hook `useDoorSubmit` pendentes). Antes: **SDD pronto, aprovada para Dev** (2026-10-26): [SDD-031](../../../tech-lead/sdd/SDD-031-porta-unica-lancar-ou-prever-us-090-091.md), **5 pts confirmados pelo TL** (orquestração no cliente; botão "Salvar despesa/receita" em vez de "Salvar lançamento", **PO ajusta o Gherkin**) |
 | Depende de | US-005, US-006, US-018, US-019, US-030. **Prepara** US-051 (receita prevista) e US-100 (transferência prevista, tipo "Transferência" na mesma porta) |
 | Corte | Não depende de outras do pacote; a US-091 vem depois |
 | Rastreabilidade | **NEED-031** (RN-031.1..6) · NEED-004, NEED-022 · FLUXO-001, FLUXO-005, **FLUXO-019** · D-GES-15 · D-PO-102 |
