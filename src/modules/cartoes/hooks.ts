@@ -75,7 +75,7 @@ function useInvalidateAfterCardChange() {
   const qc = useQueryClient();
   return () =>
     Promise.all(
-      [["cards"], ["card"], ["invoice"], ["home"]].map((queryKey) =>
+      [["cards"], ["card"], ["invoice"], ["home"], ["payables"]].map((queryKey) =>
         qc.invalidateQueries({ queryKey }),
       ),
     );

@@ -35,6 +35,7 @@ export const ExportCardSchema = z
     limiteEmCentavos: cents,
     diaFechamento: z.number().int(),
     diaVencimento: z.number().int(),
+    contaPagadoraId: id.nullable(), // US-089
     arquivadoEm: nullableIso,
     excluidoEm: nullableIso,
     criadoEm: iso,

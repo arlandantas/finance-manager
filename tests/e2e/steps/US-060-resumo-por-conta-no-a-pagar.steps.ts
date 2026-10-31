@@ -304,10 +304,18 @@ Then(
   },
 );
 
-// Passos da fatura com conta pagadora (cenário @pendente-us-089): ficam definidos para a US-089 ligar.
+// US-089: cartão com conta pagadora; a fatura (fecha dia 5, vence dia 20) soma na linha da conta.
 Given(
   "o cartão {string} com conta pagadora {string} e fatura fechada de {string} vencendo em outubro",
-  async () => {
-    throw new Error("US-089: CreditCard.paymentAccountId ainda não existe");
+  async ({ world }, nome: string, conta: string, valor: string) => {
+    const fam = await setupFamily(world);
+    const pagadora = await account(world, conta);
+    const card = await makeCard(fam, {
+      name: nome,
+      closingDay: 5,
+      dueDay: 20,
+      paymentAccount: pagadora,
+    });
+    await makeCardPurchase(fam, { card, amountInCents: money(valor), occurredOn: "2026-09-20" });
   },
 );

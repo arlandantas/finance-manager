@@ -34,7 +34,6 @@ Funcionalidade: Resumo por conta no A pagar
     Então o total de "A pagar" é "R$ 950,00"
     E a soma das linhas por conta, incluindo "Sem conta definida", é "R$ 950,00"
 
-  @pendente-us-089
   Cenário: Fatura entra na conta pagadora do cartão
     Dado o cartão "Nubank Lucas" com conta pagadora "Corrente" e fatura fechada de "R$ 1.500,00" vencendo em outubro
     Quando Mariana abre "A pagar" de outubro de 2026

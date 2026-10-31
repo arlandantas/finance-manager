@@ -200,11 +200,26 @@ describe("US-060 resumo por conta no A pagar (SDD-029 §8.2)", () => {
     expect(p.byAccount.rows[0].account.name).toBe("Corrente"); // falta, mas "sem conta" é a última
   });
 
-  // US-089 (TL-U8): fatura na conta pagadora do cartão. Liga quando `CreditCard.paymentAccountId`
-  // existir e `invoiceItem` ler `card.paymentAccountId` (ponto único em previstas/payables.ts).
-  it.todo(
-    "@pendente-us-089 fatura fechada de 1.500 de cartão com conta pagadora Corrente soma na linha Corrente",
-  );
+  // US-089 (SDD-030 §3.5): a fatura soma na conta pagadora ATIVA do cartão.
+  it("fatura fechada de 1.500 de cartão com conta pagadora Corrente soma na linha Corrente", async () => {
+    const corrente = await makeAccount(fx, { name: "Corrente", openingBalanceInCents: 100000 });
+    const card = await makeCard(fx, {
+      name: "Nubank",
+      closingDay: 25,
+      dueDay: 5,
+      paymentAccount: corrente,
+    });
+    await makeCardPurchase(fx, { card, amountInCents: 150000, occurredOn: "2026-09-10" });
+    await makePlannedExpense(fx, {
+      description: "A",
+      amountInCents: 20000,
+      dueOn: "2026-10-20",
+      account: corrente,
+    });
+    const p = (await expectReconciled("2026-10")) as never;
+    expect(rowOf(p, "Corrente")).toMatchObject({ dueInCents: 170000, itemCount: 2 });
+    expect(rowOf(p, null)).toBeUndefined();
+  });
 
   it("baixa: saldo e a pagar caem juntos, previsto não muda; estorno desfaz", async () => {
     const corrente = await makeAccount(fx, { name: "Corrente", openingBalanceInCents: 100000 });

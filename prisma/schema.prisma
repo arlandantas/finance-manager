@@ -228,6 +228,7 @@ enum FamilyEventType {
   ASSISTANT_ACCESS_CHANGED // US-074
   MEMBER_JOINED // SEC-004: entrou por convite (aceite explícito)
   CARD_OWNER_CHANGED // SEC-042: troca de titular de cartão (quem trocou, de quem para quem)
+  CARD_PAYER_ACCOUNT_CHANGED // US-089: conta pagadora padrão do cartão
   TAG_RENAMED // US-046 (SDD-016): gestão de tags (sem uso nesta fatia)
   TAG_MERGED
   TAG_DELETED
@@ -373,6 +374,7 @@ model BankAccount {
   transactions      Transaction[]
   plannedExpenses   PlannedExpense[]
   recurringExpenses RecurringExpense[]
+  payerForCards     CreditCard[]
 
   @@unique([familyId, id])
   @@map("bank_accounts")
@@ -399,8 +401,12 @@ model CreditCard {
   deletedAt          DateTime? @db.Timestamptz(3)
   deletedByMemberId  String?   @db.Uuid
 
+  // US-089: conta que paga a fatura (só sugere; nunca decide pagamento)
+  paymentAccountId String? @db.Uuid
+
   family           Family            @relation(fields: [familyId], references: [id])
   owner            Member            @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
+  paymentAccount   BankAccount?      @relation(fields: [familyId, paymentAccountId], references: [familyId, id])
   invoices         CardInvoice[]
   installmentPlans InstallmentPlan[]
   transactions     Transaction[]

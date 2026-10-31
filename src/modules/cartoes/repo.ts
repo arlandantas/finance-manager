@@ -1,7 +1,10 @@
 import type { Tx } from "@/lib/api/types";
 import { fromCents } from "@/lib/money";
 
-const withOwner = { owner: { include: { user: true } } } as const;
+const withOwner = {
+  owner: { include: { user: true } },
+  paymentAccount: { select: { id: true, name: true, archivedAt: true, deletedAt: true } },
+} as const;
 
 /** Cartões sempre escopados por `familyId` (ADR-013). */
 export function cartoesRepo(tx: Tx, familyId: string) {
@@ -41,6 +44,7 @@ export function cartoesRepo(tx: Tx, familyId: string) {
       limitInCents: number;
       closingDay: number;
       dueDay: number;
+      paymentAccountId?: string | null;
       updatedByMemberId: string;
     }) =>
       tx.creditCard.create({
@@ -57,6 +61,7 @@ export function cartoesRepo(tx: Tx, familyId: string) {
         limitInCents?: number;
         closingDay?: number;
         dueDay?: number;
+        paymentAccountId?: string | null;
         updatedByMemberId: string;
       },
     ) =>
@@ -69,6 +74,7 @@ export function cartoesRepo(tx: Tx, familyId: string) {
           ...(d.limitInCents !== undefined ? { limitInCents: fromCents(d.limitInCents) } : {}),
           ...(d.closingDay !== undefined ? { closingDay: d.closingDay } : {}),
           ...(d.dueDay !== undefined ? { dueDay: d.dueDay } : {}),
+          ...(d.paymentAccountId !== undefined ? { paymentAccountId: d.paymentAccountId } : {}),
           updatedByMemberId: d.updatedByMemberId,
           version: { increment: 1 },
         },

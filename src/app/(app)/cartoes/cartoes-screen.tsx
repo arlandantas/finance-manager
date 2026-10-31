@@ -16,6 +16,7 @@ import { useArchivedCards, useCardAction, useCards } from "@/modules/cartoes/hoo
 import type { CardDTO } from "@/modules/cartoes/schemas";
 import { useFamily } from "@/modules/familia/hooks";
 import { CardDrawer } from "./card-drawer";
+import { PayerLine } from "./payer-line";
 
 function UsageBar({ card }: { card: CardDTO }) {
   const pct =
@@ -137,6 +138,7 @@ function CardItem({
       <p data-testid="card-cycle" className="col-span-full text-sm text-slate-700">
         {cycleSentence(card.closingDay, card.dueDay)}
       </p>
+      <PayerLine card={card} className="col-span-full" />
       <UsageBar card={card} />
       <p data-testid="card-open-invoice" className="col-span-full text-sm text-slate-700">
         Fatura aberta{" "}

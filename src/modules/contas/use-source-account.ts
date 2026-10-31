@@ -29,6 +29,8 @@ export function useSourceAccount(o: {
   accounts: AccountDTO[];
   /** Conta já prevista (US-059): vale enquanto ativa e enquanto o usuário não escolher outra. */
   preferredAccountId?: string | null | undefined;
+  /** Texto da origem da pré-seleção (padrão "Conta prevista"; cartão: "Conta pagadora do cartão"). */
+  preferredReason?: string;
 }) {
   const [picked, setPicked] = useState<string | null>(null);
   useEffect(() => {
@@ -55,7 +57,11 @@ export function useSourceAccount(o: {
     userPicked: picked !== null,
     suggestion,
     reasonText:
-      picked !== null ? "" : preferred ? "Conta prevista" : SOURCE_REASON_TEXT[suggestion.reason],
+      picked !== null
+        ? ""
+        : preferred
+          ? (o.preferredReason ?? "Conta prevista")
+          : SOURCE_REASON_TEXT[suggestion.reason],
     optionSuffix: (a: AccountDTO) =>
       insufficient(a, o.amountInCents) ? ` · ${INSUFFICIENT_TEXT}` : "",
   };

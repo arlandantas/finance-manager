@@ -260,6 +260,8 @@ describe("US-017a Agregação, isolamento e derivação", () => {
         closingDate: "2026-10-25",
         totalInCents: 40000,
         isOverdue: true,
+        paymentAccountId: null, // US-089 (SDD-030 §3.5): cartão sem conta pagadora
+        paymentAccountName: null,
       },
     ]);
   });

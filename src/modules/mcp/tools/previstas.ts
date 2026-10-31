@@ -70,7 +70,8 @@ export const previstasDoMes: AnyTool = {
         isOverdue: i.isOverdue,
         responsible: i.responsible ? memberName(i.responsible) : null,
         isRecurring: i.isRecurring,
-        payWith: i.paymentAccountName ? name60(i.paymentAccountName) : null,
+        // D-TL-U8-6: a fatura não expõe `payWith` no assistente (só PLANNED)
+        payWith: i.type === "PLANNED" && i.paymentAccountName ? name60(i.paymentAccountName) : null,
       })),
     };
   },

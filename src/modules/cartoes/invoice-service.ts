@@ -165,6 +165,14 @@ export async function getInvoice(
   };
 }
 
+function activePayer(
+  a: { id: string; name: string; archivedAt: Date | null; deletedAt: Date | null } | null,
+): { paymentAccountId: string | null; paymentAccountName: string | null } {
+  return a && a.archivedAt === null && a.deletedAt === null
+    ? { paymentAccountId: a.id, paymentAccountName: a.name }
+    : { paymentAccountId: null, paymentAccountName: null };
+}
+
 export type PayableInvoice = {
   cardId: string;
   cardName: string;
@@ -173,6 +181,9 @@ export type PayableInvoice = {
   closingDate: string;
   totalInCents: number;
   isOverdue: boolean;
+  /** US-089: conta pagadora do cartão, só se ativa (D-TL-U8-2); senão null. */
+  paymentAccountId: string | null;
+  paymentAccountName: string | null;
 };
 
 /**
@@ -190,7 +201,16 @@ export async function listPayableInvoices(
       familyId: ctx.familyId,
       ...(opts.includeOpen ? {} : { closingDate: { lt: new Date(`${today}T00:00:00Z`) } }),
     },
-    include: { card: { select: { name: true } } },
+    include: {
+      card: {
+        select: {
+          name: true,
+          archivedAt: true,
+          deletedAt: true,
+          paymentAccount: { select: { id: true, name: true, archivedAt: true, deletedAt: true } },
+        },
+      },
+    },
     orderBy: [{ dueDate: "asc" }, { id: "asc" }],
   });
   const ids = rows.map((r) => r.id);
@@ -209,6 +229,7 @@ export async function listPayableInvoices(
         closingDate: fromDbDate(r.closingDate),
         totalInCents: total,
         isOverdue: today > dueDate,
+        ...activePayer(r.card.paymentAccount),
       },
     ];
   });

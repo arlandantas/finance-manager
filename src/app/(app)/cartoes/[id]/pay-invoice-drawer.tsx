@@ -22,12 +22,15 @@ export function PayInvoiceDrawer({
   open,
   cardName,
   ownerMemberId,
+  defaultAccountId,
   invoice,
   onClose,
 }: {
   open: boolean;
   cardName: string;
   ownerMemberId: string;
+  /** US-089: conta pagadora ATIVA do cartão (só sugere; o usuário confirma). */
+  defaultAccountId?: string | null;
   invoice: InvoiceDTO;
   onClose: () => void;
 }) {
@@ -48,6 +51,8 @@ export function PayInvoiceDrawer({
     amountInCents: expected,
     ownerMemberId,
     accounts: accounts.data?.items ?? [],
+    preferredAccountId: defaultAccountId ?? null,
+    preferredReason: "Conta pagadora do cartão",
   });
   const accountId = source.accountId;
   const pay = usePayInvoice(invoice.cardId, invoice.ref, key);

@@ -18,6 +18,7 @@ import { useCard, useInvoice, useUndoInvoicePayment } from "@/modules/cartoes/ho
 import type { InvoiceDTO } from "@/modules/cartoes/schemas";
 import { LedgerRow } from "../../extrato/ledger-row";
 import { TransactionDetailDrawer } from "../../extrato/transaction-detail-drawer";
+import { PayerLine } from "../payer-line";
 import { PayInvoiceDrawer } from "./pay-invoice-drawer";
 
 const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
@@ -162,6 +163,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
           <header className="rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-4">
             <h1 className="text-2xl font-semibold text-slate-900">{c.name}</h1>
             <p className="text-sm text-slate-600">{cycleSentence(c.closingDay, c.dueDay)}</p>
+            <PayerLine card={c} />
             <div className="mt-3 flex flex-wrap justify-between gap-x-3 text-sm">
               <span className="text-slate-600">
                 Limite{" "}
@@ -303,6 +305,9 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
           open={paying}
           cardName={c.name}
           ownerMemberId={c.owner.id}
+          defaultAccountId={
+            c.paymentAccount && !c.paymentAccount.archived ? c.paymentAccount.id : null
+          }
           invoice={inv}
           onClose={() => setPaying(false)}
         />

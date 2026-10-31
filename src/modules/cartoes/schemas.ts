@@ -21,6 +21,9 @@ const cardName = z
   .min(2, "Informe o nome do cartão")
   .max(60, "O nome deve ter no máximo 60 caracteres");
 
+// US-089 (SDD-030 §3.2): conta que paga a fatura. Só sugere; null/omitido = sem conta.
+const payerAccount = z.uuid({ error: "Escolha uma conta bancária ativa" }).nullable();
+
 export const CreateCardSchema = z
   .object({
     name: cardName,
@@ -29,6 +32,7 @@ export const CreateCardSchema = z
     limitInCents: limitSchema,
     closingDay: dayOfMonth(CLOSING_MSG),
     dueDay: dayOfMonth(DUE_MSG),
+    paymentAccountId: payerAccount.optional(),
   })
   .strict();
 export type CreateCardInput = z.input<typeof CreateCardSchema>;
@@ -43,6 +47,7 @@ export const UpdateCardSchema = z
     limitInCents: limitSchema.optional(),
     closingDay: dayOfMonth(CLOSING_MSG).optional(),
     dueDay: dayOfMonth(DUE_MSG).optional(),
+    paymentAccountId: payerAccount.optional(), // undefined = não mexe; null = remove
   })
   .strict()
   .refine((v) => Object.keys(v).some((k) => k !== "version"), { message: "Nada para alterar" });
@@ -110,6 +115,8 @@ export type CardDTO = {
   neverUsed: boolean; // base de "Excluir" (sem nenhuma compra)
   version: number;
   createdAt: string;
+  /** US-089: conta pagadora padrão (só sugere). `archived` = a UI avisa e deixa o seletor vazio. */
+  paymentAccount: { id: string; name: string; archived: boolean } | null;
   openInvoice: InvoiceSummaryDTO; // a fatura aberta hoje (virtual, total 0, se não materializada)
   payableInvoices: InvoiceSummaryDTO[]; // CLOSED (inclui vencidas) com total > 0, mais antigas primeiro
 };

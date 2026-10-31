@@ -79,3 +79,22 @@ describe("US-015 UpdateCardSchema", () => {
     expect(UpdateCardSchema.safeParse({ version: 1, limitInCents: 600000 }).success).toBe(true);
   });
 });
+
+describe("US-089 conta pagadora (SDD-030 §9.1)", () => {
+  const base = { name: "Nubank", limitInCents: 100000, closingDay: 10, dueDay: 20 };
+  const uuid = "11111111-1111-4111-8111-111111111111";
+
+  it("aceita uuid, null e omitido; rejeita não-uuid com a mensagem", () => {
+    expect(CreateCardSchema.safeParse({ ...base, paymentAccountId: uuid }).success).toBe(true);
+    expect(CreateCardSchema.safeParse({ ...base, paymentAccountId: null }).success).toBe(true);
+    expect(CreateCardSchema.safeParse(base).success).toBe(true);
+    const r = CreateCardSchema.safeParse({ ...base, paymentAccountId: "abc" });
+    expect(r.success).toBe(false);
+    expect(r.error?.issues[0]?.message).toBe("Escolha uma conta bancária ativa");
+  });
+
+  it("Update só com paymentAccountId: null não cai em 'Nada para alterar'", () => {
+    expect(UpdateCardSchema.safeParse({ version: 1, paymentAccountId: null }).success).toBe(true);
+    expect(UpdateCardSchema.safeParse({ version: 1 }).success).toBe(false);
+  });
+});

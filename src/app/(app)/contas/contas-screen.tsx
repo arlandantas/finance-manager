@@ -326,6 +326,13 @@ export function ContasScreen() {
               A conta some das listas e dos seletores; o histórico permanece e você pode reativá-la
               depois.
             </p>
+            {archiving.payerForCards.length > 0 ? (
+              <p role="note" className="text-sm text-slate-700" data-testid="archive-payer-note">
+                Esta conta paga a fatura de {archiving.payerForCards.map((c) => c.name).join(", ")}.
+                Depois de arquivar, esses cartões ficam sem conta pagadora (reativar a conta
+                restaura a escolha).
+              </p>
+            ) : null}
             {data && data.items.length === 1 ? (
               <p role="status" className="text-sm font-medium text-amber-900 dark:text-amber-200">
                 Sem contas ativas você não poderá lançar despesas em conta nem pagar faturas.
@@ -376,6 +383,11 @@ export function ContasScreen() {
               A conta nunca teve movimentação. Ela some de todas as telas e o nome fica livre; isso
               não pode ser desfeito.
             </p>
+            {deleting.payerForCards.length > 0 ? (
+              <p role="note" className="text-sm text-slate-700" data-testid="delete-payer-note">
+                O vínculo com {deleting.payerForCards.map((c) => c.name).join(", ")} será removido.
+              </p>
+            ) : null}
             {banner ? (
               <p role="alert" className="text-sm text-red-800 dark:text-red-300">
                 {banner}

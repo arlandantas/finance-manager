@@ -7,6 +7,7 @@ import { listAccounts } from "@/modules/contas/service";
 
 type Row = {
   id: string;
+  name: string;
   version: number;
   archivedAt: Date | null;
   archivedByMemberId: string | null;
@@ -15,7 +16,7 @@ type Row = {
 /** `FOR UPDATE` da conta (conflita com o FOR SHARE de qualquer postagem em andamento). */
 async function lockForUpdate(tx: Tx, ctx: RequestContext, id: string): Promise<Row> {
   const rows = await tx.$queryRaw<Row[]>`
-    SELECT id, version, "archivedAt", "archivedByMemberId" FROM bank_accounts
+    SELECT id, name, version, "archivedAt", "archivedByMemberId" FROM bank_accounts
     WHERE id = ${id}::uuid AND "familyId" = ${ctx.familyId}::uuid AND "deletedAt" IS NULL FOR UPDATE`;
   const row = rows[0];
   if (!row) throw notFound("Conta não encontrada.");
@@ -83,6 +84,50 @@ export async function unarchiveAccount(tx: Tx, ctx: RequestContext, id: string, 
   return { account: await dto(tx, ctx, id) };
 }
 
+/**
+ * US-089 (SDD-030 §4.4, D-TL-U8-3): excluir a conta limpa o vínculo dos cartões que a usam, na mesma transação
+ * (`version + 1` e um evento por cartão). Prisma direto: `contas` não importa `cartoes` (ciclo).
+ */
+async function clearCardPayers(
+  tx: Tx,
+  ctx: RequestContext,
+  accountId: string,
+  accountName: string,
+) {
+  const cards = await tx.creditCard.findMany({
+    where: { familyId: ctx.familyId, paymentAccountId: accountId, deletedAt: null },
+    select: { id: true, name: true },
+    orderBy: { id: "asc" },
+  });
+  if (cards.length === 0) return;
+  await tx.creditCard.updateMany({
+    where: { familyId: ctx.familyId, paymentAccountId: accountId, deletedAt: null },
+    data: {
+      paymentAccountId: null,
+      version: { increment: 1 },
+      updatedByMemberId: ctx.memberId,
+    },
+  });
+  for (const c of cards) {
+    await tx.familyEvent.create({
+      data: {
+        familyId: ctx.familyId,
+        type: "CARD_PAYER_ACCOUNT_CHANGED",
+        actorMemberId: ctx.memberId,
+        changes: {
+          cardId: c.id,
+          cardName: c.name,
+          fromAccountId: accountId,
+          fromAccountName: accountName,
+          toAccountId: null,
+          toAccountName: null,
+          reason: "ACCOUNT_DELETED",
+        },
+      },
+    });
+  }
+}
+
 /** Exclusão lógica terminal (só ADMIN; só conta nunca usada): some de tudo e libera o nome. */
 export async function deleteAccount(tx: Tx, ctx: RequestContext, id: string, version: number) {
   if (ctx.role !== "ADMIN") throw forbidden();
@@ -99,6 +144,7 @@ export async function deleteAccount(tx: Tx, ctx: RequestContext, id: string, ver
       version: { increment: 1 },
     },
   });
+  await clearCardPayers(tx, ctx, id, row.name);
   return { deleted: true };
 }
 

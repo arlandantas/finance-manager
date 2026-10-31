@@ -141,6 +141,13 @@ function SettlementSetting({
   );
 }
 
+/** US-089: detalhe "{cartão}: de {A} para {B}" a partir de `changes`. */
+function eventDetail(e: FamilyDTO["events"][number]): string {
+  if (e.type !== "CARD_PAYER_ACCOUNT_CHANGED") return "";
+  const c = e.changes as Record<string, string | null | undefined>;
+  return ` (${c.cardName ?? "cartão"}: de ${c.fromAccountName ?? "nenhuma"} para ${c.toAccountName ?? "nenhuma"})`;
+}
+
 const EVENT_TEXT: Record<FamilyDTO["events"][number]["type"], string> = {
   FAMILY_RENAMED: "renomeou a família",
   ROLE_CHANGED: "alterou o papel de",
@@ -152,6 +159,7 @@ const EVENT_TEXT: Record<FamilyDTO["events"][number]["type"], string> = {
   ASSISTANT_ACCESS_CHANGED: "alterou o acesso por assistente",
   MEMBER_JOINED: "entrou na família",
   CARD_OWNER_CHANGED: "trocou o titular de um cartão",
+  CARD_PAYER_ACCOUNT_CHANGED: "definiu a conta pagadora de um cartão",
   TAG_RENAMED: "renomeou uma tag",
   TAG_MERGED: "mesclou tags",
   TAG_DELETED: "removeu uma tag",
@@ -569,7 +577,8 @@ export function FamiliaScreen() {
                 {data.events.map((e, i) => (
                   <li key={`${e.at}-${i}`} data-testid="family-event">
                     {e.actor.name.split(" ")[0]} {EVENT_TEXT[e.type]}
-                    {e.target ? ` ${e.target.name.split(" ")[0]}` : ""} ·{" "}
+                    {e.target ? ` ${e.target.name.split(" ")[0]}` : ""}
+                    {eventDetail(e)} ·{" "}
                     {new Date(e.at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}
                   </li>
                 ))}

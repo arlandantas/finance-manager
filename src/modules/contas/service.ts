@@ -41,6 +41,7 @@ function toDTO(
   balanceInCents: number,
   usageCountByMe = 0,
   neverUsed = false,
+  payerForCards: Array<{ id: string; name: string }> = [],
 ): AccountDTO {
   return {
     id: a.id,
@@ -56,7 +57,25 @@ function toDTO(
     neverUsed,
     version: a.version,
     createdAt: a.createdAt.toISOString(),
+    payerForCards,
   };
+}
+
+/** US-089 (SDD-030 §3.2): uma consulta; cartões ativos (não arquivados/excluídos) por conta pagadora. */
+async function payerCardsByAccount(tx: Tx, familyId: string, ids: string[]) {
+  const map = new Map<string, Array<{ id: string; name: string }>>();
+  if (ids.length === 0) return map;
+  const cards = await tx.creditCard.findMany({
+    where: { familyId, paymentAccountId: { in: ids }, archivedAt: null, deletedAt: null },
+    select: { id: true, name: true, paymentAccountId: true },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+  });
+  for (const c of cards) {
+    const list = map.get(c.paymentAccountId as string) ?? [];
+    list.push({ id: c.id, name: c.name });
+    map.set(c.paymentAccountId as string, list);
+  }
+  return map;
 }
 
 export async function listAccounts(
@@ -76,8 +95,13 @@ export async function listAccounts(
     addDays(todayInFamilyTz(ctx.clock), -90),
   );
   const unused = await neverUsedAccountIds(tx, ctx.familyId);
+  const payers = await payerCardsByAccount(
+    tx,
+    ctx.familyId,
+    accounts.map((a) => a.id),
+  );
   const items = accounts.map((a) =>
-    toDTO(a, balances.get(a.id) ?? 0, usage.get(a.id) ?? 0, unused.has(a.id)),
+    toDTO(a, balances.get(a.id) ?? 0, usage.get(a.id) ?? 0, unused.has(a.id), payers.get(a.id)),
   );
   // Fonte única (SDD-019 §2): saldo disponível = ativas ∧ ¬reserva; reservas = ativas ∧ reserva.
   const active = items.filter((a) => !a.archived);
@@ -222,5 +246,6 @@ export async function renameAccount(
     );
   }
   const balances = await accountBalances(tx, ctx.familyId, [id]);
-  return toDTO(fresh, balances.get(id) ?? 0);
+  const payers = await payerCardsByAccount(tx, ctx.familyId, [id]);
+  return toDTO(fresh, balances.get(id) ?? 0, 0, false, payers.get(id));
 }

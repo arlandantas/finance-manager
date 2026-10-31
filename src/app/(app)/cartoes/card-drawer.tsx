@@ -11,10 +11,18 @@ import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { cycleExplanation } from "@/modules/cartoes/cycle";
 import { useCreateCard, useUpdateCard } from "@/modules/cartoes/hooks";
 import { type CardDTO, CreateCardSchema, UpdateCardSchema } from "@/modules/cartoes/schemas";
+import { useAccounts } from "@/modules/contas/hooks";
 import { INSTITUTION_SUGGESTIONS } from "@/modules/contas/schemas";
 import { useFamily } from "@/modules/familia/hooks";
 
-type FieldKey = "name" | "limitInCents" | "closingDay" | "dueDay" | "ownerMemberId" | "institution";
+type FieldKey =
+  | "name"
+  | "limitInCents"
+  | "closingDay"
+  | "dueDay"
+  | "ownerMemberId"
+  | "institution"
+  | "paymentAccountId";
 
 const CYCLE_LOCKED_HINT =
   "Os dias de fechamento e vencimento não podem ser alterados porque já há compras neste cartão";
@@ -30,6 +38,7 @@ export function CardDrawer({
   onClose: () => void;
 }) {
   const family = useFamily();
+  const accounts = useAccounts();
   const qc = useQueryClient();
   const [name, setName] = useState("");
   const [institutionChoice, setInstitutionChoice] = useState("Outro");
@@ -38,6 +47,8 @@ export function CardDrawer({
   const [limit, setLimit] = useState(0);
   const [closing, setClosing] = useState("");
   const [due, setDue] = useState("");
+  const [payerId, setPayerId] = useState("");
+  const [payerTouched, setPayerTouched] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [banner, setBanner] = useState<string | null>(null);
   const [conflict, setConflict] = useState<string | null>(null);
@@ -52,6 +63,7 @@ export function CardDrawer({
     setErrors({});
     setBanner(null);
     setConflict(null);
+    setPayerTouched(false);
     setKey(newIdempotencyKey());
     if (card) {
       setName(card.name);
@@ -62,6 +74,10 @@ export function CardDrawer({
       setLimit(card.limitInCents);
       setClosing(String(card.closingDay));
       setDue(String(card.dueDay));
+      // Arquivada: seletor vazio (D-TL-U8-2); o vínculo só muda se o usuário mexer no campo
+      setPayerId(
+        card.paymentAccount && !card.paymentAccount.archived ? card.paymentAccount.id : "",
+      );
     } else {
       setName("");
       setInstitutionChoice("Outro");
@@ -70,6 +86,7 @@ export function CardDrawer({
       setLimit(0);
       setClosing("");
       setDue("");
+      setPayerId("");
     }
   }, [open, card]);
 
@@ -118,6 +135,8 @@ export function CardDrawer({
       limitInCents: limit,
       ...(closingDay !== undefined ? { closingDay } : {}),
       ...(dueDay !== undefined ? { dueDay } : {}),
+      // só envia quando o usuário mexeu (evita PATCH e evento falsos)
+      ...((card ? payerTouched : payerId !== "") ? { paymentAccountId: payerId || null } : {}),
     };
     const parsed = card
       ? UpdateCardSchema.safeParse({ ...base, version: card.version })
@@ -288,6 +307,46 @@ export function CardDrawer({
               {sentence}
             </p>
           ) : null}
+          {card?.paymentAccount?.archived && !payerTouched ? (
+            <p role="status" className="text-sm font-medium text-amber-900 dark:text-amber-200">
+              A conta {card.paymentAccount.name} foi arquivada. Escolha outra ou deixe sem conta.
+            </p>
+          ) : null}
+          <Field
+            id="card-payer"
+            label="Conta que paga a fatura"
+            error={errors.paymentAccountId}
+            hint={
+              accounts.data && accounts.data.items.length === 0
+                ? "Cadastre uma conta para escolher"
+                : "Só sugere: você confirma a conta ao pagar."
+            }
+          >
+            <select
+              id="card-payer"
+              className={inputClass}
+              value={payerId}
+              disabled={accounts.isPending}
+              aria-invalid={errors.paymentAccountId ? true : undefined}
+              onChange={(e) => {
+                setPayerId(e.target.value);
+                setPayerTouched(true);
+              }}
+            >
+              {accounts.isPending ? (
+                <option value="">Carregando contas…</option>
+              ) : (
+                <>
+                  <option value="">Nenhuma (escolho ao pagar)</option>
+                  {(accounts.data?.items ?? []).map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
+          </Field>
           <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white dark:bg-slate-100 p-4">
             <Button type="submit" className="w-full" disabled={pending}>
               {pending ? "Salvando…" : "Salvar cartão"}

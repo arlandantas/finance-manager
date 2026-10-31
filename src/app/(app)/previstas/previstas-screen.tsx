@@ -111,7 +111,11 @@ function PayableRow({
         <p className="truncate font-semibold text-slate-900">{item.title}</p>
         <p className="text-sm text-slate-600">
           Vence {brDate(item.dueOn)}
-          {item.paymentAccountName ? ` · Pagar com ${item.paymentAccountName}` : ""}
+          {item.paymentAccountName
+            ? item.type === "INVOICE"
+              ? ` · Sai da conta ${item.paymentAccountName}`
+              : ` · Pagar com ${item.paymentAccountName}`
+            : ""}
         </p>
       </div>
       <div className="flex items-center gap-1">

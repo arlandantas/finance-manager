@@ -50,8 +50,8 @@ const invoiceItem = (i: PayableInvoice, today: string): PayableItemDTO => ({
   isSharedExpense: null,
   invoiceStatus: i.closingDate < today ? "CLOSED" : "OPEN",
   isRecurring: false,
-  paymentAccountName: null,
-  paymentAccountId: null, // US-089: trocar por `i.paymentAccountId` (conta pagadora do cartão); ponto único
+  paymentAccountName: i.paymentAccountName, // US-089: conta pagadora ATIVA do cartão (SDD-030 §3.5)
+  paymentAccountId: i.paymentAccountId,
   href: `/cartoes/${i.cardId}?ref=${i.ref}`,
 });
 

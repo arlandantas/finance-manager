@@ -20,6 +20,7 @@ import type {
   CreateCardParsed,
   UpdateCardParsed,
 } from "@/modules/cartoes/schemas";
+import { lockAccountsForPosting } from "@/modules/contas/lock";
 
 type CardRow = NonNullable<Awaited<ReturnType<ReturnType<typeof cartoesRepo>["findById"]>>>;
 
@@ -29,6 +30,11 @@ export const CARD_OWNER_ONLY_CODE = "CARD_OWNER_ONLY";
 export const CARD_OWNER_ONLY_MESSAGE = "Só o titular do cartão pode trocar o titular.";
 export const CYCLE_LOCKED_MESSAGE =
   "Os dias de fechamento e vencimento não podem ser alterados porque já há compras neste cartão";
+
+/** SDD-030 §4.2: conta pagadora precisa estar ativa (arquivada/excluída/de outra família = 422). */
+async function assertPayerAccount(tx: Tx, familyId: string, accountId: string) {
+  await lockAccountsForPosting(tx, familyId, [accountId], "paymentAccountId");
+}
 
 const memberRef = (m: {
   id: string;
@@ -78,6 +84,13 @@ async function toCardDTOs(tx: Tx, ctx: RequestContext, rows: CardRow[]): Promise
       neverUsed: !usedIds.has(c.id),
       version: c.version,
       createdAt: c.createdAt.toISOString(),
+      paymentAccount: c.paymentAccount
+        ? {
+            id: c.paymentAccount.id,
+            name: c.paymentAccount.name,
+            archived: c.paymentAccount.archivedAt !== null || c.paymentAccount.deletedAt !== null,
+          }
+        : null,
       openInvoice: inv?.open as CardDTO["openInvoice"],
       payableInvoices: inv?.payable ?? [],
     };
@@ -119,6 +132,7 @@ export async function createCard(
       { path: "ownerMemberId", message: "Titular inválido." },
     ]);
   }
+  if (input.paymentAccountId) await assertPayerAccount(tx, ctx.familyId, input.paymentAccountId);
   let row: CardRow;
   try {
     row = await repo.insert({
@@ -128,6 +142,7 @@ export async function createCard(
       limitInCents: input.limitInCents,
       closingDay: input.closingDay,
       dueDay: input.dueDay,
+      paymentAccountId: input.paymentAccountId ?? null,
       updatedByMemberId: ctx.memberId,
     });
   } catch (e) {
@@ -160,7 +175,12 @@ export async function updateCard(
   input: UpdateCardParsed,
 ): Promise<{ card: CardDTO }> {
   const repo = cartoesRepo(tx, ctx.familyId);
-  if (!(await repo.findById(id))) throw notFound(NOT_FOUND);
+  const current = await repo.findById(id);
+  if (!current) throw notFound(NOT_FOUND);
+  // D-TL-U8-4: conta antes de cartão. Igual ao atual (mesmo arquivada) não revalida (SDD-030 §4.1).
+  if (input.paymentAccountId && input.paymentAccountId !== current.paymentAccountId) {
+    await assertPayerAccount(tx, ctx.familyId, input.paymentAccountId);
+  }
   await repo.lockForUpdate(id);
   const row = (await repo.findById(id)) as CardRow;
 
@@ -193,6 +213,9 @@ export async function updateCard(
       ? { closingDay: input.closingDay }
       : {}),
     ...(input.dueDay !== undefined && input.dueDay !== row.dueDay ? { dueDay: input.dueDay } : {}),
+    ...(input.paymentAccountId !== undefined && input.paymentAccountId !== row.paymentAccountId
+      ? { paymentAccountId: input.paymentAccountId }
+      : {}),
   };
   if (Object.keys(wanted).length === 0) {
     if (input.version !== row.version) throw await versionConflict(repo, id);
@@ -227,6 +250,32 @@ export async function updateCard(
           cardName: row.name,
           fromMemberId: row.ownerMemberId,
           toMemberId: wanted.ownerMemberId,
+        },
+      },
+    });
+  }
+  if ("paymentAccountId" in wanted) {
+    const toId = wanted.paymentAccountId ?? null;
+    const names = await tx.bankAccount.findMany({
+      where: {
+        familyId: ctx.familyId,
+        id: { in: [row.paymentAccountId, toId].filter((x): x is string => x !== null) },
+      },
+      select: { id: true, name: true },
+    });
+    const nameOf = (a: string | null) => names.find((n) => n.id === a)?.name ?? null;
+    await tx.familyEvent.create({
+      data: {
+        familyId: ctx.familyId,
+        type: "CARD_PAYER_ACCOUNT_CHANGED",
+        actorMemberId: ctx.memberId,
+        changes: {
+          cardId: id,
+          cardName: wanted.name ?? row.name,
+          fromAccountId: row.paymentAccountId,
+          fromAccountName: nameOf(row.paymentAccountId),
+          toAccountId: toId,
+          toAccountName: nameOf(toId),
         },
       },
     });

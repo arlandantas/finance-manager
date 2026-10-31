@@ -82,6 +82,8 @@ export type AccountDTO = {
   excludeFromAvailable: boolean; // US-057: reserva
   neverUsed: boolean; // base de "Excluir" (a UI só mostra a ação a ADMIN)
   createdAt: string;
+  /** US-089: cartões ATIVOS que usam esta conta como pagadora (aviso ao arquivar/excluir). */
+  payerForCards: Array<{ id: string; name: string }>;
 };
 
 /** `totalBalanceInCents` = saldo DISPONÍVEL (ativas e fora das reservas); `reservesInCents` = ativas marcadas como reserva. */

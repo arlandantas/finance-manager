@@ -175,6 +175,7 @@ async function currentFamily(tx: Tx, familyId: string, memberId: string, myIds: 
       limiteEmCentavos: num(c.limitInCents),
       diaFechamento: c.closingDay,
       diaVencimento: c.dueDay,
+      contaPagadoraId: c.paymentAccountId, // US-089
       arquivadoEm: tsOrNull(c.archivedAt),
       excluidoEm: tsOrNull(c.deletedAt),
       criadoEm: ts(c.createdAt),

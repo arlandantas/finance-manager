@@ -114,6 +114,7 @@ export type FamilyEventDTO = {
     | "ASSISTANT_ACCESS_CHANGED"
     | "MEMBER_JOINED"
     | "CARD_OWNER_CHANGED"
+    | "CARD_PAYER_ACCOUNT_CHANGED" // US-089
     | "TAG_RENAMED" // US-046 (SDD-016): gestão de tags
     | "TAG_MERGED"
     | "TAG_DELETED";

@@ -248,6 +248,7 @@ export async function makeCard(
     dueDay?: number;
     institution?: string;
     color?: string; // aceito desde já (US-050); ignorado até lá
+    paymentAccount?: { id: string }; // US-089: conta pagadora padrão
   },
 ): Promise<CardFixture> {
   const db = fdb();
@@ -262,6 +263,7 @@ export async function makeCard(
       limitInCents: BigInt(o.limitInCents ?? 500000),
       closingDay: o.closingDay ?? 25,
       dueDay: o.dueDay ?? 5,
+      ...(o.paymentAccount ? { paymentAccountId: o.paymentAccount.id } : {}),
       updatedByMemberId: owner.memberId,
     },
   });

@@ -10,7 +10,7 @@ export async function lockAccountsForPosting(
   tx: Tx,
   familyId: string,
   ids: string[],
-  path: "accountId" | "fromAccountId" | "toAccountId" = "accountId",
+  path: "accountId" | "fromAccountId" | "toAccountId" | "paymentAccountId" = "accountId",
 ): Promise<void> {
   const unique = [...new Set(ids)].sort();
   if (unique.length === 0) return;
