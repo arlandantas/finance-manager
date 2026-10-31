@@ -15,6 +15,7 @@ Regra de ouro: comece por `agents/estado/<área>.md` (estado vigente, denso). De
 | Segurança (achados, riscos aceitos) | [estado/seguranca.md](estado/seguranca.md) |
 | Família, convites, sessões | [estado/familia-convites-sessoes.md](estado/familia-convites-sessoes.md) |
 | Lançamentos, contas, extrato e base | [estado/lancamentos-contas-extrato.md](estado/lancamentos-contas-extrato.md) |
+| Hospedagem e produção (Vercel, Prisma, backup, cron, travas) | [estado/hospedagem-producao.md](estado/hospedagem-producao.md) |
 
 Todas as áreas estão migradas. Divergência docs x código: o código e os testes vencem.
 

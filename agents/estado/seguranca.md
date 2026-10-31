@@ -7,7 +7,7 @@ Atualizado: 2026-10-30 (revisão do ADR-033). Fonte de verdade: código + testes
 - ADR-033 pode ser Aceito com condições: o TL emenda §2.3/§2.5/§2.8/§3/§5/§9 (SEC-058, 059, 061, 063, 065). Q-TL-U2, U3, U5 e U4: Segurança concorda com condições ([relatório](../security/relatorios/revisao-adr033-2026-10-30.md)).
 - Ciclo do "Só meu" encerrado (D-GES-61). Novos achados só de mudanças futuras.
 - Decisões que dependem do usuário: Q-TL-U1/SEC-060 ("Entra na divisão?" no cadastro); SEC-062 (criar "Desvincular conta"); veto a SEC-054/055/056 (aceites do Gestor); SEC-037 (reautenticação nas exclusões; hoje: confirmação digitada + e-mail de aviso); validação jurídica dos prazos/texto LGPD (U5).
-- Ações do usuário para produção (§e): variáveis de ambiente, `ALLOWED_SIGNUP_EMAILS`, `MCP_CIMD_ALLOWED_CLIENT_IDS`, teto de IA, aprovar texto de privacidade, avisar o deploy da fase 1 da SEC-018 (para o Gestor agendar a fase 2).
+- Ações do usuário para produção ([hospedagem-producao.md](hospedagem-producao.md)): variáveis de ambiente, `ALLOWED_SIGNUP_EMAILS`, `MCP_CIMD_ALLOWED_CLIENT_IDS`, teto de IA, aprovar texto de privacidade, avisar o deploy da fase 1 da SEC-018 (para o Gestor agendar a fase 2).
 - Nunca verificado: produção (Vercel), claude.ai real, Google real, UI no navegador (§d).
 
 ## b) Achados (status final)
@@ -83,13 +83,7 @@ Nunca verificado (a Segurança só testa em local, regra do README):
 6. Backup/restore de produção (risco 3 do ADR-031, ainda sem ensaio).
 
 ## e) Regras de deploy e pendências
-Variáveis (Production, nunca Preview; segredos só em Production): `APP_DEPLOY_ENV=production`, `APP_URL`/`AUTH_URL=https://verbus-finance.vercel.app`, `AUTH_TRUST_HOST=true`, `AUTH_SECRET` (novo, forte), `AUTH_GOOGLE_ID/SECRET`, `DATABASE_URL` (pooled), `DIRECT_URL` (direta), `CRON_SECRET` (≥ 32), `ALLOWED_SIGNUP_EMAILS`, `MCP_CIMD_ALLOWED_CLIENT_IDS`, `LLM_GLOBAL_MONTHLY_CAP_CENTS` + `OPS_ALERT_EMAIL` (obrigatórias com `AI_FEATURES_ENABLED=true`; sugerido R$ 50), `PRIVACY_CONTACT_EMAIL`. Nunca em produção: `AUTH_DEV_LOGIN`, `APP_HOMOLOG_MODE`, `APP_NOW_OVERRIDE`. `MCP_CIMD_ALLOWED_HOSTS` é obsoleta (em produção só ela = falha no boot). Lista completa: [checklist-vercel-producao.md](../manager/checklist-vercel-producao.md) (Blocos 1 a 9).
-
-Migrações de segurança em `prisma/migrations` (aplicadas pelo `vercel-build` com `migrate deploy` só em produção): `sec024`, `sec004` (2), `sec011`, `sec018` (hash + idle cap), `sec013`, `dev91`, `sec017` (strip tokens, forbid purge bypass), `sec017c`, `sec036`, `sec042`. Regra: toda migração compatível com a versão anterior (expandir antes de contrair); rollback da Vercel não desfaz migração.
-
-Fase 2 da SEC-018 (pendente, NÃO aplicar antes): `prisma/pending/20261027000000_sec018_drop_plain_session_token`. Condições: fase 1 em produção há ≥ 1 dia; `pnpm tsx scripts/sec018-phase2-check.ts --since <ISO do deploy da fase 1>` sai com 0; então mover a pasta para `prisma/migrations` (timestamp posterior à última), remover `sessionToken` do model, `pnpm db:generate`. Tarefa do Gestor (D-GES-44); o usuário avisa quando a fase 1 for ao ar. Depois de cadastrar o primeiro `client_id` do Claude em `MCP_CIMD_ALLOWED_CLIENT_IDS`: rodar `scripts/sec010-revalidate-mcp-clients.ts` uma vez.
-
-Pré-requisitos para `MCP_ENABLED=true` (checklist Bloco 7): EN-007 (build/migração/cron/backup), ensaio de restore, SDD-024 §9 com `/security-review`, domínio definido, opções do MCP decididas. Pós-deploy (Bloco 8): health `ok`, smoke, login só Google, `/api/auth/session` sem `sessionToken`.
+Hospedagem, variáveis, build, migrações, backup, cron, smoke e fase 2 da SEC-018: [hospedagem-producao.md](hospedagem-producao.md).
 
 Pendências abertas: veto a D-GES-57/61; SEC-037 reauth; validação jurídica LGPD; reteste formal curto de SEC-038/039/040 (opcional); SEC-019 sem correção disponível; CSP completa para enforce (validar em navegador); EXT-01..12 em [pendencias-externas.md](../manager/pendencias-externas.md).
 
