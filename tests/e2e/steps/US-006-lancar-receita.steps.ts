@@ -38,7 +38,7 @@ When(
     });
     await gotoReady(page, "/");
     await openDrawer(page);
-    await page.getByRole("button", { name: modo, exact: true }).click();
+    await page.getByRole("radio", { name: modo.replace(/^Nova /, ""), exact: true }).click();
     await fillAmount(page, valor);
     await pickCategory(page, categoria);
     await save(page, "Salvar Receita");
@@ -59,7 +59,7 @@ When(
     await ensureWorld(world, page, "Lucas");
     await gotoReady(page, "/");
     await openDrawer(page);
-    await page.getByRole("button", { name: "Nova Receita", exact: true }).click();
+    await page.getByRole("radio", { name: "Receita", exact: true }).click();
     await fillAmount(page, valor);
     await pickCategory(page, categoria);
     await page.getByRole("radio", { name: escolha.split(": ")[1] as string, exact: true }).click();
@@ -81,7 +81,7 @@ When("abro o lançamento no modo {string}", async ({ page, world }, modo: string
   await ensureWorld(world, page, "Lucas");
   await gotoReady(page, "/");
   await openDrawer(page);
-  await page.getByRole("button", { name: modo, exact: true }).click();
+  await page.getByRole("radio", { name: modo.replace(/^Nova /, ""), exact: true }).click();
 });
 
 Then("o switch {string} não é exibido", async ({ page }, rotulo: string) => {
@@ -97,7 +97,7 @@ When("tento salvar a receita com {string}", async ({ page, world }, valor: strin
   await ensureWorld(world, page, "Lucas");
   await gotoReady(page, "/");
   await openDrawer(page);
-  await page.getByRole("button", { name: "Nova Receita", exact: true }).click();
+  await page.getByRole("radio", { name: "Receita", exact: true }).click();
   await fillAmount(page, valor);
   await pickCategory(page, "Salário");
   await save(page, "Salvar Receita");
@@ -107,7 +107,7 @@ When("toco duas vezes em {string}", async ({ page, world }, botao: string) => {
   await ensureWorld(world, page, "Lucas");
   await gotoReady(page, "/");
   await openDrawer(page);
-  await page.getByRole("button", { name: "Nova Receita", exact: true }).click();
+  await page.getByRole("radio", { name: "Receita", exact: true }).click();
   await fillAmount(page, "R$ 100,00");
   await pickCategory(page, "Salário");
   await drawer(page).getByRole("button", { name: botao }).dblclick();

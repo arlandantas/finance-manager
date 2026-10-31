@@ -321,7 +321,9 @@ Then("{string} vem com {string}", async ({ page }, campo: string, valor: string)
 
 When("Lucas alterna para {string}", async ({ page }, aba: string) => {
   await openDrawer(page);
-  await drawer(page).getByRole("button", { name: aba }).click();
+  await drawer(page)
+    .getByRole("radio", { name: aba.replace(/^Nova /, ""), exact: true })
+    .click();
 });
 
 Then("o seletor {string} lista apenas contas, sem cartões", async ({ page }, campo: string) => {

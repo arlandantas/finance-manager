@@ -190,7 +190,7 @@ Then("não vê o campo de tags", async ({ page }) => {
 
 When("Mariana troca para {string}", async ({ page }, _nome: string) => {
   await openDrawer(page);
-  await page.getByRole("button", { name: "Nova Receita", exact: true }).click();
+  await page.getByRole("radio", { name: "Receita", exact: true }).click();
 });
 
 Then("vê a ação {string} no formulário", async ({ page }, nome: string) => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
+import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { CategoryIcon } from "@/components/category-icon";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, TextInput } from "@/components/ui/field";
+import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { useCreateCategory, useUpdateCategory } from "@/modules/categorias/hooks";
 import {
@@ -43,6 +45,7 @@ export function CategoryDrawer({
   onReactivate: (c: CategoryDTO) => void;
 }) {
   const [name, setName] = useState("");
+  const [createKind, setCreateKind] = useState<"EXPENSE" | "INCOME">("EXPENSE"); // US-085
   const [icon, setIcon] = useState<CategoryIconKey>(CATEGORY_ICON_KEYS[0]);
   const [error, setError] = useState<string | undefined>();
   const [iconError, setIconError] = useState<string | undefined>();
@@ -58,6 +61,7 @@ export function CategoryDrawer({
   const open = target !== null;
   useEffect(() => {
     if (!target) return;
+    if (target.mode === "create") setCreateKind(target.kind);
     setName(target.mode === "create" ? "" : target.category.name);
     setIcon(
       target.mode === "create"
@@ -91,7 +95,7 @@ export function CategoryDrawer({
     setBanner(null);
     setArchivedHit(null);
     if (target.mode === "create") {
-      const parsed = CreateCategorySchema.safeParse({ kind: target.kind, name, icon });
+      const parsed = CreateCategorySchema.safeParse({ kind: createKind, name, icon });
       if (!parsed.success) {
         setError(parsed.error.issues[0]?.message);
         return;
@@ -172,6 +176,17 @@ export function CategoryDrawer({
             >
               {banner}
             </p>
+          ) : null}
+          {mode === "create" ? (
+            <SegmentedChoice
+              label="Tipo de categoria"
+              value={createKind}
+              onChange={setCreateKind}
+              options={[
+                { value: "EXPENSE", label: "Despesa", icon: ArrowDownCircle, tone: "expense" },
+                { value: "INCOME", label: "Receita", icon: ArrowUpCircle, tone: "income" },
+              ]}
+            />
           ) : null}
           {mode !== "icon" ? (
             <Field id="category-name" label="Nome" error={error}>

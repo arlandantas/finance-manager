@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
+import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { addMonthsToRef, formatInvoiceLabel, invoiceHint } from "@/modules/cartoes/cycle";
 import { useCards } from "@/modules/cartoes/hooks";
@@ -50,15 +52,15 @@ type FieldKey =
 
 const TEXT: Record<Kind, { title: string; payer: string; save: string; success: string }> = {
   EXPENSE: {
-    title: "Nova Despesa",
+    title: "Nova despesa",
     payer: "Quem pagou?",
-    save: "Salvar Despesa",
+    save: "Salvar despesa",
     success: "Despesa registrada com sucesso!",
   },
   INCOME: {
-    title: "Nova Receita",
+    title: "Nova receita",
     payer: "Quem recebeu?",
-    save: "Salvar Receita",
+    save: "Salvar receita",
     success: "Receita registrada com sucesso!",
   },
 };
@@ -279,28 +281,15 @@ export function TransactionDrawer({
           submit();
         }}
       >
-        <div
-          role="group"
-          aria-label="Tipo de lançamento"
-          className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1"
-        >
-          {(["EXPENSE", "INCOME"] as const).map((k) => (
-            <button
-              key={k}
-              type="button"
-              aria-pressed={kind === k}
-              onClick={() => switchKind(k)}
-              className={cn(
-                "min-h-11 rounded-lg text-sm font-semibold",
-                kind === k
-                  ? "bg-white dark:bg-slate-100 text-slate-900 shadow-sm"
-                  : "text-slate-600",
-              )}
-            >
-              {TEXT[k].title}
-            </button>
-          ))}
-        </div>
+        <SegmentedChoice
+          label="Tipo de lançamento"
+          value={kind}
+          onChange={switchKind}
+          options={[
+            { value: "EXPENSE", label: "Despesa", icon: ArrowDownCircle, tone: "expense" },
+            { value: "INCOME", label: "Receita", icon: ArrowUpCircle, tone: "income" },
+          ]}
+        />
 
         {banner ? (
           <p

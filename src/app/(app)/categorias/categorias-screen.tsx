@@ -1,6 +1,15 @@
 "use client";
 
-import { Archive, MoreHorizontal, Palette, Pencil, Plus, Undo2 } from "lucide-react";
+import {
+  Archive,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  MoreHorizontal,
+  Palette,
+  Pencil,
+  Plus,
+  Undo2,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -8,6 +17,7 @@ import { CategoryIcon } from "@/components/category-icon";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Menu, MenuItem } from "@/components/ui/menu";
+import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { useCategories, useCategoryState } from "@/modules/categorias/hooks";
@@ -15,10 +25,6 @@ import type { CategoryDTO } from "@/modules/categorias/schemas";
 import { CategoryDrawer, type DrawerTarget } from "./category-drawer";
 
 type Kind = "EXPENSE" | "INCOME";
-const TABS: Array<{ kind: Kind; label: string }> = [
-  { kind: "EXPENSE", label: "Despesa" },
-  { kind: "INCOME", label: "Receita" },
-];
 
 export function CategoriasScreen() {
   const router = useRouter();
@@ -92,29 +98,16 @@ export function CategoriasScreen() {
         </Button>
       </header>
 
-      <div
-        role="tablist"
-        aria-label="Tipo de categoria"
-        className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1"
-      >
-        {TABS.map((t) => (
-          <button
-            key={t.kind}
-            type="button"
-            role="tab"
-            aria-selected={kind === t.kind}
-            onClick={() => router.replace(`/categorias?kind=${t.kind}`)}
-            className={cn(
-              "min-h-11 rounded-lg text-sm font-semibold",
-              kind === t.kind
-                ? "bg-white dark:bg-slate-100 text-slate-900 shadow-sm"
-                : "text-slate-600",
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedChoice
+        variant="tabs"
+        label="Tipo de categoria"
+        value={kind}
+        onChange={(k) => router.replace(`/categorias?kind=${k}`)}
+        options={[
+          { value: "EXPENSE", label: "Despesa", icon: ArrowDownCircle, tone: "expense" },
+          { value: "INCOME", label: "Receita", icon: ArrowUpCircle, tone: "income" },
+        ]}
+      />
 
       {list.isPending ? (
         <div className="flex flex-col gap-2" aria-busy="true" aria-label="Carregando categorias">

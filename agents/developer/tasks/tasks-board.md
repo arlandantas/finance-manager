@@ -732,6 +732,9 @@ Ver o relatório de entrega ao Gestor e DEV-81..86 em [pedidos-ao-gestor.md](../
 - **DEV-144**: a lista vazia mantém "Nenhuma conta a pagar neste mês" (o SDD pede "Nada a pagar neste mês"), pois o BDD da US-018 depende do texto atual.
 - **DEV-145**: o cenário "Valores ocultos" ganhou um Dado (Corrente com saldo e a pagar) para existir "Falta" a conferir.
 
+### [TASK-088..091] Polimento UR-1 (US-085..088, sem SDD; notas do TL em `tech-lead/architecture/notas-polimento-us-085-088.md`)
+- **TASK-088 / US-085** — Concluído (aguardando validação do Gestor). `components/ui/segmented-choice.tsx` (genérico: `options` com ícone/tom/`disabled`/`hint`, `variant` radio|tabs, roving tabindex e setas), aplicado em `transaction-drawer.tsx`, `categorias-screen.tsx` (tabs) e `category-drawer.tsx` (criar, antes sem seletor). Texto "Nova despesa/receita" e "Salvar despesa/receita". Passos E2E atualizados: US-006, US-016a, US-045 (radio em vez de button). Testes: E2E `US-085` (5 cenários x 2 projetos, inclui contraste AA calculado no navegador no tema escuro e teclado); regressão E2E US-005/006/012/014/016a/045 (verdes). Verificado no navegador (tema claro mobile 375 e escuro desktop).
+
 ---
 
 ## Fila de implementação (atualizada em 2026-10-25)
