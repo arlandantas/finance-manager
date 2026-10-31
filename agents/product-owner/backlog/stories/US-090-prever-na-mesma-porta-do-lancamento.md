@@ -15,7 +15,7 @@ Como **membro da família**, quero **escolher, no mesmo formulário, se a despes
 ## Regras
 - O lançamento (FAB/"Nova despesa") ganha o seletor **"Quando? Já aconteceu | Vai acontecer"** — **padrão "Já aconteceu"**, mantendo a meta de lançar em < 10 s (RN-031.4: previsto é **opção, não etapa**). Os demais campos são os mesmos: valor, descrição, categoria, responsável, conta/cartão, divisão, "Só meu", tags.
 - **"Já aconteceu" = lançamento real** (data não futura, regras de hoje). **"Vai acontecer" = prevista** (data = **vencimento**, pode ser futura; **"Pagar com"** opcional; sem efeito em saldo, extrato, totais ou acerto até a baixa). **A unificação de tela não unifica o efeito** (RN-031.2).
-- **Efeito explícito antes de salvar** (RN-031.3): linha de apoio sob o seletor — "Já aconteceu: entra no extrato e nos saldos agora" / "Vai acontecer: fica em A pagar até você dar baixa; não muda saldo nem extrato" — e o botão muda: **"Salvar lançamento"** / **"Salvar previsão"**.
+- **Efeito explícito antes de salvar** (RN-031.3): linha de apoio sob o seletor — "Já aconteceu: entra no extrato e nos saldos agora" / "Vai acontecer: fica em A pagar até você dar baixa; não muda saldo nem extrato" — e o botão muda: **"Salvar despesa"** (ou "Salvar receita") / **"Salvar previsão"** (DEV-158).
 - **Padrões por modo mantidos e mostrados ao trocar:** previsão nasce **"Só meu" por padrão** (D-GES-15); lançamento real segue o padrão atual. Ao trocar de modo, o formulário mostra o aviso "Padrão deste modo: Só meu" e não apaga o que já foi digitado.
 - Campos que só existem na previsão (vencimento, "Pagar com" opcional, responsável pelo pagamento) aparecem só em "Vai acontecer"; no cartão, "Vai acontecer" fica **indisponível** (compra no cartão não admite data futura); a cobrança mensal no cartão é a **Assinatura (US-096)**, oferecida em "Quando?" ao escolher um cartão, com a dica "No cartão, use Assinatura (todo mês)".
 - Com a US-051, **receita** usa a mesma porta (tipo Receita + "Vai acontecer" = receita prevista). Enquanto ela não existir, "Vai acontecer" só aparece para **Despesa**.
@@ -36,7 +36,7 @@ Funcionalidade: Lançar ou prever na mesma porta
   Cenário: Padrão é lançar o que já aconteceu
     Quando Mariana abre "Nova despesa"
     Então "Já aconteceu" está selecionado
-    E o botão é "Salvar lançamento"
+    E o botão é "Salvar despesa"
 
   Cenário: Lançar o que já aconteceu mantém o caminho rápido
     Quando Mariana lança "Mercado" de "R$ 80,00" pela "Corrente"

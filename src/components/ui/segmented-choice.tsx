@@ -11,6 +11,8 @@ export type SegmentedOption<T extends string> = {
   /** Indisponível mas focável (`aria-disabled`); a dica explica o motivo. */
   disabled?: boolean;
   hint?: string;
+  /** Id de um elemento visível que explica o motivo (alternativa ao `hint` sr-only). */
+  describedBy?: string;
   /** Cor do estado selecionado (padrão: marca). A cor nunca é o único sinal: ícone + texto. */
   tone?: "brand" | "expense" | "income";
 };
@@ -33,6 +35,7 @@ export function SegmentedChoice<T extends string>({
   onChange,
   variant = "radio",
   className,
+  onBlocked,
 }: {
   label: string;
   options: Array<SegmentedOption<T>>;
@@ -40,6 +43,8 @@ export function SegmentedChoice<T extends string>({
   onChange: (value: T) => void;
   variant?: "radio" | "tabs";
   className?: string;
+  /** Toque/Enter numa opção indisponível: quem usa leva o foco à dica (SDD-031 §6.1). */
+  onBlocked?: (value: T) => void;
 }) {
   const id = useId();
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -79,11 +84,12 @@ export function SegmentedChoice<T extends string>({
             role={tabs ? "tab" : "radio"}
             {...(tabs ? { "aria-selected": selected } : { "aria-checked": selected })}
             aria-disabled={o.disabled ? true : undefined}
-            aria-describedby={hintId}
+            aria-describedby={hintId ?? o.describedBy}
             tabIndex={selected ? 0 : -1}
             data-selected={selected ? "true" : "false"}
             onClick={() => {
-              if (!o.disabled) onChange(o.value);
+              if (o.disabled) onBlocked?.(o.value);
+              else onChange(o.value);
             }}
             onKeyDown={(e) => {
               if (e.key === "ArrowRight" || e.key === "ArrowDown") {

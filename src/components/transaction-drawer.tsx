@@ -4,7 +4,9 @@ import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { monthLabel } from "@/app/(app)/extrato/filters";
 import { CategoryIcon } from "@/components/category-icon";
+import { RepeatFields, WhenSwitch } from "@/components/door-parts";
 import { InstallmentPreviewText } from "@/components/installment-preview";
 import { useFormatMoney } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
@@ -26,43 +28,40 @@ import { MAX_INSTALLMENTS } from "@/modules/cartoes/installments";
 import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { useFamily } from "@/modules/familia/hooks";
-import { splitSwitchLabel } from "@/modules/split/shares-label";
-import { useCreateTransaction, useDefaults } from "@/modules/transacoes/hooks";
 import {
-  type CreateTransactionInput,
-  CreateTransactionSchema,
+  availability,
+  DOOR_FLAGS,
+  type DoorCtx,
+  type DoorField,
+  type DoorRepeat,
+  type DoorState,
+  type DoorWhen,
+  effectivePayerOf,
+  fieldsFromIssues,
+  laterHint,
+  MODE_DEFAULTS,
+  SERIES_NOTE_NOTICE,
+  saveLabel,
+  seriesDefaults,
+  serviceOf,
+  sharedAfterModeChange,
+  validateDateForWhen,
+  validateSubmission,
+} from "@/modules/lancamento/door";
+import { successText, useDoorSubmit } from "@/modules/lancamento/use-door-submit";
+import { addMonths, type MonthISO, monthOf } from "@/modules/previstas/recurrence";
+import { splitSwitchLabel } from "@/modules/split/shares-label";
+import { useDefaults } from "@/modules/transacoes/hooks";
+import {
   DESCRIPTION_MSG,
   PAID_BEFORE_APP_MSG,
   paidBeforeAppSchema,
 } from "@/modules/transacoes/schemas";
 
 type Kind = "EXPENSE" | "INCOME";
-type FieldKey =
-  | "amountInCents"
-  | "accountId"
-  | "cardId"
-  | "categoryId"
-  | "occurredOn"
-  | "description"
-  | "note"
-  | "payerMemberId"
-  | "installments"
-  | "paidBeforeApp"
-  | "tags";
-
-const TEXT: Record<Kind, { title: string; payer: string; save: string; success: string }> = {
-  EXPENSE: {
-    title: "Nova despesa",
-    payer: "Quem pagou?",
-    save: "Salvar despesa",
-    success: "Despesa registrada com sucesso!",
-  },
-  INCOME: {
-    title: "Nova receita",
-    payer: "Quem recebeu?",
-    save: "Salvar receita",
-    success: "Receita registrada com sucesso!",
-  },
+const TEXT: Record<Kind, { title: string; payer: string }> = {
+  EXPENSE: { title: "Nova despesa", payer: "Quem pagou?" },
+  INCOME: { title: "Nova receita", payer: "Quem recebeu?" },
 };
 
 export function TransactionDrawer({
@@ -82,6 +81,15 @@ export function TransactionDrawer({
   const [categoryId, setCategoryId] = useState("");
   const [payerId, setPayerId] = useState("");
   const [shared, setShared] = useState(false); // nasce "Só meu" e não lembra a escolha (US-030)
+  const [sharedTouched, setSharedTouched] = useState(false);
+  // US-090/091: "Quando?" e "Repetir"; a data é uma só (occurredOn em NOW, dueOn em LATER)
+  const [when, setWhen] = useState<DoorWhen>("NOW");
+  const [repeat, setRepeat] = useState<DoorRepeat>("NONE");
+  const [day, setDay] = useState<string | null>(null); // null = padrão derivado da data
+  const [startMonth, setStartMonth] = useState<string | null>(null);
+  const [endKind, setEndKind] = useState<"NONE" | "COUNT">("NONE");
+  const [endMonths, setEndMonths] = useState("");
+  const [unknownOutcome, setUnknownOutcome] = useState(false); // falha de rede: resultado desconhecido
   const [installments, setInstallments] = useState(1); // US-040a: só vale com cartão
   const [paidText, setPaidText] = useState("0"); // US-065: parcelas já pagas antes do app
   const [nextInvoice, setNextInvoice] = useState("open"); // "open" ou ref da fatura fechada não paga
@@ -89,7 +97,7 @@ export function TransactionDrawer({
   const [description, setDescription] = useState("");
   const [note, setNote] = useState("");
   const [tags, setTags] = useState<string[]>([]); // US-045: nomes digitados (linha "+ Tag" recolhida)
-  const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<DoorField, string>>>({});
   const [banner, setBanner] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   // ADR-009: a chave nasce ao abrir o drawer e é reaproveitada nos reenvios até o sucesso.
@@ -103,7 +111,7 @@ export function TransactionDrawer({
   const cards = useCards();
   const family = useFamily();
   const categories = useCategories(kind);
-  const create = useCreateTransaction(key);
+  const door = useDoorSubmit(key);
 
   // Nova abertura: estado limpo e nova chave.
   useEffect(() => {
@@ -112,6 +120,14 @@ export function TransactionDrawer({
     setCents(0);
     setCategoryId("");
     setShared(false);
+    setSharedTouched(false);
+    setWhen("NOW");
+    setRepeat("NONE");
+    setDay(null);
+    setStartMonth(null);
+    setEndKind("NONE");
+    setEndMonths("");
+    setUnknownOutcome(false);
     setInstallments(1);
     setPaidText("0");
     setNextInvoice("open");
@@ -127,21 +143,33 @@ export function TransactionDrawer({
     setKey(newIdempotencyKey());
   }, [open, initialKind]);
 
+  // ADR-009 + SDD-031 §5.1: uma chave por abertura E por serviço; regerada ao mudar de serviço, salvo
+  // depois de falha de rede com resultado desconhecido (aí o seletor fica travado).
+  const doorService = serviceOf({ kind, when, repeat: kind === "EXPENSE" ? repeat : "NONE" });
+  const lastService = useRef(doorService);
+  useEffect(() => {
+    if (lastService.current === doorService) return;
+    lastService.current = doorService;
+    if (!unknownOutcome) setKey(newIdempotencyKey());
+  }, [doorService, unknownOutcome]);
+
   // Padrões vindos do servidor (última conta usada; quem pagou = logado).
   useEffect(() => {
     if (!open || !defaults.data) return;
     // Padrão: último meio usado (cartão da despesa mais recente, senão a conta).
     setSource((cur) => {
       if (cur) return cur;
-      if (defaults.data.cardId) return `card:${defaults.data.cardId}`;
+      if (defaults.data.cardId && when === "NOW") return `card:${defaults.data.cardId}`;
       return defaults.data.accountId ? `acc:${defaults.data.accountId}` : "";
     });
     setPayerId((cur) => cur || defaults.data.payerMemberId);
   }, [open, defaults.data]);
 
   const cardList = cards.data?.items ?? [];
-  const selectedCard = source.startsWith("card:")
-    ? cardList.find((c) => `card:${c.id}` === source)
+  // Receita só entra em conta: se o padrão veio como cartão, volta para a primeira conta.
+  const effectiveSource = kind === "INCOME" && source.startsWith("card:") ? "" : source;
+  const selectedCard = effectiveSource.startsWith("card:")
+    ? cardList.find((c) => `card:${c.id}` === effectiveSource)
     : undefined;
   const parcelado = kind === "EXPENSE" && selectedCard !== undefined && installments > 1;
   const paidBeforeApp = paidText.trim() === "" ? 0 : Number(paidText);
@@ -176,13 +204,77 @@ export function TransactionDrawer({
   // SEC-026: "Só meu" é sempre em nome de quem lança; para registrar o gasto de outra pessoa, divida.
   const myMemberId = family.data?.currentMemberId ?? defaults.data?.payerMemberId ?? "";
   const personalExpense = kind === "EXPENSE" && !(shared && splitAvailable && !splitBlocked);
-  const effectivePayerId = personalExpense && myMemberId ? myMemberId : payerId;
-  // Receita só entra em conta: se o padrão veio como cartão, volta para a primeira conta.
-  const effectiveSource = kind === "INCOME" && source.startsWith("card:") ? "" : source;
+
+  // Porta única (SDD-031): o estado vira DoorState e `door.ts` monta o corpo do serviço escolhido.
+  const today = defaults.data?.today ?? "";
+  const nowIso = today || new Date().toISOString().slice(0, 10);
+  const isLater = when === "LATER";
+  const seriesOn = isLater && kind === "EXPENSE" && repeat === "MONTHLY";
+  const derived = seriesDefaults(date, today);
+  const dayValue = day ?? derived.day;
+  const startValue = startMonth ?? derived.startMonth;
+  const doorState: DoorState = {
+    kind,
+    when,
+    repeat: kind === "EXPENSE" ? repeat : "NONE",
+    cents,
+    description,
+    categoryId,
+    source: effectiveSource,
+    payerId,
+    shared,
+    sharedTouched,
+    date,
+    note,
+    tags,
+    installments,
+    paidBeforeApp: Number.isNaN(paidBeforeApp) ? 0 : paidBeforeApp,
+    paidAnchorOn: paidActive && effectiveNext !== "open" ? anchorOn : "",
+    day: dayValue,
+    startMonth: startValue,
+    endKind,
+    endMonths,
+  };
+  const doorCtx: DoorCtx = {
+    today,
+    me: myMemberId,
+    splitAvailable,
+    splitBlocked: !isLater && splitBlocked,
+    flags: DOOR_FLAGS,
+  };
+  const effectivePayerId = effectivePayerOf(doorState, doorCtx);
+  const avail = availability(doorState, doorCtx);
+  const dateError = errors.date ?? validateDateForWhen(date, when, today) ?? undefined;
+  const currentMonth = today ? monthOf(today) : null;
+  const monthOptions = currentMonth
+    ? Array.from(
+        new Set(
+          [
+            ...Array.from({ length: 12 }, (_, i) => addMonths(currentMonth as MonthISO, i)),
+            startValue,
+          ].filter(Boolean),
+        ),
+      )
+        .sort()
+        .map((m) => ({ value: m, label: monthLabel(m) }))
+    : [];
+  const locked = door.isPending || unknownOutcome;
+
+  function changeWhen(next: DoorWhen) {
+    if (next === when) return;
+    setWhen(next);
+    if (!sharedTouched) setShared(sharedAfterModeChange({ shared, sharedTouched }, next));
+    setErrors((e) => ({ ...e, date: undefined }));
+    if (validateDateForWhen(date, next, today)) setDetailsOpen(true);
+  }
 
   function switchKind(next: Kind) {
     if (next === kind) return;
     setKind(next);
+    if (next === "INCOME") {
+      setWhen("NOW"); // receita prevista só com a US-051
+      setRepeat("NONE");
+    }
     if (next === "INCOME" && source.startsWith("card:")) {
       setSource(defaults.data?.accountId ? `acc:${defaults.data.accountId}` : "");
     }
@@ -190,68 +282,35 @@ export function TransactionDrawer({
     setErrors((e) => ({ ...e, categoryId: undefined }));
   }
 
-  function buildPayload(): CreateTransactionInput {
-    const fromCard = kind === "EXPENSE" && effectiveSource.startsWith("card:");
-    return {
-      type: kind,
-      ...(fromCard
-        ? { cardId: effectiveSource.slice(5) }
-        : { accountId: effectiveSource.startsWith("acc:") ? effectiveSource.slice(4) : "" }),
-      categoryId,
-      amountInCents: cents,
-      ...(effectivePayerId ? { payerMemberId: effectivePayerId } : {}),
-      ...(paidActive
-        ? effectiveNext !== "open"
-          ? { occurredOn: anchorOn }
-          : {}
-        : date
-          ? { occurredOn: date }
-          : {}),
-      ...(description.trim() ? { description } : {}),
-      ...(note.trim() ? { note } : {}),
-      ...(tags.length > 0 ? { tags } : {}),
-      ...(kind === "EXPENSE" ? { isSharedExpense: splitAvailable && shared && !splitBlocked } : {}),
-      ...(fromCard && installments > 1 ? { installments } : {}),
-      ...(fromCard && installments > 1 && paidBeforeApp >= 1 ? { paidBeforeApp } : {}),
-    } as CreateTransactionInput;
-  }
-
-  function fieldsFromIssues(issues: Array<{ path: string; message: string }>) {
-    const out: Partial<Record<FieldKey, string>> = {};
-    for (const i of issues) {
-      const k = i.path.split(".")[0] as FieldKey;
-      if (!out[k]) out[k] = i.message;
-    }
-    return out;
-  }
-
   function submit() {
     if (submitting.current) return;
-    const parsed = CreateTransactionSchema.safeParse(buildPayload());
-    if (!parsed.success) {
-      const next = fieldsFromIssues(
-        parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
-      );
-      setErrors(next);
-      if (next.occurredOn || next.note) setDetailsOpen(true);
-      if (next.amountInCents) document.getElementById("tx-amount")?.focus();
-      else if (next.categoryId) categoryRef.current?.querySelector<HTMLElement>("button")?.focus();
+    const result = validateSubmission(doorState, doorCtx);
+    if (!result.ok) {
+      setErrors(result.errors);
+      if (result.errors.date && !isLater) setDetailsOpen(true);
+      if (result.errors.note) setDetailsOpen(true);
+      if (result.errors.amountInCents) document.getElementById("tx-amount")?.focus();
+      else if (result.errors.categoryId)
+        categoryRef.current?.querySelector<HTMLElement>("button")?.focus();
       return;
     }
     setErrors({});
     setBanner(null);
     submitting.current = true;
-    create.mutate(buildPayload(), {
-      onSuccess: () => {
-        toast.success(TEXT[kind].success);
+    const service = result.submission.service;
+    door.submit(result.submission, {
+      onSuccess: (generated) => {
+        toast.success(successText(service, kind, generated));
         onOpenChange(false);
       },
       onError: (e) => {
-        if (e instanceof NetworkError) setBanner(e.message);
-        else if (e instanceof ApiClientError && Array.isArray(e.details)) {
+        if (e instanceof NetworkError) {
+          setBanner(e.message);
+          setUnknownOutcome(true);
+        } else if (e instanceof ApiClientError && Array.isArray(e.details)) {
           const next = fieldsFromIssues(e.details as Array<{ path: string; message: string }>);
           setErrors(next);
-          if (next.occurredOn) setDetailsOpen(true);
+          if ((next.date && !isLater) || next.note) setDetailsOpen(true);
           if (Object.keys(next).length === 0) setBanner(e.message);
         } else setBanner(e instanceof Error ? e.message : "Erro inesperado. Tente novamente.");
       },
@@ -291,6 +350,14 @@ export function TransactionDrawer({
           ]}
         />
 
+        <WhenSwitch
+          when={when}
+          repeat={doorState.repeat}
+          onChange={changeWhen}
+          later={avail.later}
+          locked={locked}
+        />
+
         {banner ? (
           <p
             role="alert"
@@ -319,7 +386,7 @@ export function TransactionDrawer({
         <Field
           id="tx-account"
           label={kind === "EXPENSE" ? "Pagar com" : "Receber em"}
-          error={errors.accountId ?? errors.cardId}
+          error={errors.source}
         >
           <select
             id="tx-account"
@@ -329,11 +396,15 @@ export function TransactionDrawer({
               setSource(e.target.value);
               if (!e.target.value.startsWith("card:")) setInstallments(1); // conta: volta a 1x
             }}
-            aria-invalid={errors.accountId || errors.cardId ? true : undefined}
+            aria-invalid={errors.source ? true : undefined}
           >
-            <option value="" disabled>
-              {kind === "EXPENSE" ? "Escolha uma conta ou um cartão" : "Escolha uma conta"}
-            </option>
+            {isLater ? (
+              <option value="">Escolher ao dar baixa</option>
+            ) : (
+              <option value="" disabled>
+                {kind === "EXPENSE" ? "Escolha uma conta ou um cartão" : "Escolha uma conta"}
+              </option>
+            )}
             <optgroup label="Contas">
               {(accounts.data?.items ?? []).map((a) => (
                 <option key={a.id} value={`acc:${a.id}`}>
@@ -341,7 +412,7 @@ export function TransactionDrawer({
                 </option>
               ))}
             </optgroup>
-            {kind === "EXPENSE" && cardList.length > 0 ? (
+            {kind === "EXPENSE" && !isLater && cardList.length > 0 ? (
               <optgroup label="Cartões">
                 {cardList.map((c) => (
                   <option key={c.id} value={`card:${c.id}`}>
@@ -352,7 +423,7 @@ export function TransactionDrawer({
             ) : null}
           </select>
         </Field>
-        {kind === "EXPENSE" && cards.data && cardList.length === 0 ? (
+        {kind === "EXPENSE" && !isLater && cards.data && cardList.length === 0 ? (
           <Link
             href="/cartoes"
             onClick={() => onOpenChange(false)}
@@ -523,9 +594,9 @@ export function TransactionDrawer({
 
         <Field
           id="tx-description"
-          label="Descrição (opcional)"
+          label={isLater ? "Descrição" : "Descrição (opcional)"}
           error={errors.description ?? liveDescriptionError}
-          hint="Se vazia, usamos o nome da categoria."
+          hint={isLater ? undefined : "Se vazia, usamos o nome da categoria."}
         >
           <input
             id="tx-description"
@@ -539,18 +610,20 @@ export function TransactionDrawer({
           />
         </Field>
 
-        <TagInput
-          value={tags}
-          onChange={(next) => {
-            setTags(next);
-            setErrors((x) => ({ ...x, tags: undefined }));
-          }}
-          error={errors.tags}
-        />
+        {isLater ? null : (
+          <TagInput
+            value={tags}
+            onChange={(next) => {
+              setTags(next);
+              setErrors((x) => ({ ...x, tags: undefined }));
+            }}
+            error={errors.tags}
+          />
+        )}
 
         <div className="flex flex-col gap-1.5">
           <span id="tx-payer-label" className="text-sm font-medium text-slate-800">
-            {text.payer}
+            {isLater ? "Responsável pelo pagamento" : text.payer}
           </span>
           <div role="radiogroup" aria-labelledby="tx-payer-label" className="flex flex-wrap gap-2">
             {members.map((m) => (
@@ -597,7 +670,9 @@ export function TransactionDrawer({
               aria-describedby={splitBlocked ? "tx-installment-notice" : undefined}
               aria-labelledby="tx-shared-label"
               onClick={() => {
-                if (!splitBlocked) setShared((v) => !v);
+                if (splitBlocked) return;
+                setShared((v) => !v);
+                setSharedTouched(true);
               }}
               className={cn(
                 "relative h-7 w-12 shrink-0 rounded-full transition-colors",
@@ -613,6 +688,11 @@ export function TransactionDrawer({
               />
             </button>
           </div>
+        ) : null}
+        {isLater && personalExpense ? (
+          <p role="note" data-testid="mode-default-note" className="text-xs text-slate-600">
+            Padrão deste modo: {MODE_DEFAULTS.LATER.shared ? "Dividir" : "Só meu"}
+          </p>
         ) : null}
         {personalExpense && members.length > 1 ? (
           <p
@@ -638,39 +718,81 @@ export function TransactionDrawer({
           </p>
         ) : null}
 
-        <details
-          open={detailsOpen}
-          onToggle={(e) => setDetailsOpen((e.currentTarget as HTMLDetailsElement).open)}
-          className="rounded-lg border border-slate-200 p-3"
-        >
-          <summary className="min-h-6 cursor-pointer text-sm font-medium text-slate-700">
-            Mais detalhes
-          </summary>
-          <div className="mt-3 flex flex-col gap-4">
-            {paidActive ? null : (
-              <Field id="tx-date" label="Data" error={errors.occurredOn}>
-                <input
-                  id="tx-date"
-                  type="date"
-                  className={inputClass}
-                  value={date}
-                  {...(defaults.data ? { max: defaults.data.today } : {})}
-                  onChange={(e) => setDate(e.target.value)}
-                  aria-invalid={errors.occurredOn ? true : undefined}
+        {isLater && !seriesOn ? (
+          <Field id="tx-date" label="Vencimento" error={dateError} hint="Se vazio, vence hoje.">
+            <input
+              id="tx-date"
+              type="date"
+              className={inputClass}
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              aria-invalid={dateError ? true : undefined}
+            />
+          </Field>
+        ) : null}
+        {isLater && kind === "EXPENSE" ? (
+          <RepeatFields
+            repeat={doorState.repeat}
+            onRepeat={setRepeat}
+            locked={locked}
+            day={dayValue}
+            onDay={(v) => setDay(v)}
+            startMonth={startValue}
+            onStartMonth={(v) => setStartMonth(v)}
+            monthOptions={monthOptions}
+            endKind={endKind}
+            onEndKind={setEndKind}
+            endMonths={endMonths}
+            onEndMonths={setEndMonths}
+            errors={errors}
+          />
+        ) : null}
+
+        {seriesOn ? (
+          note.trim() ? (
+            <p
+              role="note"
+              data-testid="series-note-notice"
+              className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200"
+            >
+              {SERIES_NOTE_NOTICE}
+            </p>
+          ) : null
+        ) : (
+          <details
+            open={detailsOpen}
+            onToggle={(e) => setDetailsOpen((e.currentTarget as HTMLDetailsElement).open)}
+            className="rounded-lg border border-slate-200 p-3"
+          >
+            <summary className="min-h-6 cursor-pointer text-sm font-medium text-slate-700">
+              Mais detalhes
+            </summary>
+            <div className="mt-3 flex flex-col gap-4">
+              {paidActive || isLater ? null : (
+                <Field id="tx-date" label="Data" error={dateError}>
+                  <input
+                    id="tx-date"
+                    type="date"
+                    className={inputClass}
+                    value={date}
+                    {...(defaults.data ? { max: defaults.data.today } : {})}
+                    onChange={(e) => setDate(e.target.value)}
+                    aria-invalid={dateError ? true : undefined}
+                  />
+                </Field>
+              )}
+              <Field id="tx-note" label="Observação" error={errors.note}>
+                <textarea
+                  id="tx-note"
+                  className={cn(inputClass, "min-h-20 py-2")}
+                  maxLength={500}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
                 />
               </Field>
-            )}
-            <Field id="tx-note" label="Observação" error={errors.note}>
-              <textarea
-                id="tx-note"
-                className={cn(inputClass, "min-h-20 py-2")}
-                maxLength={500}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-            </Field>
-          </div>
-        </details>
+            </div>
+          </details>
+        )}
 
         <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white dark:bg-slate-100 p-4">
           <Button
@@ -678,10 +800,14 @@ export function TransactionDrawer({
             variant={overLimit ? "danger" : "primary"}
             className="w-full"
             disabled={
-              create.isPending || liveDescriptionError !== undefined || paidError !== undefined
+              door.isPending || liveDescriptionError !== undefined || paidError !== undefined
             }
           >
-            {create.isPending ? "Salvando…" : overLimit ? "Confirmar mesmo assim" : text.save}
+            {door.isPending
+              ? "Salvando…"
+              : overLimit
+                ? "Confirmar mesmo assim"
+                : saveLabel({ kind, when })}
           </Button>
         </div>
       </form>
