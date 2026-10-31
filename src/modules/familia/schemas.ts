@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sanitizeMemberName } from "@/modules/familia/display-name";
 
 export const emailSchema = z
   .string({ error: "Informe um e-mail válido" })
@@ -55,6 +56,23 @@ export const CreateInvitationSchema = z
   .strict();
 export type CreateInvitationInput = z.input<typeof CreateInvitationSchema>;
 
+// US-092b (SDD-033 §4.1): o corpo NUNCA traz joinedAt/role/userId (.strict()); joinedAt = now() só no servidor (SEC-060).
+export const memberNameSchema = z
+  .string({ error: "Informe o nome" })
+  .transform(sanitizeMemberName) // SEC-063b: NFKC, sem invisíveis, espaços colapsados
+  .pipe(z.string().min(2, "Use de 2 a 60 caracteres").max(60, "Use de 2 a 60 caracteres"));
+
+export const CreateUnlinkedMemberSchema = z
+  .object({
+    name: memberNameSchema,
+    email: z.preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+      emailSchema.optional(),
+    ),
+  })
+  .strict();
+export type CreateUnlinkedMemberInput = z.infer<typeof CreateUnlinkedMemberSchema>;
+
 export const DevLoginSchema = z
   .object({
     email: emailSchema,
@@ -83,7 +101,11 @@ export type MemberDTO = {
   role: Role;
   joinedAt: string;
   unlinked?: true;
+  /** US-092b: só para ADMIN e só em membro sem conta; ausente para os demais (e nunca em `MemberRef`). */
+  pendingEmail?: string | null;
 };
+
+export type CreateUnlinkedMemberResponse = { member: MemberDTO & { canChangeRole: false } };
 
 export type InvitationDTO = {
   id: string;
@@ -117,7 +139,7 @@ export type FamilyEventDTO = {
     | "MEMBER_JOINED"
     | "CARD_OWNER_CHANGED"
     | "CARD_PAYER_ACCOUNT_CHANGED" // US-089
-    | "MEMBER_CREATED" // US-092 (SDD-033): sem uso até a 092b
+    | "MEMBER_CREATED" // US-092b
     | "MEMBER_UPDATED" // US-095
     | "MEMBER_LINKED" // US-094b
     | "TAG_RENAMED" // US-046 (SDD-016): gestão de tags

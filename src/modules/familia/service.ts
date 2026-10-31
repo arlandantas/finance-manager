@@ -163,6 +163,8 @@ export async function getFamily(tx: Tx, ctx: RequestContext): Promise<FamilyDTO>
       role: toRole(m.role),
       joinedAt: m.joinedAt.toISOString(),
       ...(m.user === null ? { unlinked: true as const } : {}),
+      // PII de terceiro (US-092b): o e-mail pendente só sai para ADMIN, em sem conta; a chave some para os demais
+      ...(m.user === null && ctx.role === "ADMIN" ? { pendingEmail: m.pendingEmail } : {}),
       canChangeRole: ctx.role === "ADMIN" && m.user !== null,
     })),
     exMembers: (await repos.familia.listExMembers()).map((m) => ({

@@ -25,6 +25,7 @@ import type {
   MyInvitationDTO,
   MyInvitationsResponse,
 } from "@/modules/familia/invitations/schemas";
+import { lockFamilyAdmins } from "@/modules/familia/manage";
 import { findActiveMembership } from "@/modules/familia/repo";
 import { toRole } from "@/modules/familia/roles";
 import type {
@@ -167,7 +168,18 @@ export async function createInvitation(
   const email = normalizeEmail(input.email);
   const now = ctx.clock.now();
 
+  await lockFamilyAdmins(tx, ctx, true); // US-092b: serializa com o cadastro de membro sem conta
   await repo.expireStale(email, now); // libera reconvite após vencer
+  // US-092b: o e-mail de um cadastro sem conta só convida pelo cadastro (094a); sem consumir cota
+  const unlinked = (await repo.members()).find(
+    (m) => m.userId === null && m.pendingEmail === email,
+  );
+  if (unlinked) {
+    throw conflict(
+      "EMAIL_BELONGS_TO_UNLINKED_MEMBER",
+      `Este e-mail é do cadastro de ${memberDisplayName(unlinked)}. Convide pelo cadastro dele(a).`,
+    );
+  }
   await assertInvitationQuota(tx, ctx.familyId, now);
   await assertInviterQuota(tx, ctx.userId, now); // SEC-040
   if (await repo.memberWithEmail(email)) {

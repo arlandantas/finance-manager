@@ -69,13 +69,15 @@ describe("leituras de membro (SEC-058, D-033-2)", () => {
     expect(bad).toEqual([]);
   });
 
-  it("(b) `pendingEmail` só aparece em familia/**, privacidade/delete-* e no schema/tipos gerados", () => {
+  it("(b) `pendingEmail` só aparece em familia/**, privacidade/delete-*, na tela Família e no schema/tipos gerados", () => {
     const bad = files
       .filter((f) => /pendingEmail/.test(f.text))
       .map((f) => f.p)
       .filter(
         (p) =>
-          !p.startsWith("src/modules/familia/") && !p.startsWith("src/modules/privacidade/delete-"),
+          !p.startsWith("src/modules/familia/") &&
+          !p.startsWith("src/modules/privacidade/delete-") &&
+          p !== "src/app/(app)/familia/familia-screen.tsx", // US-092b: lista da tela Família (só ADMIN recebe o campo)
       );
     expect(bad).toEqual([]);
   });
