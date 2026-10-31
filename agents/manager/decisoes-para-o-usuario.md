@@ -61,7 +61,7 @@ Todas as hipóteses do Stakeholder foram aprovadas em 2026-10-26, **exceto Q-U20
 | Q-U24 | Saldo previsto por conta inclui previstas "Só meu" de outro membro | Sim |
 
 ## H. Membro sem conta: Q-TL-U1..U5 do ADR-033 (2026-10-30) — RESPONDIDAS pelo usuário
-Q-TL-U1..U5 respondidas; a revisão da Segurança (SEC-058..068, 2026-10-30) concordou com U2/U5 e com U3/U4 sob condições já incorporadas no ADR. **Restam 2 perguntas novas da Segurança (abaixo, pendentes; não bloqueiam a 092a).** Registro: D-GES-63; modelo em `tech-lead/adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md`.
+Q-TL-U1..U5 respondidas; a revisão da Segurança (SEC-058..068, 2026-10-30) concordou com U2/U5 e com U3/U4 sob condições já incorporadas no ADR. As 2 perguntas novas da Segurança foram respondidas em 2026-10-30 (D-GES-64). Registro: D-GES-63; modelo em `tech-lead/adrs/ADR-033-membro-sem-conta-e-convite-vinculado.md`.
 
 | ID | Decisão | Resposta (usuário, 2026-10-30) |
 | :-- | :-- | :-- |
@@ -71,9 +71,9 @@ Q-TL-U1..U5 respondidas; a revisão da Segurança (SEC-058..068, 2026-10-30) con
 | Q-TL-U4 | O nome do cadastro continua valendo depois que a pessoa assume? | **Não: a pessoa escolhe o próprio nome ao assumir; o do cadastro é provisório** (muda a recomendação do TL) |
 | Q-TL-U5 | Anonimizar o e-mail dos convites do cadastro removido na hora | Sim (a Segurança concorda e amplia: também ao editar o e-mail e sem e-mail no histórico de reenvio) |
 
-**Pendentes (revisão da Segurança, 2026-10-30):**
+**Revisão da Segurança (respondidas, D-GES-64):**
 
-| ID | Decisão | Hipótese adotada | Impacto se mudar |
-| :-- | :-- | :-- | :-- |
-| SEC-060 | O cadastro deve perguntar "Entra na divisão das despesas?" (escolha obrigatória; "não" grava a divisão proporcional com 0%)? A Segurança recomenda sim | Vale a resposta da Q-TL-U1: só o aviso no cadastro | +1 pt na US-092 |
-| SEC-062(3) | Criar "Desvincular conta" (só Administrador, até 7 dias após o aceite) para desfazer um convite aceito pela pessoa errada? | Não por ora; aviso na criação do convite e e-mail aos Administradores quando o cadastro é assumido | Nova fatia (~3 pts) |
+| ID | Decisão | Resposta (usuário, 2026-10-30) |
+| :-- | :-- | :-- |
+| SEC-060 | Cadastro perguntar "Entra na divisão das despesas?" | Não: vale só o aviso da Q-TL-U1 |
+| SEC-062(3) | Criar "Desvincular conta" agora | Não por ora; só o aviso aos Administradores quando o cadastro é assumido |

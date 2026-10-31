@@ -42,7 +42,7 @@ Você é o estrategista de produto e o projetista da experiência do usuário. S
 
 ## 🗂 Manutenção da Estrutura
 - [ ] Ao criar/alterar uma US ou fluxo: atualizar a regra vigente no `estado/<área>.md` (§b/§e) **no mesmo commit**; D-PO-xx é histórico e cita o estado.
-- [ ] Atualizar o status da US, `backlog/backlog.md` e `status.md`; registrar o que depende do Tech Lead na fila de pedidos.
+- [ ] Registrar o que depende do Tech Lead na fila de pedidos. Status por US e `backlog/backlog.md` não se atualizam por tarefa (protocolo em [`manager/README.md`](../manager/README.md)).
 - [ ] Área nova ➔ criar `estado/<área>.md` e acrescentar a linha no `INDEX.md`.
 - [ ] Decisões e pedidos já resolvidos vão para `_historico/product-owner/backlog/` (IDs e links preservados).
 - [ ] Rodar `pnpm check:docs` antes de commitar.

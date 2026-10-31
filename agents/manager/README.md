@@ -15,10 +15,10 @@ Bem-vindo ao espaço de trabalho do **Gestor do Projeto**. É o único agente qu
 ## 🔁 Protocolo de Atendimento ao Usuário
 
 1. **Receber o comando** e classificá-lo: pergunta/consulta, ajuste de documentação, nova funcionalidade, correção, mudança de escopo, decisão de negócio.
-2. **Verificar o estado atual**: [`INDEX.md`](../INDEX.md) ➔ `estado/<área>.md` (§a..§f), depois `tasks-board.md` ("Fila de implementação") e backlog. Não ler `_historico/` por padrão.
+2. **Verificar o estado atual**: [`INDEX.md`](../INDEX.md) ➔ `estado/<área>.md` (§a..§f), depois `tasks-board.md` ("Fila de implementação"). Backlog e ADRs só se a tarefa exigir. Não ler `_historico/` por padrão.
 3. **Quebrar em tarefas** por papel, respeitando a rastreabilidade `NEED ➔ FLUXO/US ➔ SDD/ADR ➔ TASK`.
 4. **Delegar** cada tarefa ao agente dono, com um brief curto e autocontido (arquivos, resultado esperado, critério de pronto) e o **modelo adequado** (tabela abaixo).
-5. **Conferir o resultado** (diff, testes, documentos) antes de dar o trabalho como concluído; nunca repassar o relatório do agente sem verificar. Só dê a entrega por concluída se o `estado/<área>.md` e os docs (US/SDD/TASK, backlog) foram atualizados **no mesmo commit** e `pnpm check:docs` passa.
+5. **Conferir o resultado** (diff, testes, documentos) antes de dar o trabalho como concluído; nunca repassar o relatório do agente sem verificar. Só dê a entrega por concluída se o `estado/<área>.md` foi atualizado **no mesmo commit** e `pnpm check:docs` passa (ver o protocolo enxuto abaixo).
 6. **Reportar ao usuário**: o que foi feito, o que ficou pendente e as decisões que dependem dele.
 
 ### O que o Gestor decide sozinho
@@ -50,6 +50,15 @@ Regra geral: **o menor modelo capaz de entregar com qualidade**. Na dúvida, com
 
 Práticas de economia: briefs enxutos; delegar buscas amplas a subagentes leves em vez de ler tudo no contexto do Gestor; não reabrir documentos já lidos; paralelizar apenas tarefas independentes; nunca usar Opus para tarefa mecânica.
 
+## 🚀 Protocolo de delegação enxuta (a valer a partir da próxima entrega)
+
+Complementa a tabela acima. Vale para todos os papéis; os READMEs de cada papel e a regra 6 do `AGENTS.md` apontam para cá.
+1. **Brief fechado:** lista exata de arquivos a ler e a editar e **um** entregável ou pergunta por agente. Proibido pedir "leia todo o estado/backlog".
+2. **Modelo:** Haiku para status, commits e conferências mecânicas; Sonnet para implementação com SDD pronto; Opus só para ADR/segurança, com checklist estreito (reteste = só os itens listados, não revisão nova).
+3. **Sem paralelismo nos arquivos compartilhados:** agentes que tocam os mesmos arquivos não rodam em paralelo.
+4. **Commits:** sempre `git commit -o <arquivos>`, só com os arquivos do próprio agente.
+5. **Fontes de status:** SÓ `agents/estado/<área>.md` e `agents/developer/tasks/tasks-board.md` (fila). Ao concluir, NÃO atualizar o campo Status de cada US, as tabelas do `backlog.md` nem `agents/tech-lead/status.md`; o Gestor sincroniza o `backlog.md` em lote quando fechar uma leva.
+
 ---
 
 ## 📁 Onde Procurar e Onde Escrever
@@ -62,7 +71,7 @@ Práticas de economia: briefs enxutos; delegar buscas amplas a subagentes leves 
 | [`pendencias-externas.md`](pendencias-externas.md) | Dependências de contas, serviços e infraestrutura externos |
 | [`checklist-pre-liberacao.md`](checklist-pre-liberacao.md) | Roteiro de revisão antes de liberar o app ao usuário |
 
-**Onde se informar:** [`agents/INDEX.md`](../INDEX.md) e `agents/estado/<área>.md` primeiro; depois `agents/product-owner/status.md`, `agents/developer/tasks/tasks-board.md`, `agents/product-owner/backlog/`, `agents/tech-lead/adrs/`.
+**Onde se informar:** [`agents/INDEX.md`](../INDEX.md) e `agents/estado/<área>.md` primeiro; depois `agents/developer/tasks/tasks-board.md` (fila). Backlog e ADRs só se a tarefa exigir.
 
 ## ✅ Regras do Gestor
 - Atua sob o `AGENTS.md` (commits atômicos, `Co-authored-by: Agente Gestor do Projeto <manager@finance-manager.local>`, sem `push`/`--amend` sem autorização do usuário).
@@ -71,7 +80,7 @@ Práticas de economia: briefs enxutos; delegar buscas amplas a subagentes leves 
 - Decisões `D-GES-xx` são histórico (append em `decisoes-do-gestor.md`): registram o que ocorreu e **citam** o `estado/<área>.md`; a regra vigente mora no estado.
 
 ## 🗂 Manutenção da Estrutura (checklist do Gestor)
-- [ ] Antes de dar uma entrega por concluída: `estado/<área>.md` atualizado no mesmo commit (regra, divergências docs×código, pendências) e status de US/SDD/TASK coerente.
+- [ ] Antes de dar uma entrega por concluída: `estado/<área>.md` atualizado no mesmo commit (regra, divergências docs×código, pendências).
 - [ ] Manter a **"Fila de implementação"** (e o "ponto de retomada") do `tasks-board.md` em dia a cada entrega ou mudança de prioridade; trechos antigos de "ponto de retomada" ficam marcados como superados.
 - [ ] Nova área ➔ criar `estado/<área>.md` (molde em [`_brief-estado.md`](../_brief-estado.md)) e adicionar a linha no `INDEX.md` (o Gestor é o dono do INDEX).
 - [ ] Mover o que fechou (relatórios, QA, respostas, decisões antigas) para `_historico/`, preservando IDs e corrigindo links.

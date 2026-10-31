@@ -129,7 +129,7 @@ A responsabilidade de QA fica concentrada no **Desenvolvedor & QA**:
    Se houver ambiguidade, conflito técnico ou necessidade de revisão de escopo, sinalize imediatamente ao Gestor do Projeto.
 6. **Manter a estrutura de estado (ver [`agents/INDEX.md`](agents/INDEX.md))**:
    - Leia INDEX ➔ `agents/estado/<área>.md`; não leia `agents/_historico/` por padrão.
-   - Mudou uma regra? Atualize `agents/estado/<área>.md` (e status de US/SDD/TASK, `backlog.md`, `tasks-board.md`) no MESMO commit; divergência spec×código vira `DEV-xxx` e entra no estado. Fechado ➔ `_historico/` (IDs e links preservados). Rode `pnpm check:docs` antes de commitar. A documentação faz parte da Definition of Done.
+   - Mudou uma regra? Atualize `agents/estado/<área>.md` (e a fila do `tasks-board.md`; status de US e `backlog.md` seguem o protocolo em `agents/manager/README.md`) no MESMO commit; divergência spec×código vira `DEV-xxx` e entra no estado. Fechado ➔ `_historico/` (IDs e links preservados). Rode `pnpm check:docs` antes de commitar. A documentação faz parte da Definition of Done.
 7. **Escolha do Modelo por Complexidade (Economia)**:
    Ao invocar ou atuar como agente, avalie a complexidade da tarefa e use o **menor modelo capaz de entregá-la com qualidade**. Não use modelos mais complexos (e caros) para tarefas simples.
    - **Modelo leve** (ex.: Haiku): buscas e leituras no repositório, ajustes de documentação/status, edições mecânicas, formatação, rodar comandos e relatar resultado.

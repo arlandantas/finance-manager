@@ -84,7 +84,7 @@ Co-authored-by: Agente Desenvolvedor & QA <dev-qa@finance-manager.local>
 ## 🗂 Manutenção da Estrutura
 Ao concluir uma unidade de trabalho (no mesmo commit do código):
 - [ ] `estado/<área>.md`: regra vigente, divergências docs×código (DEV-xxx) e pendências.
-- [ ] Status da US/SDD/TASK e `backlog.md`; `tasks-board.md` ("Fila de implementação" e "ponto de retomada").
+- [ ] `tasks-board.md` ("Fila de implementação" e "ponto de retomada"). Status por US/SDD e `backlog.md` não se atualizam por tarefa (protocolo em [`manager/README.md`](../manager/README.md)).
 - [ ] Área nova ➔ criar `estado/<área>.md` e acrescentar a linha no `INDEX.md`.
 - [ ] QA/tarefas encerradas e relatórios antigos vão para `_historico/developer/tasks/` (IDs TASK/DEV e links preservados).
 - [ ] Rodar `pnpm check:docs` (e os testes) antes de commitar.

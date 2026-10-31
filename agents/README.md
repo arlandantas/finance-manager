@@ -65,7 +65,7 @@ agents/
 
 Mapa e regra de manutenção ficam no [`INDEX.md`](INDEX.md) (não duplicar aqui). Checklist ao concluir uma unidade de trabalho:
 - [ ] Atualizei `estado/<área>.md` (regra vigente, divergências docs×código, pendências) **no mesmo commit** da mudança; o arquivo continua com ~1500 palavras ou menos.
-- [ ] Atualizei o status do que toquei (US/SDD/TASK), `backlog.md` e, se couber ao meu papel, a "Fila de implementação" do `tasks-board.md`.
+- [ ] Se couber ao meu papel, atualizei a "Fila de implementação" do `tasks-board.md`. Status por US e `backlog.md` não se atualizam por tarefa (protocolo em [`manager/README.md`](manager/README.md)).
 - [ ] Se a área é nova: criei `estado/<área>.md` (molde em [`_brief-estado.md`](_brief-estado.md)) e acrescentei a linha no `INDEX.md`.
 - [ ] Item fechado (relatório, QA, resposta, decisão antiga) vai para `_historico/` com a mesma subestrutura, mantendo IDs e corrigindo os links que apontavam para o caminho antigo.
 - [ ] Rodei `pnpm check:docs` antes de commitar.
