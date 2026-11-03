@@ -1,10 +1,10 @@
 # Estado atual
 
 **Fase:** R1–R4 em grande parte entregues; US-050 e US-051 entregues, aceite do Gestor pendente. Fluxo enxuto adotado (docs/ + .claude/agents/); histórico antigo só no git (`agents/`, removida).
-**Verificação (2026-11-03):** lint, typecheck, check:imports e check:docs ok · unit 867 ok · int 1292 ok (1 pulado) · E2E 1313 ok, 2 pulados, 7 falhas em EN-004/EN-005 (`/familia` presa em "Carregando família" no `ai-settings-link`; passam isoladas e com `--workers=1`; causa em investigação, fora de US-050/051). QA exploratório da US-050 pendente.
+**Verificação (2026-11-03):** lint, typecheck, check:imports e check:docs ok · unit 867 ok · int 1292 ok (1 pulado) · E2E 1313 ok, 2 pulados na 1ª execução, com 7 falhas únicas em EN-004/EN-005 (`/familia` presa em "Carregando família"); não reproduziu (isoladas, cache frio, após `test:int`) e o desktop completo passou depois (660 ok, 1 pulado) → flakiness de ambiente, sem defeito de código. Se voltar, abrir o trace. QA exploratório da US-050 pendente.
 
 ## Próximo passo
-1. Resolver as 7 falhas E2E de EN-004/EN-005; depois aceitar ou devolver US-050/US-051.
+1. Aceitar ou devolver US-050/US-051 (suítes verdes; falta o QA exploratório da US-050).
 2. Fila no índice (`docs/backlog/index.md`): US-041 (pode iniciar), US-042/043/044 só após a janela de reversão do rateio (EN-002, `INSTALLMENT_SPLIT_RELEASED=false`), US-046, US-048/049, US-053/054, US-094a/b, US-095..101 (os últimos aguardam especificação do architect).
 3. Bloqueadas: US-066..069 (R5 adiada), US-074b e US-076c (decisão do usuário).
 
