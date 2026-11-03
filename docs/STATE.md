@@ -17,7 +17,7 @@
 - Decisões: SEC-037 (reautenticação nas exclusões), vetos a D-GES-57/61 e SEC-035, agregados da IA com "Só meu" alheio (recomendado: não), TL-42/TL-47 (token pessoal, limites do assistente), ordem US-041 × US-042.
 
 ## Dívidas conhecidas
-- US-053: filtro "Divisão" do Extrato fica aplicado sem controle visível se o acerto for desligado com ele ativo; E2E de selos só cobre o Extrato (Início e A pagar sem E2E). US-054: `contas-screen.tsx` e `cartoes-screen.tsx` passam de 300 linhas; `ArchiveBlocker` declarado em `cartoes/archive.ts` e `cartoes/hooks.ts`; sem E2E próprio de conta (coberto pela US-032).
+- US-053: E2E de selos só cobre o Extrato (Início e A pagar sem E2E). US-054: `contas-screen.tsx` e `cartoes-screen.tsx` passam de 300 linhas; `ArchiveBlocker` declarado em `cartoes/archive.ts` e `cartoes/hooks.ts`; sem E2E próprio de conta (coberto pela US-032).
 - E2E: o 1º cenário de uma rodada às vezes falha por compilação a frio do `next dev`; passa no reteste. `tests/unit/split/backfill.test.ts` estoura 5 s sob carga.
 - Divergência spec×código: código e testes vencem; registrar em `docs/spec/<área>`.
 - DEV-168..173 (previstas, US-051) e DEV-164..167 (cores, US-050): ver specs 04b e 10b.
