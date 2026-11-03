@@ -1,0 +1,39 @@
+# Índice de ADRs
+
+Decisões de arquitetura e de regra vigente. Molde: `../templates/adr.md`.
+
+- [ADR-001](ADR-001-stack-tecnologica.md) — Stack tecnológica da aplicação web — aceito
+- [ADR-002](ADR-002-autenticacao-google.md) — Autenticação com Google via Auth.js — aceito
+- [ADR-003](ADR-003-jobs-e-agendamento.md) — Jobs e agendamento com pg-boss — aceito
+- [ADR-004](ADR-004-escrita-offline-adiada.md) — Escrita offline adiada (PWA somente leitura) — adiado
+- [ADR-005](ADR-005-hospedagem-producao-adiada.md) — Hospedagem e stack de produção (adiada) — substituído por ADR-031
+- [ADR-006](ADR-006-split-familiar-no-mvp.md) — Split / acerto de contas familiar entra no MVP — aceito
+- [ADR-007](ADR-007-modelo-de-ledger-e-correcoes.md) — Modelo de ledger, correções e transferências — aceito
+- [ADR-008](ADR-008-login-de-teste.md) — Login de teste (dev-login) com sessão em banco — aceito
+- [ADR-009](ADR-009-idempotencia-e-controle-otimista.md) — Idempotência de mutações e controle otimista — aceito
+- [ADR-010](ADR-010-periodo-e-datas.md) — Datas contábeis e período como função de `cutDay` — aceito
+- [ADR-011](ADR-011-regra-de-divisao-versionada.md) — Regra de divisão versionada por vigência e apuração do acerto — aceito
+- [ADR-012](ADR-012-convites-e-email.md) — Convites por e-mail, vínculo no login e adapter de e-mail — aceito
+- [ADR-013](ADR-013-isolamento-por-familia.md) — Isolamento por `familyId` e contexto da família na sessão — aceito
+- [ADR-014](ADR-014-cartao-e-fatura-no-ledger.md) — Cartão de crédito, fatura e pagamento da fatura no ledger — aceito
+- [ADR-015](ADR-015-despesa-prevista-como-entidade-propria.md) — Despesa prevista como entidade própria (não é `Transaction`) — aceito
+- [ADR-016](ADR-016-percentual-gravado-por-lancamento.md) — Percentual de divisão gravado por lançamento (rateio por membro) — aceito
+- [ADR-017](ADR-017-parcelamento-no-cartao-e-competencia.md) — Compra parcelada no cartão (N linhas no ledger) e competência — aceito
+- [ADR-018](ADR-018-multiplos-grupos-spike.md) — Spike: pessoa em mais de um grupo e conta privada no grupo — aceito como diagnóstico e recomendação
+- [ADR-019](ADR-019-ciclo-de-vida-do-vinculo-ex-membro.md) — Ciclo de vida do vínculo (`Member`): ex-membro, saída e reconvite — aceito
+- [ADR-020](ADR-020-parcela-na-k-esima-fatura-e-competencia-no-banco.md) — Parcela *k* na *k*-ésima fatura, competência derivada no banco, exclusão do plano por carimbo — aceito
+- [ADR-021](ADR-021-protocolo-de-migracao-e-corte-do-motor-do-acerto.md) — Protocolo de migração e corte do motor do acerto — aceito
+- [ADR-022](ADR-022-tags-e-agregado-unico-da-analise.md) — Tags (normalização, N:N, mesclagem) e agregado único da Análise — aceito
+- [ADR-023](ADR-023-receita-prevista-por-kind-e-cor-por-enum-fixo.md) — Receita prevista como `kind` da previsão e cor como enum fechado — aceito
+- [ADR-024](ADR-024-modo-de-homologacao-rapida.md) — Modo de homologação rápida (build de produção + login de teste) — aceito
+- [ADR-025](ADR-025-recorrencia-mensal-materializada.md) — Despesa recorrente mensal como série com ocorrências materializadas — aceito
+- [ADR-026](ADR-026-producao-do-alpha.md) — Produção do alpha (v0): PaaS único, Postgres gerenciado e travas automáticas — substituído por ADR-031 na escolha de provedor
+- [ADR-027](ADR-027-parcelas-anteriores-ao-app.md) — Parcelas "anteriores ao app" como contador no plano — aceito
+- [ADR-028](ADR-028-integracao-llm-cliente-unico-e-teto-de-custo.md) — Integração com LLM: cliente único, modelo por finalidade, teto de custo e provedor simulado — aceito
+- [ADR-029](ADR-029-privacidade-e-anonimizacao-para-llm.md) — Privacidade para LLM: opt-in, payload só de agregados por allowlist e retenção mínima — aceito
+- [ADR-030](ADR-030-servidor-mcp-oauth-proprio-e-hospedagem.md) — Servidor MCP no app Next: OAuth 2.1 próprio, escopos e lançamento direto — aceito
+- [ADR-031](ADR-031-producao-vercel-prisma-postgres.md) — Produção na Vercel + Prisma Postgres; desenvolvimento em Docker — aceito
+- [ADR-032](ADR-032-correcoes-de-seguranca-grupo-b.md) — Correções de segurança do Grupo B (SEC-004, 009, 010, 011, 013, 017, 018) — aceito para especificação
+- [ADR-033](ADR-033-membro-sem-conta-e-convite-vinculado.md) — Membro sem conta (`Member.userId` anulável) e convite vinculado ao membro — aceito
+- [ADR-034](ADR-034-membro-sem-conta-decisoes-de-produto.md) — Membro sem conta: decisões de produto do usuário (divisão, acerto, cartão, remoção) — aceito
+- [ADR-035](ADR-035-ambiente-local-de-desenvolvimento.md) — Ambiente local de desenvolvimento: portas e acesso por rede — aceito
