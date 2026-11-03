@@ -5,10 +5,13 @@ const TYPES = ["EXPENSE", "INCOME", "TRANSFER", "INVOICE_PAYMENT"] as const;
 /** Filtros da URL (mesmos nomes da API, SDD-005 §4.1). Valores desconhecidos são ignorados. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function parseFilters(sp: {
-  get(name: string): string | null;
-  getAll?(name: string): string[];
-}): LedgerUiFilters {
+export function parseFilters(
+  sp: {
+    get(name: string): string | null;
+    getAll?(name: string): string[];
+  },
+  settlementEnabled = true,
+): LedgerUiFilters {
   const f: LedgerUiFilters = {};
   const period = sp.get("period");
   if (period && /^\d{4}-(0[1-9]|1[0-2])$/.test(period)) f.period = period;
@@ -26,7 +29,8 @@ export function parseFilters(sp: {
   const type = sp.get("type");
   if (type && (TYPES as readonly string[]).includes(type)) f.type = type as (typeof TYPES)[number];
   const shared = sp.get("shared");
-  if (shared === "true" || shared === "false") f.shared = shared === "true";
+  // Com o acerto desligado o filtro "Divisão" não existe na tela: ignorar o `shared` da URL
+  if (settlementEnabled && (shared === "true" || shared === "false")) f.shared = shared === "true";
   const origin = sp.get("origin");
   if (origin === "APP" || origin === "ASSISTANT") f.origin = origin;
   const q = sp.get("q")?.trim();

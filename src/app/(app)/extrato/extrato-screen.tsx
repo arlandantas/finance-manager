@@ -11,6 +11,7 @@ import { cn } from "@/components/ui/cn";
 import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError, newIdempotencyKey } from "@/lib/http";
+import { useSettlementEnabled } from "@/lib/settlement-context";
 import { useMarkAssistantReviewed } from "@/modules/mcp/hooks";
 import { useLedger } from "@/modules/transacoes/hooks";
 import type { LedgerUiFilters } from "@/modules/transacoes/optimistic";
@@ -87,7 +88,11 @@ export function ExtratoScreen() {
   // `highlight=<id>`: parâmetro só de interface (SDD-010 §4.6); id que não existe é ignorado
   const highlightId = searchParams.get("highlight");
 
-  const filters = useMemo(() => parseFilters(searchParams), [searchParams]);
+  const settlementEnabled = useSettlementEnabled();
+  const filters = useMemo(
+    () => parseFilters(searchParams, settlementEnabled),
+    [searchParams, settlementEnabled],
+  );
   const ledger = useLedger(filters);
   // US-076a: abrir o Extrato filtrado por "Via assistente" também marca os lançamentos como conferidos
   const markReviewed = useMarkAssistantReviewed();
