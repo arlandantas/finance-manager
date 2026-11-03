@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { PrevistasScreen } from "./previstas-screen";
 
-export const metadata = { title: "Contas a pagar · Finance Manager" };
+export const metadata = { title: "Previstas · Finance Manager" };
 
 export default function PrevistasPage() {
   return (

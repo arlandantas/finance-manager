@@ -16,12 +16,14 @@ import { INSTALLMENT_SPLIT_NOTICE } from "@/modules/cartoes/installment-copy";
 import { SUMMARY_COPY } from "@/modules/home/copy";
 import { useHome, useMonthSummary } from "@/modules/home/hooks";
 import type { HomeDTO, MonthSummaryDTO } from "@/modules/home/schemas";
+import type { ReceivableItemDTO } from "@/modules/previstas/schemas";
 import { SPLIT_COPY } from "@/modules/split/copy";
 import { AssistantReviewCard } from "./assistant-review-card";
 import { LedgerRow } from "./extrato/ledger-row";
 import { TransactionDetailDrawer } from "./extrato/transaction-detail-drawer";
 import { NewConnectionCard } from "./new-connection-card";
 import { PayPlannedDrawer } from "./previstas/pay-drawer";
+import { useCanActOnReceivable } from "./previstas/receivable-access";
 
 const first = (n: string) => n.split(" ")[0] ?? n;
 
@@ -182,6 +184,42 @@ function Line({
   );
 }
 
+/** US-051: uma receita prevista pendente no Resumo (selo "Atrasada" e ação "Receber"). */
+function ReceivableLine({ item, onReceive }: { item: ReceivableItemDTO; onReceive: () => void }) {
+  const canAct = useCanActOnReceivable(item);
+  return (
+    <li
+      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1"
+      data-testid="home-toreceive-item"
+    >
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="truncate">{item.title}</span>
+        <span className="text-xs text-slate-500">
+          {item.dueOn.slice(8, 10)}/{item.dueOn.slice(5, 7)}
+        </span>
+        {item.isOverdue ? (
+          <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800 dark:text-red-300">
+            {SUMMARY_COPY.overdue}
+          </span>
+        ) : null}
+      </span>
+      <span className="flex items-center gap-2">
+        <Money cents={item.amountInCents} />
+        {canAct ? (
+          <Button
+            variant="secondary"
+            aria-label={`Receber ${item.title}`}
+            className="min-h-11"
+            onClick={onReceive}
+          >
+            Receber
+          </Button>
+        ) : null}
+      </span>
+    </li>
+  );
+}
+
 function MonthSummaryCard({
   s,
   onShift,
@@ -195,6 +233,7 @@ function MonthSummaryCard({
 }) {
   const maskText = useMoneyText();
   const negative = s.projectedBalanceInCents < 0;
+  const [receivingId, setReceivingId] = useState<string | null>(null);
   return (
     <section
       aria-label="Resumo do mês"
@@ -310,6 +349,33 @@ function MonthSummaryCard({
             ) : null}
           </ul>
         </div>
+        {s.toReceive ? (
+          <div className="py-1" data-testid="home-toreceive-block">
+            <Line
+              label="A receber"
+              testid="home-toreceive"
+              tone="text-emerald-700 dark:text-emerald-300"
+            >
+              <Money cents={s.toReceive.totalInCents} />
+            </Line>
+            <ul
+              className="mb-1 ml-3 flex flex-col gap-1 text-sm text-slate-600"
+              aria-label="Receitas a receber"
+            >
+              {s.toReceive.items.map((i) => (
+                <ReceivableLine key={i.id} item={i} onReceive={() => setReceivingId(i.id)} />
+              ))}
+            </ul>
+            {s.toReceive.totalCount > s.toReceive.items.length ? (
+              <Link
+                href="/previstas?tab=receber"
+                className="ml-3 inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 dark:text-emerald-300 underline"
+              >
+                Ver todas as receitas a receber
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
         <div className="py-1">
           <Line
             label="Saldo previsto"
@@ -319,7 +385,11 @@ function MonthSummaryCard({
           >
             <Money cents={s.projectedBalanceInCents} />
           </Line>
-          <p className="text-xs text-slate-500">{SUMMARY_COPY.projectedHint}</p>
+          <p className="text-xs text-slate-500">
+            {s.projectedBalanceFormula === "SALDO_ATUAL_MENOS_A_PAGAR_MAIS_A_RECEBER"
+              ? SUMMARY_COPY.projectedHintWithReceivables
+              : SUMMARY_COPY.projectedHint}
+          </p>
           {negative ? (
             <p
               role="status"
@@ -332,6 +402,7 @@ function MonthSummaryCard({
         </div>
       </dl>
       {indicator && s.period.isCurrent ? <SettlementLines ind={indicator} /> : null}
+      <PayPlannedDrawer plannedId={receivingId} onClose={() => setReceivingId(null)} />
       <Link
         href="/previstas"
         className="inline-flex min-h-11 items-center text-sm font-semibold text-brand-800 dark:text-emerald-300 underline"

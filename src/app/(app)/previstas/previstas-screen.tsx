@@ -26,16 +26,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { useFamily } from "@/modules/familia/hooks";
+import { plannedCopy } from "@/modules/previstas/copy";
 import {
   useDeletePlanned,
   usePayables,
   usePlanned,
   usePlannedList,
+  useReceivables,
   useUndoPlannedPayment,
 } from "@/modules/previstas/hooks";
 import { useEndSeries, useSeries, useSeriesImpact } from "@/modules/previstas/recurring-hooks";
 import { differenceLabel } from "@/modules/previstas/rules";
-import type { PayableItemDTO, PlannedExpenseDTO } from "@/modules/previstas/schemas";
+import type {
+  PayableItemDTO,
+  PlannedExpenseDTO,
+  PlannedKind,
+  ReceivableItemDTO,
+} from "@/modules/previstas/schemas";
 import {
   canWritePlanned,
   canWriteTransaction,
@@ -49,8 +56,12 @@ import { monthLabel, shiftMonthKey } from "../extrato/filters";
 import { ByAccountBlock, ByAccountSkeleton, NO_ACCOUNT } from "./by-account-block";
 import { PayPlannedDrawer } from "./pay-drawer";
 import { PlannedDrawer } from "./planned-drawer";
+import { useCanActOnReceivable } from "./receivable-access";
 
-type Tab = "pay" | "paid";
+type Tab = "pay" | "receive" | "paid"; // US-051: A pagar · A receber · Pagas e recebidas
+const TAB_PARAM: Record<Tab, string> = { pay: "pagar", receive: "receber", paid: "pagas" };
+const tabFromParam = (v: string | null): Tab =>
+  v === "receber" ? "receive" : v === "pagas" ? "paid" : "pay";
 type ActionKind = "edit" | "edit-series" | "end-series" | "delete" | "undo";
 type Action = { kind: ActionKind; id: string } | null;
 
@@ -221,30 +232,130 @@ function PayableRow({
   );
 }
 
+/** US-051: receita prevista pendente ("A receber"); as mesmas regras de controle da prevista (SEC-026). */
+function ReceivableRow({
+  item,
+  onAction,
+  onReceive,
+}: {
+  item: ReceivableItemDTO;
+  onAction: (kind: ActionKind) => void;
+  onReceive: () => void;
+}) {
+  const canAct = useCanActOnReceivable(item);
+  return (
+    <li
+      id={item.id}
+      data-testid="receivable-item"
+      data-overdue={item.isOverdue ? "true" : undefined}
+      className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
+    >
+      <div className="min-w-0">
+        <p className="flex items-center gap-2 truncate font-semibold text-slate-900">
+          <CategoryIcon icon={item.category.icon} size={18} />
+          <span className="truncate">{item.title}</span>
+        </p>
+        <p className="text-sm text-slate-600">
+          Esperada {brDate(item.dueOn)}
+          {item.destinationAccount ? ` · Cai na conta ${item.destinationAccount.name}` : ""}
+        </p>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="font-semibold tabular-nums text-slate-900">
+          <Money cents={item.amountInCents} />
+        </span>
+        {canAct ? (
+          <Button variant="secondary" aria-label={`Receber ${item.title}`} onClick={onReceive}>
+            Receber
+          </Button>
+        ) : null}
+        {canAct ? (
+          <Menu
+            label={`Ações de ${item.title}`}
+            trigger={<MoreHorizontal size={20} aria-hidden="true" />}
+          >
+            {(close) => (
+              <>
+                <MenuItem
+                  onClick={() => {
+                    close();
+                    onAction("edit");
+                  }}
+                >
+                  <Pencil size={16} aria-hidden="true" />
+                  Editar
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    close();
+                    onAction("delete");
+                  }}
+                >
+                  <Trash2 size={16} aria-hidden="true" />
+                  Excluir
+                </MenuItem>
+              </>
+            )}
+          </Menu>
+        ) : null}
+      </div>
+      <div className="col-span-full flex flex-wrap items-center gap-2">
+        {item.isOverdue ? <OverdueChip /> : null}
+        <span className="flex items-center gap-1 text-xs text-slate-600">
+          <Avatar name={item.responsible.name} image={item.responsible.image} size={20} />
+          {first(item.responsible.name)}
+          {item.responsible.unlinked && !item.responsible.removed ? (
+            <UnlinkedBadge className="ml-1 px-1.5 py-0.5 text-[11px]" />
+          ) : null}
+        </span>
+      </div>
+    </li>
+  );
+}
+
 function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void }) {
   const paid = item.paid;
   const fmt = useFormatMoney();
   const family = useFamily().data;
+  const income = item.kind === "INCOME";
+  const copy = plannedCopy(item.kind);
   // SEC-021: estornar a baixa de um "Só meu" é só do dono (quem pagou)
   const paidRow = paid
     ? {
-        kind: "EXPENSE",
+        kind: income ? "INCOME" : "EXPENSE",
         isSharedExpense: item.isSharedExpense,
         payerMemberId: effectiveOwner(paid.payer).id,
         authorMemberId: paid.authorId ?? paid.payer.id,
         accountOwnerMemberId: paid.accountOwnerId ?? null,
       }
     : null;
+  // US-051: desfazer o recebimento exige controle da receita prevista (a receita gerada não é "Só meu")
+  const incomeControl =
+    income &&
+    (family === undefined ||
+      canWritePlanned(
+        {
+          isSharedExpense: item.isSharedExpense,
+          responsibleMemberId: effectiveOwner(item.responsible).id ?? "",
+          authorMemberId: item.author.id,
+          accountOwnerMemberId: item.paymentAccount?.ownerId ?? null,
+        },
+        { memberId: family.currentMemberId, role: family.currentRole },
+        effectiveOwner(item.responsible).removed,
+        isUnlinkedActive(item.responsible),
+      ));
   const canUndo =
     !paid ||
     !paidRow ||
-    (family !== undefined &&
-      canWriteTransaction(
-        paidRow,
-        { memberId: family.currentMemberId, role: family.currentRole },
-        effectiveOwner(paid.payer).removed,
-        isUnlinkedActive(paid.payer), // US-093b: tutor
-      ));
+    (income
+      ? incomeControl
+      : family !== undefined &&
+        canWriteTransaction(
+          paidRow,
+          { memberId: family.currentMemberId, role: family.currentRole },
+          effectiveOwner(paid.payer).removed,
+          isUnlinkedActive(paid.payer), // US-093b: tutor
+        ));
   return (
     <li
       id={item.id}
@@ -259,13 +370,14 @@ function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void
         </span>
         {paid ? (
           <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-            Pago em {brDate(paid.paidOn)}
+            {income ? "Recebida" : "Pago"} em {brDate(paid.paidOn)}
           </span>
         ) : null}
       </div>
       {paid ? (
         <p className="text-sm text-slate-700" data-testid="paid-summary">
-          Previsto <Money cents={item.amountInCents} /> · Pago <Money cents={paid.amountInCents} />
+          Previsto <Money cents={item.amountInCents} /> · {income ? "Recebido" : "Pago"}{" "}
+          <Money cents={paid.amountInCents} />
         </p>
       ) : null}
       {paid ? (
@@ -277,11 +389,11 @@ function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void
         <div>
           <Button
             variant="secondary"
-            aria-label={`Desfazer pagamento de ${item.description}`}
+            aria-label={`${copy.undoAction} de ${item.description}`}
             onClick={onUndo}
           >
             <Undo2 size={16} aria-hidden="true" />
-            Desfazer pagamento
+            {copy.undoAction}
           </Button>
         </div>
       ) : (
@@ -312,11 +424,12 @@ export function PrevistasScreen() {
   const periodParam = params.get("period");
   const period =
     periodParam && /^\d{4}-(0[1-9]|1[0-2])$/.test(periodParam) ? periodParam : undefined;
-  const [tab, setTab] = useState<Tab>("pay");
+  const [tab, setTab] = useState<Tab>(() => tabFromParam(params.get("tab"))); // US-051: ?tab=
   const [accountFilter, setAccountFilter] = useState<string | null>(null); // US-060: chave da conta
   const payables = usePayables(period);
-  const paidList = usePlannedList(period, "PAGO");
-  const [creating, setCreating] = useState(false);
+  const receivables = useReceivables(period);
+  const paidList = usePlannedList(period, "PAGO", "ALL"); // "Pagas e recebidas" mistura os dois tipos
+  const [creating, setCreating] = useState<PlannedKind | null>(null);
   const [action, setAction] = useState<Action>(null);
   const detail = usePlanned(action?.id ?? null);
   const del = useDeletePlanned();
@@ -326,12 +439,14 @@ export function PrevistasScreen() {
   const undo = useUndoPlannedPayment();
 
   const periodKey = payables.data?.period.key ?? period;
+  const tabQuery = tab === "pay" ? "" : `&tab=${TAB_PARAM[tab]}`;
   const go = (delta: number) => {
     setAccountFilter(null); // trocar de mês limpa o filtro por conta
-    if (periodKey) router.replace(`/previstas?period=${shiftMonthKey(periodKey, delta)}`);
+    if (periodKey)
+      router.replace(`/previstas?period=${shiftMonthKey(periodKey, delta)}${tabQuery}`);
   };
 
-  const active = tab === "pay" ? payables : paidList;
+  const active = tab === "pay" ? payables : tab === "receive" ? receivables : paidList;
   const planned = detail.data?.plannedExpense ?? null;
   const endSeries = useEndSeries();
   const endingSeriesId = action?.kind === "end-series" ? (planned?.series?.id ?? null) : null;
@@ -350,7 +465,9 @@ export function PrevistasScreen() {
       { id: planned.id, version: planned.version, idempotencyKey: deleteKey.current },
       {
         onSuccess: () => {
-          toast.success("Despesa prevista excluída");
+          toast.success(
+            planned.kind === "INCOME" ? "Receita prevista excluída" : "Despesa prevista excluída",
+          );
           setAction(null);
         },
         onError: (e) => {
@@ -389,7 +506,7 @@ export function PrevistasScreen() {
       { id: planned.id, version: planned.version, idempotencyKey: deleteKey.current },
       {
         onSuccess: () => {
-          toast.success("Pagamento desfeito");
+          toast.success(planned.kind === "INCOME" ? "Recebimento desfeito" : "Pagamento desfeito");
           setAction(null);
         },
         onError: (e) => {
@@ -403,10 +520,10 @@ export function PrevistasScreen() {
   return (
     <main className="flex flex-col gap-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-slate-900">Contas a pagar</h1>
-        <Button onClick={() => setCreating(true)}>
+        <h1 className="text-2xl font-semibold text-slate-900">Previstas</h1>
+        <Button onClick={() => setCreating(tab === "receive" ? "INCOME" : "EXPENSE")}>
           <Plus size={18} aria-hidden="true" />
-          Nova despesa prevista
+          {tab === "receive" ? "Nova receita prevista" : "Nova despesa prevista"}
         </Button>
       </header>
 
@@ -437,7 +554,25 @@ export function PrevistasScreen() {
         </button>
       </div>
 
-      {payables.data ? (
+      {tab === "receive" && receivables.data ? (
+        <section
+          aria-label="Total do mês"
+          className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl bg-brand-800 p-4 text-white"
+        >
+          <p className="text-sm text-brand-100">A receber</p>
+          <p data-testid="receivables-total" className="text-3xl font-bold tabular-nums">
+            <Money cents={receivables.data.totals.dueInCents} />
+          </p>
+          {receivables.data.totals.overdueCount > 0 ? (
+            <p data-testid="receivables-overdue" className="w-full text-sm text-brand-100">
+              {receivables.data.totals.overdueCount} atrasada(s):{" "}
+              <Money cents={receivables.data.totals.overdueInCents} />
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {tab !== "receive" && payables.data ? (
         <section
           aria-label="Total do mês"
           className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl bg-brand-800 p-4 text-white"
@@ -468,12 +603,13 @@ export function PrevistasScreen() {
       <div
         role="tablist"
         aria-label="Situação"
-        className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1"
+        className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1"
       >
         {(
           [
             ["pay", "A pagar"],
-            ["paid", "Pagas"],
+            ["receive", "A receber"],
+            ["paid", "Pagas e recebidas"],
           ] as const
         ).map(([k, label]) => (
           <button
@@ -483,7 +619,7 @@ export function PrevistasScreen() {
             aria-selected={tab === k}
             onClick={() => setTab(k)}
             className={cn(
-              "min-h-11 rounded-lg text-sm font-semibold",
+              "min-h-11 rounded-lg px-1 text-sm font-semibold",
               tab === k ? "bg-white dark:bg-slate-100 text-slate-900 shadow-sm" : "text-slate-600",
             )}
           >
@@ -493,11 +629,7 @@ export function PrevistasScreen() {
       </div>
 
       {active.isPending ? (
-        <div
-          className="flex flex-col gap-2"
-          aria-busy="true"
-          aria-label="Carregando contas a pagar"
-        >
+        <div className="flex flex-col gap-2" aria-busy="true" aria-label="Carregando previstas">
           <Skeleton className="h-20" />
           <Skeleton className="h-20" />
           <Skeleton className="h-20" />
@@ -520,7 +652,7 @@ export function PrevistasScreen() {
         payables.data.items.length === 0 ? (
           <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-8 text-center">
             <p className="text-slate-700">Nenhuma conta a pagar neste mês</p>
-            <Button onClick={() => setCreating(true)}>Nova despesa prevista</Button>
+            <Button onClick={() => setCreating("EXPENSE")}>Nova despesa prevista</Button>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -554,13 +686,33 @@ export function PrevistasScreen() {
         )
       ) : null}
 
+      {tab === "receive" && receivables.data ? (
+        receivables.data.items.length === 0 ? (
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-8 text-center">
+            <p className="text-slate-700">Nenhuma receita a receber neste mês</p>
+            <Button onClick={() => setCreating("INCOME")}>Cadastrar receita prevista</Button>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-2" aria-label="Receitas a receber">
+            {receivables.data.items.map((item) => (
+              <ReceivableRow
+                key={item.id}
+                item={item}
+                onAction={(kind) => openAction(kind, item.id)}
+                onReceive={() => setPayingId(item.id)}
+              />
+            ))}
+          </ul>
+        )
+      ) : null}
+
       {tab === "paid" && paidList.data ? (
         paidList.data.items.length === 0 ? (
           <p className="rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-6 text-center text-slate-700">
-            Nenhuma conta paga neste mês
+            Nenhuma conta paga ou recebida neste mês
           </p>
         ) : (
-          <ul className="flex flex-col gap-2" aria-label="Contas pagas">
+          <ul className="flex flex-col gap-2" aria-label="Pagas e recebidas">
             {paidList.data.items.map((item) => (
               <PaidRow key={item.id} item={item} onUndo={() => openAction("undo", item.id)} />
             ))}
@@ -568,7 +720,12 @@ export function PrevistasScreen() {
         )
       ) : null}
 
-      <PlannedDrawer open={creating} planned={null} onClose={() => setCreating(false)} />
+      <PlannedDrawer
+        open={creating !== null}
+        planned={null}
+        defaultKind={creating ?? "EXPENSE"}
+        onClose={() => setCreating(null)}
+      />
       <PlannedDrawer
         open={action?.kind === "edit" && planned !== null}
         planned={planned}
@@ -622,12 +779,13 @@ export function PrevistasScreen() {
       <Drawer
         open={action?.kind === "undo"}
         onOpenChange={(o) => !o && setAction(null)}
-        title="Desfazer pagamento?"
+        title={planned?.kind === "INCOME" ? "Desfazer recebimento?" : "Desfazer pagamento?"}
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-slate-700">
-            A despesa gerada sai do extrato, dos totais e do acerto, o saldo da conta volta e a
-            previsão volta a ficar pendente.
+            {planned?.kind === "INCOME"
+              ? "A receita gerada sai do extrato e dos totais, o saldo da conta volta e a previsão volta a ficar pendente."
+              : "A despesa gerada sai do extrato, dos totais e do acerto, o saldo da conta volta e a previsão volta a ficar pendente."}
           </p>
           {deleteError ? (
             <p role="alert" className="text-sm text-red-700 dark:text-red-300">
@@ -635,7 +793,11 @@ export function PrevistasScreen() {
             </p>
           ) : null}
           <Button variant="danger" disabled={undo.isPending || !planned} onClick={confirmUndo}>
-            {undo.isPending ? "Desfazendo…" : "Desfazer pagamento"}
+            {undo.isPending
+              ? "Desfazendo…"
+              : planned?.kind === "INCOME"
+                ? "Desfazer recebimento"
+                : "Desfazer pagamento"}
           </Button>
           <Button variant="ghost" onClick={() => setAction(null)}>
             Cancelar
@@ -646,11 +808,15 @@ export function PrevistasScreen() {
       <Drawer
         open={action?.kind === "delete"}
         onOpenChange={(o) => !o && setAction(null)}
-        title="Excluir despesa prevista?"
+        title={
+          planned?.kind === "INCOME" ? "Excluir receita prevista?" : "Excluir despesa prevista?"
+        }
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm text-slate-700">
-            A previsão deixa de aparecer em Contas a pagar. Nenhum saldo ou lançamento é alterado.
+            {planned?.kind === "INCOME"
+              ? "A previsão deixa de aparecer em A receber. Nenhum saldo ou lançamento é alterado."
+              : "A previsão deixa de aparecer em Contas a pagar. Nenhum saldo ou lançamento é alterado."}
           </p>
           {deleteError ? (
             <p role="alert" className="text-sm text-red-700 dark:text-red-300">

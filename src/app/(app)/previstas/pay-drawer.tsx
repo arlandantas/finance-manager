@@ -84,9 +84,23 @@ export function PayPlannedDrawer({
     accounts: accounts.data?.items ?? [],
     preferredAccountId: planned?.paymentAccount?.archived ? null : planned?.paymentAccount?.id,
   });
-  const accountId = source.accountId;
+  // US-051: "Receber" — a conta é o DESTINO (sem sugestão por saldo nem aviso de saldo negativo)
+  const isIncome = planned?.kind === "INCOME";
+  const [pickedDest, setPickedDest] = useState<string | null>(null);
+  useEffect(() => {
+    if (plannedId) setPickedDest(null);
+  }, [plannedId]);
+  const activeAccounts = accounts.data?.items ?? [];
+  const defaultDest =
+    (planned?.paymentAccount && !planned.paymentAccount.archived
+      ? activeAccounts.find((a) => a.id === planned.paymentAccount?.id)?.id
+      : undefined) ??
+    activeAccounts.find((a) => a.owner.id === planned?.responsible.id)?.id ??
+    activeAccounts[0]?.id ??
+    "";
+  const accountId = isIncome ? (pickedDest ?? defaultDest) : source.accountId;
   const account = (accounts.data?.items ?? []).find((a) => a.id === accountId);
-  const negative = account !== undefined && account.balanceInCents - cents < 0;
+  const negative = !isIncome && account !== undefined && account.balanceInCents - cents < 0;
   const diff = planned ? cents - planned.amountInCents : 0;
 
   function fieldsFrom(issues: Array<{ path: string; message: string }>) {
@@ -136,7 +150,9 @@ export function PayPlannedDrawer({
       { id: planned.id, input: parsed.data },
       {
         onSuccess: () => {
-          toast.success("Pagamento registrado com sucesso!");
+          toast.success(
+            isIncome ? "Recebimento registrado com sucesso!" : "Pagamento registrado com sucesso!",
+          );
           onClose();
         },
         onError,
@@ -153,7 +169,13 @@ export function PayPlannedDrawer({
     <Drawer
       open={open}
       onOpenChange={(o) => !o && onClose()}
-      title={planned ? `Dar baixa em ${planned.description}` : "Dar baixa"}
+      title={
+        planned
+          ? isIncome
+            ? "Receber receita prevista"
+            : `Dar baixa em ${planned.description}`
+          : "Dar baixa"
+      }
     >
       {conflict ? (
         <div className="flex flex-col gap-4">
@@ -164,6 +186,7 @@ export function PayPlannedDrawer({
             onClick={async () => {
               await qc.invalidateQueries({ queryKey: ["planned"] });
               await qc.invalidateQueries({ queryKey: ["payables"] });
+              await qc.invalidateQueries({ queryKey: ["receivables"] });
               await qc.invalidateQueries({ queryKey: ["home"] });
               onClose();
             }}
@@ -193,9 +216,14 @@ export function PayPlannedDrawer({
             </p>
           ) : null}
 
+          {isIncome ? (
+            <p data-testid="pay-income-title" className="text-sm font-semibold text-slate-900">
+              {planned.description}
+            </p>
+          ) : null}
           <Field
             id="pay-amount"
-            label="Valor pago"
+            label={isIncome ? "Valor recebido" : "Valor pago"}
             error={errors.amountInCents}
             hint={`Previsto ${fmt(planned.amountInCents)}`}
           >
@@ -213,12 +241,18 @@ export function PayPlannedDrawer({
             {differenceLabel(diff, fmt)}
           </p>
 
-          <Field id="pay-account" label="Conta" error={errors.accountId}>
+          <Field
+            id="pay-account"
+            label={isIncome ? "Conta de destino" : "Conta"}
+            error={errors.accountId}
+          >
             <SourceSelect
               id="pay-account"
               color={accounts.data?.items.find((a) => a.id === accountId)?.color}
               value={accountId}
-              onChange={(e) => source.pick(e.target.value)}
+              onChange={(e) =>
+                isIncome ? setPickedDest(e.target.value) : source.pick(e.target.value)
+              }
               aria-invalid={errors.accountId ? true : undefined}
             >
               <option value="" disabled>
@@ -227,7 +261,7 @@ export function PayPlannedDrawer({
               {(accounts.data?.items ?? []).map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name} · Saldo {fmt(a.balanceInCents)}
-                  {source.optionSuffix(a)}
+                  {isIncome ? "" : source.optionSuffix(a)}
                 </option>
               ))}
             </SourceSelect>
@@ -236,7 +270,7 @@ export function PayPlannedDrawer({
                 A conta prevista ({planned.paymentAccount.name}) foi arquivada. Escolha outra.
               </p>
             ) : null}
-            {source.reasonText ? (
+            {!isIncome && source.reasonText ? (
               <p data-testid="source-reason" className="mt-1 text-xs text-slate-600">
                 {source.reasonText}
               </p>
@@ -254,7 +288,7 @@ export function PayPlannedDrawer({
 
           <div className="flex flex-col gap-1.5">
             <span id="pay-payer-label" className="text-sm font-medium text-slate-800">
-              Quem pagou?
+              {isIncome ? "Quem recebeu?" : "Quem pagou?"}
             </span>
             <div
               role="radiogroup"
@@ -308,7 +342,7 @@ export function PayPlannedDrawer({
             <div className="mt-3">
               <Field
                 id="pay-date"
-                label="Data do pagamento"
+                label={isIncome ? "Data do recebimento" : "Data do pagamento"}
                 error={errors.paidOn}
                 hint="Se vazia, hoje."
               >
@@ -336,7 +370,9 @@ export function PayPlannedDrawer({
                 ? "Registrando…"
                 : negative
                   ? "Confirmar mesmo assim"
-                  : "Confirmar pagamento"}
+                  : isIncome
+                    ? "Confirmar recebimento"
+                    : "Confirmar pagamento"}
             </Button>
           </div>
         </form>

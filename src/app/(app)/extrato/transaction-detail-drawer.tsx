@@ -17,6 +17,7 @@ import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import { useUndoInvoicePayment } from "@/modules/cartoes/hooks";
 import { useFamily } from "@/modules/familia/hooks";
+import { plannedCopy } from "@/modules/previstas/copy";
 import {
   useDefaults,
   useInstallmentPlan,
@@ -424,12 +425,12 @@ export function TransactionDetailDrawer({
                 data-testid="linked-planned"
                 className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800"
               >
-                <span>Esta despesa veio de uma despesa prevista. Use Desfazer pagamento.</span>{" "}
+                <span>{plannedCopy(isIncome ? "INCOME" : "EXPENSE").linkedToPlanned}</span>{" "}
                 <Link
-                  href={`/previstas#${t.plannedExpenseId}`}
+                  href={`/previstas${isIncome ? "?tab=pagas" : ""}#${t.plannedExpenseId}`}
                   className="font-medium text-brand-800 dark:text-emerald-300 underline"
                 >
-                  Ver despesa prevista
+                  {isIncome ? "Ver receita prevista" : "Ver despesa prevista"}
                 </Link>
               </p>
             ) : null}

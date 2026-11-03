@@ -32,6 +32,7 @@ import {
 import {
   CreatePlannedExpenseSchema,
   type PlannedExpenseDTO,
+  type PlannedKind,
   UpdatePlannedExpenseSchema,
 } from "@/modules/previstas/schemas";
 import { splitSwitchLabel } from "@/modules/split/shares-label";
@@ -66,15 +67,21 @@ export function PlannedDrawer({
   open,
   planned,
   mode = "one",
+  defaultKind = "EXPENSE",
   onClose,
 }: {
   open: boolean;
   planned: PlannedExpenseDTO | null;
   mode?: "one" | "series";
+  /** US-051: tipo inicial no cadastro (a aba "A receber" abre como receita). Na edição vale o da previsão. */
+  defaultKind?: PlannedKind;
   onClose: () => void;
 }) {
   const family = useFamily();
-  const categories = useCategories("EXPENSE");
+  const [kind, setKind] = useState<PlannedKind>(planned?.kind ?? defaultKind);
+  const isIncome = kind === "INCOME"; // US-051: receita prevista (imutável após criar)
+  const categories = useCategories(kind);
+  const [destId, setDestId] = useState(""); // conta de destino sugerida (só receita)
   const qc = useQueryClient();
   const [description, setDescription] = useState("");
   const [cents, setCents] = useState(0);
@@ -129,6 +136,8 @@ export function PlannedDrawer({
     setBanner(null);
     setConflict(null);
     setKey(newIdempotencyKey());
+    setKind(planned?.kind ?? defaultKind);
+    setDestId(planned?.paymentAccount?.id ?? "");
     if (planned) {
       setDescription(planned.description);
       setCents(planned.amountInCents);
@@ -153,7 +162,7 @@ export function PlannedDrawer({
       setEndKind("NONE");
       setEndMonths("");
     }
-  }, [open, planned]);
+  }, [open, planned, defaultKind]);
 
   // Edição "esta e as próximas": os campos vêm da série (não da ocorrência).
   useEffect(() => {
@@ -296,15 +305,15 @@ export function PlannedDrawer({
 
   function submit() {
     if (submitting.current) return;
-    const accountId = source.accountId;
+    const accountId = isIncome ? destId : source.accountId;
     const legacyWithoutAccount = editing && !seriesMode && !planned?.paymentAccount && !accountId;
-    if (!accountId && !legacyWithoutAccount) {
+    if (!isIncome && !accountId && !legacyWithoutAccount) {
       setErrors({ paymentAccountId: "Escolha de qual conta vai sair" });
       return;
     }
     const endInput =
       endKind === "COUNT" ? { kind: "COUNT", months: Number(endMonths) } : { kind: "NONE" };
-    if (repeat && !editing) {
+    if (repeat && !editing && !isIncome) {
       const parsedSeries = CreateRecurringExpenseSchema.safeParse({
         description,
         amountInCents: cents,
@@ -384,11 +393,19 @@ export function PlannedDrawer({
     }
     const base = {
       ...(accountId ? { paymentAccountId: accountId } : {}),
+      // edição: conta de destino limpa vira null (a receita pode ficar sem conta sugerida)
+      ...(isIncome && editing && !accountId && planned?.paymentAccount
+        ? { paymentAccountId: null }
+        : {}),
       description,
       amountInCents: cents,
       categoryId,
       ...(effectiveResponsibleId ? { responsibleMemberId: effectiveResponsibleId } : {}),
-      isSharedExpense: splitAvailable ? shared : (planned?.isSharedExpense ?? false),
+      isSharedExpense: isIncome
+        ? false
+        : splitAvailable
+          ? shared
+          : (planned?.isSharedExpense ?? false),
       ...(dueOn ? { dueOn } : {}),
     };
     const parsed = planned
@@ -397,7 +414,11 @@ export function PlannedDrawer({
           version: planned.version,
           note: note.trim() === "" ? null : note,
         })
-      : CreatePlannedExpenseSchema.safeParse({ ...base, ...(note.trim() ? { note } : {}) });
+      : CreatePlannedExpenseSchema.safeParse({
+          ...base,
+          kind,
+          ...(note.trim() ? { note } : {}),
+        });
     if (!parsed.success) {
       const next = fieldsFrom(
         parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
@@ -411,7 +432,15 @@ export function PlannedDrawer({
     submitting.current = true;
     const done = {
       onSuccess: () => {
-        toast.success(planned ? "Despesa prevista atualizada" : "Despesa prevista cadastrada!");
+        toast.success(
+          isIncome
+            ? planned
+              ? "Receita prevista atualizada"
+              : "Receita prevista cadastrada!"
+            : planned
+              ? "Despesa prevista atualizada"
+              : "Despesa prevista cadastrada!",
+        );
         onClose();
       },
       onError,
@@ -425,7 +454,7 @@ export function PlannedDrawer({
 
   const pending =
     create.isPending || update.isPending || createSeries.isPending || updateSeries.isPending;
-  const showDayFields = seriesMode || (repeat && !editing);
+  const showDayFields = seriesMode || (repeat && !editing && !isIncome);
   const monthOptions = currentMonth
     ? Array.from({ length: 12 }, (_, i) => addMonths(currentMonth as MonthISO, i))
     : [];
@@ -439,8 +468,12 @@ export function PlannedDrawer({
         seriesMode
           ? "Editar esta e as próximas"
           : editing
-            ? "Editar despesa prevista"
-            : "Nova despesa prevista"
+            ? isIncome
+              ? "Editar receita prevista"
+              : "Editar despesa prevista"
+            : isIncome
+              ? "Nova receita prevista"
+              : "Nova despesa prevista"
       }
     >
       {conflict ? (
@@ -452,6 +485,7 @@ export function PlannedDrawer({
             onClick={async () => {
               await qc.invalidateQueries({ queryKey: ["planned"] });
               await qc.invalidateQueries({ queryKey: ["payables"] });
+              await qc.invalidateQueries({ queryKey: ["receivables"] });
               onClose();
             }}
           >
@@ -475,6 +509,56 @@ export function PlannedDrawer({
               {banner}
             </p>
           ) : null}
+
+          {!editing ? (
+            <div className="flex flex-col gap-1.5">
+              <span id="pl-kind-label" className="text-sm font-medium text-slate-800">
+                Tipo da previsão
+              </span>
+              <div
+                role="radiogroup"
+                aria-labelledby="pl-kind-label"
+                className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1"
+              >
+                {(
+                  [
+                    ["EXPENSE", "Despesa prevista"],
+                    ["INCOME", "Receita prevista"],
+                  ] as const
+                ).map(([k, label]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    role="radio"
+                    aria-checked={kind === k}
+                    onClick={() => {
+                      if (kind === k) return;
+                      setKind(k);
+                      setCategoryId(""); // a categoria é do mesmo tipo da previsão
+                      setErrors((e) => ({ ...e, categoryId: undefined }));
+                      if (k === "INCOME") {
+                        setShared(false);
+                        setRepeat(false);
+                      }
+                    }}
+                    className={cn(
+                      "min-h-11 rounded-lg text-sm font-semibold",
+                      kind === k
+                        ? "bg-white text-slate-900 shadow-sm dark:bg-slate-100"
+                        : "text-slate-600",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : seriesMode ? null : (
+            <p data-testid="kind-fixed" className="text-xs text-slate-600">
+              {isIncome ? "Receita prevista" : "Despesa prevista"}. Para mudar o tipo, exclua e
+              cadastre de novo.
+            </p>
+          )}
 
           <Field id="pl-description" label="Descrição" error={errors.description}>
             <input
@@ -568,7 +652,7 @@ export function PlannedDrawer({
 
           <div className="flex flex-col gap-1.5">
             <span id="pl-responsible-label" className="text-sm font-medium text-slate-800">
-              Responsável pelo pagamento
+              {isIncome ? "Responsável pelo recebimento" : "Responsável pelo pagamento"}
             </span>
             <div
               role="radiogroup"
@@ -641,7 +725,7 @@ export function PlannedDrawer({
             ) : null}
           </div>
 
-          {splitAvailable ? (
+          {splitAvailable && !isIncome ? (
             <div className="flex min-h-11 items-center justify-between gap-3">
               <span id="pl-shared-label" className="text-sm font-medium text-slate-800">
                 Dividir com a família
@@ -679,22 +763,30 @@ export function PlannedDrawer({
 
           <Field
             id="pl-account"
-            label="Pagar com"
+            label={isIncome ? "Conta de destino" : "Pagar com"}
             error={errors.paymentAccountId}
-            hint={source.reasonText || undefined}
+            hint={
+              isIncome
+                ? "Opcional. Você confirma a conta ao receber."
+                : source.reasonText || undefined
+            }
           >
             <SourceSelect
               id="pl-account"
-              color={accounts.data?.items.find((a) => a.id === source.accountId)?.color}
-              value={source.accountId}
+              color={
+                accounts.data?.items.find((a) => a.id === (isIncome ? destId : source.accountId))
+                  ?.color
+              }
+              value={isIncome ? destId : source.accountId}
               disabled={controllerOnly}
               onChange={(e) => {
-                source.pick(e.target.value);
+                if (isIncome) setDestId(e.target.value);
+                else source.pick(e.target.value);
                 setErrors((er) => ({ ...er, paymentAccountId: undefined }));
               }}
               aria-invalid={errors.paymentAccountId ? true : undefined}
             >
-              <option value="">Escolha a conta</option>
+              <option value="">{isIncome ? "Sem conta definida" : "Escolha a conta"}</option>
               {(accounts.data?.items ?? []).map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
@@ -703,7 +795,7 @@ export function PlannedDrawer({
             </SourceSelect>
           </Field>
 
-          {!editing ? (
+          {!editing && !isIncome ? (
             <div className="flex min-h-11 items-center justify-between gap-3">
               <span id="pl-repeat-label" className="text-sm font-medium text-slate-800">
                 Repetir todo mês
@@ -859,9 +951,9 @@ export function PlannedDrawer({
               {showDayFields ? null : (
                 <Field
                   id="pl-due"
-                  label="Vencimento"
+                  label={isIncome ? "Data esperada" : "Vencimento"}
                   error={errors.dueOn}
-                  hint="Se vazio, vence hoje."
+                  hint={isIncome ? "Se vazia, hoje." : "Se vazio, vence hoje."}
                 >
                   <input
                     id="pl-due"
