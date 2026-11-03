@@ -1,189 +1,67 @@
-# 🤖 Protocolo e Governança dos Agentes (AGENTS.md)
+# finance-manager
 
-> **Primeira leitura obrigatória: [`agents/INDEX.md`](agents/INDEX.md)** (mapa por área/tarefa; o estado vigente de cada área está em `agents/estado/`; o histórico fica em `agents/_historico/`). Mudou uma regra? Atualize o arquivo de estado no mesmo commit.
+Gestão financeira familiar (Next.js + Prisma/Postgres + Auth.js, Vitest, Playwright-BDD, Biome, pnpm).
+Idioma: docs, UI e commits em pt-BR; código e identificadores em inglês.
+Ponto de entrada único de qualquer agente. Esteira enxuta: sem papéis por pasta, sem trailer por papel.
 
-Este documento estabelece o protocolo operacional, fluxo de trabalho e governança dos **quatro agentes inteligentes** que colaboram na construção da aplicação web de **Gestão Financeira Familiar**, sob a gestão e orquestração do **Gestor do Projeto**.
+## Mapa (leia só o que a tarefa exige; nunca varra diretórios)
 
----
+- `docs/STATE.md` — fase, verificação, próximo passo, pendências do usuário (reescrito, ≤40 linhas)
+- `docs/backlog/index.md` — uma linha por história · `docs/backlog/stories/US-NNN.md` — história pendente
+- `docs/spec/` — regra vigente por área (≤120 linhas); índice em `docs/spec/README.md`
+- `docs/adr/` — uma decisão por arquivo; índice em `docs/adr/README.md`
+- `docs/agents/` — papéis · `docs/rules/` — regras por tema · `docs/templates/` — story e ADR · `docs/roadmap.md` — marcos
+- Histórico (`agents/`, relatórios, D-GES/D-PO, SDD, tasks) só no git: `git log -- agents/`. Não leia.
 
-## 📌 Organização dos Agentes
+## Regras por tema
 
-Todas as instruções específicas de cada papel, histórico de decisões, documentos de trabalho e registros de tarefas residem dentro do diretório [`agents/`](file:///home/arlan/ai-tests/finance-manager/agents):
+| Ao tocar | Leia |
+| --- | --- |
+| valores, rateio, acerto, fatura, parcelas | `docs/rules/dinheiro-centavos.md` |
+| `prisma/**`, queries, transações, travas | `docs/rules/prisma-db.md` |
+| `src/app/**`, componentes, hooks de UI | `docs/rules/frontend.md` |
+| qualquer teste | `docs/rules/testing.md` |
+| dados pessoais, "Só meu", LLM, MCP, auth | `docs/rules/seguranca-lgpd.md` |
 
-```text
-agents/
-├── README.md                      # Panorama geral do diretório de agentes
-├── security/                      # 5. Agente de Segurança da Informação (auditor independente: brechas, dados pessoais, OAuth/MCP)
-│   ├── README.md                  # Instruções de operação do Agente de Segurança
-│   └── status.md                  # Quadro dos achados (SEC-xxx); relatórios fechados em _historico/
-├── manager/                       # 0. Agente Gestor do Projeto (interface com o usuário, orquestração, decisões e escalonamentos)
-│   ├── README.md                  # Instruções de operação do Gestor
-│   └── *.md                       # Decisões do gestor, decisões para o usuário, pedidos, pendências externas, checklists
-├── stakeholder/                   # 1. Agente Stakeholder (Dono do Problema, Dores & Regras de Negócio)
-│   ├── README.md                  # Instruções de operação do Stakeholder
-│   └── needs/                     # Levantamento de necessidades, personas e dores
-├── product-owner/                 # 2. Agente Product Owner (Dono da Solução, Fluxos de Trabalho & UI/UX)
-│   ├── README.md                  # Instruções de operação do PO
-│   ├── flows/                     # Fluxos de navegação (User Flows) e conceitos de UI/UX
-│   └── backlog/                   # Épicos, histórias de usuário (BDD) e definição de MVP/Roadmap
-├── tech-lead/                     # 3. Agente Tech Lead (Dono da Engenharia, Gaps Técnicos & SDD)
-│   ├── README.md                  # Instruções de operação do Tech Lead
-│   ├── sdd/                       # Especificações SDD (Specification-Driven Development)
-│   ├── adrs/                      # Architecture Decision Records (ADRs)
-│   └── architecture/              # Diagramas, modelos de dados e visão sistêmica
-└── developer/                     # 4. Dev (implementação e testes) + 5. QA executor (Haiku) e QA exploratório (Sonnet)
-    ├── README.md                  # Instruções de operação do Dev e dos dois papéis de QA
-    └── tasks/                     # Acompanhamento de execução técnica e checklist de QA
-```
+## Comandos
 
----
+- `pnpm dev` (porta 3100) · `pnpm db:up` · `pnpm db:migrate` · `pnpm db:seed` · `pnpm db:reset`
+- `pnpm lint` (Biome) · `pnpm typecheck` · `pnpm test` (imports + docs + Vitest unit)
+- `pnpm test:int` (Postgres real) · `pnpm test:e2e` (BDD + Playwright)
+- `pnpm check:docs` — limites de tamanho, links e índice↔histórias · `pnpm check:imports`
+- Hook pre-commit: lint, typecheck, check:imports, check:docs · commit-msg: commitlint
 
-## 🔄 Fluxo de Trabalho e Ciclo de Vida (Handover)
+## Limites de tamanho (divida antes de passar)
 
-O ciclo de desenvolvimento segue uma esteira contínua e precisa de ponta a ponta:
+AGENTS.md ≤80 linhas · spec ≤120 · história ≤60 · ADR ≤40 · STATE ≤40 · fonte ≤300.
+Histórico fica no git, não em docs. Nunca anexe ao STATE.md; reescreva.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Gestor as Gestor do Projeto
-    actor Stk as Stakeholder
-    actor PO as Product Owner
-    actor TL as Tech Lead
-    actor Dev as Dev (código e testes)
-    actor QA as QA executor / exploratório
+## Loop do gestor (a sessão principal)
 
-    Gestor->>Stk: Inicia ciclo / Define objetivos de negócio
-    Note over Stk,PO: Parceria: Stakeholder traz valor e dores,<br/>PO fatia o MVP e desenha o Roadmap
-    PO->>Gestor: Publica MVP, flows/ e backlog/ em agents/product-owner/
-    Gestor->>TL: Solicita refinamento técnico e viabilidade
-    Note over TL: Avalia viabilidade de UX, resolve gaps,<br/>estima esforço técnico e gera SDD
-    TL->>Gestor: Registra decisões e SDD em agents/tech-lead/
-    Note over Gestor,PO: Gestor consolida cronograma com base nas<br/>estimativas do TL/Dev e metas do Stakeholder
-    Gestor->>Dev: Libera sprint / tarefas para implementação e testes
-    Note over Dev: Implementa código seguindo o SDD<br/>e escreve testes unitários, de integração e BDD/E2E
-    Dev->>Gestor: Submete código e testes focados
-    Gestor->>QA: Aciona suítes completas (e exploratório se houver UI)
-    QA->>Gestor: Devolve lista curta de falhas/achados
-    Gestor->>Stk: Apresenta entrega para homologação de valor
-```
+1. Leia STATE.md e a próxima linha `todo` de `docs/backlog/index.md`.
+2. Delegue ao `builder` com: ID da história + caminhos de spec/ADR/rules que ela lista. Nada mais.
+3. Delegue o diff ao `reviewer`. No máx. 2 rodadas builder↔reviewer; depois pergunte ao usuário.
+4. Aprovado: status `done` no index, reescreva STATE.md, commit.
+5. Mudou regra de negócio: atualize a spec da área no mesmo commit.
+6. Decida sozinho o que for reversível e registre ADR. Escale ao usuário só: escopo, prazo, regra financeira sensível, credenciais/contas, ações irreversíveis (push, deploy, apagar dados).
 
----
+## Papéis (`docs/agents/`)
 
-## 🎯 Papel do Gestor do Projeto
+architect (opus, raro: marco/domínio crítico) · builder, reviewer (sonnet) · researcher (haiku, buscas e levantamento de segurança).
+Brief = ID da história + caminhos. Resposta do subagente ≤150 palavras: resultado, arquivos, pendências. Reviewer: `APPROVED` ou lista numerada (arquivo:linha, motivo, esperado).
 
-O **Gestor** é o único agente que conversa com o **usuário**. Ele recebe os comandos, classifica, quebra em tarefas por papel, delega a cada agente (com o modelo adequado), confere o resultado e reporta. Resolve sozinho conflitos e ambiguidades cobertos por regras/ADRs já aprovados e **escala ao usuário** apenas o que o time não pode decidir (escopo, prazo, regras financeiras sensíveis, contas e gastos externos, ações irreversíveis como `push`/deploy). Protocolo completo em [`agents/manager/README.md`](file:///home/arlan/ai-tests/finance-manager/agents/manager/README.md); registros em `agents/manager/`.
+## Git
 
----
+Commits atômicos, Conventional Commits em pt-BR; história: `feat(US-NNN): ...` ou `fix(US-NNN): ...`; docs/config: `docs:`/`chore:`.
+O commitlint exige trailer `Co-authored-by:` (uma atribuição do agente). `git commit -o <seus arquivos>`; sem `push`, `--force` nem `--amend` sem autorização.
 
-## 🛡️ Papel do Agente de Segurança
+## Não negociáveis
 
-Auditor **independente** (não faz parte da sequência Stakeholder ➔ PO ➔ TL ➔ Dev). O Gestor o aciona em momentos escolhidos para levantar brechas, com foco em leitura e escrita de dados pessoais. Ele só levanta e prova (somente em ambiente local); cada achado passa pelo Gestor e pelo usuário antes de virar tarefa, e a correção segue a esteira normal (TL ➔ Dev) com reteste. O Tech Lead continua dono do *projeto seguro* (modelo de ameaças nos ADR/SDD). Ver [`agents/security/README.md`](file:///home/arlan/ai-tests/finance-manager/agents/security/README.md).
-
----
-
-## 👥 Matriz de Responsabilidades & Decisões Estratégicas
-
-| Decisão / Domínio | Stakeholder | Product Owner (PO) | Tech Lead / Dev | Gestor do Projeto |
-| :--- | :---: | :---: | :---: | :---: |
-| **Identificação do Problema e Dores** | **Dono Principal** | Apoia entendimento | Analisa contexto | Garante alinhamento |
-| **Definição do Escopo do MVP** | Informa a dor vital inegociável | **Lidera o fatiamento (*Scope Slicing*)** | Avalia complexidade técnica | Valida viabilidade |
-| **Priorização** | Prioridade de **impacto/valor** | **Ordena o Backlog operacional** | Aponta dependências técnicas | Garante foco da sprint |
-| **Fluxos de Trabalho & UI/UX** | Valida se resolve a dor | **Dono dos fluxos e telas** | Avalia viabilidade técnica | Homologa experiência |
-| **Engenharia, Gaps & SDD** | Não opina | Consome viabilidade | **Dono da especificação técnica** | Monitora riscos |
-| **Cronograma e Prazos** | Informa metas desejadas | Define metas de Release | **Estima esforço técnico** | **Monta e gerencia o cronograma** |
-
----
-
-## 💡 Como Funciona o SDD (Specification-Driven Development)
-
-Enquanto o **BDD e os Fluxos do PO** orientam *a experiência e o comportamento esperado pelo usuário*, o **SDD do Tech Lead** define o *contrato estrito de engenharia* antes de qualquer linha de código ser escrita:
-1. **Contratos de Tipagem**: Interfaces TypeScript e validações em runtime via schemas Zod.
-2. **Contratos de API e Serviços**: Métodos HTTP, rotas, payloads, headers de idempotência e códigos de retorno.
-3. **Resolução de Gaps Técnicos**: Decisão de arredondamento de centavos (`amountInCents`), concorrência, fuse de timezones e estados de erro.
-4. **Estados Técnicos da Interface**: Definição de skeletons de loading, fallbacks e invalidação de cache.
-5. **Guia de Testes para o QA**: O Tech Lead especifica exatamente quais testes o Dev precisa criar.
-
----
-
-## 🧪 Estratégia de QA (Quality Assurance)
-
-A qualidade é dividida em três papéis: o **Dev** escreve os testes; o **QA executor** roda as suítes; o **QA exploratório** verifica a interface no navegador (detalhes em `agents/developer/README.md`). Do Dev:
-- O desenvolvedor programa com mentalidade de engenharia da qualidade desde o início.
-- Antes de marcar qualquer tarefa como concluída, o desenvolvedor deve:
-  - Validar todos os cenários **BDD** criados pelo PO.
-  - Atender a todos os testes exigidos no **SDD** pelo Tech Lead.
-  - Verificar a ausência de regressões e a responsividade da interface.
-
----
-
-## 📋 Regras de Operação para Qualquer Agente
-
-1. **Sempre verificar o estado atual**:
-   Antes de iniciar qualquer atividade, verifique o que o agente da etapa anterior concluiu e o que está registrado na pasta dele.
-2. **Trabalhar na sua própria pasta para documentação e planejamento**:
-   - Documente suas propostas, dúvidas e artefatos na sua pasta específica em `agents/<seu-papel>/`.
-   - Mantenha um arquivo de status ou log atualizado para que os outros agentes e o Gestor saibam em que estágio você está.
-3. **Rastreabilidade Obrigatória**:
-   Todo trabalho deve ter rastreabilidade cruzada:
-   - Exemplo: Requisito `NEED-001` (Stakeholder) ➔ Fluxo `FLUXO-001` / História `US-001` (PO) ➔ Especificação `SDD-001` / Decisão `ADR-001` (Tech Lead) ➔ Tarefa `TASK-001` / Código e Testes (Dev).
-4. **Respeito aos Critérios de Conclusão (Definition of Done - DoD)**:
-   Nenhuma etapa é considerada concluída sem que os entregáveis estejam documentados, testados e validados pelo Gestor.
-5. **Comunicação com o Gestor**:
-   Se houver ambiguidade, conflito técnico ou necessidade de revisão de escopo, sinalize imediatamente ao Gestor do Projeto.
-6. **Manter a estrutura de estado (ver [`agents/INDEX.md`](agents/INDEX.md))**:
-   - Leia INDEX ➔ `agents/estado/<área>.md`; não leia `agents/_historico/` por padrão.
-   - Mudou uma regra? Atualize `agents/estado/<área>.md` (e a fila do `tasks-board.md`; status de US e `backlog.md` seguem o protocolo em `agents/manager/README.md`) no MESMO commit; divergência spec×código vira `DEV-xxx` e entra no estado. Fechado ➔ `_historico/` (IDs e links preservados). Rode `pnpm check:docs` antes de commitar. A documentação faz parte da Definition of Done.
-7. **Escolha do Modelo por Complexidade (Economia)**:
-   Ao invocar ou atuar como agente, avalie a complexidade da tarefa e use o **menor modelo capaz de entregá-la com qualidade**. Não use modelos mais complexos (e caros) para tarefas simples.
-   - **Modelo leve** (ex.: Haiku): buscas e leituras no repositório, ajustes de documentação/status, edições mecânicas, formatação, rodar comandos e relatar resultado.
-   - **Modelo intermediário** (ex.: Sonnet): implementação seguindo um SDD já pronto, testes, refatorações localizadas, correção de bugs conhecidos.
-   - **QA**: o **QA executor** (rodar suítes e E2E, relatar falhas) usa Haiku; o **QA exploratório** (navegador real, só em entregas de interface) usa Sonnet. Nenhum dos dois edita código.
-   - **Modelo avançado** (ex.: Opus): decisões de arquitetura/ADR, SDD de domínio crítico (rateio, centavos, concorrência, migração de dados), depuração difícil e revisões de risco.
-   - Na dúvida, comece pelo modelo menor e escale apenas se o resultado for insuficiente. Registre a escolha e o motivo na tarefa quando não for óbvia.
-   - O **Gestor** é responsável por aplicar esta regra ao delegar: escolhe o modelo de cada subagente, briefs enxutos, delegando buscas amplas a modelos leves e reservando o avançado a decisões críticas.
-
----
-
-## 🔀 Política de Commits Atômicos & Co-autoria Obrigatória
-
-Todos os commits no repositório devem seguir rigorosamente duas regras fundamentais:
-
-1. **Commits Atômicos**:
-   - Cada commit deve representar **uma única unidade lógica e coesa de mudança** (ex.: registrar necessidades, definir MVP, criar especificação SDD, implementar um componente ou configurar testes).
-   - Evite acumular alterações não relacionadas no mesmo commit.
-   - Adote o padrão *Conventional Commits* (`docs:`, `feat:`, `fix:`, `refactor:`, `chore:`).
-
-2. **Nota de Co-autoria Obrigatória do Agente**:
-   - Todo commit gerado por ou em conjunto com um agente deve conter ao final da mensagem de commit a assinatura de co-autoria no formato Git padrão (`Co-authored-by:`):
-   
-   ```gitcommit
-   <tipo>(<escopo>): <descrição clara da alteração>
-
-   <contexto adicional se necessário>
-
-   Co-authored-by: <Nome do Agente> <<email-do-agente>>
-   ```
-
-   **Mapeamento Oficial de Co-autores por Agente**:
-   - **Gestor do Projeto**: `Co-authored-by: Agente Gestor do Projeto <manager@finance-manager.local>`
-   - **Stakeholder**: `Co-authored-by: Agente Stakeholder <stakeholder@finance-manager.local>`
-   - **Product Owner**: `Co-authored-by: Agente Product Owner <po@finance-manager.local>`
-   - **Tech Lead**: `Co-authored-by: Agente Tech Lead <tech-lead@finance-manager.local>`
-   - **Dev**: `Co-authored-by: Agente Desenvolvedor & QA <dev-qa@finance-manager.local>`
-   - **QA (executor e exploratório)**: `Co-authored-by: Agente QA <qa@finance-manager.local>`
-   - **Segurança da Informação**: `Co-authored-by: Agente de Segurança <security@finance-manager.local>`
-
-
-3. **Commit Automático das Próprias Modificações**:
-   - Ao concluir uma unidade lógica de trabalho, cada agente deve **commitar automaticamente** as suas modificações, sem aguardar pedido do Gestor.
-   - Faça o commit apenas dos arquivos que o próprio agente alterou (`git add <arquivos>`), nunca `git add -A` às cegas, para não incluir mudanças de terceiros.
-   - Siga as regras 1 e 2 acima: commit atômico, Conventional Commits e trailer `Co-authored-by` do agente.
-   - **Não** fazer `git push`, `--force`, `--amend` de commits já existentes nem reescrita de histórico sem autorização explícita do Gestor.
-   - Se os testes ou verificações da tarefa estiverem falhando, não commitar como "concluído": sinalize o problema ao Gestor.
+Dinheiro em centavos inteiros (`amountInCents`). Dados pessoais/LGPD e "Só meu" nunca vazam. Sem segredos no repositório. Escalar ao usuário o que a lista do loop manda.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
