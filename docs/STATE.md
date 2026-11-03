@@ -18,6 +18,6 @@
 
 ## Dívidas conhecidas
 - US-053: E2E de selos só cobre o Extrato (Início e A pagar sem E2E). US-054: `contas-screen.tsx` e `cartoes-screen.tsx` passam de 300 linhas; `ArchiveBlocker` declarado em `cartoes/archive.ts` e `cartoes/hooks.ts`; sem E2E próprio de conta (coberto pela US-032).
-- E2E: o 1º cenário de uma rodada às vezes falha por compilação a frio do `next dev`; passa no reteste. `tests/unit/split/backfill.test.ts` estoura 5 s sob carga.
+- E2E: o 1º cenário de uma rodada às vezes falha (compilação a frio do `next dev`); com a máquina carregada (load alto de outros processos) muitos cenários estouram o timeout de 30 s. Passam no reteste ou com `--timeout=120000`. `tests/unit/split/backfill.test.ts` estoura 5 s sob carga.
 - Divergência spec×código: código e testes vencem; registrar em `docs/spec/<área>`.
 - DEV-168..173 (previstas, US-051) e DEV-164..167 (cores, US-050): ver specs 04b e 10b.
