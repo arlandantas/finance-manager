@@ -61,20 +61,24 @@ Given(
   },
 );
 
-async function archive(page: Page, n: string) {
+async function openArchive(page: Page, n: string) {
   await card(page, n)
     .getByRole("button", { name: `Ações do cartão ${n}` })
     .click();
   await page.getByRole("menuitem", { name: "Arquivar" }).click();
+}
+async function archive(page: Page, n: string) {
+  await openArchive(page, n);
   await page.getByRole("dialog").getByRole("button", { name: "Arquivar", exact: true }).click();
 }
 When("Mariana arquiva o cartão {string} e confirma", async ({ world, page }, n: string) => {
   await cartoes(world, page);
   await archive(page, n);
 });
+// US-054: o bloqueio aparece ao abrir o diálogo (o botão de confirmar fica desabilitado)
 When("Mariana tenta arquivar o cartão {string}", async ({ world, page }, n: string) => {
   await cartoes(world, page);
-  await archive(page, n);
+  await openArchive(page, n);
 });
 Then("vê o aviso de cartão {string}", async ({ page }, t: string) => {
   await expect(toast(page, t)).toBeVisible();

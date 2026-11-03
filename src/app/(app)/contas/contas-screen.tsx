@@ -21,6 +21,7 @@ import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import { useArchiveCheck } from "@/modules/cartoes/hooks";
 import { useAccountAction, useAccounts, useArchivedAccounts } from "@/modules/contas/hooks";
 import { ACCOUNT_TYPE_LABELS, type AccountDTO } from "@/modules/contas/schemas";
 import { useFamily } from "@/modules/familia/hooks";
@@ -191,6 +192,11 @@ export function ContasScreen() {
   const action = useAccountAction();
   const keyRef = useRef(newIdempotencyKey());
   const data = accounts.data;
+  const check = useArchiveCheck("accounts", archiving?.id ?? null);
+  const preBlock = check.data?.blockers.find((b) => b.code === "ACCOUNT_BALANCE_NOT_ZERO");
+  const shownBlock =
+    blocked ??
+    (preBlock ? { message: preBlock.message, balanceInCents: preBlock.amountInCents ?? 0 } : null);
 
   function run(a: AccountDTO, kind: "archive" | "unarchive" | "delete", ok: string) {
     if (action.isPending) return;
@@ -233,7 +239,7 @@ export function ContasScreen() {
   }
 
   return (
-    <main className="flex flex-col gap-4">
+    <main className="flex flex-col gap-4 pb-24 lg:pb-0">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-slate-900">Contas</h1>
         <div className="flex items-center gap-2 whitespace-nowrap">
@@ -343,19 +349,21 @@ export function ContasScreen() {
                 Sem contas ativas você não poderá lançar despesas em conta nem pagar faturas.
               </p>
             ) : null}
-            {blocked ? (
+            {shownBlock ? (
               <div
                 role="alert"
                 className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3"
               >
                 <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
-                  {blocked.message}
+                  {shownBlock.message}
                 </p>
                 <Button
                   variant="secondary"
-                  onClick={() => transferBalance(archiving, blocked.balanceInCents)}
+                  onClick={() => transferBalance(archiving, shownBlock.balanceInCents)}
                 >
-                  {blocked.balanceInCents > 0 ? "Transferir o saldo" : "Transferir para esta conta"}
+                  {shownBlock.balanceInCents > 0
+                    ? "Transferir o saldo"
+                    : "Transferir para esta conta"}
                 </Button>
               </div>
             ) : null}
@@ -365,7 +373,7 @@ export function ContasScreen() {
               </p>
             ) : null}
             <Button
-              disabled={action.isPending}
+              disabled={action.isPending || check.isFetching || shownBlock !== null}
               onClick={() => run(archiving, "archive", "Conta arquivada")}
             >
               {action.isPending ? "Arquivando…" : "Arquivar"}

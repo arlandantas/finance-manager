@@ -51,34 +51,74 @@ async function dto(tx: Tx, ctx: RequestContext, id: string) {
   return card;
 }
 
-/** Bloqueios, em ordem (SDD-012 §1): fatura fechada/vencida não paga; fatura aberta com compras. */
+export type ArchiveBlocker = {
+  code: string;
+  message: string;
+  amountInCents?: number;
+  ref?: string;
+};
+
+/**
+ * Impedimentos de arquivamento (SDD-012 §1, US-054), em ordem: faturas fechadas/vencidas não pagas;
+ * fatura aberta com compras; parcelas futuras. Fonte única de `archive` e de `GET archive-check`.
+ */
+export async function cardArchiveBlockers(
+  tx: Tx,
+  ctx: RequestContext,
+  row: { id: string; closingDay: number; dueDay: number },
+): Promise<ArchiveBlocker[]> {
+  const today = todayInFamilyTz(ctx.clock);
+  const inv = (await cardInvoiceSummaries(tx, ctx.familyId, [row], today)).get(row.id);
+  const out: ArchiveBlocker[] = (inv?.payable ?? []).map((u) => ({
+    code: "CARD_HAS_UNPAID_INVOICE",
+    message: "Pague a fatura antes de arquivar o cartão",
+    amountInCents: u.totalInCents,
+    ref: u.ref,
+  }));
+  if (inv && inv.open.totalInCents > 0) {
+    out.push({
+      code: "CARD_HAS_OPEN_PURCHASES",
+      message: "Há compras na fatura aberta. Pague a fatura quando ela fechar para arquivar.",
+      amountInCents: inv.open.totalInCents,
+    });
+  }
+  // SDD-014 §4.9: parcelas ativas em faturas futuras (sem pagamento: futura não se paga) também bloqueiam
+  const future = await futureInstallmentsInCents(
+    tx,
+    ctx.familyId,
+    row.id,
+    openInvoiceRef(today, row.closingDay),
+  );
+  if (future > 0) {
+    out.push({
+      code: "CARD_HAS_FUTURE_INSTALLMENTS",
+      message: "Este cartão tem parcelas futuras. Exclua as compras parceladas antes de arquivar",
+      amountInCents: future,
+    });
+  }
+  return out;
+}
+
+/** GET /cards/:id/archive-check: leitura, sem escrita. */
+export async function cardArchiveCheck(tx: Tx, ctx: RequestContext, id: string) {
+  const row = await tx.creditCard.findFirst({
+    where: { id, familyId: ctx.familyId, deletedAt: null },
+    select: { id: true, closingDay: true, dueDay: true },
+  });
+  if (!row) throw notFound("Cartão não encontrado.");
+  return { blockers: await cardArchiveBlockers(tx, ctx, row) };
+}
+
 export async function archiveCard(tx: Tx, ctx: RequestContext, id: string, version: number) {
   const row = await lockForUpdate(tx, ctx, id);
   await guard(tx, ctx, row, version);
   if (row.archivedAt) throw conflict("ALREADY_ARCHIVED", "Este cartão já está arquivado.");
-  const today = todayInFamilyTz(ctx.clock);
-  const inv = (await cardInvoiceSummaries(tx, ctx.familyId, [row], today)).get(id);
-  const unpaid = inv?.payable[0];
-  if (unpaid) {
-    throw unprocessable("CARD_HAS_UNPAID_INVOICE", "Pague a fatura antes de arquivar o cartão", {
-      ref: unpaid.ref,
-      label: formatInvoiceLabel(unpaid.ref),
-    });
-  }
-  if (inv && inv.open.totalInCents > 0) {
+  const first = (await cardArchiveBlockers(tx, ctx, row))[0];
+  if (first) {
     throw unprocessable(
-      "CARD_HAS_OPEN_PURCHASES",
-      "Há compras na fatura aberta. Pague a fatura quando ela fechar para arquivar.",
-    );
-  }
-  // SDD-014 §4.9: parcelas ativas em faturas futuras (sem pagamento: futura não se paga) também bloqueiam
-  if (
-    (await futureInstallmentsInCents(tx, ctx.familyId, id, openInvoiceRef(today, row.closingDay))) >
-    0
-  ) {
-    throw unprocessable(
-      "CARD_HAS_FUTURE_INSTALLMENTS",
-      "Este cartão tem parcelas futuras. Exclua as compras parceladas antes de arquivar",
+      first.code,
+      first.message,
+      first.ref ? { ref: first.ref, label: formatInvoiceLabel(first.ref) } : undefined,
     );
   }
   await tx.creditCard.updateMany({

@@ -14,9 +14,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { cycleSentence, formatInvoiceLabel } from "@/modules/cartoes/cycle";
-import { useArchivedCards, useCardAction, useCards } from "@/modules/cartoes/hooks";
+import {
+  useArchiveCheck,
+  useArchivedCards,
+  useCardAction,
+  useCards,
+} from "@/modules/cartoes/hooks";
 import type { CardDTO } from "@/modules/cartoes/schemas";
 import { useFamily } from "@/modules/familia/hooks";
+import { ArchiveBlockers } from "./archive-blockers";
 import { CardDrawer } from "./card-drawer";
 import { PayerLine } from "./payer-line";
 
@@ -257,7 +263,9 @@ export function CartoesScreen() {
           keyRef.current = newIdempotencyKey();
           if (
             e instanceof ApiClientError &&
-            (e.code === "CARD_HAS_UNPAID_INVOICE" || e.code === "CARD_HAS_OPEN_PURCHASES")
+            (e.code === "CARD_HAS_UNPAID_INVOICE" ||
+              e.code === "CARD_HAS_OPEN_PURCHASES" ||
+              e.code === "CARD_HAS_FUTURE_INSTALLMENTS")
           ) {
             setBlocked(e.message);
           } else if (e instanceof NetworkError) setBanner(e.message);
@@ -273,9 +281,11 @@ export function CartoesScreen() {
     card: null,
   });
   const data = cards.data;
-
+  const check = useArchiveCheck("cards", archiving?.id ?? null);
+  const blockers = check.data?.blockers ?? [];
+  // reserva espaço sob o botão flutuante "+" no mobile (US-054)
   return (
-    <main className="flex flex-col gap-4">
+    <main className="flex flex-col gap-4 pb-24 lg:pb-0">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-slate-900">Cartões</h1>
         <Button onClick={() => setDrawer({ open: true, card: null })}>
@@ -350,7 +360,10 @@ export function CartoesScreen() {
               O cartão some das listas e do "Pagar com"; compras e faturas pagas permanecem e você
               pode reativá-lo depois.
             </p>
-            {blocked ? (
+            {blockers.length > 0 ? (
+              <ArchiveBlockers cardId={archiving.id} blockers={blockers} />
+            ) : null}
+            {blocked && blockers.length === 0 ? (
               <p
                 role="alert"
                 className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm font-medium text-amber-900 dark:text-amber-200"
@@ -364,7 +377,7 @@ export function CartoesScreen() {
               </p>
             ) : null}
             <Button
-              disabled={action.isPending}
+              disabled={action.isPending || check.isFetching || blockers.length > 0}
               onClick={() => run(archiving, "archive", "Cartão arquivado")}
             >
               {action.isPending ? "Arquivando…" : "Arquivar"}

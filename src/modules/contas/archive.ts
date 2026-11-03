@@ -50,18 +50,47 @@ async function dto(tx: Tx, ctx: RequestContext, id: string): Promise<AccountDTO>
   return found;
 }
 
+export type AccountArchiveBlocker = {
+  code: string;
+  message: string;
+  amountInCents?: number;
+};
+
+/** Impedimentos de arquivar conta (fonte única de `archive` e `archive-check`). */
+async function accountArchiveBlockers(
+  tx: Tx,
+  ctx: RequestContext,
+  id: string,
+): Promise<AccountArchiveBlocker[]> {
+  const balance = (await accountBalances(tx, ctx.familyId, [id])).get(id) ?? 0;
+  if (balance === 0) return [];
+  return [
+    {
+      code: "ACCOUNT_BALANCE_NOT_ZERO",
+      message: "Para arquivar, o saldo precisa ser zero. Transfira ou ajuste o saldo antes.",
+      amountInCents: balance,
+    },
+  ];
+}
+
+/** GET /accounts/:id/archive-check: leitura, sem escrita. */
+export async function accountArchiveCheck(tx: Tx, ctx: RequestContext, id: string) {
+  const found = await tx.bankAccount.findFirst({
+    where: { id, familyId: ctx.familyId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!found) throw notFound("Conta não encontrada.");
+  return { blockers: await accountArchiveBlockers(tx, ctx, id) };
+}
+
 /** POST /accounts/:id/archive: saldo zero dentro do lock. */
 export async function archiveAccount(tx: Tx, ctx: RequestContext, id: string, version: number) {
   const row = await lockForUpdate(tx, ctx, id);
   await versionGuard(tx, ctx, row, version);
   if (row.archivedAt) throw conflict("ALREADY_ARCHIVED", "Esta conta já está arquivada.");
-  const balance = (await accountBalances(tx, ctx.familyId, [id])).get(id) ?? 0;
-  if (balance !== 0) {
-    throw unprocessable(
-      "ACCOUNT_BALANCE_NOT_ZERO",
-      "Para arquivar, o saldo precisa ser zero. Transfira ou ajuste o saldo antes.",
-      { balanceInCents: balance },
-    );
+  const first = (await accountArchiveBlockers(tx, ctx, id))[0];
+  if (first) {
+    throw unprocessable(first.code, first.message, { balanceInCents: first.amountInCents });
   }
   await tx.bankAccount.updateMany({
     where: { id, familyId: ctx.familyId },

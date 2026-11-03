@@ -32,6 +32,24 @@ export function useArchivedCards() {
   });
 }
 
+export type ArchiveBlocker = {
+  code: string;
+  message: string;
+  amountInCents?: number;
+  ref?: string;
+};
+
+/** US-054: impedimentos de arquivamento (leitura), refeitos a cada abertura do diálogo. */
+export function useArchiveCheck(kind: "cards" | "accounts", id: string | null) {
+  return useQuery({
+    queryKey: ["archive-check", kind, id],
+    queryFn: () => apiFetch<{ blockers: ArchiveBlocker[] }>(`/api/v1/${kind}/${id}/archive-check`),
+    enabled: id !== null,
+    staleTime: 0,
+    gcTime: 0,
+  });
+}
+
 export function useCardAction() {
   const qc = useQueryClient();
   return useMutation({
