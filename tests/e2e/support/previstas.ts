@@ -14,12 +14,12 @@ export async function openPrevistas(page: Page) {
     await page.getByRole("link", { name: "A pagar", exact: true }).first().click();
     await expect(page).toHaveURL(/\/previstas/);
   }
-  await expect(page.getByRole("heading", { name: "Contas a pagar" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Previstas" })).toBeVisible();
 }
 
 export async function openPrevistasOf(page: Page, period: string) {
   await gotoReady(page, `/previstas?period=${period}`);
-  await expect(page.getByRole("heading", { name: "Contas a pagar" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Previstas" })).toBeVisible();
 }
 
 export const payableItem = (page: Page, title: string) =>

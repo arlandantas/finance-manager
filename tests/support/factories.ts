@@ -457,13 +457,19 @@ export async function makePlannedExpense(
     shared?: boolean;
     paidTransactionId?: string;
     note?: string;
-    /** "Pagar com" (US-059); padrão: sem conta. */
+    /** "Pagar com" (US-059); padrão: sem conta. Receita prevista: conta de destino sugerida. */
     account?: AccountFixture;
+    /** US-051: padrão EXPENSE (categoria "Moradia"); INCOME usa "Salário" e nunca é dividida. */
+    kind?: "EXPENSE" | "INCOME";
   },
 ): Promise<PlannedFixture> {
   const db = fdb();
+  const kind = o.kind ?? "EXPENSE";
   const category = await db.category.findFirstOrThrow({
-    where: { familyId: fx.family.id, name: o.category ?? "Moradia" },
+    where: {
+      familyId: fx.family.id,
+      name: o.category ?? (kind === "INCOME" ? "Salário" : "Moradia"),
+    },
   });
   const responsible = (o.responsible ? fx.byName[o.responsible] : fx.members[0]) ?? fx.members[0];
   const author = (o.author ? fx.byName[o.author] : responsible) ?? responsible;
@@ -477,7 +483,8 @@ export async function makePlannedExpense(
       categoryId: category.id,
       responsibleMemberId: responsible.memberId,
       authorMemberId: author.memberId,
-      isSharedExpense: o.shared ?? true,
+      kind,
+      isSharedExpense: kind === "INCOME" ? false : (o.shared ?? true),
       note: o.note ?? null,
       ...(o.account ? { paymentAccountId: o.account.id } : {}),
       ...(o.paidTransactionId
