@@ -1,13 +1,18 @@
 /**
- * Verificações da documentação (agents/INDEX.md). Uso: `pnpm check:docs`.
- *  1. Sem link markdown relativo quebrado em agents/**\/*.md, README.md, AGENTS.md, CLAUDE.md.
- *  2. Cada agents/estado/*.md tem o cabeçalho "Atualizado:" e no máximo MAX_WORDS palavras.
- *  3. agents/INDEX.md só cita arquivos de estado que existem.
+ * Verificações da documentação (AGENTS.md). Uso: `pnpm check:docs`.
+ *  1. Sem link markdown relativo quebrado em docs/**\/*.md, README.md, AGENTS.md, CLAUDE.md.
+ *  2. Limites de linhas: AGENTS ≤80, spec ≤120, história ≤60, ADR ≤40, STATE ≤40.
+ *  3. Toda docs/backlog/stories/<ID>.md tem uma linha em docs/backlog/index.md.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 
-export const MAX_WORDS = 2800;
+export const LIMITS: { dir: string; max: number }[] = [
+  { dir: "docs/spec", max: 120 },
+  { dir: "docs/backlog/stories", max: 60 },
+  { dir: "docs/adr", max: 40 },
+];
+const FILE_LIMITS: Record<string, number> = { "AGENTS.md": 80, "docs/STATE.md": 40 };
 const ROOT_URL = "file:///home/arlan/ai-tests/finance-manager/";
 
 export type DocViolation = { file: string; rule: string; message: string };
@@ -47,52 +52,50 @@ export function brokenLinks(file: string, text: string, root: string): DocViolat
   return out;
 }
 
-export function estadoViolations(file: string, text: string): DocViolation[] {
-  const out: DocViolation[] = [];
-  const words = text.split(/\s+/).filter(Boolean).length;
-  if (words > MAX_WORDS)
-    out.push({ file, rule: "estado-tamanho", message: `${words} palavras (máx. ${MAX_WORDS})` });
-  if (!/^Atualizado:/m.test(text))
-    out.push({ file, rule: "estado-cabecalho", message: 'falta o cabeçalho "Atualizado:"' });
-  return out;
+export function sizeViolations(file: string, text: string, max: number): DocViolation[] {
+  const lines = text.replace(/\n$/, "").split("\n").length;
+  return lines > max ? [{ file, rule: "tamanho", message: `${lines} linhas (máx. ${max})` }] : [];
 }
 
-export function indexViolations(text: string, root: string): DocViolation[] {
-  const out: DocViolation[] = [];
-  const seen = new Set<string>();
-  for (const m of text.matchAll(/estado\/([A-Za-z0-9_-]+\.md)/g)) {
-    const name = m[1] ?? "";
-    if (seen.has(name)) continue;
-    seen.add(name);
-    if (!existsSync(path.join(root, "agents/estado", name)))
-      out.push({
-        file: "agents/INDEX.md",
-        rule: "index-estado",
-        message: `cita estado inexistente: estado/${name}`,
-      });
-  }
-  return out;
+export function indexViolations(indexText: string, storyIds: string[]): DocViolation[] {
+  return storyIds
+    .filter((id) => !new RegExp(`\\|\\s*${id}\\s*\\|`).test(indexText))
+    .map((id) => ({
+      file: "docs/backlog/index.md",
+      rule: "index-historia",
+      message: `sem linha para a história ${id}`,
+    }));
 }
 
 export function checkDocs(root: string): DocViolation[] {
   const out: DocViolation[] = [];
+  const docsDir = path.join(root, "docs");
   const files = [
-    ...listMd(path.join(root, "agents")),
+    ...(existsSync(docsDir) ? listMd(docsDir) : []),
     ...["README.md", "AGENTS.md", "CLAUDE.md"].map((f) => path.join(root, f)),
   ].filter(existsSync);
   for (const f of files) out.push(...brokenLinks(f, readFileSync(f, "utf8"), root));
-  const estadoDir = path.join(root, "agents/estado");
-  if (existsSync(estadoDir))
-    for (const name of readdirSync(estadoDir).filter((n) => n.endsWith(".md")))
-      out.push(
-        ...estadoViolations(
-          `agents/estado/${name}`,
-          readFileSync(path.join(estadoDir, name), "utf8"),
-        ),
-      );
-  const index = path.join(root, "agents/INDEX.md");
-  if (existsSync(index)) out.push(...indexViolations(readFileSync(index, "utf8"), root));
-  else out.push({ file: "agents/INDEX.md", rule: "index-estado", message: "arquivo ausente" });
+
+  for (const [rel, max] of Object.entries(FILE_LIMITS)) {
+    const f = path.join(root, rel);
+    if (existsSync(f)) out.push(...sizeViolations(rel, readFileSync(f, "utf8"), max));
+  }
+  for (const { dir, max } of LIMITS) {
+    const d = path.join(root, dir);
+    if (!existsSync(d)) continue;
+    for (const name of readdirSync(d).filter((n) => n.endsWith(".md")))
+      out.push(...sizeViolations(`${dir}/${name}`, readFileSync(path.join(d, name), "utf8"), max));
+  }
+
+  const storiesDir = path.join(root, "docs/backlog/stories");
+  const index = path.join(root, "docs/backlog/index.md");
+  if (existsSync(storiesDir)) {
+    const ids = readdirSync(storiesDir)
+      .filter((n) => n.endsWith(".md"))
+      .map((n) => n.replace(/\.md$/, ""));
+    if (existsSync(index)) out.push(...indexViolations(readFileSync(index, "utf8"), ids));
+    else out.push({ file: "docs/backlog/index.md", rule: "index-historia", message: "ausente" });
+  }
   return out;
 }
 
