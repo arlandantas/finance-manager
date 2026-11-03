@@ -6,6 +6,7 @@ import { Money } from "@/components/money";
 import { SourceBadge } from "@/components/source-badge";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
+import { useSettlementEnabled } from "@/lib/settlement-context";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import type { PendingTransaction } from "@/modules/transacoes/optimistic";
 
@@ -45,6 +46,7 @@ export function LedgerRow({
   onOpen: () => void;
   onHover: (groupId: string | null) => void;
 }) {
+  const settlementEnabled = useSettlementEnabled();
   const income = item.direction === "CREDIT";
   const isTransfer = item.type === "TRANSFER_IN" || item.type === "TRANSFER_OUT";
   const isPayment = item.type === "INVOICE_PAYMENT";
@@ -126,7 +128,7 @@ export function LedgerRow({
               {shortDate(item.occurredOn)} · {kindLabel} · {source}
             </span>
             <span className="mt-1 flex flex-wrap gap-1">
-              {item.type === "EXPENSE" ? (
+              {item.type === "EXPENSE" && settlementEnabled ? (
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
                   {item.isSharedExpense ? "Comum" : "Pessoal"}
                 </span>

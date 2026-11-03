@@ -25,6 +25,7 @@ import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import { useSettlementEnabled } from "@/lib/settlement-context";
 import { useFamily } from "@/modules/familia/hooks";
 import { plannedCopy } from "@/modules/previstas/copy";
 import {
@@ -98,6 +99,7 @@ function PayableRow({
   onPay: () => void;
 }) {
   const family = useFamily().data;
+  const settlementEnabled = useSettlementEnabled();
   // SEC-026: prevista "Só meu" só é alterada pelo responsável (dono); os outros veem, sem ações
   const planned = item.type === "PLANNED";
   const canAct =
@@ -215,9 +217,11 @@ function PayableRow({
                 ) : null}
               </span>
             ) : null}
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
-              {item.isSharedExpense ? "Comum" : "Pessoal"}
-            </span>
+            {settlementEnabled ? (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                {item.isSharedExpense ? "Comum" : "Pessoal"}
+              </span>
+            ) : null}
           </>
         ) : (
           <Link

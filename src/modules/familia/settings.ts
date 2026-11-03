@@ -85,7 +85,10 @@ export async function updateFamilySettings(
       familyId: ctx.familyId,
       type: "SETTLEMENT_TOGGLED",
       actorMemberId: ctx.memberId,
-      changes: { settlementEnabled: { from: fam.settlementEnabled, to: input.settlementEnabled } },
+      changes: {
+        enabled: input.settlementEnabled,
+        settlementEnabled: { from: fam.settlementEnabled, to: input.settlementEnabled },
+      },
     },
   });
   return dto(updated);

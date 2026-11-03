@@ -73,9 +73,9 @@ Funcionalidade: Ocultar valores
     Quando Lucas abre a tela de Contas
     Então o saldo da família é anunciado como "valor oculto"
 
-  Cenário: Dica não promete segurança
+  Cenário: Dica explica que a preferência é por usuário e aparelho
     Quando Lucas abre a tela de Contas
-    Então o ícone do olho tem a dica "Oculta os valores na tela. Não protege seus dados."
+    Então o ícone do olho tem a dica "Valores ocultos neste aparelho para o seu usuário. Toque para mostrar."
 
   Cenário: Outro usuário no mesmo dispositivo
     Dado que Lucas mostrou os valores neste dispositivo e saiu do app

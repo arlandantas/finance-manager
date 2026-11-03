@@ -151,6 +151,13 @@ function eventDetail(e: FamilyDTO["events"][number]): string {
   return ` (${c.cardName ?? "cartão"}: de ${c.fromAccountName ?? "nenhuma"} para ${c.toAccountName ?? "nenhuma"})`;
 }
 
+/** US-053: "ligou/desligou" quando o evento traz `enabled`; eventos antigos mantêm o texto genérico. */
+export function eventText(e: Pick<FamilyDTO["events"][number], "type" | "changes">): string {
+  if (e.type === "SETTLEMENT_TOGGLED" && typeof e.changes?.enabled === "boolean")
+    return e.changes.enabled ? "ligou o acerto de contas" : "desligou o acerto de contas";
+  return EVENT_TEXT[e.type];
+}
+
 const EVENT_TEXT: Record<FamilyDTO["events"][number]["type"], string> = {
   FAMILY_RENAMED: "renomeou a família",
   ROLE_CHANGED: "alterou o papel de",
@@ -603,7 +610,7 @@ export function FamiliaScreen() {
               <ul className="flex flex-col gap-1 text-sm text-slate-600">
                 {data.events.map((e, i) => (
                   <li key={`${e.at}-${i}`} data-testid="family-event">
-                    {e.actor.name.split(" ")[0]} {EVENT_TEXT[e.type]}
+                    {e.actor.name.split(" ")[0]} {eventText(e)}
                     {e.target ? ` ${e.target.name.split(" ")[0]}` : ""}
                     {eventDetail(e)}
                     {e.type === "MEMBER_CREATED" ? " (sem acesso ao app)" : ""} ·{" "}

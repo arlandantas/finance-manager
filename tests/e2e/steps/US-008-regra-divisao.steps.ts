@@ -17,7 +17,9 @@ async function enter(world: World, page: Page, user: "Mariana" | "Lucas") {
 async function openRule(page: Page) {
   await gotoReady(page, "/acerto/regra");
   await expect(page.getByRole("heading", { name: "Regra de divisão" })).toBeVisible();
-  await expect(page.getByRole("radio").first()).toBeVisible();
+  await expect(
+    page.locator('input[type="radio"], [data-testid="rule-readonly"]').first(),
+  ).toBeVisible();
 }
 
 const percent = (page: Page, nome: string) =>
@@ -110,8 +112,9 @@ When(
 );
 
 Then("vê a regra em modo somente leitura", async ({ page }) => {
-  await expect(page.getByText(/modo somente leitura/)).toBeVisible();
-  await expect(page.getByRole("radio", { name: /Dividir igualmente/ })).toBeDisabled();
+  await expect(page.getByText("Só o Administrador altera a regra de divisão.")).toBeVisible();
+  await expect(page.getByRole("radio")).toHaveCount(0);
+  await expect(page.getByText("A mudança vale a partir de agora.")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Salvar regra" })).toHaveCount(0);
 });
 

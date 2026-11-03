@@ -20,11 +20,12 @@ import { usePathname } from "next/navigation";
 import { type ReactNode, Suspense, useEffect, useRef, useState } from "react";
 import { signOutAction } from "@/app/actions";
 import { JoinedNotice } from "@/components/joined-notice";
-import { HIDE_VALUES_HINT, useHideValues } from "@/components/money";
+import { HIDE_VALUES_HINT_HIDDEN, HIDE_VALUES_HINT_SHOWN, useHideValues } from "@/components/money";
 import { QuickAddProvider } from "@/components/quick-add";
 import { RevokeOtherSessions } from "@/components/revoke-other-sessions";
 import { Avatar } from "@/components/ui/avatar";
 import { cn } from "@/components/ui/cn";
+import { SettlementProvider } from "@/lib/settlement-context";
 import { useTheme } from "@/lib/use-theme";
 
 export type ShellUser = { name: string; email: string; image: string | null };
@@ -166,13 +167,14 @@ function UserMenu({ user }: { user: ShellUser }) {
 function EyeToggle() {
   const { hidden, toggle } = useHideValues();
   const Icon = hidden ? EyeOff : Eye;
+  const hint = hidden ? HIDE_VALUES_HINT_HIDDEN : HIDE_VALUES_HINT_SHOWN;
   return (
     <button
       type="button"
       data-testid="hide-values-toggle"
       aria-pressed={hidden}
       aria-label={hidden ? "Valores ocultos" : "Valores visíveis"}
-      title={HIDE_VALUES_HINT}
+      title={hint}
       onClick={toggle}
       className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100"
     >
@@ -262,14 +264,16 @@ export function AppShell({
           </div>
         </div>
       </header>
-      <QuickAddProvider hideFab={HIDE_FAB_ROUTES.includes(pathname)}>
-        <div className="mx-auto w-full max-w-[960px] flex-1 px-4 py-6">
-          <Suspense fallback={null}>
-            <JoinedNotice familyName={familyName} />
-          </Suspense>
-          {children}
-        </div>
-      </QuickAddProvider>
+      <SettlementProvider enabled={settlementEnabled}>
+        <QuickAddProvider hideFab={HIDE_FAB_ROUTES.includes(pathname)}>
+          <div className="mx-auto w-full max-w-[960px] flex-1 px-4 py-6">
+            <Suspense fallback={null}>
+              <JoinedNotice familyName={familyName} />
+            </Suspense>
+            {children}
+          </div>
+        </QuickAddProvider>
+      </SettlementProvider>
       <nav
         aria-label="Principal (celular)"
         className="fixed inset-x-0 bottom-0 z-20 flex border-t border-slate-200 bg-white dark:bg-slate-100 lg:hidden"

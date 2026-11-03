@@ -8,7 +8,10 @@ import { usePref } from "@/lib/prefs";
 
 export { MONEY_MASK, maskMoneyInText };
 export const REVEAL_MS = 5000;
-export const HIDE_VALUES_HINT = "Oculta os valores na tela. Não protege seus dados.";
+export const HIDE_VALUES_HINT_HIDDEN =
+  "Valores ocultos neste aparelho para o seu usuário. Toque para mostrar.";
+export const HIDE_VALUES_HINT_SHOWN =
+  "Valores visíveis neste aparelho para o seu usuário. Toque para ocultar.";
 
 /** Estado global (por usuário/dispositivo) de ocultar valores. */
 export function useHideValues(): { hidden: boolean; toggle: () => void } {

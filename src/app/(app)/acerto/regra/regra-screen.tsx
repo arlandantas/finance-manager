@@ -19,6 +19,7 @@ import { suggestBpsFromIncomes } from "@/modules/split/preview";
 import { equalShares, formatBps, formatBpsList, parsePercentToBps } from "@/modules/split/rules";
 import type { SplitRuleDTO } from "@/modules/split/schemas";
 import { DisabledNotice, isDisabled } from "../acerto-screen";
+import { RuleReadOnly } from "./regra-readonly";
 
 const RANGE_MSG = "Informe um percentual entre 0% e 100%";
 const SUM_MSG = "Os percentuais precisam somar 100%";
@@ -153,6 +154,8 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
     });
   }
 
+  if (readOnly) return <RuleReadOnly rule={rule} />;
+
   return (
     <form
       noValidate
@@ -168,11 +171,6 @@ function Form({ rule }: { rule: SplitRuleDTO }) {
           className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200"
         >
           Um novo membro entrou. Redefina os percentuais.
-        </p>
-      ) : null}
-      {readOnly ? (
-        <p role="status" className="rounded-lg bg-slate-100 p-3 text-sm text-slate-700">
-          Somente Administradores podem alterar a regra. Você vê a regra em modo somente leitura.
         </p>
       ) : null}
       {banner ? (

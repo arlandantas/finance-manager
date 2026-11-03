@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Field, inputClass } from "@/components/ui/field";
+import { useSettlementEnabled } from "@/lib/settlement-context";
 import { useCards } from "@/modules/cartoes/hooks";
 import { useAllCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
@@ -57,6 +58,7 @@ export function FiltersPanel({
   onChange: (patch: Partial<LedgerUiFilters>) => void;
   idPrefix: string;
 }) {
+  const settlementEnabled = useSettlementEnabled();
   const accounts = useAccounts();
   const cards = useCards();
   const family = useFamily();
@@ -148,20 +150,22 @@ export function FiltersPanel({
           <option value="INVOICE_PAYMENT">Pagamento de fatura</option>
         </select>
       </Field>
-      <Field id={id("shared")} label="Divisão">
-        <select
-          id={id("shared")}
-          className={inputClass}
-          value={filters.shared === undefined ? "" : String(filters.shared)}
-          onChange={(e) =>
-            onChange({ shared: e.target.value === "" ? undefined : e.target.value === "true" })
-          }
-        >
-          <option value="">Todas</option>
-          <option value="true">Comum</option>
-          <option value="false">Pessoal</option>
-        </select>
-      </Field>
+      {settlementEnabled ? (
+        <Field id={id("shared")} label="Divisão">
+          <select
+            id={id("shared")}
+            className={inputClass}
+            value={filters.shared === undefined ? "" : String(filters.shared)}
+            onChange={(e) =>
+              onChange({ shared: e.target.value === "" ? undefined : e.target.value === "true" })
+            }
+          >
+            <option value="">Todas</option>
+            <option value="true">Comum</option>
+            <option value="false">Pessoal</option>
+          </select>
+        </Field>
+      ) : null}
       <Field id={id("origin")} label="Origem">
         <select
           id={id("origin")}
