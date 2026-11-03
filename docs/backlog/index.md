@@ -50,8 +50,8 @@ Ordem das pendentes: US-042 e US-043 só após a janela de reversão do rateio (
 | US-039 | R2.1 | Polimento da homologação | done | US-003, US-007, US-014 |
 | US-052 | R2.2 | Aviso visível: compra parcelada ainda fica fora do acerto | done | US-040a, US-030, US-029 |
 | US-055 | R2.2 | Faturas de cartão na tela "A pagar" | done | US-017a, US-018, US-019, US-025 |
-| US-054 | R2.2 | Avisar antes de arquivar cartão e botão flutuante que não cobre ações em Contas | todo | US-032, US-033, US-039 |
-| US-053 | R2.2 | Clareza de textos: acerto desligado, regra somente leitura e preferência do olho | todo | US-028, US-031, US-027, US-036 |
+| US-054 | R2.2 | Avisar antes de arquivar cartão e botão flutuante que não cobre ações em Contas | done | US-032, US-033, US-039 |
+| US-053 | R2.2 | Clareza de textos: acerto desligado, regra somente leitura e preferência do olho | done | US-028, US-031, US-027, US-036 |
 | US-056 | R2.2 | Polimento: modal de confirmação sobreposto e contraste de estados nos dois temas | done | — |
 | US-057 | R2.2 | Conta fora do saldo disponível (reserva) | done | US-032, US-026 |
 | US-058 | R2.2 | Despesa recorrente mensal (gera previstas) | done | US-018, US-019 |
