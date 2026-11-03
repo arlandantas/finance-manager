@@ -9,14 +9,31 @@ import type {
   PayPlannedResponse,
   PlannedExpenseDTO,
   PlannedListResponse,
+  ReceivablesResponse,
   UpdatePlannedExpenseInput,
 } from "@/modules/previstas/schemas";
 
 /** SDD-009 §5: chaves `["planned", { period, status }]` e `["payables", period]`. */
-export const plannedKey = (period: string | undefined, status?: "PREVISTO" | "PAGO") =>
-  ["planned", { period: period ?? "current", status: status ?? "ALL" }] as const;
+export type PlannedKindFilter = "EXPENSE" | "INCOME" | "ALL";
+export const plannedKey = (
+  period: string | undefined,
+  status?: "PREVISTO" | "PAGO",
+  kind: PlannedKindFilter = "EXPENSE",
+) => ["planned", { period: period ?? "current", status: status ?? "ALL", kind }] as const;
 export const payablesKey = (period: string | undefined) =>
   ["payables", period ?? "current"] as const;
+export const receivablesKey = (period: string | undefined) =>
+  ["receivables", period ?? "current"] as const;
+
+/** US-051: "A receber" (receitas previstas pendentes do período). */
+export function useReceivables(period: string | undefined) {
+  return useQuery({
+    queryKey: receivablesKey(period),
+    queryFn: () =>
+      apiFetch<ReceivablesResponse>(`/api/v1/receivables${period ? `?period=${period}` : ""}`),
+    staleTime: 0,
+  });
+}
 
 export function usePayables(period: string | undefined) {
   return useQuery({
@@ -27,11 +44,15 @@ export function usePayables(period: string | undefined) {
   });
 }
 
-export function usePlannedList(period: string | undefined, status: "PREVISTO" | "PAGO") {
+export function usePlannedList(
+  period: string | undefined,
+  status: "PREVISTO" | "PAGO",
+  kind: PlannedKindFilter = "EXPENSE",
+) {
   return useQuery({
-    queryKey: plannedKey(period, status),
+    queryKey: plannedKey(period, status, kind),
     queryFn: () => {
-      const p = new URLSearchParams({ status });
+      const p = new URLSearchParams({ status, kind });
       if (period) p.set("period", period);
       return apiFetch<PlannedListResponse>(`/api/v1/planned-expenses?${p.toString()}`);
     },
@@ -57,8 +78,12 @@ export function useInvalidatePlanned(withLedger = false) {
       [
         ["planned"],
         ["payables"],
+        ["receivables"],
         ["home"],
-        ...(withLedger ? [["accounts"], ["transactions"], ["transaction"], ["settlement"]] : []),
+        ["month-summary"],
+        ...(withLedger
+          ? [["accounts"], ["transactions"], ["transaction"], ["settlement"], ["analysis"]]
+          : []),
       ].map((queryKey) => qc.invalidateQueries({ queryKey })),
     );
 }

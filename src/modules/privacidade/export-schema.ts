@@ -87,6 +87,7 @@ export const ExportTransactionSchema = z
 export const ExportPlannedSchema = z
   .object({
     id,
+    tipo: z.enum(["EXPENSE", "INCOME"]), // US-051
     descricao: z.string(),
     valorEmCentavos: cents,
     vencimento: z.string(),

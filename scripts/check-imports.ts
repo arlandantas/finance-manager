@@ -30,6 +30,7 @@ const PURE: RegExp[] = [
   /^src\/modules\/split\/(backfill|split-amount)\.ts$/,
   /^src\/modules\/contas\/colors\.ts$/, // SDD-017: paleta e pickNextColor puros
   /^src\/lib\/contrast\.ts$/,
+  /^src\/modules\/previstas\/copy\.ts$/, // SDD-017: mensagens da previsão por kind (puro)
   /^src\/modules\/tags\/normalize\.ts$/, // SDD-016: normalização de tags pura
   /^src\/modules\/analise-ia\/payload\.ts$/, // ADR-029: payload puro e determinístico
 ];

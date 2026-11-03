@@ -18,36 +18,63 @@ export function previstasRepo(tx: Tx, familyId: string) {
     lock: async (id: string) => {
       await tx.$queryRaw`SELECT id FROM planned_expenses WHERE id = ${id}::uuid AND "familyId" = ${familyId}::uuid FOR UPDATE`;
     },
-    listInRange: (start: string, end: string, status?: "PREVISTO" | "PAGO") =>
+    listInRange: (
+      start: string,
+      end: string,
+      status?: "PREVISTO" | "PAGO",
+      kind: "EXPENSE" | "INCOME" | "ALL" = "EXPENSE",
+    ) =>
       tx.plannedExpense.findMany({
         where: {
           familyId,
           deletedAt: null,
           dueOn: { gte: toDbDate(start), lte: toDbDate(end) },
           ...(status ? { status } : {}),
+          ...(kind !== "ALL" ? { kind } : {}),
         },
         include,
         orderBy: [{ dueOn: "asc" }, { createdAt: "asc" }, { id: "asc" }],
       }),
+    // US-051 (SDD-017 §4.5): "A pagar" é só despesa; a receita prevista tem `listOpenReceivable`
     listOpen: () =>
       tx.plannedExpense.findMany({
-        where: { familyId, deletedAt: null, status: "PREVISTO" },
+        where: { familyId, deletedAt: null, status: "PREVISTO", kind: "EXPENSE" },
         include,
         orderBy: [{ dueOn: "asc" }, { createdAt: "asc" }, { id: "asc" }],
       }),
     listOpenUntil: (until: string) =>
       tx.plannedExpense.findMany({
-        where: { familyId, deletedAt: null, status: "PREVISTO", dueOn: { lte: toDbDate(until) } },
+        where: {
+          familyId,
+          deletedAt: null,
+          status: "PREVISTO",
+          kind: "EXPENSE",
+          dueOn: { lte: toDbDate(until) },
+        },
         include,
         orderBy: [{ dueOn: "asc" }, { createdAt: "asc" }, { id: "asc" }],
       }),
     listOpenBefore: (before: string) =>
       tx.plannedExpense.findMany({
-        where: { familyId, deletedAt: null, status: "PREVISTO", dueOn: { lt: toDbDate(before) } },
+        where: {
+          familyId,
+          deletedAt: null,
+          status: "PREVISTO",
+          kind: "EXPENSE",
+          dueOn: { lt: toDbDate(before) },
+        },
+        include,
+        orderBy: [{ dueOn: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+      }),
+    /** Receitas previstas pendentes (US-051): a base única de "A receber". */
+    listOpenReceivable: () =>
+      tx.plannedExpense.findMany({
+        where: { familyId, deletedAt: null, status: "PREVISTO", kind: "INCOME" },
         include,
         orderBy: [{ dueOn: "asc" }, { createdAt: "asc" }, { id: "asc" }],
       }),
     insert: (d: {
+      kind?: "EXPENSE" | "INCOME";
       description: string;
       amountInCents: number;
       dueOn: string;
@@ -62,6 +89,7 @@ export function previstasRepo(tx: Tx, familyId: string) {
         data: {
           familyId,
           ...d,
+          kind: d.kind ?? "EXPENSE",
           amountInCents: fromCents(d.amountInCents),
           dueOn: toDbDate(d.dueOn),
         },

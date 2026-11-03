@@ -1,4 +1,4 @@
-import { conflict, forbidden, notFound, unprocessable } from "@/lib/api/errors";
+import { badRequest, conflict, forbidden, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { localPart } from "@/lib/auth/dev-login-guard";
 import { compareDate, fromDbDate, todayInFamilyTz } from "@/lib/dates";
@@ -9,6 +9,7 @@ import { recordRevision } from "@/modules/contas/ledger";
 import { accountBalances } from "@/modules/contas/ledger-queries";
 import { shareLockAccounts, shareLockCards } from "@/modules/contas/lock";
 import { toMemberRef } from "@/modules/familia/display-name";
+import { type PlannedKindCopy, plannedCopy } from "@/modules/previstas/copy";
 import { previstasRepo } from "@/modules/previstas/repo";
 import { isPlannedOverdue, plannedDifference } from "@/modules/previstas/rules";
 import type {
@@ -43,7 +44,7 @@ import {
   UNLINKED_PAYER_CODE,
   UNLINKED_PAYER_SELF_MESSAGE,
 } from "@/modules/transacoes/ownership";
-import { createExpenseCore } from "@/modules/transacoes/service";
+import { createExpenseCore, createIncomeCore } from "@/modules/transacoes/service";
 
 type Repo = ReturnType<typeof previstasRepo>;
 export type PlannedRow = NonNullable<Awaited<ReturnType<Repo["findById"]>>>;
@@ -71,6 +72,7 @@ export function toPlannedDTO(
   const paidTx = row.paidTx;
   return {
     id: row.id,
+    kind: row.kind,
     description: row.description,
     amountInCents: planned,
     dueOn,
@@ -127,9 +129,14 @@ export async function checkPaymentAccount(repo: Repo, accountId: string) {
   }
 }
 
-export async function checkCategory(repo: Repo, categoryId: string) {
+/** Categoria ativa DO MESMO TIPO da previsão (SDD-017 §1.2): despesa usa categoria de despesa; receita, de receita. */
+export async function checkCategory(
+  repo: Repo,
+  categoryId: string,
+  kind: PlannedKindCopy = "EXPENSE",
+) {
   const category = await repo.findCategory(categoryId);
-  if (!category || category.archivedAt !== null || category.kind !== "EXPENSE") {
+  if (!category || category.archivedAt !== null || category.kind !== kind) {
     throw invalidRef("categoryId", "Escolha uma categoria");
   }
 }
@@ -150,18 +157,24 @@ export async function createPlannedExpense(
   const repo = previstasRepo(tx, ctx.familyId);
   const today = todayInFamilyTz(ctx.clock);
   const responsibleMemberId = input.responsibleMemberId ?? ctx.memberId;
+  if (input.kind === "INCOME" && input.isSharedExpense) {
+    throw badRequest("VALIDATION_ERROR", "Receita não é dividida", [
+      { path: "isSharedExpense", message: "Receita não é dividida" },
+    ]); // defesa: o schema já recusa
+  }
   if (input.isSharedExpense) await assertCanShare(tx, ctx);
   await shareLockAccounts(tx, ctx.familyId, [input.paymentAccountId]); // SDD-034 R2: a FK da criação também trava a conta
   await assertPlannedResultAllowed(tx, ctx, {
     isSharedExpense: input.isSharedExpense,
     responsibleMemberId,
   }); // SEC-026; US-093b: exceção do Administrador para dono sem conta
-  await checkCategory(repo, input.categoryId);
+  await checkCategory(repo, input.categoryId, input.kind);
   if (!(await repo.findMember(responsibleMemberId))) {
     throw invalidRef("responsibleMemberId", "Responsável inválido");
   }
   if (input.paymentAccountId) await checkPaymentAccount(repo, input.paymentAccountId);
   const row = await repo.insert({
+    kind: input.kind,
     paymentAccountId: input.paymentAccountId ?? null,
     description: input.description,
     amountInCents: input.amountInCents,
@@ -193,7 +206,7 @@ export async function listPlannedExpenses(
   const today = todayInFamilyTz(ctx.clock);
   const cutDay = await repo.cutDay();
   const period = q.period ? periodFromKey(q.period, cutDay) : periodOf(today, cutDay);
-  const rows = await repo.listInRange(period.start, period.end, q.status);
+  const rows = await repo.listInRange(period.start, period.end, q.status, q.kind);
   const members = await memberMap(repo);
   const items = rows.map((r) => toPlannedDTO(r, members, today));
   const open = items.filter((i) => i.status === "PREVISTO");
@@ -216,11 +229,10 @@ async function versionConflict(repo: Repo, tx: Tx, familyId: string, id: string)
   if (!fresh) return notFound(NOT_FOUND);
   const by = fresh.updatedByMemberId ?? fresh.authorMemberId;
   const name = (await memberMap(repo)).get(by)?.name.split(" ")[0] ?? "outra pessoa";
-  return conflict(
-    "VERSION_CONFLICT",
-    `Esta despesa prevista foi alterada por ${name}. Recarregue para continuar.`,
-    { currentVersion: fresh.version, updatedBy: by },
-  );
+  return conflict("VERSION_CONFLICT", plannedCopy(fresh.kind).versionConflict(name), {
+    currentVersion: fresh.version,
+    updatedBy: by,
+  });
 }
 
 export const PLANNED_PAID_LOCKED_MESSAGE =
@@ -240,7 +252,7 @@ async function loadForChange(
   if (!row) throw notFound(NOT_FOUND);
   if (row.version !== version) throw await versionConflict(repo, tx, ctx.familyId, id);
   if (row.status === "PAGO") {
-    throw unprocessable("PLANNED_PAID_LOCKED", PLANNED_PAID_LOCKED_MESSAGE);
+    throw unprocessable("PLANNED_PAID_LOCKED", plannedCopy(row.kind).paidLocked);
   }
   return row;
 }
@@ -254,6 +266,11 @@ export async function updatePlannedExpense(
 ): Promise<{ plannedExpense: PlannedExpenseDTO }> {
   const repo = previstasRepo(tx, ctx.familyId);
   const row = await loadForChange(tx, ctx, repo, id, input.version);
+  if (row.kind === "INCOME" && input.isSharedExpense === true) {
+    throw badRequest("VALIDATION_ERROR", "Receita não é dividida", [
+      { path: "isSharedExpense", message: "Receita não é dividida" },
+    ]);
+  }
   // SDD-034 R2: contas (atual e nova) ANTES de qualquer leitura do dono (conta ➔ membro, como o removal.ts)
   await shareLockAccounts(tx, ctx.familyId, [row.paymentAccountId, input.paymentAccountId]);
   await assertCanWritePlanned(tx, ctx, row); // SEC-026a: "Só meu" é só do responsável
@@ -285,7 +302,7 @@ export async function updatePlannedExpense(
     row,
   );
   if (input.categoryId !== undefined && input.categoryId !== row.categoryId) {
-    await checkCategory(repo, input.categoryId);
+    await checkCategory(repo, input.categoryId, row.kind);
   }
   if (
     input.responsibleMemberId !== undefined &&
@@ -387,14 +404,14 @@ export async function payPlannedExpense(
   const repo = previstasRepo(tx, ctx.familyId);
   const row = await loadForPay(tx, ctx, repo, id, input.version);
   if (row.status === "PAGO") {
-    throw conflict("PLANNED_ALREADY_PAID", "Esta despesa prevista já foi paga");
+    throw conflict("PLANNED_ALREADY_PAID", plannedCopy(row.kind).alreadyPaid);
   }
   await shareLockAccounts(tx, ctx.familyId, [row.paymentAccountId, input.accountId]); // SDD-034 R2
   await assertCanWritePlanned(tx, ctx, row); // SEC-026b: dar baixa num "Só meu" é só do responsável
   const today = todayInFamilyTz(ctx.clock);
   const paidOn = input.paidOn ?? today;
   if (compareDate(paidOn, today) > 0) {
-    const message = "A data do pagamento não pode ser futura";
+    const message = plannedCopy(row.kind).futureDate;
     throw unprocessable("FUTURE_DATE_NOT_ALLOWED", message, [{ path: "paidOn", message }]);
   }
   const effective = input.amountInCents ?? toCents(row.amountInCents);
@@ -417,7 +434,10 @@ export async function payPlannedExpense(
   if (
     !(await tx.bankAccount.findFirst({ where: { id: input.accountId, familyId: ctx.familyId } }))
   ) {
-    throw invalidRef("accountId", "Escolha a conta do pagamento");
+    throw invalidRef(
+      "accountId",
+      row.kind === "INCOME" ? "Escolha a conta do recebimento" : "Escolha a conta do pagamento",
+    );
   }
   if (!(await repo.findMember(payerMemberId))) throw invalidRef("payerMemberId", "Membro inválido");
   // US-093b (D-034-2/D-034-4, I-1; SDD-034 §4.2): a baixa do "Só meu" de dono sem conta mantém o pagador original;
@@ -452,24 +472,44 @@ export async function payPlannedExpense(
     await assertPersonalForSelf(tx, ctx, { isSharedExpense: false, payerMemberId });
   }
 
-  const created = await createExpenseCore(
-    tx,
-    ctx,
-    {
-      type: "EXPENSE",
-      accountId: input.accountId,
-      categoryId: row.categoryId,
-      amountInCents: effective,
-      occurredOn: paidOn,
-      payerMemberId,
-      description: row.description,
-      ...((input.note ?? row.note) ? { note: (input.note ?? row.note) as string } : {}),
-      isSharedExpense: row.isSharedExpense,
-      installments: 1,
-      paidBeforeApp: 0,
-    },
-    { allowArchivedCategory: true, personalFromPlanned: true },
-  );
+  const note = (input.note ?? row.note) ? { note: (input.note ?? row.note) as string } : {};
+  // SDD-017 §4.4: despesa ⇒ `createExpenseCore` (inalterado); receita ⇒ `createIncomeCore` (conta de destino,
+  // `payerMemberId` = quem recebeu). A receita nunca é dividida nem entra no acerto.
+  const created =
+    row.kind === "INCOME"
+      ? await createIncomeCore(
+          tx,
+          ctx,
+          {
+            type: "INCOME",
+            accountId: input.accountId,
+            categoryId: row.categoryId,
+            amountInCents: effective,
+            occurredOn: paidOn,
+            payerMemberId,
+            description: row.description,
+            ...note,
+          },
+          { allowArchivedCategory: true },
+        )
+      : await createExpenseCore(
+          tx,
+          ctx,
+          {
+            type: "EXPENSE",
+            accountId: input.accountId,
+            categoryId: row.categoryId,
+            amountInCents: effective,
+            occurredOn: paidOn,
+            payerMemberId,
+            description: row.description,
+            ...note,
+            isSharedExpense: row.isSharedExpense,
+            installments: 1,
+            paidBeforeApp: 0,
+          },
+          { allowArchivedCategory: true, personalFromPlanned: true },
+        );
   const res = await repo.markPaid(id, input.version, created.transaction.id, ctx.memberId);
   if (res.count === 0) throw await versionConflict(repo, tx, ctx.familyId, id);
 
@@ -493,7 +533,7 @@ export async function undoPlannedPayment(
   const repo = previstasRepo(tx, ctx.familyId);
   const row = await loadForPay(tx, ctx, repo, id, version);
   if (row.status !== "PAGO" || !row.paidTransactionId) {
-    throw conflict("PLANNED_NOT_PAID", "Esta despesa prevista não está paga");
+    throw conflict("PLANNED_NOT_PAID", plannedCopy(row.kind).notPaid);
   }
   const t = await tx.transaction.findFirst({
     where: { id: row.paidTransactionId, familyId: ctx.familyId },

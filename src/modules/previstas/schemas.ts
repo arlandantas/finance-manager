@@ -13,8 +13,13 @@ const descriptionRequired = z
   .max(100, "A descrição deve ter no máximo 100 caracteres");
 const noteSchema = z.string().trim().max(500, "A observação deve ter no máximo 500 caracteres");
 
+/** US-051 (SDD-017 §2, ADR-023): despesa ou receita prevista; imutável após a criação. */
+export const PLANNED_KINDS = ["EXPENSE", "INCOME"] as const;
+export type PlannedKind = (typeof PLANNED_KINDS)[number];
+
 export const CreatePlannedExpenseSchema = z
   .object({
+    kind: z.enum(PLANNED_KINDS).default("EXPENSE"), // padrão EXPENSE: contrato da R2 intacto
     description: descriptionRequired,
     amountInCents: amountInCentsSchema, // "Informe um valor maior que zero"
     dueOn: dateISOSchema.optional(), // padrão: hoje (servidor)
@@ -24,7 +29,16 @@ export const CreatePlannedExpenseSchema = z
     note: noteSchema.optional(),
     paymentAccountId: z.uuid({ error: "Escolha uma conta ativa" }).nullable().optional(), // US-059
   })
-  .strict();
+  .strict()
+  .superRefine((v, ctx) => {
+    if (v.kind === "INCOME" && v.isSharedExpense) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["isSharedExpense"],
+        message: "Receita não é dividida",
+      });
+    }
+  });
 export type CreatePlannedExpenseInput = z.input<typeof CreatePlannedExpenseSchema>;
 export type CreatePlannedExpenseParsed = z.output<typeof CreatePlannedExpenseSchema>;
 
@@ -65,14 +79,17 @@ export const ListPlannedQuerySchema = z
   .object({
     period: periodKeySchema.optional(), // padrão: período corrente (por vencimento)
     status: z.enum(["PREVISTO", "PAGO"]).optional(),
+    kind: z.enum(["EXPENSE", "INCOME", "ALL"]).default("EXPENSE"), // padrão EXPENSE: contrato da R2 intacto
   })
   .strict();
 export type ListPlannedQuery = z.output<typeof ListPlannedQuerySchema>;
 export const PayablesQuerySchema = z.object({ period: periodKeySchema.optional() }).strict();
+export const ReceivablesQuerySchema = z.object({ period: periodKeySchema.optional() }).strict();
 
 // ── DTOs ──
 export type PlannedExpenseDTO = {
   id: string;
+  kind: PlannedKind; // US-051; na receita, `paymentAccount` = conta de destino sugerida e `paid.accountName` = destino
   description: string;
   amountInCents: number; // PREVISTO
   dueOn: string;
@@ -178,6 +195,30 @@ export type PayablesResponse = {
   period: { key: string; start: string; end: string };
   totals: { dueInCents: number; overdueInCents: number; overdueCount: number };
   byAccount: ByAccount; // US-060 (SDD-029): derivado dos MESMOS `items`
+};
+
+/** US-051 (SDD-017 §2): receita prevista pendente ("A receber"). */
+export type ReceivableItemDTO = {
+  id: string;
+  title: string;
+  dueOn: string;
+  amountInCents: number;
+  isOverdue: boolean;
+  category: { id: string; name: string; icon: string };
+  responsible: MemberRef;
+  /** Conta de destino sugerida (a mesma coluna "Pagar com" da prevista); null se não houver. */
+  destinationAccount: { id: string; name: string } | null;
+  /** D-GES-50: lançador e dono da conta de destino (controlam a prevista "Só meu" com o responsável). */
+  authorId?: string;
+  destinationAccountOwnerId?: string | null;
+  isSharedExpense: boolean; // sempre false numa receita (CHECK); a UI aplica a mesma regra de controle
+  href: string; // /previstas?tab=receber#{id}
+};
+
+export type ReceivablesResponse = {
+  items: ReceivableItemDTO[]; // atrasadas primeiro, depois dueOn, depois título
+  period: { key: string; start: string; end: string };
+  totals: { dueInCents: number; overdueInCents: number; overdueCount: number; count: number };
 };
 
 export type HomePayablesDTO = {

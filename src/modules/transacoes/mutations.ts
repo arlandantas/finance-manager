@@ -14,6 +14,7 @@ import {
   shareLockAccounts,
   shareLockCards,
 } from "@/modules/contas/lock";
+import { plannedCopy } from "@/modules/previstas/copy";
 import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
 import { splitRepo } from "@/modules/split/repo";
@@ -48,7 +49,7 @@ const INVOICE_PAID_LOCKED =
   "Esta compra está em uma fatura já paga. Desfaça o pagamento da fatura para alterá-la.";
 const INSTALLMENT_NOT_EDITABLE =
   "Esta parcela não pode ser alterada. Exclua a compra parcelada e lance de novo.";
-const LINKED_TO_PLANNED = "Esta despesa veio de uma despesa prevista. Use Desfazer pagamento.";
+const linkedToPlanned = (kind: "EXPENSE" | "INCOME") => plannedCopy(kind).linkedToPlanned;
 const PAYMENT_NOT_EDITABLE =
   "O pagamento de fatura não pode ser editado nem excluído. Use Desfazer pagamento.";
 const SETTLED = "Este mês já foi acertado. O saldo do acerto será recalculado.";
@@ -494,7 +495,8 @@ export async function deleteTransaction(
   const repo = transacoesRepo(tx, ctx.familyId);
   const row = await loadMutable(tx, ctx, repo, id);
   if (row.deletedAt) throw conflict("ALREADY_DELETED", "Este lançamento já foi excluído.");
-  if (row.paidPlanned) throw unprocessable("LINKED_TO_PLANNED", LINKED_TO_PLANNED);
+  if (row.paidPlanned)
+    throw unprocessable("LINKED_TO_PLANNED", linkedToPlanned(row.paidPlanned.kind));
   if (row.cardId) await lockPurchaseInvoices(tx, ctx, repo, row);
   if (row.kind === "EXPENSE" && row.isSharedExpense) {
     await requireSettledConfirmation(
@@ -528,7 +530,8 @@ export async function restoreTransaction(
   await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2
   const repo = transacoesRepo(tx, ctx.familyId);
   const row = await loadMutable(tx, ctx, repo, id);
-  if (row.paidPlanned) throw unprocessable("LINKED_TO_PLANNED", LINKED_TO_PLANNED);
+  if (row.paidPlanned)
+    throw unprocessable("LINKED_TO_PLANNED", linkedToPlanned(row.paidPlanned.kind));
   if (!row.deletedAt || row.deletionReason !== "DELETED") {
     throw unprocessable("NOT_RESTORABLE", "Este lançamento não pode ser restaurado.");
   }

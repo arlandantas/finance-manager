@@ -190,7 +190,7 @@ export async function createTransaction(
   if (input.type === "EXPENSE" && input.isSharedExpense) await assertCanShare(tx, ctx);
   return input.type === "EXPENSE"
     ? createExpenseCore(tx, ctx, input, {})
-    : createIncome(tx, ctx, input);
+    : createIncomeCore(tx, ctx, input, {});
 }
 
 /**
@@ -363,10 +363,15 @@ export async function createExpenseCore(
   return { transaction: dto, account: { id: accountId, balanceInCents: balance } };
 }
 
-async function createIncome(
+/**
+ * Receita em conta. Reutilizada pela baixa de receita prevista (US-051, SDD-017 §4.4), que aceita
+ * categoria arquivada depois do cadastro (como o `createExpenseCore` na baixa da despesa).
+ */
+export async function createIncomeCore(
   tx: Tx,
   ctx: RequestContext,
   input: IncomeInput,
+  opts: { allowArchivedCategory?: boolean } = {},
 ): Promise<CreateTransactionResponse> {
   const repo = transacoesRepo(tx, ctx.familyId);
   const today = todayInFamilyTz(ctx.clock);
@@ -376,7 +381,9 @@ async function createIncome(
   const account = await repo.findAccount(input.accountId);
   if (!account) throw invalidRef("accountId", "Escolha uma conta");
   await lockAccountsForPosting(tx, ctx.familyId, [account.id]);
-  const category = await repo.findCategory(input.categoryId);
+  const category = opts.allowArchivedCategory
+    ? await repo.findCategoryAny(input.categoryId)
+    : await repo.findCategory(input.categoryId);
   if (!category) throw invalidRef("categoryId", "Escolha uma categoria");
   const payer = await repo.findMember(payerMemberId);
   if (!payer) throw invalidRef("payerMemberId", "Membro inválido");

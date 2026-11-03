@@ -9,7 +9,7 @@ const loadInclude = {
   invoice: { select: { referenceMonth: true, closingDate: true, dueDate: true } },
   category: true,
   group: true,
-  paidPlanned: { select: { id: true } },
+  paidPlanned: { select: { id: true, kind: true } },
   tags: { select: { tag: { select: { id: true, name: true } } } }, // US-045
 } as const;
 

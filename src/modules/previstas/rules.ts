@@ -1,5 +1,5 @@
 // Regras puras das despesas previstas (SDD-009 §4). Sem Prisma e sem relógio: `today` é argumento.
-import type { PayableItemDTO } from "@/modules/previstas/schemas";
+import type { PayableItemDTO, ReceivableItemDTO } from "@/modules/previstas/schemas";
 
 export type DateISO = string;
 
@@ -62,4 +62,40 @@ export function differenceLabel(
   if (differenceInCents === 0) return "Igual ao previsto";
   const abs = format(Math.abs(differenceInCents));
   return differenceInCents > 0 ? `+${abs} sobre o previsto` : `-${abs} abaixo do previsto`;
+}
+
+/** Atrasadas primeiro; depois data esperada; depois título (SDD-017 §4.5). */
+export function compareReceivables(a: ReceivableItemDTO, b: ReceivableItemDTO): number {
+  if (a.isOverdue !== b.isOverdue) return a.isOverdue ? -1 : 1;
+  if (a.dueOn !== b.dueOn) return a.dueOn < b.dueOn ? -1 : 1;
+  return a.title.localeCompare(b.title, "pt-BR");
+}
+
+/**
+ * Recorte de "A receber" (US-051): data esperada no período; no mês corrente, + atrasadas de períodos
+ * anteriores (como em "A pagar"). Mês passado ou futuro: só o que cai no período (D-PO-42).
+ */
+export function sliceReceivables(
+  items: ReceivableItemDTO[],
+  q: { period: { start: DateISO; end: DateISO }; isCurrent: boolean },
+): ReceivableItemDTO[] {
+  return items
+    .filter(
+      (i) =>
+        (i.dueOn >= q.period.start && i.dueOn <= q.period.end) ||
+        (q.isCurrent && i.dueOn < q.period.start),
+    )
+    .sort(compareReceivables);
+}
+
+/**
+ * Saldo previsto (RN-015.4): saldo atual − A pagar + A receber. A receber `null` (sem receita prevista
+ * no recorte) conta zero e mantém a fórmula da R2.1.
+ */
+export function projectedBalance(q: {
+  currentInCents: number;
+  toPayInCents: number;
+  toReceiveInCents: number | null;
+}): number {
+  return q.currentInCents - q.toPayInCents + (q.toReceiveInCents ?? 0);
 }

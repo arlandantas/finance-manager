@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { type MemberRef, periodKeySchema } from "@/lib/schemas";
 import type { AccountDTO } from "@/modules/contas/schemas";
-import type { HomePayablesDTO, PayableItemDTO } from "@/modules/previstas/schemas";
+import type {
+  HomePayablesDTO,
+  PayableItemDTO,
+  ReceivableItemDTO,
+} from "@/modules/previstas/schemas";
 import type { SettlementIndicatorDTO } from "@/modules/split/schemas";
 import type { TransactionDTO } from "@/modules/transacoes/schemas";
 
@@ -18,6 +22,19 @@ export type PayableBreakdownDTO = {
   items: PayableItemDTO[]; // até 5; atrasados primeiro
   totalCount: number; // itens existentes (para "Ver todas")
 };
+
+/** US-051 (SDD-017 §2): receitas previstas pendentes do período; `null` no resumo quando não há nenhuma. */
+export type ReceivableBreakdownDTO = {
+  totalInCents: number;
+  overdueInCents: number;
+  overdueCount: number; // data esperada < hoje
+  totalCount: number;
+  items: ReceivableItemDTO[]; // até 5; atrasadas primeiro
+};
+
+export type ProjectedBalanceFormula =
+  | "SALDO_ATUAL_MENOS_A_PAGAR"
+  | "SALDO_ATUAL_MENOS_A_PAGAR_MAIS_A_RECEBER";
 
 /** Resumo do Mês (US-025, SDD-010 §2): agregado único sobre as mesmas somas do Extrato. */
 export type MonthSummaryDTO = {
@@ -37,9 +54,12 @@ export type MonthSummaryDTO = {
   unplannedInCents: number; // EXPENSE do período sem cartão e sem baixa de prevista
   projectedExpenseInCents: number; // planned.totalInCents + unplannedInCents ("Despesas")
   currentBalanceInCents: number; // soma dos saldos das contas (cartão não entra)
-  projectedBalanceInCents: number; // current - toPay.total (RN-015.4)
+  /** US-051: `null` sem receita prevista pendente no período (nem atrasada, no mês corrente). */
+  toReceive: ReceivableBreakdownDTO | null;
+  projectedBalanceInCents: number; // current - toPay.total + (toReceive?.total ?? 0) (RN-015.4)
+  projectedBalanceFormula: ProjectedBalanceFormula; // qual rótulo vale (R2.1 ou com receitas)
   byMember: Array<{ member: MemberRef; paidInCents: number; sharePercent: number }>; // soma = 100
-  isEmpty: boolean; // sem receita, despesa nem item a pagar
+  isEmpty: boolean; // sem receita, despesa, item a pagar nem receita prevista
 };
 
 export type HomeDTO = {

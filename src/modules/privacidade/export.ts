@@ -207,6 +207,7 @@ async function currentFamily(tx: Tx, familyId: string, memberId: string, myIds: 
       .filter((p) => p.isSharedExpense || mine.has(p.responsibleMemberId))
       .map((p) => ({
         id: p.id,
+        tipo: p.kind, // US-051: EXPENSE | INCOME
         descricao: p.description,
         valorEmCentavos: num(p.amountInCents),
         vencimento: fromDbDate(p.dueOn),

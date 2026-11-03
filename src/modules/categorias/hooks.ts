@@ -44,9 +44,15 @@ function useInvalidateAfterCategoryChange() {
   const qc = useQueryClient();
   return () =>
     Promise.all(
-      [["categories"], ["transactions"], ["transaction"], ["home"], ["planned"], ["payables"]].map(
-        (queryKey) => qc.invalidateQueries({ queryKey }),
-      ),
+      [
+        ["categories"],
+        ["transactions"],
+        ["transaction"],
+        ["home"],
+        ["planned"],
+        ["payables"],
+        ["receivables"],
+      ].map((queryKey) => qc.invalidateQueries({ queryKey })),
     );
 }
 

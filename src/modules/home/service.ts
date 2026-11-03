@@ -7,7 +7,8 @@ import { paidInvoicesDueIn } from "@/modules/cartoes/invoice-service";
 import { listAccounts } from "@/modules/contas/service";
 import { homeRepo } from "@/modules/home/repo";
 import type { HomeDTO, MonthSummaryDTO } from "@/modules/home/schemas";
-import { homePayables, listDueItems } from "@/modules/previstas/payables";
+import { homePayables, listDueItems, listReceivableItems } from "@/modules/previstas/payables";
+import { projectedBalance } from "@/modules/previstas/rules";
 import { isSettlementEnabled } from "@/modules/split/guard";
 import { getSettlementIndicator } from "@/modules/split/indicator";
 import { splitRepo } from "@/modules/split/repo";
@@ -75,6 +76,17 @@ export async function getMonthSummary(
       : {};
 
   const due = await listDueItems(tx, ctx, { period, isCurrent, today });
+  const receivable = await listReceivableItems(tx, ctx, { period, isCurrent, today });
+  const toReceive =
+    receivable.items.length > 0
+      ? {
+          totalInCents: receivable.totalInCents,
+          overdueInCents: receivable.overdueInCents,
+          overdueCount: receivable.overdueCount,
+          totalCount: receivable.items.length,
+          items: receivable.items.slice(0, 5),
+        }
+      : null;
   const accounts = await listAccounts(tx, ctx);
   const toPayTotal = due.plannedInCents + due.invoicesInCents;
   // US-063 (D-TL-v0-2): "Despesas" = projeção do mês (Previstas + Não previstas); o resultado segue o realizado
@@ -110,13 +122,25 @@ export async function getMonthSummary(
     unplannedInCents: composition.unplannedInCents,
     projectedExpenseInCents: plannedTotal + composition.unplannedInCents,
     currentBalanceInCents: accounts.totalBalanceInCents,
-    projectedBalanceInCents: accounts.totalBalanceInCents - toPayTotal,
+    toReceive,
+    projectedBalanceInCents: projectedBalance({
+      currentInCents: accounts.totalBalanceInCents,
+      toPayInCents: toPayTotal,
+      toReceiveInCents: toReceive?.totalInCents ?? null,
+    }),
+    projectedBalanceFormula: toReceive
+      ? "SALDO_ATUAL_MENOS_A_PAGAR_MAIS_A_RECEBER"
+      : "SALDO_ATUAL_MENOS_A_PAGAR",
     byMember: withPaid.map((m) => ({
       member: m.ref,
       paidInCents: m.paid,
       sharePercent: shares[m.id] ?? 0,
     })),
-    isEmpty: totals.incomeInCents === 0 && totals.expenseInCents === 0 && due.items.length === 0,
+    isEmpty:
+      totals.incomeInCents === 0 &&
+      totals.expenseInCents === 0 &&
+      due.items.length === 0 &&
+      toReceive === null,
   };
 }
 

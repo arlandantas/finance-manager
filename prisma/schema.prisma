@@ -63,6 +63,12 @@ enum PlannedExpenseStatus {
   PAGO
 }
 
+// US-051 (SDD-017, ADR-023): despesa ou receita prevista na mesma tabela (kind imutável; padrão EXPENSE)
+enum PlannedKind {
+  EXPENSE
+  INCOME
+}
+
 enum Direction {
   CREDIT
   DEBIT
@@ -650,6 +656,7 @@ model PlannedExpense {
   occurrenceMonth     DateTime?            @db.Date
   isException         Boolean              @default(false)
   paymentAccountId    String?              @db.Uuid
+  kind                PlannedKind          @default(EXPENSE) // US-051: imutável após a criação
 
   family         Family            @relation(fields: [familyId], references: [id])
   series         RecurringExpense? @relation(fields: [familyId, seriesId], references: [familyId, id])
@@ -663,6 +670,7 @@ model PlannedExpense {
   @@unique([familyId, paidTransactionId])
   @@unique([familyId, seriesId, occurrenceMonth]) // sem filtro de deletedAt: nunca recria (ADR-025)
   @@index([familyId, status, dueOn])
+  @@index([familyId, kind, status, dueOn])
   @@map("planned_expenses")
 }
 
