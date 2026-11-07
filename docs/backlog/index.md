@@ -129,4 +129,4 @@ Ordem das pendentes: US-042 e US-043 só após a janela de reversão do rateio (
 | US-100 | UR-2 | Transferência prevista: modelo, cadastro e efetivação (servidor) | done | US-060, US-010 |
 | US-100b | UR-2 | Transferência prevista: telas, coluna no resumo por conta e arquivamento | done | US-100, US-054 |
 | US-101 | UR-2 | Transferência prevista recorrente: série e geração (servidor) | done | US-100 |
-| US-101b | UR-2 | Transferência recorrente: telas e arquivamento de conta | todo | US-101, US-100b |
+| US-101b | UR-2 | Transferência recorrente: telas e arquivamento de conta | done | US-101, US-100b |
