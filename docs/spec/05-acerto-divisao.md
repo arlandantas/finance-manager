@@ -86,7 +86,7 @@ Atualizado: 2026-10-31
 | L3 | `explainByRules` usa vigência por data, não `splitRuleVersionId` | equivalente enquanto só existe RULE; revisar com CUSTOM |
 | L4 | Acerto aceita qualquer conta da família (SEC-056, D-GES-61) e pode mover crédito de ex-membro (SEC-054/055) | aceito; sujeito a veto |
 | L5 | Quem voltou à família e divide item antigo aparece 2x (SEC-053) | info |
-| L6 | Parcelas fora do acerto (aviso US-052) | US-042 depende da janela de reversão |
+| L6 | Parcelas fora do acerto (aviso US-052) | Encerra com a US-042 (ADR-040) |
 | L7 | Qualquer membro desfaz qualquer acerto | decisão US-013b |
 | L8 | Mês acertado não trava: edição só pede confirmação | acerto é conciliação, não fechamento |
 | L9 | Destino do acerto livre (SEC-059b) | decisão D-GES-66 |
@@ -97,6 +97,5 @@ Testes: `tests/unit/split/{split-amount,settlement,settlement-stored,backfill,ru
 Ancoras: SDD-002/011/015/034, ADR-011/016/021 (vigente: só `splitMode<>NONE ⇒ isSharedExpense`; reversão em 2 níveis; `base` usa `weight ?? bps`).
 
 ## Pendências
-- Janela de reversão da migração (>=7 dias em produção, `pnpm migrate:split --verify` limpo, fechamento de mês conferido pelo Stakeholder): sem registro de encerramento nem de `migrate:split` em produção (migração de dados é manual).
-- Bloqueados por ela: US-042, US-043 (CUSTOM; migração `us043_modo_custom`: CHECK `isSharedExpense=(splitMode<>NONE)`, `splitMode` em previstas, inexistente), US-044. Rollback nível 2 (`--rollback --purge`) só enquanto não houver CUSTOM, parcela dividida nem contrato.
-- Decisão do Gestor/usuário: encerrar a janela.
+- Janela de reversão dispensada pelo usuário (ADR-040, 2026-11-07): sem produção nem dados reais. US-043 (CUSTOM; migração `us043_modo_custom`: CHECK `isSharedExpense=(splitMode<>NONE)`, `splitMode` em previstas, ainda inexistente), US-041, US-042 e US-044 liberadas, nessa ordem.
+- Rollback nível 2 (`--rollback --purge`) só vale enquanto não houver CUSTOM, parcela dividida nem contrato.

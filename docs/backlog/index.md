@@ -2,7 +2,7 @@
 Uma linha por história/enabler. Status: `todo` · `doing` · `done` · `blocked`. Detalhe das pendentes: `stories/US-NNN.md`.
 Ordem = ordem de execução; as entregues vêm primeiro. Status conferido contra código e testes em 2026-11-02.
 Pendentes: `todo` (pode iniciar quando as deps fecharem) · `blocked` (R5 adiada: importação de fatura; US-074b/US-076c fora do POC, decisão do usuário).
-Ordem das pendentes: US-042 e US-043 só após a janela de reversão do rateio (EN-002); US-041 depois da US-043 (ordem de risco).
+Ordem das pendentes (ADR-040, janela do EN-002 dispensada): US-043 → US-041 → US-042 → US-044.
 
 | ID | Marco | Título | Status | Deps |
 |---|---|---|---|---|
@@ -64,9 +64,9 @@ Ordem das pendentes: US-042 e US-043 só após a janela de reversão do rateio (
 | US-040b | R3 | Excluir compra parcelada inteira e Extrato por intervalo | done | US-040a |
 | EN-002a | R3 | Percentual gravado por lançamento: motor STORED | done | US-040a |
 | EN-002b | R3 | Percentual gravado: migração com gate de 1 centavo | done | EN-002a |
-| US-042 | R3 | Compra parcelada dividida entra no acerto por parcela | todo | US-040, EN-002, US-030 |
 | US-043 | R3 | Dividir no lançamento: Só meu, Pela regra ou De outro jeito | todo | EN-002, US-030 |
 | US-041 | R3 | Gerenciar compra parcelada (editar parcelas e excluir uma parcela) | todo | US-040, US-016b, US-043 |
+| US-042 | R3 | Compra parcelada dividida entra no acerto por parcela | todo | US-040, EN-002, US-030, US-041 |
 | US-044 | R3 | Lembrar "dividir" por categoria e revisar despesas não divididas no fechamento | todo | US-043, US-014 |
 | US-045 | R3 | Tags livres no lançamento | done | US-005, US-006, US-016a, US-024 |
 | US-047 | R3 | Filtrar o Extrato por tag | done | US-045, US-007 |

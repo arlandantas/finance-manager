@@ -83,7 +83,7 @@ export function checkDocs(root: string): DocViolation[] {
   for (const { dir, max } of LIMITS) {
     const d = path.join(root, dir);
     if (!existsSync(d)) continue;
-    for (const name of readdirSync(d).filter((n) => n.endsWith(".md")))
+    for (const name of readdirSync(d).filter((n) => n.endsWith(".md") && n !== "README.md"))
       out.push(...sizeViolations(`${dir}/${name}`, readFileSync(path.join(d, name), "utf8"), max));
   }
 
