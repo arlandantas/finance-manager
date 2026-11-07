@@ -14,14 +14,14 @@ const itemOf = (page: Page, nome: string) =>
 const SHOTS =
   "/tmp/claude-1000/-home-arlan-ai-tests-finance-manager/5f1caabc-bd63-4581-86ca-b9d16318acfb/scratchpad";
 
-async function openCard(page: Page, world: World) {
+async function openCard(page: Page, world: World, user: "Lucas" | "Mariana" = "Lucas") {
   if (!world.data.consoleErrors) {
     const errors: string[] = [];
     world.data.consoleErrors = errors;
     page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
     page.on("pageerror", (e) => errors.push(e.message));
   }
-  if (!world.data.loggedAs) await enterAs(world, page, "Lucas");
+  await enterAs(world, page, user);
   const card = await db.creditCard.findFirstOrThrow({
     where: { familyId: world.family?.family.id },
   });
@@ -118,10 +118,29 @@ Then(
   },
 );
 
-When("Lucas abre o Extrato para ver a assinatura", async ({ page, world }) => {
-  if (!world.data.loggedAs) await enterAs(world, page, "Lucas");
+When(/^(Lucas|Mariana) abre o Extrato para ver a assinatura$/, async ({ page, world }, user) => {
+  await enterAs(world, page, user as "Lucas" | "Mariana");
   await gotoReady(page, "/extrato");
 });
+
+When("Mariana abre o cartão", async ({ page, world }) => {
+  await openCard(page, world, "Mariana");
+});
+
+When("Mariana abre o formulário de nova assinatura", async ({ page }) => {
+  await block(page).getByRole("button", { name: "Nova assinatura" }).click();
+  await expect(dlg(page)).toBeVisible();
+});
+
+Then(
+  "{string} não pode ser escolhido em {string}",
+  async ({ page }, nome: string, campo: string) => {
+    const option = dlg(page)
+      .getByLabel(campo, { exact: true })
+      .locator("option", { hasText: nome });
+    await expect(option).toBeDisabled();
+  },
+);
 
 Then(
   "a linha {string} do Extrato tem o selo {string} e nenhuma parcela",

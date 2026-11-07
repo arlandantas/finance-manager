@@ -39,3 +39,14 @@ Funcionalidade: Assinatura no cartão
     E o tema do sistema é escuro
     E a assinatura "Netflix" de "R$ 55,90" no dia 10 cadastrada pela tela do cartão
     Então a tela do cartão não tem rolagem horizontal e o bloco de assinaturas está visível
+
+  Cenário: Outro membro vê a assinatura mas não cadastra em nome de Lucas
+    Dado a assinatura "Netflix" de "R$ 55,90" no dia 10 cadastrada pela tela do cartão
+    Quando Mariana abre o cartão
+    Então o bloco de assinaturas mostra "Netflix" com "R$ 55,90" e "Todo dia 10"
+    E a fatura aberta mostra "Assinaturas previstas neste ciclo: R$ 55,90" e total "R$ 0,00"
+    Quando Mariana abre o formulário de nova assinatura
+    Então "Lucas" não pode ser escolhido em "Quem gastou"
+    Quando hoje passa a ser 10/11/2026
+    E Mariana abre o Extrato para ver a assinatura
+    Então a linha "Netflix" do Extrato tem o selo "Assinatura" e nenhuma parcela

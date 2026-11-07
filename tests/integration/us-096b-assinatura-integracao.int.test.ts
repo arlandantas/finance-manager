@@ -220,3 +220,14 @@ describe("US-096b AC6: exportação (LGPD)", () => {
     ).toEqual(["Do Lucas"]);
   });
 });
+
+describe("US-096c: visibilidade e controle (spec 01/12)", () => {
+  it("todos veem a assinatura; ninguém cadastra em nome de outro membro com conta (403)", async () => {
+    expect((await create({}, lucas())).status).toBe(201);
+    const list = await call(mariana(), "GET", "/api/v1/subscriptions");
+    expect(list.body.items).toHaveLength(1);
+    const behalf = await create({ payerMemberId: mid("Lucas") }, mariana());
+    expect(behalf.status).toBe(403);
+    expect(behalf.body.error?.code ?? behalf.body.code).toBe("PERSONAL_ON_BEHALF_FORBIDDEN");
+  });
+});

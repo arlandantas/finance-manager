@@ -26,6 +26,10 @@ Atualizado: 2026-11-07. Estado: **US-096, 096b e 096c implementadas (servidor e 
 | 13 | Lista: total mensal = Σ valor do mês corrente das ativas no filtro; `byCard`; abas Ativas/Encerradas; informativo | 098 |
 | 14 | Dividida: exige acerto ligado (`SETTLEMENT_DISABLED`); rateio pela regra vigente no dia da cobrança; acerto desligado no lançamento => cobrança "Só meu" com `sharedDowngraded`; crédito ao pagador, não a quem paga a fatura; alternar vale da próxima cobrança | 099 |
 
+## Visibilidade e controle (spec 01)
+- Lista, bloco do cartão, "previstas neste ciclo" e selo no Extrato são visíveis a todos os membros da família, como o Extrato ("Todos veem"); só a exportação omite "Só meu" alheio.
+- Altera quem pagou, o dono do cartão e quem lançou; ninguém cadastra em nome de outro (a UI desabilita os outros membros em "Quem gastou"; servidor 403 `PERSONAL_ON_BEHALF_FORBIDDEN`; exceção: Admin para dono sem conta).
+
 ## Invariantes
 1. Assinatura nunca soma duas vezes: ou está em "previstas neste ciclo" (não lançada) ou no total da fatura (lançada).
 2. `subscription_charges.status = POSTED` ⇔ `transactionId` não nulo; um registro por mês.

@@ -261,7 +261,14 @@ export function SubscriptionDrawer({
             onChange={(e) => setPayerId(e.target.value)}
           >
             {(family.data?.members ?? []).map((m) => (
-              <option key={m.memberId} value={m.memberId}>
+              <option
+                key={m.memberId}
+                value={m.memberId}
+                // spec 01: ninguém cria "Só meu" em nome de outro (exceção: Admin p/ dono sem conta)
+                disabled={
+                  m.memberId !== me && !(family.data?.currentRole === "ADMIN" && m.unlinked)
+                }
+              >
                 {memberOptionLabel({ name: m.name.split(" ")[0] as string, unlinked: m.unlinked })}
               </option>
             ))}
