@@ -24,6 +24,5 @@
 - US-098: `canEditSubscription` faz N+1 por linha; filtro de cartão em `/assinaturas` usa `useCards()` (verificar se cartão arquivado com assinatura fica filtrável).
 - US-099: `subscription-drawer.tsx` está em 300 linhas (dividir na próxima alteração); `split-sweep.test.ts` só cobre `splitAmount` (a cobertura real está no int).
 - Máquina: Elasticsearch/Kibana de outros projetos consomem CPU e ajudam a estourar timeouts do E2E.
-- E2E US-054 "Impedimento surgido depois de abrir o diálogo" (cartão) falha desde 838cdc5: a pré-checagem desabilita "Arquivar" e o cenário não clica; corrigir cenário ou diálogo.
 - Divergência spec×código: código e testes vencem; registrar em `docs/spec/<área>`.
 - DEV-168..173 (previstas, US-051) e DEV-164..167 (cores, US-050): ver specs 04b e 10b.
