@@ -415,8 +415,8 @@ model BankAccount {
   plannedExpenses   PlannedExpense[]
   recurringExpenses RecurringExpense[]
   payerForCards     CreditCard[]
-  plannedTransfersFrom PlannedTransfer[] @relation("PlannedTransferFrom")
-  plannedTransfersTo   PlannedTransfer[] @relation("PlannedTransferTo")
+  plannedFrom       PlannedTransfer[]  @relation("PlannedTransferFrom") // US-100
+  plannedTo         PlannedTransfer[]  @relation("PlannedTransferTo")
 
   @@unique([familyId, id])
   @@map("bank_accounts")
@@ -509,7 +509,7 @@ model TransferGroup {
 
   family Family        @relation(fields: [familyId], references: [id])
   legs   Transaction[]
-  plannedTransfer PlannedTransfer?
+  plan   PlannedTransfer? // US-100: prevista que originou a transferência
 
   @@unique([familyId, id])
   @@index([familyId, kind, settlementPeriod])

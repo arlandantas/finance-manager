@@ -11,7 +11,7 @@ Atualizado: 2026-10-26
 ## Regras
 | Direito | Rota / tela | Regra |
 | :-- | :-- | :-- |
-| Baixar meus dados | `GET /api/v1/me/export`; Perfil > "Baixar meus dados" | JSON `meus-dados-AAAA-MM-DD.json`, `Content-Disposition: attachment`, `ExportSchema` `.strict()` `version:1`, centavos inteiros. Transação READ ONLY. Não aplica "ocultar valores" |
+| Baixar meus dados | `GET /api/v1/me/export`; Perfil > "Baixar meus dados" | JSON `meus-dados-AAAA-MM-DD.json`, `Content-Disposition: attachment`, `ExportSchema` `.strict()` `version:1`, centavos inteiros. Transação READ ONLY. Não aplica "ocultar valores". US-100: `transferenciasPrevistas` (todas da família; sem "Só meu"; só ids, centavos, datas, situação, descrição) |
 | Excluir minha conta | `POST /api/v1/me/delete-account`; `/perfil/excluir-conta`; destino `/conta-excluida` | Corpo `.strict()`: `confirmEmail` (igual ao e-mail da conta, sem caixa/espaços) + pendências da saída (`acknowledgeSettlement`, `reassign`, como `RemoveMemberSchema`/US-035) |
 | Excluir a família | `POST /api/v1/family/delete`; `/familia/excluir`; destino `/onboarding?deleted=1` | Corpo `.strict()`: `confirmFamilyName` (igual ao nome atual, aparado). Só Administrador ativo que é o ÚNICO membro ativo |
 | Política | `/privacidade` (pública; rodapé do login e Perfil) | Versão e data visíveis (`POLICY_VERSION=1`, `POLICY_UPDATED_ON=2026-10-26`); contato `PRIVACY_CONTACT_EMAIL` (vazio mostra marcador) |

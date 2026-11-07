@@ -8,6 +8,7 @@ import {
   ExportSchema,
 } from "@/modules/privacidade/export-schema";
 import { exportSubscriptions } from "@/modules/privacidade/export-subscriptions";
+import { exportPlannedTransfers } from "@/modules/privacidade/export-transfers";
 import { isPersonalExpense, personalOwnerId } from "@/modules/transacoes/ownership";
 
 // SEC-017b (SDD-028 §7.3): exportar os dados do titular. Só lê; roda numa transação READ ONLY.
@@ -246,6 +247,7 @@ async function currentFamily(
         criadaEm: ts(r.createdAt),
       })),
     assinaturas: await exportSubscriptions(tx, familyId, mine, clock),
+    transferenciasPrevistas: await exportPlannedTransfers(tx, familyId),
     acertos: groups.map((g) => ({
       id: g.id,
       tipo: g.kind,

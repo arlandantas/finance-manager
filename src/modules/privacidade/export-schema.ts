@@ -135,6 +135,22 @@ export const ExportSubscriptionSchema = z
   })
   .strict();
 
+export const ExportPlannedTransferSchema = z
+  .object({
+    id,
+    contaOrigemId: id,
+    contaDestinoId: id,
+    valorEmCentavos: cents,
+    vencimento: z.string(),
+    descricao: z.string().nullable(),
+    situacao: z.enum(["PREVISTA", "EFETIVADA"]),
+    transferenciaId: id.nullable(),
+    autorId: id,
+    criadaEm: z.string(),
+    excluidaEm: nullableIso,
+  })
+  .strict();
+
 export const ExportSettlementSchema = z
   .object({
     id,
@@ -162,6 +178,7 @@ export const ExportFamilySchema = z
     previstas: z.array(ExportPlannedSchema),
     recorrentes: z.array(ExportRecurringSchema),
     assinaturas: z.array(ExportSubscriptionSchema),
+    transferenciasPrevistas: z.array(ExportPlannedTransferSchema), // US-100
     acertos: z.array(ExportSettlementSchema),
   })
   .strict();

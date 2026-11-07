@@ -354,3 +354,45 @@ describe("US-100: isolamento e CHECKs", () => {
     ).rejects.toThrow();
   });
 });
+
+describe("US-100: exportação LGPD", () => {
+  it("exporta as previstas da família (centavos, ids, situação) e nada de outra família", async () => {
+    const p = await created({ description: "Reserva" });
+    const done = await created({ amountInCents: 4321 });
+    const r = await realize(done.id, { version: 1 });
+    const other = await makeFamily({
+      members: [{ email: "outra@exemplo.com", name: "Outra Pessoa", role: "ADMIN" }],
+    });
+    const a = await makeAccount(other, { name: "A", openingBalanceInCents: 1 });
+    const b = await makeAccount(other, { name: "B", openingBalanceInCents: 1 });
+    const foreign = await at(() =>
+      call(other.members[0]?.as ?? null, "POST", BASE, {
+        fromAccountId: a.id,
+        toAccountId: b.id,
+        amountInCents: 777,
+        dueOn: "2026-12-05",
+      }),
+    );
+    expect(foreign.status).toBe(201);
+    const ex = await at(() => call(mariana(), "GET", "/api/v1/me/export"));
+    expect(ex.status).toBe(200);
+    const list = ex.body.familiaAtual?.transferenciasPrevistas;
+    expect(list).toHaveLength(2);
+    expect(list.find((x: { id: string }) => x.id === p.id)).toMatchObject({
+      contaOrigemId: itau.id,
+      contaDestinoId: poupanca.id,
+      valorEmCentavos: 100000,
+      vencimento: "2026-12-05",
+      descricao: "Reserva",
+      situacao: "PREVISTA",
+      transferenciaId: null,
+      autorId: fx.byName.Lucas?.memberId,
+    });
+    expect(list.find((x: { id: string }) => x.id === done.id)).toMatchObject({
+      situacao: "EFETIVADA",
+      valorEmCentavos: 4321,
+      transferenciaId: r.body.transferGroupId,
+    });
+    expect(JSON.stringify(ex.body)).not.toContain(foreign.body.plannedTransfer.id);
+  });
+});
