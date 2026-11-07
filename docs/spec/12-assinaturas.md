@@ -1,6 +1,6 @@
 # Spec 12 — Assinaturas no cartão
 
-Atualizado: 2026-11-07. Estado: **US-096 implementada (servidor: modelo, cadastro, lançamento)**; 096b, 096c, 096d, 097, 098, 099 não iniciadas. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
+Atualizado: 2026-11-07. Estado: **US-096 e 096b implementadas (servidor: modelo, cadastro, lançamento, ganchos, arquivar, remoção, exportação)**; 096c, 096d, 097, 098, 099 não iniciadas. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
 
 ## Resumo
 - Assinatura = compra mensal fixa num cartão (Netflix, Spotify) que o app lança sozinho no dia da cobrança, como compra à vista normal na fatura do ciclo.
@@ -38,10 +38,17 @@ Atualizado: 2026-11-07. Estado: **US-096 implementada (servidor: modelo, cadastr
 
 ## Implementação (US-096)
 - Migrações `20261107000000_us096_enum_origin_subscription` (enum sozinha) e `20261107000100_us096_card_subscriptions` (tabelas, CHECKs, únicos, FKs compostas; reversão no topo do SQL).
-- `ensureSubscriptionCharges(tx, ctx)`: atalho sem trava; senão `lockFamilySplit` → advisory → relê; ordem de id, até 12 por chamada; mês já em `subscription_charges` só avança `nextChargeOn`. `...Standalone`: uma transação por assinatura vencida; falha é logada sem PII e não quebra a leitura. Ganchos nas demais leituras: US-096b.
+- `ensureSubscriptionCharges(tx, ctx)`: atalho sem trava; senão `lockFamilySplit` → advisory → relê; ordem de id, até 12 por chamada; mês já em `subscription_charges` só avança `nextChargeOn`. `...Standalone`: uma transação por assinatura vencida; falha é logada sem PII e não quebra a leitura. 
 - Cobrança = `createExpenseCore` com `subscription` (origem `SUBSCRIPTION`, autor da assinatura, revisão CREATE com esse autor, categoria arquivada aceita, sem checar ator × pagador). Cartão arquivado/excluído: `SKIPPED_CARD_ARCHIVED`; fatura do ciclo com pagamento ativo: `SKIPPED_INVOICE_PAID`.
 - Cadastro: ordem `lockFamilySplit` → advisory → cartão ativo `FOR SHARE`; categoria inativa/outra família `INVALID_REFERENCE`, de receita `CATEGORY_KIND_MISMATCH`; pagador pela `assertPersonalForSelf` (403 como na compra). `currentAmountInCents` antes da 1ª cobrança = valor da 1ª vigência.
 - Testes: `tests/unit/assinaturas/schedule.test.ts`, `tests/integration/us-096-assinatura-lancamento.int.test.ts`, `lock-coverage` cobre `createSubscription` e `ensureSubscriptionCharges`.
+
+## Implementação (US-096b)
+- Gancho: `ensureRecurrenceHorizonStandalone` chama `ensureSubscriptionChargesStandalone` (Início, A pagar, Previstas, Resumo, MCP); `prepare` em `GET /cards`, `GET /cards/{id}/invoices/{ref}` e `GET /transactions`. Falha logada, leitura 200.
+- `cardArchiveBlockers`: uma entrada `CARD_HAS_ACTIVE_SUBSCRIPTIONS` com a contagem na mensagem, dentro do lock `FOR UPDATE` do cartão.
+- Remoção (`familia/removal-subscriptions.ts`): assinaturas ativas do pagador removido vão a `plannedTo` (`updateMany` por pagador, `version + 1`; sem `updatedByMemberId` na tabela); cartão com assinatura ativa exige reatribuir, reconferido após o `FOR UPDATE` do arquivamento; `removalReview.subscriptions` lista as assinaturas.
+- Exportação: `familiaAtual.assinaturas[]` (ids, sem nomes de terceiros). "Só meu" de outra pessoa (não dividida, pagador não sou eu) não sai, como previstas e recorrentes.
+- Teste: `tests/integration/us-096b-assinatura-integracao.int.test.ts`.
 
 ## Perguntas ao usuário
 - Nenhuma bloqueante. Hipóteses assumidas (reversíveis, ADR-036): primeira cobrança não retroativa; encerrar não lança cobrança futura do mês corrente.

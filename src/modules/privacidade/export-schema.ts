@@ -120,6 +120,21 @@ export const ExportRecurringSchema = z
   })
   .strict();
 
+export const ExportSubscriptionSchema = z
+  .object({
+    id,
+    cartaoId: id,
+    descricao: z.string(),
+    categoriaId: id,
+    pagadorMemberId: id,
+    dia: z.number().int(),
+    valorAtualEmCentavos: cents,
+    inicio: z.string(),
+    fim: z.string().nullable(),
+    encerradaEm: nullableIso,
+  })
+  .strict();
+
 export const ExportSettlementSchema = z
   .object({
     id,
@@ -146,6 +161,7 @@ export const ExportFamilySchema = z
     lancamentos: z.array(ExportTransactionSchema),
     previstas: z.array(ExportPlannedSchema),
     recorrentes: z.array(ExportRecurringSchema),
+    assinaturas: z.array(ExportSubscriptionSchema),
     acertos: z.array(ExportSettlementSchema),
   })
   .strict();

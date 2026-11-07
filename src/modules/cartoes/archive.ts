@@ -96,6 +96,16 @@ export async function cardArchiveBlockers(
       amountInCents: future,
     });
   }
+  // US-096b (ADR-036): assinatura ativa mantém o cartão; o lock FOR UPDATE do chamador serializa com o cadastro
+  const subs = await tx.cardSubscription.count({
+    where: { familyId: ctx.familyId, cardId: row.id, endedAt: null },
+  });
+  if (subs > 0) {
+    out.push({
+      code: "CARD_HAS_ACTIVE_SUBSCRIPTIONS",
+      message: `Encerre as assinaturas deste cartão antes de arquivar (${subs})`,
+    });
+  }
   return out;
 }
 

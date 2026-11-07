@@ -1,14 +1,18 @@
 import { withApi } from "@/lib/api/with-api";
+import { ensureSubscriptionChargesStandalone } from "@/modules/assinaturas/charges";
 import { CreateCardSchema, ListCardsQuerySchema } from "@/modules/cartoes/schemas";
 import { createCard, listCards } from "@/modules/cartoes/service";
 
 export const dynamic = "force-dynamic";
 
 // SDD-008 §3.1
-export const GET = withApi({ query: ListCardsQuerySchema }, async ({ ctx, tx, query }) => ({
-  status: 200,
-  body: await listCards(tx, ctx, query.archived),
-}));
+export const GET = withApi(
+  { query: ListCardsQuerySchema, prepare: ensureSubscriptionChargesStandalone },
+  async ({ ctx, tx, query }) => ({
+    status: 200,
+    body: await listCards(tx, ctx, query.archived),
+  }),
+);
 
 export const POST = withApi({ body: CreateCardSchema }, async ({ ctx, tx, body }) => ({
   status: 201,

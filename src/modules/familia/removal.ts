@@ -2,12 +2,18 @@ import { forbidden, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { endUserSessions } from "@/lib/auth/session";
 import { fromDbDate, todayInFamilyTz } from "@/lib/dates";
-import { formatBRL, toCents } from "@/lib/money";
+import { formatBRL } from "@/lib/money";
 import { periodOf } from "@/lib/period";
 import { cardInvoiceSummaries } from "@/modules/cartoes/queries";
 import { accountBalances } from "@/modules/contas/ledger-queries";
 import { memberDisplayName } from "@/modules/familia/display-name";
 import { lockFamilyAdmins } from "@/modules/familia/manage";
+import {
+  activeSubscriptionsOf,
+  assertCardHasNoSubscriptions,
+  cardIdsWithSubscriptions,
+  reassignPayerSubscriptions,
+} from "@/modules/familia/removal-subscriptions";
 import type { RemovalReviewDTO, RemoveMemberParsed } from "@/modules/familia/schemas";
 import { revokeMemberGrants } from "@/modules/mcp/grants";
 import { scrubIdempotencyMentioning } from "@/modules/privacidade/delete-account";
@@ -76,7 +82,25 @@ async function gather(tx: Tx, ctx: RequestContext, target: Awaited<ReturnType<ty
     },
     orderBy: [{ dueOn: "asc" }, { id: "asc" }],
   });
-  return { active, today, enabled, months, accounts, balances, cards, summaries, planned };
+  const subs = await activeSubscriptionsOf(tx, ctx.familyId, target.id);
+  const cardSubs = await cardIdsWithSubscriptions(
+    tx,
+    ctx.familyId,
+    cards.map((c) => c.id),
+  );
+  return {
+    active,
+    today,
+    enabled,
+    months,
+    accounts,
+    balances,
+    cards,
+    summaries,
+    planned,
+    subs,
+    cardSubs,
+  };
 }
 
 function blockersOf(
@@ -128,8 +152,8 @@ export async function removalReview(
         id: c.id,
         name: c.name,
         unpaidInCents: unpaid,
-        mustReassign: unpaid > 0,
-        defaultAction: unpaid > 0 ? "REASSIGN" : "ARCHIVE",
+        mustReassign: unpaid > 0 || g.cardSubs.has(c.id),
+        defaultAction: unpaid > 0 || g.cardSubs.has(c.id) ? "REASSIGN" : "ARCHIVE",
       } as const;
     }),
     planned: g.planned.map((p) => ({
@@ -137,6 +161,7 @@ export async function removalReview(
       description: p.description,
       dueOn: fromDbDate(p.dueOn),
     })),
+    subscriptions: g.subs.map((x) => ({ id: x.id, description: x.description })),
     candidates: g.active
       .filter((m) => m.id !== target.id)
       .map((m) => ({ id: m.id, name: nameOf(m), role: m.role })),
@@ -189,7 +214,6 @@ export async function removeMember(
   // contas
   const archiveAccounts: string[] = [];
   const reassignAccounts: Array<[string, string]> = [];
-  const needOwner: string[] = [];
   const badTarget: string[] = [];
   for (const a of g.accounts) {
     const to = body.reassign.accounts[a.id];
@@ -198,7 +222,6 @@ export async function removeMember(
       if (validTarget(to)) reassignAccounts.push([a.id, to]);
       else badTarget.push(a.id);
     } else if (balance !== 0) {
-      needOwner.push(a.id);
       blockers.push({
         code: "ACCOUNT_NEEDS_OWNER",
         message: `A conta ${a.name} tem saldo. Passe a titularidade para outro membro.`,
@@ -217,17 +240,17 @@ export async function removeMember(
     if (to !== undefined) {
       if (validTarget(to)) reassignCards.push([c.id, to]);
       else badTarget.push(c.id);
-    } else if (unpaid > 0) {
+    } else if (unpaid > 0 || g.cardSubs.has(c.id)) {
       blockers.push({
         code: "CARD_NEEDS_OWNER",
-        message: `O cartão ${c.name} tem fatura em aberto. Passe a titularidade para outro membro.`,
+        message: `O cartão ${c.name} tem fatura em aberto ou assinatura ativa. Passe a titularidade para outro membro.`,
         ids: [c.id],
       });
     } else archiveCards.push(c.id);
   }
   // previstas: responsável
   const plannedTo = body.reassign.plannedTo ?? (isSelf ? undefined : ctx.memberId);
-  if (g.planned.length > 0) {
+  if (g.planned.length + g.subs.length > 0) {
     if (plannedTo === undefined || !validTarget(plannedTo))
       badTarget.push(plannedTo ?? "plannedTo");
     else if (isSelf && g.active.find((m) => m.id === plannedTo)?.role !== "ADMIN")
@@ -240,7 +263,6 @@ export async function removeMember(
       ids: badTarget,
     });
   }
-  void needOwner;
 
   if (blockers.length > 0) {
     throw unprocessable("REMOVAL_BLOCKED", blockers[0]?.message ?? "Remoção bloqueada", {
@@ -278,6 +300,7 @@ export async function removeMember(
   }
   for (const id of archiveCards) {
     await tx.$queryRaw`SELECT id FROM credit_cards WHERE id = ${id}::uuid FOR UPDATE`;
+    await assertCardHasNoSubscriptions(tx, ctx.familyId, id);
     await tx.creditCard.updateMany({
       where: { id, familyId: ctx.familyId },
       data: { archivedAt: now, archivedByMemberId: ctx.memberId, version: { increment: 1 } },
@@ -299,6 +322,7 @@ export async function removeMember(
       },
     });
   }
+  const subsReassigned = await reassignPayerSubscriptions(tx, ctx, target.id, plannedTo);
   // `pendingEmail` some na MESMA linha que grava `removedAt` (a CHECK members_pending_email_chk recusa o contrário)
   const pendingEmail = target.pendingEmail;
   await tx.member.update({
@@ -337,10 +361,10 @@ export async function removeMember(
         cardsArchived: archiveCards.length,
         cardsReassigned: reassignCards.length,
         plannedReassigned: g.planned.length,
+        subscriptionsReassigned: subsReassigned,
         settlementAcknowledgedInCents: g.enabled ? settleTotal : 0,
       },
     },
   });
-  void toCents;
   return kind === "LEFT" ? { left: true as const } : { removed: true as const };
 }

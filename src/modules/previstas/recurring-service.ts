@@ -4,6 +4,7 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 import { fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
 import type { MemberRef } from "@/lib/schemas";
+import { ensureSubscriptionChargesStandalone } from "@/modules/assinaturas/charges";
 import { shareLockAccounts } from "@/modules/contas/lock";
 import {
   addMonths,
@@ -147,6 +148,8 @@ export async function ensureRecurrenceHorizonStandalone(
     maxWait: 10_000,
     timeout: 30_000,
   });
+  // ADR-036 §4: mesmo gancho lança as cobranças de assinatura vencidas (falha não quebra a leitura)
+  await ensureSubscriptionChargesStandalone(ctx, db);
 }
 
 async function loadSeriesDTO(

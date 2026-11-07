@@ -7,6 +7,7 @@ import {
   type ExportFile,
   ExportSchema,
 } from "@/modules/privacidade/export-schema";
+import { exportSubscriptions } from "@/modules/privacidade/export-subscriptions";
 import { isPersonalExpense, personalOwnerId } from "@/modules/transacoes/ownership";
 
 // SEC-017b (SDD-028 §7.3): exportar os dados do titular. Só lê; roda numa transação READ ONLY.
@@ -106,7 +107,13 @@ const mapTransaction = (t: TxRow, hideNote = false) => ({
   excluidoEm: tsOrNull(t.deletedAt),
 });
 
-async function currentFamily(tx: Tx, familyId: string, memberId: string, myIds: string[]) {
+async function currentFamily(
+  tx: Tx,
+  familyId: string,
+  memberId: string,
+  myIds: string[],
+  clock: UserContext["clock"],
+) {
   const family = await tx.family.findUniqueOrThrow({ where: { id: familyId } });
   const members = await tx.member.findMany({
     where: { familyId },
@@ -238,6 +245,7 @@ async function currentFamily(tx: Tx, familyId: string, memberId: string, myIds: 
         encerradaEm: tsOrNull(r.endedAt),
         criadaEm: ts(r.createdAt),
       })),
+    assinaturas: await exportSubscriptions(tx, familyId, mine, clock),
     acertos: groups.map((g) => ({
       id: g.id,
       tipo: g.kind,
@@ -312,6 +320,7 @@ export async function buildExport(
         active.familyId,
         active.id,
         memberships.filter((m) => m.familyId === active.familyId).map((m) => m.id),
+        ctx.clock,
       )
     : null;
   const former = new Map<string, string[]>();

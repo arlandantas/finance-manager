@@ -235,6 +235,8 @@ export type RemovalReviewDTO = {
     defaultAction: "ARCHIVE" | "REASSIGN";
   }>;
   planned: Array<{ id: string; description: string; dueOn: string }>;
+  /** US-096b: assinaturas ativas pagas por ele; passam ao mesmo destino das previstas. */
+  subscriptions: Array<{ id: string; description: string }>;
   candidates: Array<{ id: string; name: string; role: Role }>;
   blockers: Array<"LAST_ADMIN" | "ONLY_MEMBER">;
   /** SEC-046: aviso de que contas/cartões reatribuídos dão controle sobre os "Só meu" lançados neles. */

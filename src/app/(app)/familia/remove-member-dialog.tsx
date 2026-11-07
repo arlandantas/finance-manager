@@ -43,7 +43,9 @@ export function RemoveMemberDialog({
   const pendingOwners = (r?.accounts ?? []).filter((a) => a.mustReassign && !owners[a.id]);
   const pendingCards = (r?.cards ?? []).filter((c) => c.mustReassign && !cardOwners[c.id]);
   const needsAck = (r?.settlement.enabled ?? false) && (r?.settlement.totalInCents ?? 0) > 0;
-  const plannedNeedsPick = (target?.self ?? false) && (r?.planned.length ?? 0) > 0 && !plannedTo;
+  const nSubs = r?.subscriptions.length ?? 0;
+  const plannedNeedsPick =
+    (target?.self ?? false) && (r?.planned.length ?? 0) + nSubs > 0 && !plannedTo;
   const blocked = (r?.blockers.length ?? 0) > 0;
   const ready =
     !blocked &&
@@ -227,13 +229,16 @@ export function RemoveMemberDialog({
                     )}
                   </li>
                 ))}
-                {r.planned.length > 0 ? (
+                {r.planned.length + nSubs > 0 ? (
                   <li data-testid="removal-planned">
                     {target.self ? (
                       <>
-                        <p>
-                          {r.planned.length} despesa(s) prevista(s) precisam de novo responsável.
-                        </p>
+                        {r.planned.length > 0 ? (
+                          <p>
+                            {r.planned.length} despesa(s) prevista(s) precisam de novo responsável.
+                          </p>
+                        ) : null}
+                        {nSubs > 0 ? <p>{nSubs} assinatura(s) precisam de novo pagador.</p> : null}
                         <select
                           aria-label="Novo responsável pelas previstas"
                           className={inputClass}
@@ -251,13 +256,18 @@ export function RemoveMemberDialog({
                         </select>
                       </>
                     ) : (
-                      <p>{r.planned.length} despesa prevista será passada para você.</p>
+                      <>
+                        {r.planned.length > 0 ? (
+                          <p>{r.planned.length} despesa prevista será passada para você.</p>
+                        ) : null}
+                        {nSubs > 0 ? <p>{nSubs} assinatura(s) serão passadas para você.</p> : null}
+                      </>
                     )}
                   </li>
                 ) : null}
                 {r.accounts.length === 0 &&
                 r.cards.length === 0 &&
-                r.planned.length === 0 &&
+                r.planned.length + nSubs === 0 &&
                 !needsAck ? (
                   <li>Nenhuma pendência. O histórico é preservado com o nome.</li>
                 ) : null}
