@@ -17,7 +17,7 @@ const MAX_PER_CALL = 12;
 type Repo = ReturnType<typeof assinaturasRepo>;
 type SubRow = Awaited<ReturnType<Repo["findManyByIds"]>>[number];
 
-/** Decide e grava a cobrança do mês `month`; devolve `false` se o cartão/valor impede de seguir. */
+/** Decide e grava a cobrança do mês `month`; devolve `true` só se lançou compra (`POSTED`), `false` se pulou. */
 async function chargeMonth(
   tx: Tx,
   ctx: RequestContext,
@@ -26,7 +26,7 @@ async function chargeMonth(
   month: MonthISO,
   chargeOn: string,
   amounts: AmountRow[],
-): Promise<void> {
+): Promise<boolean> {
   const card = await repo.lockCardState(sub.cardId);
   if (!card || card.archived) {
     await repo.insertCharge({
@@ -36,7 +36,7 @@ async function chargeMonth(
       status: "SKIPPED_CARD_ARCHIVED",
       transactionId: null,
     });
-    return;
+    return false;
   }
   const invoiceId = await repo.invoiceId(card.id, invoiceRefFor(chargeOn, card.closingDay));
   if (invoiceId && (await activePayments(tx, ctx.familyId, [invoiceId])).has(invoiceId)) {
@@ -47,7 +47,7 @@ async function chargeMonth(
       status: "SKIPPED_INVOICE_PAID",
       transactionId: null,
     });
-    return;
+    return false;
   }
   const amountInCents = amountFor(month, amounts);
   if (amountInCents === null) throw new Error("Assinatura sem valor vigente");
@@ -78,12 +78,14 @@ async function chargeMonth(
     status: "POSTED",
     transactionId: res.transaction.id,
   });
+  return true;
 }
 
 /**
  * Lança as cobranças vencidas (dia <= hoje) das assinaturas ativas. Atalho sem trava; se há vencida,
  * `lockFamilySplit` primeiro, depois advisory `subscriptions:{familyId}`, relê (outra aba pode ter lançado)
  * e a unicidade `(família, assinatura, mês)` em `subscription_charges` é a garantia final.
+ * Devolve quantas compras foram lançadas (`POSTED`); puladas não entram na conta.
  */
 export async function ensureSubscriptionCharges(
   tx: Tx,
@@ -114,9 +116,8 @@ export async function ensureSubscriptionCharges(
     while (on !== null && on <= today && budget > 0) {
       const month = monthOf(on) as MonthISO;
       if (!done.has(month)) {
-        await chargeMonth(tx, ctx, repo, sub, month, on, amounts);
-        posted += 1;
-        budget -= 1;
+        if (await chargeMonth(tx, ctx, repo, sub, month, on, amounts)) posted += 1;
+        budget -= 1; // o teto de 12 conta também as puladas (cada uma é um registro gravado)
       }
       const next = nextAfter(month, sub.dayOfMonth, endMonth);
       on = next ? next.on : null;

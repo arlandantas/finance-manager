@@ -127,6 +127,33 @@ describe("US-096 cadastro", () => {
     expect(await db.cardSubscription.count({ where: { familyId: fx.family.id } })).toBe(1);
   });
 
+  it("Idempotency-Key concorrente: mesma chave => 1 assinatura; chaves diferentes => 2, sem deadlock", async () => {
+    const body = {
+      cardId: card.id,
+      description: "Netflix",
+      amountInCents: 3990,
+      categoryId: lazer,
+      dayOfMonth: 10,
+      end: { type: "NONE" },
+    };
+    const key = crypto.randomUUID();
+    const same = await Promise.all(
+      Array.from({ length: 4 }, () =>
+        call(mariana(), "POST", "/api/v1/subscriptions", body, { idempotencyKey: key }),
+      ),
+    );
+    expect(same.every((r) => r.status === 201 || r.status === 409)).toBe(true);
+    expect(same.some((r) => r.status === 201)).toBe(true);
+    expect(await db.cardSubscription.count({ where: { familyId: fx.family.id } })).toBe(1);
+    const diff = await Promise.all(
+      Array.from({ length: 2 }, (_, i) =>
+        call(mariana(), "POST", "/api/v1/subscriptions", { ...body, description: `Outra ${i}` }),
+      ),
+    );
+    expect(diff.map((r) => r.status)).toEqual([201, 201]);
+    expect(await db.cardSubscription.count({ where: { familyId: fx.family.id } })).toBe(3);
+  });
+
   it("validações: strict, mês de início, categoria de receita", async () => {
     expect((await create({ familyId: "x" })).status).toBe(400);
     expect((await create({ dayOfMonth: 32 })).status).toBe(400);
@@ -241,6 +268,52 @@ describe("US-096 lançamento preguiçoso", () => {
     expect(await purchases()).toHaveLength(1); // a única continua excluída
     expect((await purchases())[0]?.deletedAt).not.toBeNull();
     expect(await charges(subscription.id)).toHaveLength(1);
+  });
+
+  it("AC3: concorrência com 2 assinaturas e 2 famílias: sem duplicar nem travar", async () => {
+    await create({ description: "Netflix" });
+    await create({ description: "Spotify", dayOfMonth: 10 });
+    const other = await makeFamily({ uniqueEmails: true });
+    const otherCard = await makeCard(other, { name: "Outro", closingDay: 25, dueDay: 5 });
+    const otherCat = await db.category.findFirstOrThrow({
+      where: { familyId: other.family.id, kind: "EXPENSE" },
+    });
+    const o = await call(other.members[0]?.as ?? null, "POST", "/api/v1/subscriptions", {
+      cardId: otherCard.id,
+      description: "Netflix",
+      amountInCents: 5000,
+      categoryId: otherCat.id,
+      dayOfMonth: 10,
+      end: { type: "NONE" },
+    });
+    expect(o.status).toBe(201);
+    const iso = "2026-12-10T15:00:00Z";
+    const ctxOther = {
+      familyId: other.family.id,
+      memberId: other.members[0]?.memberId as string,
+      role: "ADMIN",
+      clock: { now: () => new Date(iso) },
+    } as unknown as RequestContext;
+    const results = await Promise.all([
+      ...Array.from({ length: 4 }, () =>
+        db.$transaction((tx) => ensureSubscriptionCharges(tx, ctxAt(iso)), { timeout: 30_000 }),
+      ),
+      ...Array.from({ length: 4 }, () =>
+        db.$transaction((tx) => ensureSubscriptionCharges(tx, ctxOther), { timeout: 30_000 }),
+      ),
+      ensureSubscriptionChargesStandalone(ctxAt(iso), db as never),
+      ensureSubscriptionChargesStandalone(ctxOther, db as never),
+    ]);
+    expect(results.slice(0, 8).reduce((a, b) => (a as number) + (b as number), 0)).toBe(3);
+    expect(await purchases("Netflix")).toHaveLength(1);
+    expect(await purchases("Spotify")).toHaveLength(1);
+    const theirs = await db.transaction.findMany({
+      where: { familyId: other.family.id, origin: "SUBSCRIPTION" },
+    });
+    expect(theirs).toHaveLength(1);
+    expect(
+      await db.subscriptionCharge.count({ where: { familyId: other.family.id, status: "POSTED" } }),
+    ).toBe(1);
   });
 
   it("AC3: reexecução no mesmo dia é no-op", async () => {
