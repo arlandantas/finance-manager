@@ -62,7 +62,10 @@ When("Mariana abre o arquivamento do cartão {string}", async ({ world, page }, 
     .filter({ hasText: n })
     .getByRole("button", { name: `Ações do cartão ${n}` })
     .click();
+  // espera a pré-checagem terminar: impedimento criado antes dela não é "tardio"
+  const checked = page.waitForResponse((r) => r.url().includes("/archive-check"));
   await page.getByRole("menuitem", { name: "Arquivar" }).click();
+  await checked;
   await expect(dlg(page).getByRole("button", { name: "Arquivar", exact: true })).toBeVisible();
 });
 Then(
