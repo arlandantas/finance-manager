@@ -148,17 +148,12 @@ export async function updateTransferSeries(
   if (fromAccountId === toAccountId) throw invalidRef("toAccountId", "Escolha contas diferentes");
 
   const pending = await repo.lockPendingOccurrences(id, from, todayInFamilyTz(ctx.clock));
-  const changed: Array<[string, string]> = [];
-  if (fromAccountId !== row.fromAccountId) changed.push(["fromAccountId", fromAccountId]);
-  if (toAccountId !== row.toAccountId) changed.push(["toAccountId", toAccountId]);
-  if (changed.length > 0) {
-    await shareLockAccounts(
-      tx,
-      ctx.familyId,
-      changed.map(([, v]) => v),
-    );
-    await checkAccounts(repo, changed);
-  }
+  // contas finais sempre ativas (mesmo sem trocar): arquivar é bloqueado com série ativa, então é defesa
+  await shareLockAccounts(tx, ctx.familyId, [fromAccountId, toAccountId]);
+  await checkAccounts(repo, [
+    ["fromAccountId", fromAccountId],
+    ["toAccountId", toAccountId],
+  ]);
 
   const startMonth = monthStr(row.startMonth);
   const endMonth: MonthISO | null =

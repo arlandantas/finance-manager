@@ -473,3 +473,29 @@ describe("US-101: exportação LGPD", () => {
     expect(JSON.stringify(ex.body)).not.toContain(foreign.body.series.id);
   });
 });
+
+describe("US-101 (revisão): listas geram o horizonte e edição recusa conta arquivada", () => {
+  it("GET das listas gera o mês novo sem outra tela; GETs simultâneos não duplicam", async () => {
+    const s = await made();
+    const later = "2027-01-10T15:00:00Z";
+    await Promise.all([
+      at(() => call(lucas(), "GET", "/api/v1/planned-transfers"), later),
+      at(() => call(mariana(), "GET", BASE), later),
+      at(() => call(lucas(), "GET", "/api/v1/planned-transfers"), later),
+    ]);
+    const all = await occ(s.id, true);
+    expect(all).toHaveLength(13);
+    expect(new Set(all.map((x) => ISO(x.occurrenceMonth))).size).toBe(13);
+    const list = await at(() => call(lucas(), "GET", "/api/v1/planned-transfers"), later);
+    expect(list.body.items.map((i: { dueOn: string }) => i.dueOn)).toContain("2027-12-05");
+  });
+
+  it("editar série cuja conta (não trocada) foi arquivada => 422 e nada muda", async () => {
+    const s = await made();
+    await db.bankAccount.update({ where: { id: poupanca.id }, data: { archivedAt: new Date() } });
+    const r = await patch(s.id, { version: 1, amountInCents: 7 });
+    expect(r.status).toBe(422);
+    expect((await occ(s.id))[0]?.amountInCents).toBe(100000n);
+    expect((await db.recurringTransfer.findUniqueOrThrow({ where: { id: s.id } })).version).toBe(1);
+  });
+});

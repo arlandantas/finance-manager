@@ -1,4 +1,5 @@
 import { withApi } from "@/lib/api/with-api";
+import { ensureRecurrenceHorizonStandalone } from "@/modules/previstas/recurring-service";
 import {
   CreatePlannedTransferSchema,
   ListPlannedTransfersQuerySchema,
@@ -9,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 // US-100 (ADR-037)
 export const GET = withApi(
-  { query: ListPlannedTransfersQuerySchema },
+  { query: ListPlannedTransfersQuerySchema, prepare: ensureRecurrenceHorizonStandalone }, // US-101
   async ({ ctx, tx, query }) => ({
     status: 200,
     body: await listPlannedTransfers(tx, ctx, query),
