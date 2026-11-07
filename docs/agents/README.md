@@ -11,3 +11,5 @@ Definições neutras de ferramenta. Wrappers (`.claude/agents/`) ficam finos: fr
 
 Mapa Claude Code: architect=opus, builder/reviewer=sonnet, researcher=haiku.
 Todo papel lê `AGENTS.md` primeiro e depois só os arquivos que o brief nomeia. Resposta ≤150 palavras.
+
+Supervisão de execuções longas: ver `supervisao.md` (checagem a cada 5 min).

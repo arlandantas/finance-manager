@@ -8,3 +8,4 @@
 - Chamadas reais a LLM/rede externa proibidas em teste (helpers `no-llm-network`).
 - Antes de entregar: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:int` verdes; não marque pronto sem executar.
 - Teste não executado deve ser declarado como tal, nunca como passando.
+- Suítes longas (`test:int`, `test:e2e`) rodam em segundo plano e podem travar sob carga: confira a cada 5 min se o processo vive (`ps`) e produz saída; matar `next dev`/`playwright` órfãos e apagar `.next-e2e` antes de repetir.

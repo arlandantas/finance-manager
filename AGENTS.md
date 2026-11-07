@@ -43,7 +43,8 @@ Histórico fica no git, não em docs. Nunca anexe ao STATE.md; reescreva.
 3. Delegue o diff ao `reviewer`. No máx. 2 rodadas builder↔reviewer; depois pergunte ao usuário.
 4. Aprovado: status `done` no index, reescreva STATE.md, commit.
 5. Mudou regra de negócio: atualize a spec da área no mesmo commit.
-6. Decida sozinho o que for reversível e registre ADR. Escale ao usuário só: escopo, prazo, regra financeira sensível, credenciais/contas, ações irreversíveis (push, deploy, apagar dados).
+6. Supervisione a cada 5 min enquanto houver subagente ou teste rodando (`docs/agents/supervisao.md`): processo morto ou parado sem relatório é falha silenciosa; não espere em vão.
+7. Decida sozinho o que for reversível e registre ADR. Escale ao usuário só: escopo, prazo, regra financeira sensível, credenciais/contas, ações irreversíveis (push, deploy, apagar dados).
 
 ## Papéis (`docs/agents/`)
 
