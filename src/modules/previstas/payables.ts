@@ -15,6 +15,7 @@ import type {
   ReceivablesResponse,
 } from "@/modules/previstas/schemas";
 import { memberMap, type PlannedRow } from "@/modules/previstas/service";
+import { plannedTransferExtras } from "@/modules/previstas/transfer-extras";
 
 const plannedItem = (
   r: PlannedRow,
@@ -83,15 +84,16 @@ export async function listPayables(
   const cutDay = await previstasRepo(tx, ctx.familyId).cutDay();
   const current = periodOf(today, cutDay);
   const period = q.period ? periodFromKey(q.period, cutDay) : current;
-  const due = await listDueItems(tx, ctx, {
-    period,
-    isCurrent: period.key === current.key,
-    today,
-  });
+  const isCurrent = period.key === current.key;
+  const due = await listDueItems(tx, ctx, { period, isCurrent, today });
   const byAccount =
     opts.byAccount === false
       ? { rows: [], columns: { toReceive: false, plannedTransfers: false } }
-      : buildByAccount(due.items, await listAccountBalances(tx, ctx));
+      : buildByAccount(
+          due.items,
+          await listAccountBalances(tx, ctx),
+          await plannedTransferExtras(tx, ctx.familyId, { period, isCurrent }),
+        );
   return {
     items: due.items,
     groups: {

@@ -55,31 +55,31 @@ import {
 } from "@/modules/transacoes/ownership";
 import { monthLabel, shiftMonthKey } from "../extrato/filters";
 import { ByAccountBlock, ByAccountSkeleton, NO_ACCOUNT } from "./by-account-block";
+import { PaidRow } from "./paid-row";
 import { PayPlannedDrawer } from "./pay-drawer";
 import { PlannedDrawer } from "./planned-drawer";
 import { useCanActOnReceivable } from "./receivable-access";
+import { brDate, first, RecurringChip } from "./row-parts";
+import { TransfersTab } from "./transfers-tab";
 
-type Tab = "pay" | "receive" | "paid"; // US-051: A pagar · A receber · Pagas e recebidas
-const TAB_PARAM: Record<Tab, string> = { pay: "pagar", receive: "receber", paid: "pagas" };
+// US-051: A pagar · A receber · Pagas e recebidas; US-100b: Transferências
+type Tab = "pay" | "receive" | "paid" | "transfer";
+const TAB_PARAM: Record<Tab, string> = {
+  pay: "pagar",
+  receive: "receber",
+  paid: "pagas",
+  transfer: "transferencias",
+};
 const tabFromParam = (v: string | null): Tab =>
-  v === "receber" ? "receive" : v === "pagas" ? "paid" : "pay";
+  v === "receber"
+    ? "receive"
+    : v === "pagas"
+      ? "paid"
+      : v === "transferencias"
+        ? "transfer"
+        : "pay";
 type ActionKind = "edit" | "edit-series" | "end-series" | "delete" | "undo";
 type Action = { kind: ActionKind; id: string } | null;
-
-const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-const first = (n: string) => n.split(" ")[0] ?? n;
-
-function RecurringChip() {
-  return (
-    <span
-      data-testid="recurring-chip"
-      className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
-    >
-      <Repeat size={12} aria-hidden="true" />
-      Recorrente
-    </span>
-  );
-}
 
 function OverdueChip() {
   return (
@@ -317,111 +317,6 @@ function ReceivableRow({
   );
 }
 
-function PaidRow({ item, onUndo }: { item: PlannedExpenseDTO; onUndo: () => void }) {
-  const paid = item.paid;
-  const fmt = useFormatMoney();
-  const family = useFamily().data;
-  const income = item.kind === "INCOME";
-  const copy = plannedCopy(item.kind);
-  // SEC-021: estornar a baixa de um "Só meu" é só do dono (quem pagou)
-  const paidRow = paid
-    ? {
-        kind: income ? "INCOME" : "EXPENSE",
-        isSharedExpense: item.isSharedExpense,
-        payerMemberId: effectiveOwner(paid.payer).id,
-        authorMemberId: paid.authorId ?? paid.payer.id,
-        accountOwnerMemberId: paid.accountOwnerId ?? null,
-      }
-    : null;
-  // US-051: desfazer o recebimento exige controle da receita prevista (a receita gerada não é "Só meu")
-  const incomeControl =
-    income &&
-    (family === undefined ||
-      canWritePlanned(
-        {
-          isSharedExpense: item.isSharedExpense,
-          responsibleMemberId: effectiveOwner(item.responsible).id ?? "",
-          authorMemberId: item.author.id,
-          accountOwnerMemberId: item.paymentAccount?.ownerId ?? null,
-        },
-        { memberId: family.currentMemberId, role: family.currentRole },
-        effectiveOwner(item.responsible).removed,
-        isUnlinkedActive(item.responsible),
-      ));
-  const canUndo =
-    !paid ||
-    !paidRow ||
-    (income
-      ? incomeControl
-      : family !== undefined &&
-        canWriteTransaction(
-          paidRow,
-          { memberId: family.currentMemberId, role: family.currentRole },
-          effectiveOwner(paid.payer).removed,
-          isUnlinkedActive(paid.payer), // US-093b: tutor
-        ));
-  return (
-    <li
-      id={item.id}
-      data-testid="paid-item"
-      className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white dark:bg-slate-100 p-3"
-    >
-      <div className="flex items-center justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-2 font-semibold text-slate-900">
-          <CategoryIcon icon={item.category.icon} size={18} />
-          <span className="truncate">{item.description}</span>
-          {item.series ? <RecurringChip /> : null}
-        </span>
-        {paid ? (
-          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-            {income ? "Recebida" : "Pago"} em {brDate(paid.paidOn)}
-          </span>
-        ) : null}
-      </div>
-      {paid ? (
-        <p className="text-sm text-slate-700" data-testid="paid-summary">
-          Previsto <Money cents={item.amountInCents} /> · {income ? "Recebido" : "Pago"}{" "}
-          <Money cents={paid.amountInCents} />
-        </p>
-      ) : null}
-      {paid ? (
-        <p data-testid="paid-difference" className="text-sm font-medium text-slate-700">
-          {differenceLabel(paid.differenceInCents, fmt)}
-        </p>
-      ) : null}
-      {canUndo ? (
-        <div>
-          <Button
-            variant="secondary"
-            aria-label={`${copy.undoAction} de ${item.description}`}
-            onClick={onUndo}
-          >
-            <Undo2 size={16} aria-hidden="true" />
-            {copy.undoAction}
-          </Button>
-        </div>
-      ) : (
-        <p data-testid="personal-readonly" className="text-xs text-slate-600">
-          {paidRow && family
-            ? personalWriteMessage(
-                controllerNames(
-                  personalControllerIds(paidRow),
-                  family.members.map((m) => ({
-                    id: m.memberId,
-                    name: m.name,
-                    unlinked: m.unlinked,
-                  })),
-                  { adminCan: isUnlinkedActive(paid?.payer) },
-                ),
-                " (Só meu)",
-              )
-            : ""}
-        </p>
-      )}
-    </li>
-  );
-}
-
 export function PrevistasScreen() {
   const router = useRouter();
   const params = useSearchParams();
@@ -450,7 +345,7 @@ export function PrevistasScreen() {
       router.replace(`/previstas?period=${shiftMonthKey(periodKey, delta)}${tabQuery}`);
   };
 
-  const active = tab === "pay" ? payables : tab === "receive" ? receivables : paidList;
+  const active = tab === "receive" ? receivables : tab === "paid" ? paidList : payables;
   const planned = detail.data?.plannedExpense ?? null;
   const endSeries = useEndSeries();
   const endingSeriesId = action?.kind === "end-series" ? (planned?.series?.id ?? null) : null;
@@ -525,10 +420,12 @@ export function PrevistasScreen() {
     <main className="flex flex-col gap-4">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-slate-900">Previstas</h1>
-        <Button onClick={() => setCreating(tab === "receive" ? "INCOME" : "EXPENSE")}>
-          <Plus size={18} aria-hidden="true" />
-          {tab === "receive" ? "Nova receita prevista" : "Nova despesa prevista"}
-        </Button>
+        {tab === "transfer" ? null : (
+          <Button onClick={() => setCreating(tab === "receive" ? "INCOME" : "EXPENSE")}>
+            <Plus size={18} aria-hidden="true" />
+            {tab === "receive" ? "Nova receita prevista" : "Nova despesa prevista"}
+          </Button>
+        )}
       </header>
 
       <div className="flex items-center justify-center gap-1" role="group" aria-label="Período">
@@ -576,7 +473,7 @@ export function PrevistasScreen() {
         </section>
       ) : null}
 
-      {tab !== "receive" && payables.data ? (
+      {(tab === "pay" || tab === "paid") && payables.data ? (
         <section
           aria-label="Total do mês"
           className="flex flex-wrap items-baseline justify-between gap-2 rounded-xl bg-brand-800 p-4 text-white"
@@ -607,13 +504,14 @@ export function PrevistasScreen() {
       <div
         role="tablist"
         aria-label="Situação"
-        className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1"
+        className="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 sm:grid-cols-4"
       >
         {(
           [
             ["pay", "A pagar"],
             ["receive", "A receber"],
             ["paid", "Pagas e recebidas"],
+            ["transfer", "Transferências"],
           ] as const
         ).map(([k, label]) => (
           <button
@@ -632,7 +530,11 @@ export function PrevistasScreen() {
         ))}
       </div>
 
-      {active.isPending ? (
+      {tab === "transfer" ? (
+        <TransfersTab period={periodKey} range={payables.data?.period} />
+      ) : null}
+
+      {tab !== "transfer" && active.isPending ? (
         <div className="flex flex-col gap-2" aria-busy="true" aria-label="Carregando previstas">
           <Skeleton className="h-20" />
           <Skeleton className="h-20" />
@@ -640,7 +542,7 @@ export function PrevistasScreen() {
         </div>
       ) : null}
 
-      {active.isError ? (
+      {tab !== "transfer" && active.isError ? (
         <div
           role="alert"
           className="flex flex-col items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4"

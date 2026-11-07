@@ -12,6 +12,7 @@ export const rowKey = (r: ByAccountRow) => r.account?.id ?? NO_ACCOUNT;
 export const rowLabel = (r: ByAccountRow) => r.account?.name ?? "Sem conta definida";
 
 const GRID = "lg:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))]";
+const GRID_TRANSFERS = "lg:grid-cols-[minmax(0,1.6fr)_repeat(4,minmax(0,1fr))]"; // US-100b
 
 export function ByAccountSkeleton() {
   return (
@@ -53,10 +54,12 @@ function Cell({
 function Row({
   row,
   pressed,
+  withTransfers,
   onToggle,
 }: {
   row: ByAccountRow;
   pressed: boolean;
+  withTransfers: boolean;
   onToggle: () => void;
 }) {
   const none = row.account === null;
@@ -70,7 +73,7 @@ function Row({
         onClick={onToggle}
         className={cn(
           "grid w-full grid-cols-1 gap-x-3 gap-y-1 rounded-xl border bg-white p-3 text-left dark:bg-slate-100 lg:items-center",
-          GRID,
+          withTransfers ? GRID_TRANSFERS : GRID,
           pressed ? "border-brand-700 ring-2 ring-brand-700" : "border-slate-200",
         )}
       >
@@ -95,6 +98,15 @@ function Row({
         <Cell label="A pagar" testId="by-account-due" className="text-slate-900">
           <Money cents={row.dueInCents} />
         </Cell>
+        {withTransfers ? (
+          <Cell label="Transferências previstas" testId="by-account-transfers">
+            {row.plannedTransfersInCents === 0 ? (
+              "—"
+            ) : (
+              <Money cents={row.plannedTransfersInCents} signed />
+            )}
+          </Cell>
+        ) : null}
         <Cell label="Saldo previsto" testId="by-account-projected">
           {none || row.projectedInCents === null ? (
             "—"
@@ -140,16 +152,19 @@ export function ByAccountBlock({
     );
   }
   const active = data.rows.find((r) => rowKey(r) === filter);
+  const withTransfers = data.columns.plannedTransfers;
+  const grid = withTransfers ? GRID_TRANSFERS : GRID;
   return (
     <section aria-label="Resumo por conta" data-testid="by-account" className="flex flex-col gap-2">
       <h2 className="text-sm font-semibold text-slate-700">Por conta</h2>
       <div
         aria-hidden="true"
-        className={cn("hidden gap-x-3 px-3 text-xs font-medium text-slate-600 lg:grid", GRID)}
+        className={cn("hidden gap-x-3 px-3 text-xs font-medium text-slate-600 lg:grid", grid)}
       >
         <span>Conta</span>
         <span className="text-right">Saldo atual (hoje)</span>
         <span className="text-right">A pagar</span>
+        {withTransfers ? <span className="text-right">Transferências previstas</span> : null}
         <span className="text-right">Saldo previsto</span>
       </div>
       <ul className="flex flex-col gap-2" aria-label="Contas">
@@ -158,6 +173,7 @@ export function ByAccountBlock({
             key={rowKey(r)}
             row={r}
             pressed={filter === rowKey(r)}
+            withTransfers={withTransfers}
             onToggle={() => onFilter(filter === rowKey(r) ? null : rowKey(r))}
           />
         ))}
@@ -165,7 +181,7 @@ export function ByAccountBlock({
       <p
         className={cn(
           "flex items-baseline justify-between gap-3 px-3 text-sm font-semibold text-slate-900 lg:grid",
-          GRID,
+          grid,
         )}
       >
         <span>Total</span>
@@ -173,6 +189,7 @@ export function ByAccountBlock({
         <span data-testid="by-account-total" className="tabular-nums lg:text-right">
           <Money cents={totalInCents} />
         </span>
+        {withTransfers ? <span className="hidden lg:block" /> : null}
         <span className="hidden lg:block" />
       </p>
       {active ? (

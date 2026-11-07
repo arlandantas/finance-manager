@@ -62,15 +62,31 @@ async function accountArchiveBlockers(
   ctx: RequestContext,
   id: string,
 ): Promise<AccountArchiveBlocker[]> {
+  const out: AccountArchiveBlocker[] = [];
   const balance = (await accountBalances(tx, ctx.familyId, [id])).get(id) ?? 0;
-  if (balance === 0) return [];
-  return [
-    {
+  if (balance !== 0) {
+    out.push({
       code: "ACCOUNT_BALANCE_NOT_ZERO",
       message: "Para arquivar, o saldo precisa ser zero. Transfira ou ajuste o saldo antes.",
       amountInCents: balance,
+    });
+  }
+  // US-100b (ADR-037 §4): transferência prevista pendente usa a conta; lida dentro do FOR UPDATE da conta
+  const planned = await tx.plannedTransfer.count({
+    where: {
+      familyId: ctx.familyId,
+      deletedAt: null,
+      status: "PREVISTA",
+      OR: [{ fromAccountId: id }, { toAccountId: id }],
     },
-  ];
+  });
+  if (planned > 0) {
+    out.push({
+      code: "ACCOUNT_HAS_PLANNED_TRANSFERS",
+      message: "Exclua ou efetive as transferências previstas desta conta",
+    });
+  }
+  return out;
 }
 
 /** GET /accounts/:id/archive-check: leitura, sem escrita. */

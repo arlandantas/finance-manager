@@ -25,6 +25,7 @@ import { useArchiveCheck } from "@/modules/cartoes/hooks";
 import { useAccountAction, useAccounts, useArchivedAccounts } from "@/modules/contas/hooks";
 import { ACCOUNT_TYPE_LABELS, type AccountDTO } from "@/modules/contas/schemas";
 import { useFamily } from "@/modules/familia/hooks";
+import { ArchiveAccountDrawer, type ArchiveBlock } from "./archive-account-drawer";
 import { NewAccountDrawer } from "./new-account-drawer";
 import { RenameAccountDialog } from "./rename-account-dialog";
 import { TransferDrawer, type TransferPrefill } from "./transfer-drawer";
@@ -184,7 +185,7 @@ export function ContasScreen() {
   const [prefill, setPrefill] = useState<TransferPrefill | null>(null);
   const [archiving, setArchiving] = useState<AccountDTO | null>(null);
   const [deleting, setDeleting] = useState<AccountDTO | null>(null);
-  const [blocked, setBlocked] = useState<{ message: string; balanceInCents: number } | null>(null);
+  const [blocked, setBlocked] = useState<ArchiveBlock | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const family = useFamily();
@@ -193,10 +194,12 @@ export function ContasScreen() {
   const keyRef = useRef(newIdempotencyKey());
   const data = accounts.data;
   const check = useArchiveCheck("accounts", archiving?.id ?? null);
-  const preBlock = check.data?.blockers.find((b) => b.code === "ACCOUNT_BALANCE_NOT_ZERO");
-  const shownBlock =
-    blocked ??
-    (preBlock ? { message: preBlock.message, balanceInCents: preBlock.amountInCents ?? 0 } : null);
+  const preBlocks: ArchiveBlock[] = (check.data?.blockers ?? []).map((b) => ({
+    code: b.code,
+    message: b.message,
+    ...(b.code === "ACCOUNT_BALANCE_NOT_ZERO" ? { balanceInCents: b.amountInCents ?? 0 } : {}),
+  }));
+  const blocks = blocked && !preBlocks.some((b) => b.code === blocked.code) ? [blocked] : preBlocks;
 
   function run(a: AccountDTO, kind: "archive" | "unarchive" | "delete", ok: string) {
     if (action.isPending) return;
@@ -216,9 +219,12 @@ export function ContasScreen() {
           keyRef.current = newIdempotencyKey();
           if (e instanceof ApiClientError && e.code === "ACCOUNT_BALANCE_NOT_ZERO") {
             setBlocked({
+              code: e.code,
               message: e.message,
               balanceInCents: (e.details as { balanceInCents: number }).balanceInCents,
             });
+          } else if (e instanceof ApiClientError && e.code === "ACCOUNT_HAS_PLANNED_TRANSFERS") {
+            setBlocked({ code: e.code, message: e.message });
           } else if (e instanceof NetworkError) setBanner(e.message);
           else setBanner(e instanceof Error ? e.message : "Erro inesperado. Tente novamente.");
         },
@@ -326,64 +332,17 @@ export function ContasScreen() {
         />
       ) : null}
 
-      <Drawer
-        open={archiving !== null}
-        onOpenChange={(o) => !o && setArchiving(null)}
-        title={archiving ? `Arquivar ${archiving.name}?` : "Arquivar conta"}
-      >
-        {archiving ? (
-          <div className="flex flex-col gap-3">
-            <p className="text-sm text-slate-700">
-              A conta some das listas e dos seletores; o histórico permanece e você pode reativá-la
-              depois.
-            </p>
-            {archiving.payerForCards.length > 0 ? (
-              <p role="note" className="text-sm text-slate-700" data-testid="archive-payer-note">
-                Esta conta paga a fatura de {archiving.payerForCards.map((c) => c.name).join(", ")}.
-                Depois de arquivar, esses cartões ficam sem conta pagadora (reativar a conta
-                restaura a escolha).
-              </p>
-            ) : null}
-            {data && data.items.length === 1 ? (
-              <p role="status" className="text-sm font-medium text-amber-900 dark:text-amber-200">
-                Sem contas ativas você não poderá lançar despesas em conta nem pagar faturas.
-              </p>
-            ) : null}
-            {shownBlock ? (
-              <div
-                role="alert"
-                className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3"
-              >
-                <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
-                  {shownBlock.message}
-                </p>
-                <Button
-                  variant="secondary"
-                  onClick={() => transferBalance(archiving, shownBlock.balanceInCents)}
-                >
-                  {shownBlock.balanceInCents > 0
-                    ? "Transferir o saldo"
-                    : "Transferir para esta conta"}
-                </Button>
-              </div>
-            ) : null}
-            {banner ? (
-              <p role="alert" className="text-sm text-red-800 dark:text-red-300">
-                {banner}
-              </p>
-            ) : null}
-            <Button
-              disabled={action.isPending || check.isFetching || shownBlock !== null}
-              onClick={() => run(archiving, "archive", "Conta arquivada")}
-            >
-              {action.isPending ? "Arquivando…" : "Arquivar"}
-            </Button>
-            <Button variant="ghost" onClick={() => setArchiving(null)}>
-              Cancelar
-            </Button>
-          </div>
-        ) : null}
-      </Drawer>
+      <ArchiveAccountDrawer
+        account={archiving}
+        activeCount={data?.items.length ?? 0}
+        blocks={blocks}
+        banner={banner}
+        busy={action.isPending || check.isFetching}
+        pending={action.isPending}
+        onClose={() => setArchiving(null)}
+        onTransfer={transferBalance}
+        onConfirm={(a) => run(a, "archive", "Conta arquivada")}
+      />
 
       <Drawer
         open={deleting !== null}

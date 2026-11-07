@@ -68,7 +68,10 @@ const groups = () => db.transferGroup.count({ where: { familyId: fx.family.id } 
 const snapshot = async () => ({
   balances: [...(await accountBalances(db as never, fx.family.id)).entries()].sort(),
   extrato: (await at(() => call(lucas(), "GET", "/api/v1/transactions"))).body,
-  payables: (await at(() => call(lucas(), "GET", "/api/v1/payables"))).body,
+  // US-100b: só `byAccount` ganha a coluna de transferências previstas; itens e totais não mudam
+  payables: (({ items, groups, totals, period }) => ({ items, groups, totals, period }))(
+    (await at(() => call(lucas(), "GET", "/api/v1/payables"))).body,
+  ),
   settlement: (await at(() => call(lucas(), "GET", "/api/v1/settlement"))).body,
   txCount: await db.transaction.count({ where: { familyId: fx.family.id } }),
 });

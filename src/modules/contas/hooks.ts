@@ -140,6 +140,7 @@ export function useUndoTransfer() {
           ["home"],
           ["settlement"],
           ["payables"],
+          ["planned-transfers"], // US-100b: desfazer reabre a prevista
         ].map((queryKey) => qc.invalidateQueries({ queryKey })),
       ),
   });

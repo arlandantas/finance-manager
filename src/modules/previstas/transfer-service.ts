@@ -139,7 +139,12 @@ async function loadForChange(tx: Tx, ctx: RequestContext, repo: Repo, id: string
   if (!(await repo.findById(id))) throw notFound(NOT_FOUND);
   await repo.lock(id);
   const row = await repo.findById(id);
-  if (!row) throw notFound(NOT_FOUND);
+  // excluída por outra pessoa enquanto esperava a trava: conflito de versão, não "não encontrada"
+  if (!row)
+    throw conflict(
+      "VERSION_CONFLICT",
+      "Esta transferência prevista foi alterada por outra pessoa. Recarregue para continuar.",
+    );
   if (row.version !== version) throw await versionConflict(tx, ctx, id);
   if (row.status === "EFETIVADA") {
     throw unprocessable("PLANNED_TRANSFER_REALIZED_LOCKED", LOCKED_MESSAGE);

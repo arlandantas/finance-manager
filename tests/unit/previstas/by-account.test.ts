@@ -150,3 +150,34 @@ describe("buildByAccount (SDD-029 §8.1)", () => {
     }
   });
 });
+
+describe("buildByAccount com transferências previstas (US-100b)", () => {
+  const extras = (m: Record<string, number>) =>
+    new Map(Object.entries(m).map(([k, v]) => [k, { toReceive: 0, plannedTransfers: v }]));
+
+  it("-1.000,00 na origem, +1.000,00 no destino; previsto ajustado; Σ dueInCents intacto", () => {
+    const r = buildByAccount(
+      [item("a", 30000)],
+      [acc("a", "Itaú", 500000), acc("b", "Poupança", 100000, { excludeFromAvailable: true })],
+      extras({ a: -100000, b: 100000 }),
+    );
+    const a = r.rows.find((x) => x.account?.id === "a");
+    const b = r.rows.find((x) => x.account?.id === "b");
+    expect(a).toMatchObject({ plannedTransfersInCents: -100000, projectedInCents: 370000 });
+    expect(b).toMatchObject({ plannedTransfersInCents: 100000, projectedInCents: 200000 });
+    expect(r.rows.reduce((s, x) => s + x.dueInCents, 0)).toBe(30000);
+    expect(r.columns.plannedTransfers).toBe(true);
+  });
+
+  it("sem extras a coluna some; conta de reserva só com transferência prevista aparece", () => {
+    const none = buildByAccount([], [acc("a", "Itaú", 0)]);
+    expect(none.columns.plannedTransfers).toBe(false);
+    const r = buildByAccount(
+      [],
+      [acc("b", "Reserva", 0, { excludeFromAvailable: true })],
+      extras({ b: 1 }),
+    );
+    expect(r.rows).toHaveLength(1);
+    expect(r.rows[0]?.plannedTransfersInCents).toBe(1);
+  });
+});
