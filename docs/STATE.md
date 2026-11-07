@@ -1,10 +1,10 @@
 # Estado atual
 
 **Fase:** R1–R4 em grande parte entregues; R2.2 concluída. Em 2026-11-07 entregues e aprovadas pelo reviewer (testes pontuais): US-046 (tags), US-048/049 (análise), UR-2 inteira (US-094a/b, 095, 096/096b/c/d, 097, 098, 099, 100/100b, 101/101b). US-050 e US-051 entregues, aceite do Gestor pendente.
-**Verificação:** por história rodaram lint, typecheck, `pnpm test` (918), int e E2E da própria história. A suíte completa do bloco UR-2 (int completo + E2E completo) e o QA no browser ainda NÃO rodaram (regra por bloco em `docs/rules/testing.md`). Último int completo verde: 1482 (após a US-101). Antes: E2E de 2026-11-03 com flakiness de ambiente, sem defeito de código.
+**Verificação (2026-11-07):** por história: lint, typecheck, `pnpm test` (918+), int e E2E da própria história, todos verdes. Bloco UR-2: `test:int` completo verde (125 arquivos, 1485 ok, 1 pulado). E2E completo NÃO foi concluído (cortado por limite de tempo aos ~55 min, sem falhas vistas); dispensado pelo usuário: vale o QA no browser (Análise, Tags, Assinaturas, Previstas/Transferências, Cartões, Família, Extrato abriram sem erro de console; achou e corrigiu hidratação em `/analise`, `196a796`). Telas novas ainda sem conferência visual com dados reais.
 
 ## Próximo passo
-1. Fechar o bloco UR-2: `test:int` completo, E2E completo (desktop e mobile), QA no browser (telas novas: tags, análise, convites, assinaturas, transferências previstas; QA exploratório da US-050).
+1. Aceitar o bloco UR-2; QA exploratório com dados reais (convites, assinaturas, transferências previstas) e da US-050 fica com o usuário.
 2. Fila (`docs/backlog/index.md`): US-041 (depende de US-043), US-042/043/044 só após a janela de reversão do rateio (EN-002, `INSTALLMENT_SPLIT_RELEASED=false`) e a decisão da ordem US-041 × US-042.
 3. Bloqueadas: US-066..069 (R5 adiada), US-074b e US-076c (decisão do usuário).
 

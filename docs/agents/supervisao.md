@@ -18,3 +18,4 @@ Subagentes, `pnpm test:int`, `pnpm test:e2e` e dev servers rodam em segundo plan
 - `while pgrep -f "vitest"` casa com a própria linha de comando do shell (que contém "vitest") e nunca sai: use `pgrep -f "[v]itest"` ou espere pelo PID/arquivo de saída.
 - `until grep -q "passed|failed" arquivo` trava para sempre se o processo morreu antes de escrever isso: sempre limite com `timeout` e teste também se o processo ainda vive.
 - Todo loop de espera leva `timeout` (≤10 min). Na checagem de 5 min, procure `sleep` órfão (`ps -eo pid,etimes,args | grep "sleep "`) e mate os de mais de 15 min.
+- Validação final de bloco: não embuta `timeout` fixo curto no comando da suíte completa (já cortou o E2E aos 55 min); deixe rodar e confirme a cada 5 min que o processo vive e avança (saída em arquivo com `--reporter=list`).
