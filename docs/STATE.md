@@ -1,11 +1,11 @@
 # Estado atual
 
-**Fase:** US-046 (tags), US-048 e US-049 (análise) e US-094a, US-094b e US-095 (convites) e US-096/096b/096c/096d/097 (assinatura: servidor, remoção, exportação, telas) entregues; visual das telas novas e E2E completo (regressão da porta única) ainda sem conferência (QA final); migrações 20261107* (inclui us097_subscription_updated_by) pendentes em produção e aprovadas em 2026-11-07. R1–R4 em grande parte entregues; R2.2 concluída (US-053 e US-054 aprovadas pelo reviewer em 2026-11-03); US-050 e US-051 entregues, aceite do Gestor pendente. Fluxo enxuto adotado (docs/ + .claude/agents/); histórico antigo só no git (`agents/`, removida).
+**Fase:** US-046 (tags), US-048 e US-049 (análise) e US-094a, US-094b e US-095 (convites) e US-096/096b/096c/096d/097/098 (assinatura: servidor, remoção, exportação, telas) entregues; visual das telas novas e E2E completo (regressão da porta única) ainda sem conferência (QA final); migrações 20261107* (inclui us097_subscription_updated_by) pendentes em produção e aprovadas em 2026-11-07. R1–R4 em grande parte entregues; R2.2 concluída (US-053 e US-054 aprovadas pelo reviewer em 2026-11-03); US-050 e US-051 entregues, aceite do Gestor pendente. Fluxo enxuto adotado (docs/ + .claude/agents/); histórico antigo só no git (`agents/`, removida).
 **Verificação (2026-11-03):** lint, typecheck, check:imports e check:docs ok · unit 867 ok · int 1292 ok (1 pulado) · E2E 1313 ok, 2 pulados na 1ª execução, com 7 falhas únicas em EN-004/EN-005 (`/familia` presa em "Carregando família"); não reproduziu (isoladas, cache frio, após `test:int`) e o desktop completo passou depois (660 ok, 1 pulado) → flakiness de ambiente, sem defeito de código. Se voltar, abrir o trace. QA exploratório da US-050 pendente.
 
 ## Próximo passo
 1. Aceitar ou devolver US-050/US-051 (suítes verdes; falta o QA exploratório da US-050).
-2. Fila no índice (`docs/backlog/index.md`): US-041 (pode iniciar), US-042/043/044 só após a janela de reversão do rateio (EN-002, `INSTALLMENT_SPLIT_RELEASED=false`), US-098..101 (especificadas pelo architect em 2026-11-07, prontas para o builder).
+2. Fila no índice (`docs/backlog/index.md`): US-041 (pode iniciar), US-042/043/044 só após a janela de reversão do rateio (EN-002, `INSTALLMENT_SPLIT_RELEASED=false`), US-099..101 (especificadas pelo architect em 2026-11-07, prontas para o builder).
 3. Bloqueadas: US-066..069 (R5 adiada), US-074b e US-076c (decisão do usuário).
 
 ## Pendências do usuário
@@ -21,5 +21,6 @@
 - E2E: o 1º cenário de uma rodada às vezes falha (compilação a frio do `next dev`); com a máquina carregada (load alto de outros processos) muitos cenários estouram o timeout de 30 s. Passam no reteste ou com `--timeout=120000`. `tests/unit/split/backfill.test.ts` estoura 5 s sob carga.
 - Fontes acima de 300 linhas (anteriores): `familia-screen.tsx` (837), `invitations/service.ts` (525); dividir quando tocar.
 - US-096b: `removal.ts:323` (`reassignPayerSubscriptions`) troca o pagador sem `lockFamilySplit`/lock de assinaturas (risco baixo: cobrança concorrente pode lançar no removido); sem teste de concorrência do bloqueio de arquivar cartão; `removal.ts` (370) e `export.ts` (383) >300, extrair `gather`/`blockersOf`.
+- US-098: `canEditSubscription` faz N+1 por linha; filtro de cartão em `/assinaturas` usa `useCards()` (verificar se cartão arquivado com assinatura fica filtrável).
 - Divergência spec×código: código e testes vencem; registrar em `docs/spec/<área>`.
 - DEV-168..173 (previstas, US-051) e DEV-164..167 (cores, US-050): ver specs 04b e 10b.
