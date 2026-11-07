@@ -68,6 +68,30 @@ export async function seedEverything(fx: FamilyFixture): Promise<void> {
       authorMemberId: mariana,
     },
   });
+  // US-101: série de transferência com uma ocorrência (a exclusão da família apaga ocorrência, série e contas)
+  const series = await db.recurringTransfer.create({
+    data: {
+      familyId,
+      fromAccountId: itau.id,
+      toAccountId: nub.id,
+      amountInCents: 7000n,
+      dayOfMonth: 15,
+      startMonth: new Date("2026-11-01T00:00:00Z"),
+      authorMemberId: mariana,
+    },
+  });
+  await db.plannedTransfer.create({
+    data: {
+      familyId,
+      fromAccountId: itau.id,
+      toAccountId: nub.id,
+      amountInCents: 7000n,
+      dueOn: new Date("2026-11-15T00:00:00Z"),
+      seriesId: series.id,
+      occurrenceMonth: new Date("2026-11-01T00:00:00Z"),
+      authorMemberId: mariana,
+    },
+  });
   const category = await db.category.findFirstOrThrow({ where: { familyId, name: "Moradia" } });
   const recurring = await db.recurringExpense.create({
     data: {

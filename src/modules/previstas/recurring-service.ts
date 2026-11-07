@@ -9,6 +9,7 @@ import { shareLockAccounts } from "@/modules/contas/lock";
 import {
   addMonths,
   endMonthFromCount,
+  HORIZON,
   type MonthISO,
   monthOf,
   monthsToGenerate,
@@ -23,6 +24,10 @@ import type {
 } from "@/modules/previstas/recurring-schemas";
 import { previstasRepo } from "@/modules/previstas/repo";
 import { checkCategory, checkPaymentAccount, memberMap } from "@/modules/previstas/service";
+import {
+  hasPendingTransferSeries,
+  materializeTransfers,
+} from "@/modules/previstas/transfer-series-generate";
 import { assertCanShare } from "@/modules/split/guard";
 import {
   adminFullPower,
@@ -37,7 +42,6 @@ import {
 } from "@/modules/transacoes/ownership";
 
 // ADR-025 / SDD-019 §3.3 e §3.5.
-const HORIZON = 12;
 const NOT_FOUND = "Despesa recorrente não encontrada.";
 
 type Repo = ReturnType<typeof recurringRepo>;
@@ -132,11 +136,12 @@ async function materialize(repo: Repo, ctx: RequestContext, series: SeriesRow[])
 export async function ensureRecurrenceHorizon(tx: Tx, ctx: RequestContext): Promise<number> {
   const repo = recurringRepo(tx, ctx.familyId);
   const target = addMonths(currentMonthOf(ctx), HORIZON - 1);
-  if ((await repo.pendingSeriesIds(target)).length === 0) return 0;
+  const pendingTransfers = await hasPendingTransferSeries(tx, ctx); // US-101: mesmo atalho e trava
+  if ((await repo.pendingSeriesIds(target)).length === 0 && !pendingTransfers) return 0;
   await repo.lockFamily();
   const ids = await repo.pendingSeriesIds(target);
-  if (ids.length === 0) return 0;
-  return materialize(repo, ctx, await repo.findManyByIds(ids));
+  const created = ids.length > 0 ? await materialize(repo, ctx, await repo.findManyByIds(ids)) : 0;
+  return created + (await materializeTransfers(tx, ctx));
 }
 
 /** Transação curta própria, ANTES da leitura (que pode ser REPEATABLE READ) de Início/A pagar/Previstas/Resumo. */

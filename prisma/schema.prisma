@@ -203,6 +203,7 @@ model Family {
   creditCards                  CreditCard[]
   plannedExpenses              PlannedExpense[]
   plannedTransfers             PlannedTransfer[]
+  recurringTransfers           RecurringTransfer[]
   recurringExpenses            RecurringExpense[]
   cardSubscriptions            CardSubscription[]
   cardSubscriptionAmounts      CardSubscriptionAmount[]
@@ -302,6 +303,7 @@ model Member {
   plannedResponsible           PlannedExpense[]              @relation("PlannedResponsible")
   plannedAuthored              PlannedExpense[]              @relation("PlannedAuthor")
   plannedTransfersAuthored     PlannedTransfer[]             @relation("PlannedTransferAuthor")
+  recurringTransfersAuthored   RecurringTransfer[]           @relation("RecurringTransferAuthor")
   recurringResponsible         RecurringExpense[]            @relation("RecurringResponsible")
   recurringAuthored            RecurringExpense[]            @relation("RecurringAuthor")
   subscriptionPayer            CardSubscription[]            @relation("SubscriptionPayer")
@@ -417,6 +419,8 @@ model BankAccount {
   payerForCards     CreditCard[]
   plannedFrom       PlannedTransfer[]  @relation("PlannedTransferFrom") // US-100
   plannedTo         PlannedTransfer[]  @relation("PlannedTransferTo")
+  recurringFrom     RecurringTransfer[] @relation("RecurringTransferFrom") // US-101
+  recurringTo       RecurringTransfer[] @relation("RecurringTransferTo")
 
   @@unique([familyId, id])
   @@map("bank_accounts")
@@ -1296,7 +1300,11 @@ model PlannedTransfer {
   updatedAt         DateTime              @updatedAt @db.Timestamptz(3)
   deletedAt         DateTime?             @db.Timestamptz(3)
   deletedByMemberId String?               @db.Uuid
+  seriesId          String?               @db.Uuid // US-101 (ADR-037 §5)
+  occurrenceMonth   DateTime?             @db.Date // dia 1; seriesId nulo <=> occurrenceMonth nulo (CHECK)
+  isException       Boolean               @default(false)
 
+  series        RecurringTransfer? @relation(fields: [familyId, seriesId], references: [familyId, id])
   family        Family         @relation(fields: [familyId], references: [id])
   fromAccount   BankAccount    @relation("PlannedTransferFrom", fields: [familyId, fromAccountId], references: [familyId, id])
   toAccount     BankAccount    @relation("PlannedTransferTo", fields: [familyId, toAccountId], references: [familyId, id])
@@ -1305,6 +1313,38 @@ model PlannedTransfer {
 
   @@unique([familyId, id])
   @@unique([familyId, transferGroupId])
+  @@unique([familyId, seriesId, occurrenceMonth])
   @@index([familyId, status, dueOn])
   @@map("planned_transfers")
+}
+
+// US-101 (ADR-037 §5): série mensal de transferência prevista; ocorrências = linhas de planned_transfers
+model RecurringTransfer {
+  id                    String    @id @default(uuid()) @db.Uuid
+  familyId              String    @db.Uuid
+  fromAccountId         String    @db.Uuid
+  toAccountId           String    @db.Uuid
+  amountInCents         BigInt // > 0 (CHECK)
+  description           String? // 2..100
+  dayOfMonth            Int // 1..31 (CHECK)
+  startMonth            DateTime  @db.Date // dia 1
+  endMonth              DateTime? @db.Date // dia 1; null = sem fim
+  generatedThroughMonth DateTime? @db.Date // último mês já materializado
+  endedAt               DateTime? @db.Timestamptz(3)
+  endedByMemberId       String?   @db.Uuid
+  authorMemberId        String    @db.Uuid
+  updatedByMemberId     String?   @db.Uuid
+  version               Int       @default(1)
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @db.Timestamptz(3)
+
+  family      Family            @relation(fields: [familyId], references: [id])
+  fromAccount BankAccount       @relation("RecurringTransferFrom", fields: [familyId, fromAccountId], references: [familyId, id])
+  toAccount   BankAccount       @relation("RecurringTransferTo", fields: [familyId, toAccountId], references: [familyId, id])
+  author      Member            @relation("RecurringTransferAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+  occurrences PlannedTransfer[]
+
+  @@unique([familyId, id])
+  @@index([familyId, endedAt, generatedThroughMonth])
+  @@map("recurring_transfers")
 }

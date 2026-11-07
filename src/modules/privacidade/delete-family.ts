@@ -33,6 +33,7 @@ export const FAMILY_TABLES_DELETE_ORDER = [
   "transaction_splits",
   "planned_expenses",
   "planned_transfers", // US-100: antes de bank_accounts e transfer_groups (FKs RESTRICT)
+  "recurring_transfers", // US-101: depois das ocorrências, antes de bank_accounts e members
   "subscription_charges", // US-096: antes de transactions e card_subscriptions (FKs RESTRICT)
   "card_subscription_amounts",
   "card_subscriptions",

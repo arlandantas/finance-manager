@@ -3,6 +3,9 @@ import type { DateISO } from "@/lib/dates";
 /** Mês civil `YYYY-MM` (ADR-025, SDD-019 §3.2). Funções puras, sem fuso nem relógio. */
 export type MonthISO = `${number}-${number}`;
 
+/** Horizonte de geração: 12 meses a partir do mês corrente (ADR-025). */
+export const HORIZON = 12;
+
 const pad = (n: number) => String(n).padStart(2, "0");
 
 export const monthOf = (d: DateISO): MonthISO => d.slice(0, 7) as MonthISO;
@@ -46,7 +49,7 @@ export function monthsToGenerate(
     endedAt: Date | null;
   },
   currentMonth: MonthISO,
-  horizon = 12,
+  horizon = HORIZON,
 ): MonthISO[] {
   if (s.endedAt) return [];
   const from =

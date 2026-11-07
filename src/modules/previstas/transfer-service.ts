@@ -47,6 +47,8 @@ function toDTO(row: Row, members: Map<string, MemberRef>, today: string): Planne
     status: row.status,
     isOverdue: row.status === "PREVISTA" && dueOn < today,
     transferGroupId: row.transferGroupId,
+    seriesId: row.seriesId,
+    isException: row.isException,
     version: row.version,
     author: members.get(row.authorMemberId) ?? unknownMember(row.authorMemberId),
   };
@@ -189,8 +191,11 @@ export async function updatePlannedTransfer(
       : {}),
   };
   if (Object.keys(wanted).length === 0) return { plannedTransfer: await loadDTO(tx, ctx, id) };
+  // US-101: mudar qualquer campo (exceto descrição) de uma ocorrência a marca como exceção da série
+  const exception = row.seriesId !== null && Object.keys(wanted).some((k) => k !== "description");
   const res = await repo.updateVersioned(id, input.version, {
     ...wanted,
+    ...(exception ? { isException: true as const } : {}),
     updatedByMemberId: ctx.memberId,
   });
   if (res.count === 0) throw await versionConflict(tx, ctx, id);

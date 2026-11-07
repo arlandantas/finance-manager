@@ -148,6 +148,25 @@ export const ExportPlannedTransferSchema = z
     autorId: id,
     criadaEm: z.string(),
     excluidaEm: nullableIso,
+    recorrenciaId: id.nullable(), // US-101
+    mesOcorrencia: z.string().nullable(),
+    alterada: z.boolean(),
+  })
+  .strict();
+
+export const ExportRecurringTransferSchema = z // US-101
+  .object({
+    id,
+    contaOrigemId: id,
+    contaDestinoId: id,
+    valorEmCentavos: cents,
+    descricao: z.string().nullable(),
+    diaDoMes: z.number().int(),
+    mesInicial: z.string(),
+    mesFinal: z.string().nullable(),
+    encerradaEm: nullableIso,
+    autorId: id,
+    criadaEm: iso,
   })
   .strict();
 
@@ -179,6 +198,7 @@ export const ExportFamilySchema = z
     recorrentes: z.array(ExportRecurringSchema),
     assinaturas: z.array(ExportSubscriptionSchema),
     transferenciasPrevistas: z.array(ExportPlannedTransferSchema), // US-100
+    transferenciasRecorrentes: z.array(ExportRecurringTransferSchema), // US-101
     acertos: z.array(ExportSettlementSchema),
   })
   .strict();

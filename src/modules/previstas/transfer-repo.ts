@@ -53,12 +53,14 @@ export function plannedTransfersRepo(tx: Tx, familyId: string) {
         amountInCents?: number;
         dueOn?: string;
         description?: string | null;
+        isException?: true;
         updatedByMemberId: string;
       },
     ) =>
       tx.plannedTransfer.updateMany({
         where: { id, familyId, version, deletedAt: null, status: "PREVISTA" },
         data: {
+          ...(d.isException ? { isException: true } : {}),
           ...(d.fromAccountId !== undefined ? { fromAccountId: d.fromAccountId } : {}),
           ...(d.toAccountId !== undefined ? { toAccountId: d.toAccountId } : {}),
           ...(d.amountInCents !== undefined ? { amountInCents: fromCents(d.amountInCents) } : {}),

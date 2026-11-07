@@ -14,7 +14,7 @@ const descriptionRequired = z
   .min(2, "A descrição deve ter no mínimo 2 caracteres")
   .max(100, "A descrição deve ter no máximo 100 caracteres");
 
-const endSchema = z.discriminatedUnion("kind", [
+export const endSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("NONE") }),
   z.object({
     kind: z.literal("COUNT"),

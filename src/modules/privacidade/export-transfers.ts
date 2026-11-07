@@ -23,5 +23,29 @@ export async function exportPlannedTransfers(tx: Tx, familyId: string) {
     autorId: r.authorMemberId,
     criadaEm: r.createdAt.toISOString(),
     excluidaEm: r.deletedAt ? r.deletedAt.toISOString() : null,
+    recorrenciaId: r.seriesId,
+    mesOcorrencia: r.occurrenceMonth ? fromDbDate(r.occurrenceMonth) : null,
+    alterada: r.isException,
+  }));
+}
+
+/** US-101: séries mensais da família (sem "Só meu"; só ids, centavos, datas e descrição). */
+export async function exportRecurringTransfers(tx: Tx, familyId: string) {
+  const rows = await tx.recurringTransfer.findMany({
+    where: { familyId },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    contaOrigemId: r.fromAccountId,
+    contaDestinoId: r.toAccountId,
+    valorEmCentavos: toCents(r.amountInCents),
+    descricao: r.description,
+    diaDoMes: r.dayOfMonth,
+    mesInicial: fromDbDate(r.startMonth),
+    mesFinal: r.endMonth ? fromDbDate(r.endMonth) : null,
+    encerradaEm: r.endedAt ? r.endedAt.toISOString() : null,
+    autorId: r.authorMemberId,
+    criadaEm: r.createdAt.toISOString(),
   }));
 }
