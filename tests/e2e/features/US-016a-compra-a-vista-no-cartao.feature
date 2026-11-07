@@ -8,6 +8,7 @@ Funcionalidade: Compra à vista no cartão
     E hoje é 15/10/2026
     E Lucas está autenticado
 
+  @mobile
   Cenário: Compra no cartão com sucesso
     Quando Lucas toca em "+", digita "R$ 300,00", escolhe "Supermercado", escolhe "Pagar com: Nubank Mariana" e toca em "Salvar Despesa"
     Então a despesa é registrada com autor "Lucas", quem pagou "Lucas", cartão "Nubank Mariana" e data de hoje
@@ -19,21 +20,25 @@ Funcionalidade: Compra à vista no cartão
     Quando Lucas lança "R$ 300,00" no cartão "Nubank Mariana"
     Então a compra está na fatura de "out/2026" que fecha em 25/10 e vence em 05/11
 
+  @integration
   Cenário: Compra no dia do fechamento fica na fatura que fecha
     Dado que hoje é 25/10/2026
     Quando Lucas lança "R$ 100,00" no cartão "Nubank Mariana"
     Então a compra está na fatura de "out/2026"
 
+  @integration
   Cenário: Compra depois do fechamento vai para a próxima fatura
     Dado que hoje é 26/10/2026
     Quando Lucas lança "R$ 100,00" no cartão "Nubank Mariana"
     Então a compra está na fatura de "nov/2026" que fecha em 25/11 e vence em 05/12
 
+  @integration
   Cenário: Compra no fim do ano cai na fatura de janeiro
     Dado que hoje é 26/12/2026
     Quando Lucas lança "R$ 100,00" no cartão "Nubank Mariana"
     Então a compra está na fatura de "jan/2027" que fecha em 25/01 e vence em 05/02
 
+  @integration
   Cenário: Data retroativa muda a fatura
     Dado que hoje é 28/10/2026
     Quando Lucas lança "R$ 100,00" no cartão com a data 20/10/2026

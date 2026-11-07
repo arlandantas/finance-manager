@@ -18,10 +18,12 @@ Funcionalidade: Compra parcelada no cartão (US-040a)
     E a fatura de dez/2026 mostra "Notebook 2/10 R$ 250,00"
     E a fatura de ago/2027 mostra "Notebook 10/10 R$ 250,00"
 
+  @integration
   Cenário: Limite consumido pelo total
     Quando Lucas lança "Notebook" de "R$ 2.500,00" em "10x"
     Então o limite do cartão "Nubank Lucas" passa a "R$ 2.500,00"
 
+  @integration
   Cenário: Centavos de arredondamento vão para a primeira parcela
     Quando Lucas lança "Presente" de "R$ 1.000,01" em "3x"
     Então as parcelas são "R$ 333,35" e "R$ 333,33" e "R$ 333,33"
@@ -37,12 +39,14 @@ Funcionalidade: Compra parcelada no cartão (US-040a)
     Então a prévia mostrou "1ª na fatura de dez/2026"
     E a fatura de dez/2026 mostra "Notebook 1/10 R$ 250,00"
 
+  @integration
   Cenário: Parcela cai no mesmo dia dos meses seguintes ajustando o fim do mês
     Dado que hoje é 31/01/2027
     Quando Lucas lança "Curso" de "R$ 600,00" em "3x"
     Então a parcela 2 tem data 28/02/2027
     E a parcela 3 tem data 31/03/2027
 
+  @integration
   Cenário: Cada parcela cai numa fatura diferente com fechamento no dia 28
     Dado o cartão "Visa Silva" com fechamento dia 28 e vencimento dia 10
     E que hoje é 31/01/2027
@@ -51,6 +55,7 @@ Funcionalidade: Compra parcelada no cartão (US-040a)
     E a parcela 2 está na fatura de mar/2027
     E a parcela 3 está na fatura de abr/2027
 
+  @integration
   Cenário: Pagar a fatura libera só a parcela paga
     Dado que Lucas lançou "Notebook" de "R$ 2.500,00" em "10x"
     E a fatura de nov/2026 foi fechada e paga

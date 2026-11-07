@@ -34,7 +34,8 @@ export default defineConfig({
   use: { baseURL: BASE_URL, trace: "retain-on-failure" },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
+    // Mobile é smoke: só cenários @mobile (layout/fluxos-chave). Regra de negócio roda no desktop.
+    { name: "mobile", grep: /@mobile/, use: { ...devices["Pixel 7"] } },
   ],
   webServer: {
     command: `pnpm exec next dev -p ${PORT}`,

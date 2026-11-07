@@ -6,6 +6,7 @@ Funcionalidade: Espaçamento compacto nos formulários
     E Mariana está autenticada
     E a tela tem 375 por 667 pixels
 
+  @mobile
   Cenário: Nova despesa com o Salvar sempre visível
     Quando Mariana abre o formulário-gaveta "Nova despesa"
     Então o botão "Salvar despesa" está visível sem rolar
@@ -16,6 +17,7 @@ Funcionalidade: Espaçamento compacto nos formulários
     Então o espaço entre os campos é o token padrão de 8 pixels
     E o espaço é o mesmo do formulário de lançamento
 
+  @mobile
   Cenário: Alvos de toque preservados
     Quando Mariana abre o formulário-gaveta "Nova despesa"
     Então cada campo e botão visível tem pelo menos 44 pixels de altura

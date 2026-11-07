@@ -1,6 +1,7 @@
 # language: pt
 Funcionalidade: Home da família
 
+  @mobile
   Cenário: Home com dados
     Dado contas "Itaú Mariana" (R$ 6.500,00) e "Nubank Conjunta" (R$ 849,50)
     Quando abro a Home
@@ -47,6 +48,7 @@ Funcionalidade: Home da família
     Quando a Home está carregando
     Então vejo skeletons nos blocos, sem saltos de layout
 
+  @mobile
   Cenário: Layout responsivo
     Dado contas "Itaú Mariana" (R$ 6.500,00) e "Nubank Conjunta" (R$ 849,50)
     E viewports de 375 px e 1280 px

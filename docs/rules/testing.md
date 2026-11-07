@@ -5,6 +5,7 @@
 - Vitest integração (`tests/integration`, `pnpm test:int`): banco real, rotas, travas, gatilhos, migrações, isolamento por família.
 - Playwright-BDD (`tests/e2e`, `pnpm test:e2e` = `bddgen && playwright test`): cenários Gherkin dos fluxos de usuário.
 - Novo gatilho/CHECK/migração exige teste de integração; novo fluxo de UI exige cenário E2E.
+- E2E enxuto (ADR-039): o projeto mobile roda só `@mobile` (smoke); cenário que só prova regra de negócio já coberta em integração leva `@integration`; prefira um cenário de jornada a vários que repetem a preparação.
 - Chamadas reais a LLM/rede externa proibidas em teste (helpers `no-llm-network`).
 - Por história: `pnpm lint`, `pnpm typecheck`, `pnpm test`, o int e o E2E da própria história, e (se tocou schema/migração/tabela) os guardas baratos `sec017*`, `sec029*`, `migrations`, `lock-coverage` e os que usam `seed-all`; verdes antes de entregar.
 - Por bloco (3 a 5 histórias, ou antes de QA/release): `pnpm test:int` completo, E2E completo (desktop e mobile) e conferência visual no browser. O gestor agenda; não rode a suíte completa a cada história.

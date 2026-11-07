@@ -1,5 +1,4 @@
-# Índice de ADRs
-Decisões de arquitetura e de regra vigente. Molde: `../templates/adr.md`.
+# Índice de ADRs — decisões de arquitetura e de regra vigente (molde: `../templates/adr.md`)
 - [ADR-001](ADR-001-stack-tecnologica.md) — Stack tecnológica da aplicação web — aceito
 - [ADR-002](ADR-002-autenticacao-google.md) — Autenticação com Google via Auth.js — aceito
 - [ADR-003](ADR-003-jobs-e-agendamento.md) — Jobs e agendamento com pg-boss — aceito
@@ -38,3 +37,4 @@ Decisões de arquitetura e de regra vigente. Molde: `../templates/adr.md`.
 - [ADR-036](ADR-036-assinatura-no-cartao.md) — Assinatura mensal no cartão: tabela própria, lançamento preguiçoso e valor por vigência — aceito
 - [ADR-037](ADR-037-transferencia-prevista-tabela-propria.md) — Transferência prevista em tabela própria (`planned_transfers`) e série própria — aceito
 - [ADR-038](ADR-038-convite-aceite-e-edicao-do-sem-conta.md) — Membro sem conta: contrato do convite vinculado, do aceite e da edição — aceito
+- [ADR-039](ADR-039-e2e-enxuto-mobile-smoke-e-regra-em-integracao.md) — E2E enxuto: mobile só smoke e regra de negócio em integração — aceito

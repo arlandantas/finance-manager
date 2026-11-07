@@ -8,17 +8,20 @@ Funcionalidade: Pagamento da fatura
     E hoje é 28/10/2026
     E Lucas está autenticado
 
+  @mobile
   Cenário: Pagar a fatura fechada
     Quando Lucas toca em "Pagar fatura", escolhe a conta "Itaú Lucas" e confirma o pagamento de "R$ 1.200,00"
     Então o saldo de "Itaú Lucas" passa a "R$ 1.800,00"
     E a fatura "out/2026" fica "Paga" em 28/10/2026
     E aparece o aviso "Fatura paga com sucesso!"
 
+  @integration
   Cenário: Pagar libera o limite
     Dado o limite disponível de "R$ 3.800,00"
     Quando Lucas paga a fatura "out/2026"
     Então o limite disponível passa a "R$ 5.000,00"
 
+  @integration
   Cenário: Pagamento não é despesa
     Quando Lucas paga a fatura "out/2026"
     Então o total de despesas de outubro no extrato não muda e a Home segue projetando a fatura em novembro
@@ -84,12 +87,14 @@ Funcionalidade: Pagamento da fatura
     E a fatura "out/2026" volta a "Fechada"
     E o limite disponível volta a "R$ 3.800,00"
 
+  @integration
   Cenário: Compra em fatura paga é recusada
     Dado a fatura "out/2026" paga
     Quando Lucas tenta lançar no cartão uma compra com a data 20/10/2026
     Então vê "A fatura de out/2026 já foi paga. Use uma data posterior ao fechamento."
     E nada é registrado
 
+  @integration
   Cenário: Compras de fatura paga ficam travadas
     Dado a fatura "out/2026" paga
     Quando Lucas tenta editar ou excluir uma compra dela
@@ -100,6 +105,7 @@ Funcionalidade: Pagamento da fatura
     Quando Lucas abre o detalhe
     Então não há "Editar" nem "Excluir", só "Desfazer pagamento"
 
+  @integration
   Cenário: Isolamento entre famílias
     Dado a "Família Souza" com a fatura "out/2026" fechada
     Quando Lucas tenta pagá-la por endereço direto

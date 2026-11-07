@@ -1,6 +1,7 @@
 # language: pt
 Funcionalidade: Login com Google
 
+  @mobile
   Cenário: Primeiro acesso de pessoa sem família nem convite
     Dado que "mariana@exemplo.com" nunca acessou o sistema
     E não existe convite pendente para esse e-mail
@@ -49,6 +50,7 @@ Funcionalidade: Login com Google
     Então a opção de login de teste não é exibida
     E tentativas diretas de usá-la são rejeitadas
 
+  @mobile
   Cenário: Sair do sistema
     Dado que estou autenticado
     Quando clico em "Sair"

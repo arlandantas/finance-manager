@@ -3,6 +3,8 @@
 **Fase:** R1–R4 em grande parte entregues; R2.2 concluída. Em 2026-11-07 entregues e aprovadas pelo reviewer (testes pontuais): US-046 (tags), US-048/049 (análise), UR-2 inteira (US-094a/b, 095, 096/096b/c/d, 097, 098, 099, 100/100b, 101/101b). US-050 e US-051 entregues, aceite do Gestor pendente.
 **Verificação (2026-11-07):** por história: lint, typecheck, `pnpm test` (918+), int e E2E da própria história, todos verdes. Bloco UR-2: `test:int` completo verde (125 arquivos, 1485 ok, 1 pulado). E2E completo NÃO foi concluído (cortado por limite de tempo aos ~55 min, sem falhas vistas); dispensado pelo usuário: vale o QA no browser (Análise, Tags, Assinaturas, Previstas/Transferências, Cartões, Família, Extrato abriram sem erro de console; achou e corrigiu hidratação em `/analise`, `196a796`). Telas novas ainda sem conferência visual com dados reais.
 
+**E2E enxuto (ADR-039):** mobile roda só `@mobile` (12 cenários); 14 cenários de regra viraram `@integration` (US-016a/017b/040a). Execuções E2E ~1.490 → ~730; tempo real ainda não medido. Se continuar lento: paralelizar por schema e seguir a auditoria das demais features.
+
 ## Próximo passo
 1. Aceitar o bloco UR-2; QA exploratório com dados reais (convites, assinaturas, transferências previstas) e da US-050 fica com o usuário.
 2. Fila (`docs/backlog/index.md`): US-041 (depende de US-043), US-042/043/044 só após a janela de reversão do rateio (EN-002, `INSTALLMENT_SPLIT_RELEASED=false`) e a decisão da ordem US-041 × US-042.

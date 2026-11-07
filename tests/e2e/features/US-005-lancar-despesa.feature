@@ -6,6 +6,7 @@ Funcionalidade: Lançamento rápido de despesa
     E os membros "Mariana" e "Lucas"
     E Lucas está autenticado
 
+  @mobile
   Cenário: Despesa comum com sucesso
     Quando Lucas toca no botão "+", digita "R$ 150,50", escolhe a categoria "Supermercado" e toca em "Salvar Despesa"
     Então a despesa é registrada com autor "Lucas", quem pagou "Lucas", conta "Nubank Conjunta" e data de hoje
