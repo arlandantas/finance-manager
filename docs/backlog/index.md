@@ -72,7 +72,7 @@ Ordem das pendentes: US-042 e US-043 só após a janela de reversão do rateio (
 | US-047 | R3 | Filtrar o Extrato por tag | done | US-045, US-007 |
 | US-046 | R3 | Gerenciar tags (listar, renomear, remover) | done | US-045 |
 | US-048 | R3 | Visão sintética: período, totais e quebra por categoria | done | US-007, US-025, US-040b |
-| US-049 | R3 | Visão sintética: quebras por membro, conta/cartão e tag, com filtros combináveis | todo | US-048, US-045, US-047 |
+| US-049 | R3 | Visão sintética: quebras por membro, conta/cartão e tag, com filtros combináveis | done | US-048, US-045, US-047 |
 | US-050 | R3 | Cor por conta e cartão | done | US-004, US-015, US-037 |
 | US-051 | R3 | Receitas previstas e saldo previsto completo | done | US-018, US-019, US-025 |
 | EN-003 | R3 | Spike de modelo: uma pessoa em mais de um grupo | done | — |
