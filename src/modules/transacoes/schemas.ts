@@ -230,8 +230,8 @@ export type TransactionDefaults = {
 
 // ── Extrato (SDD-005 §2) ──
 /** Último dia de uma janela de 24 meses a partir de `from` (inclusive). */
-const lastDayOfWindow = (from: string) => addDays(addMonthsClamped(from, 24), -1);
-const boolParam = z.enum(["true", "false"]).transform((v) => v === "true");
+export const lastDayOfWindow = (from: string) => addDays(addMonthsClamped(from, 24), -1);
+export const boolParam = z.enum(["true", "false"]).transform((v) => v === "true");
 /** Filtro plural (OU dentro): `?tagIds=a&tagIds=b` ou um só valor; no máximo 20 (SDD-016 §1). */
 export const idListParam = z
   .union([uuidSchema, z.array(uuidSchema).max(20, "Escolha no máximo 20 valores no filtro")])
