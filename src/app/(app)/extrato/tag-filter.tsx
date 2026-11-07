@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { inputClass } from "@/components/ui/field";
+import { useHydrated } from "@/lib/use-hydrated";
 import { useTags } from "@/modules/tags/hooks";
 import type { LedgerUiFilters } from "@/modules/transacoes/optimistic";
 
@@ -74,7 +75,8 @@ export function TagFilter({
   }, [text]);
   const tags = useTags(q, { limit: q ? 20 : 500 });
   const selected = new Set(filters.tagIds ?? []);
-  const items = tags.data?.items ?? [];
+  const ready = useHydrated();
+  const items = ready ? (tags.data?.items ?? []) : [];
   const toggle = (tagId: string) => {
     const next = selected.has(tagId)
       ? [...selected].filter((x) => x !== tagId)
@@ -99,7 +101,7 @@ export function TagFilter({
         className="flex max-h-40 flex-wrap gap-2 overflow-auto"
         data-testid="tag-filter-options"
       >
-        {items.length === 0 && !tags.isPending ? (
+        {items.length === 0 && ready && !tags.isPending ? (
           <li className="text-sm text-slate-600">
             {q ? "Nenhuma tag encontrada" : "Nenhuma tag ainda. Crie tags ao lançar uma despesa."}
           </li>

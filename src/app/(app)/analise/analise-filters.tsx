@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Field, inputClass } from "@/components/ui/field";
+import { useHydrated } from "@/lib/use-hydrated";
 import type { AnalysisGroupBy } from "@/modules/analise/schemas";
 import { type AnaliseFilters, hasFilters } from "@/modules/analise/url";
 import { useCards } from "@/modules/cartoes/hooks";
@@ -61,6 +62,8 @@ export function AnaliseFiltersPanel({
   const cards = useCards();
   const family = useFamily();
   const categories = useAllCategories();
+  // opções vindas do cache só após hidratar: o 1º render do cliente deve igualar o HTML do servidor
+  const ready = useHydrated();
   const one = (v: string) => (v === "" ? undefined : [v]);
   return (
     <details
@@ -79,7 +82,7 @@ export function AnaliseFiltersPanel({
             onChange={(e) => onChange({ payerIds: one(e.target.value) })}
           >
             <option value="">Todos</option>
-            {(family.data?.members ?? []).map((m) => (
+            {(ready ? (family.data?.members ?? []) : []).map((m) => (
               <option key={m.memberId} value={m.memberId}>
                 {memberOptionLabel({ name: m.name.split(" ")[0] as string, unlinked: m.unlinked })}
               </option>
@@ -94,12 +97,12 @@ export function AnaliseFiltersPanel({
             onChange={(e) => onChange({ sourceIds: one(e.target.value) })}
           >
             <option value="">Todas</option>
-            {(accounts.data?.items ?? []).map((a) => (
+            {(ready ? (accounts.data?.items ?? []) : []).map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
               </option>
             ))}
-            {(cards.data?.items ?? []).map((c) => (
+            {(ready ? (cards.data?.items ?? []) : []).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name} (cartão)
               </option>
@@ -114,7 +117,7 @@ export function AnaliseFiltersPanel({
             onChange={(e) => onChange({ categoryIds: one(e.target.value) })}
           >
             <option value="">Todas</option>
-            {(categories.data?.items ?? []).map((c) => (
+            {(ready ? (categories.data?.items ?? []) : []).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.archived ? `${c.name} (arquivada)` : c.name}
               </option>
