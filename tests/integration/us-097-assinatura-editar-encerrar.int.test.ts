@@ -8,8 +8,11 @@ import {
   type FamilyFixture,
   makeAccount,
   makeCard,
+  makeCardPurchase,
   makeFamily,
   makeInvoicePayment,
+  makePlannedExpense,
+  makeTransaction,
 } from "../support/factories";
 
 // US-097 (ADR-036, spec 12): corrigir a cobrança do mês, reajustar e encerrar a assinatura.
@@ -328,5 +331,120 @@ describe("US-097 AC8: quem controla (spec 01)", () => {
     expect((await call(as, "GET", `/api/v1/subscriptions/${sub.id}`)).status).toBe(404);
     expect((await patch(sub.id, { version: 1, amountInCents: 100 }, as)).status).toBe(404);
     expect((await end(sub.id, 1, as)).status).toBe(404);
+  });
+});
+
+describe("US-097: editar x encerrar x cobrança preguiçosa em Promise.all", () => {
+  it("sem 500, uma cobrança por mês, nada após hoje e version consistente", async () => {
+    for (let round = 0; round < 3; round++) {
+      const sub = await create({ description: `Netflix ${round}` });
+      const rs = await at(NOV, () =>
+        Promise.all([
+          patch(sub.id, { version: 1, description: `Netflix X${round}` }),
+          end(sub.id, 1),
+          call(mariana(), "GET", "/api/v1/transactions"),
+          call(mariana(), "GET", `/api/v1/subscriptions/${sub.id}`),
+        ]),
+      );
+      expect(rs.every((r) => r.status < 500)).toBe(true);
+      const writes = rs.slice(0, 2);
+      expect(writes.filter((r) => r.status === 200).length).toBeGreaterThanOrEqual(1);
+      expect(writes.every((r) => [200, 409].includes(r.status))).toBe(true);
+      const row = await db.cardSubscription.findFirstOrThrow({ where: { id: sub.id } });
+      expect(row.version).toBe(1 + writes.filter((r) => r.status === 200).length);
+      const rows = await charges(sub.id);
+      const months = rows.map((c) => c.chargeMonth.toISOString());
+      expect(new Set(months).size).toBe(months.length);
+      for (const c of rows)
+        expect(c.chargeOn.toISOString().slice(0, 10) <= "2026-11-20").toBe(true);
+      if (row.endedAt) {
+        expect(row.nextChargeOn).toBeNull();
+        await open(DEC);
+        expect(await charges(sub.id)).toHaveLength(rows.length);
+      }
+    }
+  });
+});
+
+describe("US-097: isAmended só nas cobranças de assinatura", () => {
+  it("editar valor, data, descrição e categoria em lançamento comum, parcela e prevista não toca subscription_charges", async () => {
+    const sub = await create();
+    await open(NOV);
+    const before = await charges(sub.id);
+    const other = (
+      await db.category.findFirstOrThrow({ where: { familyId: fx.family.id, name: "Moradia" } })
+    ).id;
+    const plain = await makeTransaction(fx, {
+      account: itau,
+      category: "Lazer e restaurantes",
+      amountInCents: 1000,
+      occurredOn: "2026-10-02",
+    });
+    const purchase = await makeCardPurchase(fx, {
+      card,
+      amountInCents: 2000,
+      occurredOn: "2026-10-03",
+    });
+    for (const t of [plain, purchase]) {
+      const r = await call(mariana(), "PATCH", `/api/v1/transactions/${t.id}`, {
+        version: 1,
+        amountInCents: 1234,
+        occurredOn: "2026-10-04",
+        description: "Editada",
+        categoryId: other,
+      });
+      expect(r.status).toBe(200);
+      expect(r.body.transaction.isSubscriptionAmended).toBe(false);
+    }
+    const parcel = await call(mariana(), "POST", "/api/v1/transactions", {
+      type: "EXPENSE",
+      cardId: card.id,
+      categoryId: lazer,
+      amountInCents: 3000,
+      occurredOn: "2026-10-04",
+      payerMemberId: fx.byName.Mariana?.memberId,
+      description: "Parcelada",
+      installments: 3,
+    });
+    expect(parcel.body.error ?? null, JSON.stringify(parcel.body)).toBeNull();
+    const pid = parcel.body.transaction.id as string;
+    const pr = await call(mariana(), "PATCH", `/api/v1/transactions/${pid}`, {
+      version: 1,
+      description: "Parcelada 2",
+    });
+    expect(pr.status).toBeLessThan(500);
+    const planned = await makePlannedExpense(fx, {
+      description: "Luz",
+      amountInCents: 5000,
+      dueOn: "2026-12-15",
+    });
+    const pl = await call(mariana(), "PATCH", `/api/v1/planned-expenses/${planned.id}`, {
+      version: 1,
+      amountInCents: 5100,
+    });
+    expect(pl.status).toBeLessThan(500);
+    const after = await charges(sub.id);
+    expect(after.map((c) => [c.id, c.isAmended, c.status])).toEqual(
+      before.map((c) => [c.id, c.isAmended, c.status]),
+    );
+    expect(await db.subscriptionCharge.count({ where: { familyId: fx.family.id } })).toBe(
+      before.length,
+    );
+    // e a cobrança da assinatura marca só quando valor/data/descrição/categoria mudam
+    const note = await call(
+      mariana(),
+      "PATCH",
+      `/api/v1/transactions/${before[0]?.transactionId}`,
+      { version: 1, note: "n" },
+    );
+    expect(note.status).toBe(200);
+    const desc = await call(
+      mariana(),
+      "PATCH",
+      `/api/v1/transactions/${before[1]?.transactionId}`,
+      { version: 1, description: "Outro nome" },
+    );
+    expect(desc.status).toBe(200);
+    expect((await charges(sub.id)).map((c) => c.isAmended)).toEqual([false, true]);
   });
 });
