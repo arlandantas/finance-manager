@@ -36,11 +36,12 @@ Porta única (US-090/091, SDD-031):
 - Chave de idempotência regerada ao mudar de serviço, salvo após falha de rede (seletor travado): `useDoorKey` (SDD-031 §8.1-7).
 - Chave repetida devolve 422 `IDEMPOTENCY_KEY_REUSED`, não 409; futura em NOW devolve "Para contas futuras, use Despesa prevista" (DEV-159).
 
-Transferência prevista (PLANEJADA: US-100, 100b, 101, 101b; ADR-037):
+Transferência prevista (US-100 servidor implementada; PLANEJADAS: 100b telas, 101, 101b; ADR-037):
 - Tabela própria `planned_transfers` (não é `kind` de `planned_expenses`): origem ≠ destino, contas ativas da família, valor > 0, vencimento, descrição opcional, `PREVISTA | EFETIVADA`, `version`, exclusão lógica; atrasada = `PREVISTA` e `dueOn < hoje`. Sem "Só meu": qualquer membro ativo cadastra, edita, exclui e efetiva.
 - Sem efeito até efetivar: fora de saldo, extrato, totais, acerto, "A pagar", Resumo e MCP. Só o resumo por conta soma `plannedTransfersInCents` (- na origem, + no destino; coluna "Transferências previstas" só quando há); Σ `dueInCents` = total do "A pagar" segue.
 - Efetivar = transferência real (`createTransferGroup`, valor/data efetivos, data <= hoje) + `EFETIVADA` na mesma transação (`lockFamilySplit` → prevista `FOR UPDATE` → contas). Desfazer a transferência devolve `PREVISTA`. Efetivada não edita nem exclui. Conta arquivada impede efetivar; conta com prevista pendente ou série ativa não arquiva (`ACCOUNT_HAS_PLANNED_TRANSFERS`).
 - Série mensal `recurring_transfers` gerada por `ensureRecurrenceHorizon` (mesmas regras 9-13 da spec 04: 12 meses, chave única sem filtro de exclusão, editar reescreve só futuras pendentes não alteradas, encerrar exclui futuras pendentes).
+- Servidor (US-100): `previstas/{transfer-schemas,transfer-repo,transfer-service}.ts`; rotas `/planned-transfers` (GET, POST), `/[id]` (GET, PATCH), `/[id]/delete`, `/[id]/realize` (POST com `Idempotency-Key`; `Create`/`Update`/`Realize` `.strict()`). Erros: `INVALID_REFERENCE` (conta inativa/alheia), `VERSION_CONFLICT` ("alterada por {nome}"), `PLANNED_TRANSFER_REALIZED_LOCKED` (422), `PLANNED_TRANSFER_ALREADY_REALIZED` (409), `ACCOUNT_ARCHIVED_LOCKED`, `FUTURE_DATE_NOT_ALLOWED`. `undoTransferGroup` reabre a prevista (`reopenByGroup`). Migração `20261107000300_us100_planned_transfers` (expand, CHECKs `planned_transfer_*`). Testes: `tests/integration/us-100-transferencia-prevista.int.test.ts`; `lock-coverage` cobre `realizePlannedTransfer`.
 - Entrada só pela tela Previstas (aba "Transferências"); a porta única não ganha transferência nesta fase.
 
 ## Invariantes
@@ -61,7 +62,7 @@ Testes: `tests/unit/home/projected-balance.test.ts`, `tests/unit/previstas/{copy
 Âncoras: US-051/060/090/091; SDD-017, SDD-029, SDD-031; ADR-023 (receita por kind).
 
 ## Perguntas ao usuário
-- Transferência prevista para conta de reserva (`excludeFromAvailable`) muda o "disponível" futuro, mas o saldo previsto do Resumo foi mantido sem ela (hipótese: transferência interna soma zero). Confirmar.
+- Decidido (arquiteto): transferência prevista para conta de reserva NÃO muda o saldo previsto do Resumo; aparece só na tela Previstas.
 - Escopo: a porta única ("Vai acontecer"/"Repetir todo mês") NÃO cobre transferência prevista; só a tela Previstas. Confirmar ou pedir história extra.
 
 ## Pendências

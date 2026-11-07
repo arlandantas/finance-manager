@@ -69,6 +69,12 @@ enum PlannedKind {
   INCOME
 }
 
+// US-100 (ADR-037): transferência prevista entre contas
+enum PlannedTransferStatus {
+  PREVISTA
+  EFETIVADA
+}
+
 enum Direction {
   CREDIT
   DEBIT
@@ -196,6 +202,7 @@ model Family {
   bankAccounts                 BankAccount[]
   creditCards                  CreditCard[]
   plannedExpenses              PlannedExpense[]
+  plannedTransfers             PlannedTransfer[]
   recurringExpenses            RecurringExpense[]
   cardSubscriptions            CardSubscription[]
   cardSubscriptionAmounts      CardSubscriptionAmount[]
@@ -294,6 +301,7 @@ model Member {
   ownedCards                   CreditCard[]
   plannedResponsible           PlannedExpense[]              @relation("PlannedResponsible")
   plannedAuthored              PlannedExpense[]              @relation("PlannedAuthor")
+  plannedTransfersAuthored     PlannedTransfer[]             @relation("PlannedTransferAuthor")
   recurringResponsible         RecurringExpense[]            @relation("RecurringResponsible")
   recurringAuthored            RecurringExpense[]            @relation("RecurringAuthor")
   subscriptionPayer            CardSubscription[]            @relation("SubscriptionPayer")
@@ -407,6 +415,8 @@ model BankAccount {
   plannedExpenses   PlannedExpense[]
   recurringExpenses RecurringExpense[]
   payerForCards     CreditCard[]
+  plannedTransfersFrom PlannedTransfer[] @relation("PlannedTransferFrom")
+  plannedTransfersTo   PlannedTransfer[] @relation("PlannedTransferTo")
 
   @@unique([familyId, id])
   @@map("bank_accounts")
@@ -499,6 +509,7 @@ model TransferGroup {
 
   family Family        @relation(fields: [familyId], references: [id])
   legs   Transaction[]
+  plannedTransfer PlannedTransfer?
 
   @@unique([familyId, id])
   @@index([familyId, kind, settlementPeriod])
@@ -1265,4 +1276,35 @@ model SubscriptionCharge {
   @@unique([familyId, subscriptionId, chargeMonth])
   @@unique([familyId, transactionId]) // == transactionId único (uma compra tem uma só família)
   @@map("subscription_charges")
+}
+
+// US-100 (ADR-037): transferência prevista; sem efeito no ledger até efetivar (CHECKs em SQL na migração)
+model PlannedTransfer {
+  id                String                @id @default(uuid()) @db.Uuid
+  familyId          String                @db.Uuid
+  fromAccountId     String                @db.Uuid
+  toAccountId       String                @db.Uuid
+  amountInCents     BigInt // > 0 (CHECK)
+  dueOn             DateTime              @db.Date
+  description       String? // 2..100
+  status            PlannedTransferStatus @default(PREVISTA)
+  transferGroupId   String?               @db.Uuid
+  authorMemberId    String                @db.Uuid
+  updatedByMemberId String?               @db.Uuid
+  version           Int                   @default(1)
+  createdAt         DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime              @updatedAt @db.Timestamptz(3)
+  deletedAt         DateTime?             @db.Timestamptz(3)
+  deletedByMemberId String?               @db.Uuid
+
+  family        Family         @relation(fields: [familyId], references: [id])
+  fromAccount   BankAccount    @relation("PlannedTransferFrom", fields: [familyId, fromAccountId], references: [familyId, id])
+  toAccount     BankAccount    @relation("PlannedTransferTo", fields: [familyId, toAccountId], references: [familyId, id])
+  transferGroup TransferGroup? @relation(fields: [familyId, transferGroupId], references: [familyId, id])
+  author        Member         @relation("PlannedTransferAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+
+  @@unique([familyId, id])
+  @@unique([familyId, transferGroupId])
+  @@index([familyId, status, dueOn])
+  @@map("planned_transfers")
 }

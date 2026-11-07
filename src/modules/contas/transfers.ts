@@ -9,6 +9,7 @@ import { assertAccountsEditable, lockAccountsForPosting } from "@/modules/contas
 import { contasRepo } from "@/modules/contas/repo";
 import type { CreateTransferInput, TransferDTO } from "@/modules/contas/schemas";
 import { memberRef } from "@/modules/contas/service";
+import { plannedTransfersRepo } from "@/modules/previstas/transfer-repo";
 import { lockFamilySplit } from "@/modules/split/lock";
 
 type Repo = ReturnType<typeof contasRepo>;
@@ -199,5 +200,7 @@ export async function undoTransferGroup(
       changes: [{ field: "deletionReason", from: null, to: "UNDONE" }],
     });
   }
+  // US-100 (ADR-037 §2): se veio de uma transferência prevista, ela volta a PREVISTA (mesma transação)
+  await plannedTransfersRepo(tx, ctx.familyId).reopenByGroup(groupId, ctx.memberId);
   return { transfer: await toTransferDTO(tx, ctx, after) };
 }

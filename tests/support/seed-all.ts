@@ -57,6 +57,17 @@ export async function seedEverything(fx: FamilyFixture): Promise<void> {
     dueOn: "2026-11-10",
     responsible: who,
   });
+  // US-100: transferência prevista (exclusão da família precisa apagá-la antes das contas)
+  await db.plannedTransfer.create({
+    data: {
+      familyId,
+      fromAccountId: itau.id,
+      toAccountId: nub.id,
+      amountInCents: 5000n,
+      dueOn: new Date("2026-11-20T00:00:00Z"),
+      authorMemberId: mariana,
+    },
+  });
   const category = await db.category.findFirstOrThrow({ where: { familyId, name: "Moradia" } });
   const recurring = await db.recurringExpense.create({
     data: {
