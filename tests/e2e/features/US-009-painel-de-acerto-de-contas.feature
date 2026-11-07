@@ -13,17 +13,20 @@ Funcionalidade: Painel de acerto de contas
     E Mariana: pagou "R$ 2.400,00", cota "R$ 2.000,00", diferença "+R$ 400,00"
     E Lucas: pagou "R$ 1.600,00", cota "R$ 2.000,00", diferença "-R$ 400,00"
 
+  @integration
   Cenário: Despesas pessoais não entram
     Dado uma despesa pessoal de "R$ 500,00" de Mariana
     Quando abro o painel de acerto
     Então o total comum não inclui "R$ 500,00"
 
+  @integration
   Cenário: Divisão proporcional
     Dado a regra 60% / 40% e total comum de "R$ 1.000,00" pago integralmente por Mariana
     Quando abro o painel de acerto
     Então a cota de Mariana é "R$ 600,00" e a de Lucas é "R$ 400,00"
     E vejo "Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana"
 
+  @integration
   Cenário: Centavo ímpar não se perde
     Dado a regra 50/50 e uma única despesa comum de "R$ 100,01" paga por Mariana
     Quando abro o painel de acerto

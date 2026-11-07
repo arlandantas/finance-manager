@@ -19,6 +19,7 @@ Funcionalidade: Registro do acerto de contas
     Quando Lucas informa "R$ 500,00" no acerto
     Então vê "O valor não pode ser maior que o devido (R$ 400,00)" e nada é registrado
 
+  @integration
   Cenário: Acerto não distorce receitas e despesas
     Dado que o acerto de "R$ 400,00" foi registrado
     Quando consulto totais de despesas e receitas após o acerto
@@ -29,6 +30,7 @@ Funcionalidade: Registro do acerto de contas
     Quando abro o painel após o acerto
     Então vejo "Lucas transferiu R$ 400,00 para Mariana em 04/10" com as contas usadas
 
+  @integration
   Cenário: Nova despesa comum após o acerto
     Dado que o mês foi quitado
     Quando Mariana lança nova despesa comum de "R$ 200,00"

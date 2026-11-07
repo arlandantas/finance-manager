@@ -31,6 +31,7 @@ Funcionalidade: Transferência prevista entre contas
     Quando Mariana exclui a transferência prevista
     Então a aba de transferências está vazia
 
+  @integration
   Cenário: Conta com transferência prevista pendente não arquiva
     Dado a conta "Reserva" sem saldo e uma transferência prevista de "R$ 100,00" de "Reserva" para "Poupança" vencendo em "2026-12-20"
     Quando Mariana abre o arquivamento da conta "Reserva"
@@ -74,6 +75,7 @@ Funcionalidade: Transferência prevista entre contas
     Quando Mariana salva a série com o valor "R$ 600,00"
     Então a ocorrência de janeiro de 2027 mostra "600,00" e a efetivada segue "500,00"
 
+  @integration
   Cenário: Conta com série ativa não arquiva; encerrar a série libera
     Dado a conta "Reserva" sem saldo
     Quando Mariana cadastra a transferência mensal de "R$ 100,00" de "Reserva" para "Poupança" no dia 15

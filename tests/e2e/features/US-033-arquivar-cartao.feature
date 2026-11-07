@@ -31,6 +31,7 @@ Funcionalidade: Arquivar cartão de crédito
     Quando Mariana reativa o cartão "Nubank Lucas"
     Então "Nubank Lucas" volta à lista de cartões
 
+  @integration
   Cenário: Excluir cartão sem compras e cartão com compras só arquiva
     Quando Mariana exclui o cartão "Cartão novo" e confirma
     Então vê o aviso de cartão "Cartão excluído"

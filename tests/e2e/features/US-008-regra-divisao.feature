@@ -33,6 +33,7 @@ Funcionalidade: Regra de divisão familiar
     Então o sistema solicita ao Administrador que redefina os percentuais
     E enquanto isso o acerto exibe aviso "Regra de divisão desatualizada"
 
+  @integration
   Cenário: Mudança de regra não altera meses passados
     Dado o acerto de setembro calculado com a regra 50% / 50%
     Quando o Administrador define 60% / 40% com vigência a partir de outubro

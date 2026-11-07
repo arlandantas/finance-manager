@@ -31,6 +31,7 @@ Funcionalidade: Fatura do cartão
     E que hoje é 06/11/2026 e a fatura não foi paga
     Então a fatura "out/2026" aparece como "Vencida" em destaque de alerta
 
+  @integration
   Cenário: Limite considera faturas fechadas e abertas
     Dado compras de "R$ 1.200,00" na fatura "out/2026" e de "R$ 300,00" na fatura "nov/2026"
     E que hoje é 28/10/2026
@@ -48,11 +49,13 @@ Funcionalidade: Fatura do cartão
     Quando Lucas abre a fatura
     Então vê "Mariana R$ 300,00" e "Lucas R$ 100,00"
 
+  @integration
   Cenário: Compra retroativa em fatura fechada aumenta o total
     Dado a fatura "out/2026" fechada com total "R$ 400,00" e que hoje é 28/10/2026
     Quando Lucas lança "R$ 50,00" no cartão com a data 20/10/2026
     Então o total da fatura "out/2026" passa a "R$ 450,00"
 
+  @integration
   Cenário: Compra excluída não conta no total
     Dado uma compra de "R$ 100,00" excluída na fatura "out/2026"
     Quando Lucas abre a fatura
@@ -74,6 +77,7 @@ Funcionalidade: Fatura do cartão
     Quando Lucas abre o cartão
     Então vê "Não foi possível carregar" com o botão "Tentar de novo"
 
+  @integration
   Cenário: Isolamento entre famílias
     Dado a "Família Souza" com o cartão "Visa Souza"
     Quando Lucas tenta abrir a fatura do cartão "Visa Souza" por endereço direto

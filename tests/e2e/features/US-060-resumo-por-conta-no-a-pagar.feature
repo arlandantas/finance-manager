@@ -17,33 +17,39 @@ Funcionalidade: Resumo por conta no A pagar
     Quando Mariana abre "A pagar" de outubro de 2026
     Então "Corrente" destaca "Falta R$ 270,00"
 
+  @integration
   Cenário: Prevista sem conta
     Dado uma prevista de "R$ 100,00" sem conta
     Quando Mariana abre "A pagar" de outubro de 2026
     Então aparece a linha "Sem conta definida" com "R$ 100,00"
 
+  @integration
   Cenário: Prevista Só meu de outro membro entra no cálculo
     Dado "Corrente" com saldo "R$ 1.000,00"
     E Lucas tem uma prevista "Só meu" de "R$ 300,00" com "Pagar com: Corrente"
     Quando Mariana abre "A pagar" de outubro de 2026
     Então "Corrente" mostra a pagar "R$ 300,00" e previsto "R$ 700,00"
 
+  @integration
   Cenário: A soma das contas bate com o total de A pagar
     Dado previstas de "R$ 650,00" na "Corrente", "R$ 200,00" na "Poupança" e "R$ 100,00" sem conta
     Quando Mariana abre "A pagar" de outubro de 2026
     Então o total de "A pagar" é "R$ 950,00"
     E a soma das linhas por conta, incluindo "Sem conta definida", é "R$ 950,00"
 
+  @integration
   Cenário: Fatura entra na conta pagadora do cartão
     Dado o cartão "Nubank Lucas" com conta pagadora "Corrente" e fatura fechada de "R$ 1.500,00" vencendo em outubro
     Quando Mariana abre "A pagar" de outubro de 2026
     Então "Corrente" inclui "R$ 1.500,00" na coluna "A pagar"
 
+  @integration
   Cenário: Fatura de cartão sem conta pagadora
     Dado o cartão "Nubank Lucas" sem conta pagadora e fatura fechada de "R$ 1.500,00" vencendo em outubro
     Quando Mariana abre "A pagar" de outubro de 2026
     Então "Sem conta definida" inclui "R$ 1.500,00"
 
+  @integration
   Cenário: Prevista paga sai do cálculo
     Dado "Corrente" com saldo "R$ 1.000,00" e a pagar "R$ 770,00"
     Quando Mariana dá baixa em uma prevista de "R$ 650,00" pela "Corrente"

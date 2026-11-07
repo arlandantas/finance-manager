@@ -13,6 +13,7 @@ Funcionalidade: Transferência entre contas
     Então vejo uma linha de saída em "Itaú Lucas" e uma de entrada em "Nubank Conjunta"
     E ambas indicam que fazem parte da mesma transferência
 
+  @integration
   Cenário: Não é despesa nem receita
     Dado "Itaú Lucas" com "R$ 3.000,00" e "Nubank Conjunta" com "R$ 500,00" e uma transferência de "R$ 1.000,00" entre elas
     Quando consulto os totais de despesas e receitas do mês

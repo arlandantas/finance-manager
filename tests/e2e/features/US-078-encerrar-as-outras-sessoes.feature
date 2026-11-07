@@ -28,6 +28,7 @@ Funcionalidade: Encerrar as outras sessões
     Então vê o aviso de sessões "0 sessões encerradas"
     E este aparelho continua conectado
 
+  @integration
   Cenário: Não afeta a sessão de outra pessoa
     Dado que Mariana está conectada no próprio aparelho
     Quando Lucas abre o menu do usuário e toca em "Encerrar as outras sessões"

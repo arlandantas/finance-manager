@@ -30,6 +30,7 @@ Funcionalidade: Correção e exclusão de lançamentos
     Então Lucas vê o conflito "Este lançamento foi alterado por Mariana. Recarregue para continuar."
     E sua alteração não é gravada
 
+  @integration
   Cenário: Acerto de contas recalculado
     Dado "Para equilibrar o mês: Lucas transfere R$ 400,00 para Mariana" no painel
     Quando a despesa comum de Mariana de "R$ 400,00" é excluída

@@ -20,6 +20,7 @@ Funcionalidade: Despesa prevista
     Quando Lucas cadastra "Escola" de "R$ 1.200,00" com responsável "Mariana"
     Então o responsável pelo pagamento é "Mariana" e o autor é "Lucas"
 
+  @integration
   Cenário: Previsão não mexe no saldo, extrato, totais nem acerto
     Quando Lucas cadastra "Condomínio" de "R$ 650,00" com vencimento em 10/11/2026
     Então o saldo de "Itaú Lucas" continua "R$ 3.000,00"
@@ -88,6 +89,7 @@ Funcionalidade: Despesa prevista
     Quando Lucas toca duas vezes rapidamente em "Salvar" na nova previsão
     Então apenas uma previsão é cadastrada
 
+  @integration
   Cenário: Membro comum também cadastra
     Dado que Lucas é "Membro" e não "Administrador"
     Quando Lucas cadastra uma despesa prevista
@@ -99,6 +101,7 @@ Funcionalidade: Despesa prevista
     Então vê "Sem conexão. Seus dados continuam na tela, tente de novo."
     E o formulário preserva o que foi digitado
 
+  @integration
   Cenário: Isolamento entre famílias
     Dado a "Família Souza" com a previsão "Aluguel"
     Quando Lucas abre "Contas a pagar"

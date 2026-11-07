@@ -25,6 +25,7 @@ Funcionalidade: Atribuir contas e lançamentos ao membro sem conta (093a e 093b)
     Então "Ana" aparece com crédito de "R$ 200,00" e o selo "Sem acesso ao app"
     E "Mariana" e "Lucas" aparecem devendo "R$ 100,00" cada
 
+  @integration
   Cenário: Acerto desligado não inclui ninguém
     Dado uma despesa dividida de "R$ 300,00" paga por "Ana" entre "Mariana", "Lucas" e "Ana"
     E que o acerto de contas está desligado para a atribuição
@@ -39,12 +40,14 @@ Funcionalidade: Atribuir contas e lançamentos ao membro sem conta (093a e 093b)
     Quando Mariana abre o filtro de pessoa no Extrato
     Então "Ana · sem acesso ao app" aparece como opção
 
+  @integration
   Cenário: Só meu de membro sem conta é controlado por quem lançou
     Dado que Mariana lançou uma despesa "Só meu" com pagador "Ana"
     Quando Lucas tenta excluir essa despesa
     Então vê que apenas quem controla pode alterar
     E Mariana consegue excluí-la
 
+  @integration
   Cenário: Pagador sem conta só pelo lançador ou Administrador
     Dado que Lucas lançou uma despesa
     Quando Lucas tenta definir "Ana" como pagadora de uma despesa lançada por Mariana

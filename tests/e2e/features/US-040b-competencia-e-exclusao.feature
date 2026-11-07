@@ -8,6 +8,7 @@ Funcionalidade: Competência da parcela e exclusão da compra parcelada (US-040b
     E hoje é 10/11/2026
     E Lucas está autenticado
 
+  @integration
   Cenário: Despesa do mês conta só a parcela
     Dado que Lucas lançou "Notebook" de "R$ 2.500,00" em "10x"
     Então as despesas de nov/2026 no Extrato são "R$ 250,00"
@@ -18,6 +19,7 @@ Funcionalidade: Competência da parcela e exclusão da compra parcelada (US-040b
     Quando Lucas abre o Extrato filtrado pelo cartão no intervalo de nov/2026 a ago/2027
     Então vê 10 linhas "Notebook" com rótulos "1/10" a "10/10"
 
+  @integration
   Cenário: Parcela aparece no Extrato do mês da fatura
     Dado que hoje é 28/11/2026
     E que Lucas lançou "Notebook" de "R$ 2.500,00" em "10x"
@@ -25,6 +27,7 @@ Funcionalidade: Competência da parcela e exclusão da compra parcelada (US-040b
     Então vê a linha "Notebook" com a etiqueta "Fatura dez/2026 · 1/10"
     E o Extrato de 2026-11 não mostra a linha "Notebook"
 
+  @integration
   Cenário: Compra à vista segue pela data da compra
     Dado que hoje é 28/11/2026
     E que Lucas lançou "Mercado" de "R$ 90,00" em "1x"
@@ -49,6 +52,7 @@ Funcionalidade: Competência da parcela e exclusão da compra parcelada (US-040b
     Então as 10 parcelas voltam às suas faturas
     E o limite disponível do cartão volta a "R$ 2.500,00"
 
+  @integration
   Cenário: Excluir a compra com parcela em fatura fechada
     Dado que Lucas lançou "Notebook" de "R$ 2.500,00" em "10x"
     E a fatura de nov/2026 está fechada e não paga
@@ -62,6 +66,7 @@ Funcionalidade: Competência da parcela e exclusão da compra parcelada (US-040b
     Então o detalhe da parcela não tem "Editar"
     E o detalhe da parcela tem "Excluir compra parcelada"
 
+  @integration
   Cenário: Intervalo do Extrato aceita até 24 meses
     Dado que Lucas lançou "Notebook" de "R$ 2.500,00" em "10x"
     Quando Lucas escolhe no Extrato um intervalo de 25 meses

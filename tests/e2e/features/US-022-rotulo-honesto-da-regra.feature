@@ -10,6 +10,7 @@ Funcionalidade: Rótulo da regra de divisão no Acerto
     Então o rótulo da divisão é "Divisão igual (50% / 50%)"
     E a cota de Mariana é "R$ 358,50" e a de Lucas é "R$ 358,50"
 
+  @integration
   Cenário: Mês passado não herda a regra criada depois
     Dado uma nova regra proporcional "58% / 42%" com vigência a partir de 04/10/2026
     E despesas comuns de setembro de 2026 que somam "R$ 717,00"
@@ -38,6 +39,7 @@ Funcionalidade: Rótulo da regra de divisão no Acerto
     Então vê 3 regras no histórico com o percentual e a data de vigência
     E não vê o botão "Alterar regra"
 
+  @integration
   Cenário: Números homologados permanecem
     Dado despesas comuns de outubro de "R$ 3.169,90" e regra igual
     Quando Lucas abre o Acerto de "2026-10"

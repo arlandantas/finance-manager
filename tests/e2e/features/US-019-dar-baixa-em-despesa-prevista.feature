@@ -20,29 +20,35 @@ Funcionalidade: Baixa de despesa prevista
     Então o saldo de "Itaú Lucas" passa a "R$ 2.317,50"
     E a previsão mostra "Previsto R$ 650,00 · Pago R$ 682,50" com a diferença "+R$ 32,50"
 
+  @integration
   Cenário: A baixa gera a despesa real
     Quando Lucas dá baixa em "Condomínio" de novembro pagando "R$ 682,50" pela conta "Itaú Lucas" em 10/11/2026
     Então o extrato mostra uma despesa de "R$ 682,50" na categoria "Moradia" em 10/11/2026 na conta "Itaú Lucas"
     E o total de despesas de novembro aumenta "R$ 682,50"
 
+  @integration
   Cenário: Quem pagou padrão é o responsável
     Quando Lucas dá baixa sem alterar quem pagou
     Então a despesa gerada tem "Pago por Lucas"
 
+  @integration
   Cenário: Outro membro paga a conta
     Quando Lucas dá baixa escolhendo "Quem pagou: Mariana"
     Então a despesa gerada tem autor "Lucas" e "Pago por Mariana"
 
+  @integration
   Cenário: Despesa comum entra no acerto pelo valor efetivo
     Dado a regra de divisão "igualitária"
     Quando Lucas dá baixa em "Condomínio" pagando "R$ 682,50"
     Então o acerto de novembro considera "R$ 682,50" pago por Lucas
 
+  @integration
   Cenário: Despesa pessoal fica fora do acerto
     Dado a previsão "Plano de saúde de Lucas" de "R$ 300,00" marcada como pessoal
     Quando Lucas dá baixa nela
     Então o acerto de novembro não muda
 
+  @integration
   Cenário: Previsão do mês seguinte permanece intacta
     Quando Lucas dá baixa em "Condomínio" de novembro
     Então a despesa de 10/12/2026 continua "Previsto" com valor "R$ 650,00"
@@ -82,6 +88,7 @@ Funcionalidade: Baixa de despesa prevista
     Então apenas uma despesa é gerada
     E a conta é debitada uma única vez
 
+  @integration
   Cenário: Conflito de baixa simultânea
     Dado que Lucas e Mariana abriram a baixa de "Condomínio" de novembro
     Quando Mariana confirma a baixa

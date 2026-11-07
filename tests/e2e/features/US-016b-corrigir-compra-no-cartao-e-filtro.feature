@@ -14,6 +14,7 @@ Funcionalidade: Corrigir compra no cartão e filtrar por cartão
     E o total da fatura "out/2026" passa a "R$ 250,00"
     E o limite disponível passa a "R$ 4.750,00"
 
+  @integration
   Cenário: Mudar a data para depois do fechamento muda a fatura
     Dado que hoje é 28/10/2026
     Quando Mariana edita a data da compra para 27/10/2026
@@ -56,6 +57,7 @@ Funcionalidade: Corrigir compra no cartão e filtrar por cartão
     Então vê o cartão "Nubank Mariana" e a fatura "out/2026"
     E vejo "Registrado por" e "Pago por"
 
+  @integration
   Cenário: Acerto recalculado ao excluir compra compartilhada
     Dado a regra de divisão "igualitária" e que a compra de "R$ 300,00" é de Mariana e compartilhada
     Quando Mariana exclui a compra

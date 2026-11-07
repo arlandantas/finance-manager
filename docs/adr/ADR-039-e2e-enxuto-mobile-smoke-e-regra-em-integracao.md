@@ -12,5 +12,5 @@ A suíte E2E (743 cenários × projetos desktop e mobile, 1 worker, `next dev`) 
 4. **Descartado:** `next build && next start` (em produção o relógio fixo e o login de teste ficam desligados, ADR-024/026; religá-los enfraqueceria travas) e `storageState` (o `resetDb` apaga usuários a cada cenário, e o login já é uma chamada de API barata).
 
 ## Consequências
-- Execuções E2E caem de ~1.490 para ~730. Novos fluxos de UI marcam `@mobile` só se forem caminho crítico.
-- Se ainda for lento: paralelizar com schema por worker (exige isolar `resetDb` e o relógio global do servidor) e continuar a auditoria de cenários redundantes.
+- Execuções E2E caem de ~1.490 para ~610 (599 desktop + 12 mobile) após a auditoria de todas as features (132 cenários rebaixados). Novos fluxos de UI marcam `@mobile` só se forem caminho crítico.
+- Ficaram no E2E, por serem de UI: mensagens de erro, estados vazios, selos, duplo clique, falha de rede, layout e fluxos entre telas. Se ainda for lento: paralelizar com schema por worker (exige isolar `resetDb` e o relógio global do servidor).

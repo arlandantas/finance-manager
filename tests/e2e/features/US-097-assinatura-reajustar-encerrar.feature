@@ -32,6 +32,7 @@ Funcionalidade: Reajustar e encerrar a assinatura
     Quando Lucas abre o Extrato para ver a assinatura
     Então a linha "Netflix" do Extrato tem o selo "alterada"
 
+  @integration
   Cenário: Quem não controla a assinatura "Só meu" alheia é barrado
     Dado a assinatura "Netflix" passa a ser de Mariana
     E Lucas recarrega a tela do cartão

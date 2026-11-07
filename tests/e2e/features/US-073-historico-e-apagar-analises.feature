@@ -31,6 +31,7 @@ Funcionalidade: Histórico das análises
     Então o histórico fica vazio
     E as sugestões descartadas continuam salvas
 
+  @integration
   Cenário: Apagar não afeta lançamentos
     Quando Lucas abre o "Histórico" da análise
     E toca em "Apagar todo o histórico" e confirma

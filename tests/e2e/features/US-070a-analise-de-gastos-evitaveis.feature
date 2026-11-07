@@ -24,12 +24,14 @@ Funcionalidade: Análise de gastos evitáveis
     E cada categoria tem uma explicação curta
     E vê o selo "Gerada por IA: confira os números"
 
+  @integration
   Cenário: Números vêm do sistema
     Dado que a "Análise de gastos" foi ligada pela Administradora
     E 4 meses de lançamentos categorizados até set/2026 para a análise
     Quando Lucas envia a análise de "set/2026"
     Então o valor de "Lazer" mostrado é "R$ 480,00"
 
+  @integration
   Cenário: Texto da IA com número é substituído pelo texto do sistema
     Dado que a "Análise de gastos" foi ligada pela Administradora
     E 4 meses de lançamentos categorizados até set/2026 para a análise
@@ -38,6 +40,7 @@ Funcionalidade: Análise de gastos evitáveis
     Então o valor de "Lazer" mostrado é "R$ 480,00"
     E a análise não mostra "999"
 
+  @integration
   Cenário: Análise não aponta pessoas
     Dado que a "Análise de gastos" foi ligada pela Administradora
     E 4 meses de lançamentos categorizados até set/2026 para a análise

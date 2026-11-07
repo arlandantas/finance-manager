@@ -22,6 +22,7 @@ Funcionalidade: Arquivar e excluir conta
     Quando Mariana toca em "Transferir o saldo"
     Então o formulário de transferência abre com origem "Itaú Lucas" e valor "R$ 3.000,00"
 
+  @integration
   Cenário: Saldo da família ignora conta arquivada
     Dado que a conta "Poupança" foi arquivada
     Quando Mariana abre a Home das contas
@@ -39,11 +40,13 @@ Funcionalidade: Arquivar e excluir conta
     Quando Mariana cadastra uma conta chamada "Carteira antiga"
     Então a conta "Carteira antiga" é criada
 
+  @integration
   Cenário: Conta arquivada continua ocupando o nome
     Dado que a conta "Poupança" foi arquivada
     Quando Mariana cadastra uma conta chamada "Poupança"
     Então vê o aviso de nome já em uso
 
+  @integration
   Cenário: Conta com histórico só pode ser arquivada e Membro não exclui
     Quando Mariana abre as ações da conta "Poupança"
     Então vê a ação "Arquivar" e não vê "Excluir"

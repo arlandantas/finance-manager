@@ -12,6 +12,7 @@ Funcionalidade: Gastos que parecem evitáveis (recorrentes)
     Quando Lucas envia a análise de "set/2026"
     Então vê o gasto evitável "Streaming X" com "R$ 55,90 por mês · R$ 670,80 por ano"
 
+  @integration
   Cenário: O nome do estabelecimento não vai para a IA
     Quando Lucas abre os "Gastos evitáveis" da análise
     E toca em "Analisar" na análise

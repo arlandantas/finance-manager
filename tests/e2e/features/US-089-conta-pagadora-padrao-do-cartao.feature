@@ -27,11 +27,13 @@ Funcionalidade: Conta pagadora padrão do cartão
     Então o pagamento sai da "Poupança"
     E a conta pagadora padrão do cartão continua "Corrente"
 
+  @integration
   Cenário: O app não paga sozinho
     Dado "Nubank Lucas" com conta pagadora "Corrente" e fatura fechada vencendo hoje
     Quando o dia passa sem ninguém pagar
     Então a fatura continua em "A pagar" e nada é debitado da "Corrente"
 
+  @integration
   Cenário: Conta pagadora arquivada
     Dado "Nubank Lucas" com conta pagadora "Corrente" e fatura fechada de "R$ 1.500,00"
     Quando Lucas abre o diálogo de arquivar a conta "Corrente" já zerada
@@ -40,6 +42,7 @@ Funcionalidade: Conta pagadora padrão do cartão
     Então o cartão mostra o aviso "A conta Corrente foi arquivada"
     E a fatura ainda pode ser paga por outra conta
 
+  @integration
   Cenário: Trocar a conta padrão não muda pagamento já feito
     Dado a fatura de setembro paga pela "Corrente"
     Quando Lucas troca a conta pagadora para "Poupança"

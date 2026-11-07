@@ -29,6 +29,7 @@ Funcionalidade: Remover membro e sair da família
     Quando Mariana marca "Reconheço a diferença"
     Então o botão da remoção "Continuar" fica habilitado
 
+  @integration
   Cenário: Último Administrador não pode sair
     Quando Mariana tenta sair da família
     Então vê o bloqueio da remoção "Você é a única pessoa Administradora. Promova outro membro antes de sair."
@@ -38,6 +39,7 @@ Funcionalidade: Remover membro e sair da família
     Então vê o aviso na entrada "Você saiu da família"
     E Lucas não consegue mais abrir a Home da família
 
+  @integration
   Cenário: Membro não remove outros
     Quando Lucas abre o menu de "Mariana" na tela Família
     Então não vê a ação "Remover"

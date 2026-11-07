@@ -29,11 +29,13 @@ Funcionalidade: Cadastrar membro sem conta ativa
     Quando Mariana cadastra o membro "ana"
     Então vê "Já existe um membro com este nome"
 
+  @integration
   Cenário: E-mail que já é de outro membro
     Dado que "Lucas" usa o e-mail "lucas@exemplo.com"
     Quando Mariana cadastra o membro "Lucas Filho" com o e-mail "lucas@exemplo.com"
     Então vê "Este e-mail já pertence a outro membro"
 
+  @integration
   Cenário: Membro sem conta nunca é Administrador
     Dado que Mariana cadastrou o membro "Ana"
     Quando Mariana abre o menu de "Ana"

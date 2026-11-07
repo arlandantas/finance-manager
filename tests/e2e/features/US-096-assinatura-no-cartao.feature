@@ -14,6 +14,7 @@ Funcionalidade: Assinatura no cartão
     Quando Lucas salva a assinatura
     Então o bloco de assinaturas mostra "Netflix" com "R$ 55,90" e "Todo dia 10"
 
+  @integration
   Cenário: Prevista antes do dia e lançada no dia, nunca nas duas
     Dado a assinatura "Netflix" de "R$ 55,90" no dia 10 cadastrada pela tela do cartão
     Então a fatura aberta mostra "Assinaturas previstas neste ciclo: R$ 55,90" e total "R$ 0,00"
@@ -40,6 +41,7 @@ Funcionalidade: Assinatura no cartão
     E a assinatura "Netflix" de "R$ 55,90" no dia 10 cadastrada pela tela do cartão
     Então a tela do cartão não tem rolagem horizontal e o bloco de assinaturas está visível
 
+  @integration
   Cenário: Outro membro vê a assinatura mas não cadastra em nome de Lucas
     Dado a assinatura "Netflix" de "R$ 55,90" no dia 10 cadastrada pela tela do cartão
     Quando Mariana abre o cartão
@@ -66,6 +68,7 @@ Funcionalidade: Assinatura no cartão
     E Lucas escolhe "Assinatura (todo mês)" e preenche "Netflix" de "R$ 55,90" no dia 10 com a categoria "Moradia"
     Então a porta com assinatura não tem rolagem horizontal e não há erros no console
 
+  @integration
   Cenário: Porta única da assinatura, segundo membro não cadastra em nome de Lucas
     Dado a assinatura "Netflix" de "R$ 55,90" no dia 10 cadastrada pela tela do cartão
     Quando Mariana abre a porta de lançar escolhendo o cartão "Nubank Mariana"

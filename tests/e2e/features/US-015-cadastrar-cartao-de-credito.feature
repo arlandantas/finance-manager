@@ -22,6 +22,7 @@ Funcionalidade: Cadastro de cartão de crédito
     Quando Mariana cadastra o cartão "Inter" com fechamento dia 28 e vencimento dia 28
     Então a lista mostra "Fecha dia 28 · vence dia 28 do mês seguinte"
 
+  @integration
   Cenário: Cartão não altera o saldo da família
     Dado as contas "Itaú Mariana" com "R$ 6.500,00" e "Nubank Conjunta" com "R$ 849,50"
     Quando Mariana cadastra o cartão "Nubank Mariana" com limite "R$ 5.000,00"
@@ -80,6 +81,7 @@ Funcionalidade: Cadastro de cartão de crédito
     Quando Mariana abre "Cartões"
     Então vê "Cadastre seu primeiro cartão" com o botão "Novo cartão"
 
+  @integration
   Cenário: Isolamento entre famílias
     Dado a "Família Souza" com o cartão "Visa Souza"
     Quando Mariana abre "Cartões"

@@ -21,6 +21,7 @@ Funcionalidade: Auditoria do assistente
     Quando Lucas abre "Assistente de IA" e "Atividade"
     Então vê o registro de atividade "Lançou Farmácia R$ 80,00" com o link "Ver no Extrato"
 
+  @integration
   Cenário: Um lançamento gera um único registro
     Quando Lucas abre "Assistente de IA" e "Atividade"
     Então vê um único registro do lançamento "Farmácia"

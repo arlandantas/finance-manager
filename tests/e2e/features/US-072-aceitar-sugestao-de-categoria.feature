@@ -40,6 +40,7 @@ Funcionalidade: Aceitar sugestões de categoria
     E toca em "Desfazer" no aviso de categoria
     Então o lançamento de "Droga Raia" volta à categoria "Lazer e restaurantes"
 
+  @integration
   Cenário: Fatura paga não impede mudar categoria
     Dado que a compra "Droga Raia" está em uma fatura paga
     Quando Lucas abre as "Sugestões de categoria"

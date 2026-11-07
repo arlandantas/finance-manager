@@ -14,6 +14,7 @@ Funcionalidade: Repetir todo mês na mesma porta
     Então a série "Internet" aparece em "Previstas"
     E as próximas ocorrências de "Internet" aparecem em "A pagar"
 
+  @integration
   Cenário: Série exige conta de pagamento
     Dado que Mariana abre a porta de lançar
     E Mariana seleciona "Vai acontecer"

@@ -26,6 +26,7 @@ Funcionalidade: Excluir minha conta
     E o nome do Lucas no banco é "Conta excluída" e o e-mail original não existe mais
     E Lucas está desconectado
 
+  @integration
   Cenário: Histórico da família é preservado
     Quando Lucas abre a página de exclusão da conta
     E Lucas digita o próprio e-mail e toca em "Excluir minha conta"
@@ -33,6 +34,7 @@ Funcionalidade: Excluir minha conta
     Quando Mariana abre o Extrato e a despesa
     Então a despesa mostra "Pago por ex-membro (conta excluída)"
 
+  @integration
   Cenário: Todas as sessões são encerradas
     Dado que Lucas também está conectado em outro aparelho
     Quando Lucas abre a página de exclusão da conta

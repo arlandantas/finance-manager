@@ -24,6 +24,7 @@ Funcionalidade: Editar família e papéis
     Quando Mariana altera o papel de "Lucas" para "Membro"
     Então "Lucas" aparece como "Membro"
 
+  @integration
   Cenário: Último Administrador não pode ser rebaixado
     Quando Mariana altera o papel de "Mariana" para "Membro"
     Então vê o erro de família "A família precisa de pelo menos um Administrador. Promova outro membro antes."

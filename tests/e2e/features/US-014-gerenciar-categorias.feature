@@ -16,6 +16,7 @@ Funcionalidade: Gerenciar categorias
     Quando Lucas lança "R$ 120,00" na categoria "Pet"
     Então a despesa é registrada na categoria "Pet"
 
+  @integration
   Cenário: Mesmo nome em tipos diferentes
     Dado a categoria de despesa "Presentes"
     Quando Lucas cria a categoria de receita "Presentes"
@@ -27,6 +28,7 @@ Funcionalidade: Gerenciar categorias
     Então vê "Já existe uma categoria com este nome"
     E nada é criado
 
+  @integration
   Cenário: Nome igual ao de uma categoria arquivada
     Dado a categoria de despesa "Pet" arquivada
     Quando Lucas tenta criar a categoria de despesa "Pet"
@@ -58,12 +60,14 @@ Funcionalidade: Gerenciar categorias
     Quando Lucas reativa a categoria
     Então ela volta à grade do drawer de nova despesa
 
+  @integration
   Cenário: Não arquivar a última categoria ativa do tipo
     Dado que só resta a categoria de receita "Salário" ativa
     Quando Lucas tenta arquivá-la
     Então vê "Mantenha ao menos uma categoria de receita ativa"
     E a categoria continua ativa
 
+  @integration
   Cenário: Limite de categorias por tipo
     Dado que a família tem 40 categorias de despesa
     Quando Lucas tenta criar mais uma
@@ -86,6 +90,7 @@ Funcionalidade: Gerenciar categorias
     Então vê "Sem conexão. Seus dados continuam na tela, tente de novo."
     E o formulário preserva o que foi digitado
 
+  @integration
   Cenário: Isolamento entre famílias
     Dado a "Família Souza" com a categoria "Pet"
     Quando Lucas abre "Categorias"

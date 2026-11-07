@@ -16,23 +16,27 @@ Funcionalidade: Limites de lançamento do assistente
     E vê o limite "10 lançamentos por dia"
     E vê o limite "5 lançamentos por hora"
 
+  @integration
   Cenário: Valor acima do limite é bloqueado
     Quando o assistente de Lucas lança "Eletrônicos" de "R$ 600,00"
     Então o assistente recebe a resposta "Valor acima do seu limite por lançamento pelo assistente (R$ 500,00)"
     E nenhum lançamento é criado pelo assistente
 
+  @integration
   Cenário: Limite diário bloqueia o 11º lançamento
     Dado que o assistente de Lucas já fez 10 lançamentos hoje
     Quando o assistente de Lucas lança "Padaria" de "R$ 10,00"
     Então o assistente recebe a resposta "Limite diário de lançamentos pelo assistente atingido"
     E continuam existindo 10 lançamentos do assistente
 
+  @integration
   Cenário: Limite por hora bloqueia o 6º lançamento
     Dado que o assistente de Lucas já fez 5 lançamentos na última hora
     Quando o assistente de Lucas lança "Padaria" de "R$ 10,00"
     Então o assistente recebe a resposta "Limite de lançamentos por hora pelo assistente atingido"
     E continuam existindo 5 lançamentos do assistente
 
+  @integration
   Cenário: Excluir não devolve a cota
     Dado que o assistente de Lucas já fez 10 lançamentos hoje
     E Lucas excluiu um deles
@@ -69,6 +73,7 @@ Funcionalidade: Limites de lançamento do assistente
     Quando Lucas abre "Assistente de IA" e "Atividade"
     Então vê o registro de atividade "Você alterou o limite por lançamento: R$ 500,00 para sem limite"
 
+  @integration
   Cenário: Cada membro tem os seus limites
     Dado que Lucas salvou o limite por lançamento como "Sem limite" (era "R$ 500,00")
     Quando Mariana abre "Assistente de IA" e "Limites de lançamento"

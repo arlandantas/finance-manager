@@ -20,22 +20,26 @@ Funcionalidade: Descartar sugestão de gasto evitável
     E toca em "Desfazer" no aviso de descarte
     Então o gasto evitável "Streaming X" volta à lista
 
+  @integration
   Cenário: Próxima análise respeita o descarte
     Dado que Lucas descartou "Streaming X"
     Quando Lucas envia a análise de "set/2026"
     Então "Streaming X" não aparece como possível gasto evitável
 
+  @integration
   Cenário: Descarte vale para toda a família
     Dado que Lucas descartou "Streaming X"
     Quando Mariana abre a análise feita
     Então "Streaming X" aparece em "Sugestões descartadas" das descartadas
 
+  @integration
   Cenário: Voltar a sugerir
     Dado que Lucas descartou "Streaming X"
     Quando Mariana abre a análise feita e toca em "Voltar a sugerir" em "Streaming X"
     Então o gasto evitável "Streaming X" volta à lista
     E a análise seguinte pode apontar "Streaming X" de novo
 
+  @integration
   Cenário: Descartar não altera lançamentos
     Quando Lucas abre a análise feita e toca em "Importante para nós" em "Streaming X"
     Então os lançamentos de "Streaming X" continuam no Extrato sem alteração

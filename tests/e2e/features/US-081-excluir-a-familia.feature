@@ -30,6 +30,7 @@ Funcionalidade: Excluir a família
     E nada da "Família Silva" existe mais no banco
     E a conta de Mariana continua ativa
 
+  @integration
   Cenário: Outra família não é afetada
     Dado a "Família Souza" com lançamentos e contas
     E Mariana está autenticada para excluir a família
@@ -39,6 +40,7 @@ Funcionalidade: Excluir a família
     Então vê o aviso "Família excluída" e a tela de criar família
     E os dados da "Família Souza" permanecem iguais
 
+  @integration
   Cenário: Duplo clique exclui uma única vez
     Dado Mariana está autenticada para excluir a família
     Quando Mariana abre Família e toca em "Excluir família"

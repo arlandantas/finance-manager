@@ -43,12 +43,14 @@ Funcionalidade: Lançar ou prever na mesma porta
     Quando Mariana alterna entre "Já aconteceu" e "Vai acontecer"
     Então descrição e valor continuam preenchidos
 
+  @integration
   Cenário: Data futura só em Vai acontecer
     Dado que Mariana abre a porta de lançar
     E Mariana informa o vencimento 20/10/2026 em "Vai acontecer"
     Quando Mariana seleciona "Já aconteceu"
     Então a porta mostra "A data não pode ser futura"
 
+  @integration
   Cenário: Receita só aparece em Vai acontecer quando a receita prevista existir
     Dado que Mariana abre a porta de lançar
     Quando Mariana seleciona "Receita"

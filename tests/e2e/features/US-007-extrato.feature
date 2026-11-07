@@ -43,6 +43,7 @@ Funcionalidade: Extrato de lançamentos
     Quando registro uma despesa pelo botão "+"
     Então ela aparece no topo da lista sem recarregar a página
 
+  @integration
   Cenário: Isolamento entre famílias
     Quando um usuário de outra família abre o extrato
     Então não vê nenhum lançamento da "Família Silva"

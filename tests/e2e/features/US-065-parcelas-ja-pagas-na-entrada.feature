@@ -29,16 +29,19 @@ Funcionalidade: Parcelamento com parcelas já pagas (US-065)
     Então a fatura de nov/2026 mostra "Sofá 5/10 R$ 250,00"
     E a fatura de abr/2027 mostra "Sofá 10/10 R$ 250,00"
 
+  @integration
   Cenário: Nada é criado em meses passados
     Dado que Lucas lançou "Sofá" de "R$ 2.500,00" em "10x" com "4" parcelas já pagas
     Quando Lucas abre o Extrato de out/2026
     Então não vê nenhuma linha "Sofá"
 
+  @integration
   Cenário: Saldos das contas não mudam
     Dado que a conta "Itaú Lucas" tem saldo de "R$ 1.000,00"
     Quando Lucas lança "Sofá" de "R$ 2.500,00" em "10x" com "4" parcelas já pagas
     Então o saldo da conta "Itaú Lucas" continua "R$ 1.000,00"
 
+  @integration
   Cenário: Limite consumido só pelo saldo restante
     Dado que o limite disponível do cartão "Nubank Lucas" é "R$ 5.000,00"
     Quando Lucas lança "Sofá" de "R$ 2.500,00" em "10x" com "4" parcelas já pagas
@@ -56,6 +59,7 @@ Funcionalidade: Parcelamento com parcelas já pagas (US-065)
     Então vê "Parcelas 1 a 4: anteriores ao app (já pagas)"
     E vê as parcelas "5/10" a "10/10" com suas faturas
 
+  @integration
   Cenário: Excluir a compra remove só as restantes
     Dado que Lucas lançou "Sofá" de "R$ 2.500,00" em "10x" com "4" parcelas já pagas
     Quando Lucas escolhe "Excluir compra parcelada" e confirma

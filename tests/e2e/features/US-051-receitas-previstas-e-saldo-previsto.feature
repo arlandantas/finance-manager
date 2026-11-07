@@ -28,6 +28,7 @@ Funcionalidade: Receitas previstas e saldo previsto
     Quando Lucas abre a aba "A receber" de novembro
     Então a receita "Freelance" mostra o selo "Atrasada"
 
+  @integration
   Cenário: O tipo da previsão não troca
     Dado a receita prevista "Freelance" de "R$ 1.200,00" com data esperada 20/11/2026 e responsável "Lucas"
     Quando Lucas abre a edição da receita prevista "Freelance"

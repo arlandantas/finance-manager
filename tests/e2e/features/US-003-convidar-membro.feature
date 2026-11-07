@@ -70,11 +70,13 @@ Funcionalidade: Convite de membros
     Então vejo "Informe um e-mail válido"
     E nenhum convite é criado
 
+  @integration
   Cenário: E-mail que já é membro
     Dado que "lucas@exemplo.com" já é membro da família
     Quando tento convidá-lo novamente
     Então vejo "Esta pessoa já faz parte da família"
 
+  @integration
   Cenário: Convite duplicado pendente
     Dado que já existe convite pendente para "lucas@exemplo.com"
     Quando tento convidá-lo novamente

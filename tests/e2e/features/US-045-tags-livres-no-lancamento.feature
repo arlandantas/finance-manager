@@ -18,12 +18,14 @@ Funcionalidade: Tags livres no lançamento (US-045)
     Quando Mariana digita "via" no campo de tag
     Então vê a sugestão de tag "viagem-nordeste"
 
+  @integration
   Cenário: Mesma tag com outra caixa reaproveita a existente
     Dado a tag "Viagem" já existente na família
     Quando Mariana lança "Hotel" de "R$ 800,00" em "Lazer e restaurantes" com a tag "viagem"
     Então o lançamento "Hotel" fica com a tag "Viagem"
     E não existe uma segunda tag "viagem"
 
+  @integration
   Cenário: Acentos não criam tag duplicada
     Dado a tag "Café" já existente na família
     Quando Mariana lança "Padaria" de "R$ 20,00" em "Supermercado" com a tag "cafe"
@@ -46,14 +48,17 @@ Funcionalidade: Tags livres no lançamento (US-045)
     Quando Mariana digita a tag "viagem*" e confirma
     Então vê o erro de tag "A tag só pode ter letras, números, hífen, ponto e sublinhado"
 
+  @integration
   Cenário: Transferência não tem tags
     Quando Mariana abre o formulário "Transferir entre contas"
     Então não vê o campo de tags
 
+  @integration
   Cenário: Receita aceita tags
     Quando Mariana troca para "Nova receita"
     Então vê a ação "+ Tag" no formulário
 
+  @integration
   Cenário: Compra parcelada aplica a tag a todas as parcelas
     Dado o cartão "Nubank Lucas" cadastrado para tags
     Quando Mariana lança "Notebook" de "R$ 2.500,00" parcelado em "10x" com a tag "escritorio"
@@ -64,6 +69,7 @@ Funcionalidade: Tags livres no lançamento (US-045)
     Quando Mariana troca a tag de "Hotel" para "ferias" e salva
     Então o Extrato mostra "Hotel" com a tag "ferias"
 
+  @integration
   Cenário: Editar tag de uma compra parcelada vale para todas as parcelas
     Dado o cartão "Nubank Lucas" cadastrado para tags
     E a compra "Notebook" de "R$ 2.500,00" em "10x" sem tags
