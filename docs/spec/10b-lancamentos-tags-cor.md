@@ -34,15 +34,16 @@ Atualizado: 2026-10-31. Complementa a spec 10a (Lançamentos, contas, extrato).
 3. Toda conta/cartão tem `color` válida; a cor nunca é o único identificador (sempre ao lado do nome).
 
 ## Análise sintética (US-048)
-- `GET /api/v1/analysis` (família): período (`period` ou `from/to` até 24 meses; padrão = mês atual), `type` EXPENSE|INCOME, filtros plurais. Totais por `ledgerTotals` e linhas por `buildLedgerWhere` (mesmo predicado do Extrato/Resumo); `groupBy` ≠ category = 400 até a US-049.
+- `GET /api/v1/analysis` (família): período (`period` ou `from/to` até 24 meses; padrão = mês atual), `type` EXPENSE|INCOME, filtros plurais. Totais por `ledgerTotals` e linhas por `buildLedgerWhere` (mesmo predicado do Extrato/Resumo).
+- Quebras (US-049) `groupBy`: `category` | `member` (por `payerMemberId`, ex-membros incluídos) | `account` (`COALESCE(accountId, cardId)`, `kind` ACCOUNT/CARD) | `tag` (único `JOIN`; `COUNT(DISTINCT id)`; `permille = null`; linha `NO_TAG` "Sem tag" quando não há `tagIds`; com várias tags `tagOverlapNotice = true` e `totals` nunca duplica). `drillUrl` da linha troca o filtro da própria dimensão (`payerIds`/`sourceIds`/`tagIds`/`untagged`); o Extrato lê `categoryIds/payerIds/sourceIds` da URL. Tela: abas "Agrupar por", painel de filtros, "Limpar filtros", tudo na URL; vazio com filtro = "Nada lançado com esses filtros". Reconciliação (200 conjuntos): totais = Extrato; linha = Extrato via `drillUrl`; Σ linhas = total do lado (exceto tag). Benchmark 50 mil lançamentos: p95 ≈ 80 ms (tag), ≈ 57 ms (demais).
 - Linhas por categoria (inclui arquivadas), valor desc e rótulo asc; `permille = apportion(1000, valores)` (soma exata); `drillUrl` = `/extrato?...` com o mesmo período/tipo/filtros. Tela `/analise`; cache `["analysis", params]` invalidado após mutação de lançamento.
 
 ## Riscos aceitos
 - Criar lançamento concorrente com a tag de origem de uma mesclagem pode perder essa tag no novo lançamento (nunca deixa ligação órfã).
 
 ## Fontes
-Código: `analise/{schemas,service,rows,drill,hooks}.ts`, `api/v1/analysis`, `(app)/analise`, `tags/{normalize,schemas,service,hooks}.ts`, `api/v1/tags`, `tags/manage.ts`, `(app)/tags`, `components/tag-input.tsx`, `transacoes/{mutations,extrato}.ts`, `extrato/{filters,tag-filter}`, `contas/{colors,use-suggested-color}.ts`, `lib/contrast.ts`, `components/{source-badge,color-picker,source-select}.tsx`, `privacidade/{export,delete-family}.ts`.
-Testes: int `us-045-tags`, `us-046-gerenciar-tags`, `us-047-filtro-tags`, `us-050-cores` (com backfill); unit `tags/normalize`, `contas/colors`, `ui/{colors-contrast,color-picker}`; int `us-048-analise-sintetica`; E2E `US-048`, `US-045`, `US-046`, `US-047`, `US-050`.
+Código: `analise/{schemas,service,rows,rows-groups,drill,url,hooks}.ts`, `api/v1/analysis`, `(app)/analise`, `tags/{normalize,schemas,service,hooks}.ts`, `api/v1/tags`, `tags/manage.ts`, `(app)/tags`, `components/tag-input.tsx`, `transacoes/{mutations,extrato}.ts`, `extrato/{filters,tag-filter}`, `contas/{colors,use-suggested-color}.ts`, `lib/contrast.ts`, `components/{source-badge,color-picker,source-select}.tsx`, `privacidade/{export,delete-family}.ts`.
+Testes: int `us-045-tags`, `us-046-gerenciar-tags`, `us-047-filtro-tags`, `us-050-cores` (com backfill); unit `tags/normalize`, `contas/colors`, `ui/{colors-contrast,color-picker}`; int `us-048-analise-sintetica`, `us-049-analise-quebras`; E2E `US-048`, `US-049`, `US-045`, `US-046`, `US-047`, `US-050`.
 
 ## Pendências
 - Análise: US-048 feita (só quebra por categoria); US-049 (membro/conta/tag, filtros combináveis) não iniciada; US-045/046/047/050 aguardam validação do Gestor.

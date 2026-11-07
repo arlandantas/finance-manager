@@ -124,8 +124,8 @@ describe("US-048 análise sintética", () => {
     expect(inc.body.totals.expenseInCents).toBe(120000);
   });
 
-  it("quebra por outra dimensão ainda não existe (US-049)", async () => {
-    expect((await analysis("groupBy=tag")).status).toBe(400);
+  it("parâmetro desconhecido e groupBy inválido são 400", async () => {
+    expect((await analysis("groupBy=foo")).status).toBe(400);
     expect((await analysis("foo=1")).status).toBe(400);
   });
 

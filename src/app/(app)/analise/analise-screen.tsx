@@ -9,7 +9,14 @@ import { cn } from "@/components/ui/cn";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError } from "@/lib/http";
 import { useAnalysis } from "@/modules/analise/hooks";
+import {
+  type AnaliseFilters,
+  hasFilters,
+  parseAnaliseUrl,
+  toAnaliseSearch,
+} from "@/modules/analise/url";
 import { intervalLabel, monthLabel, shiftMonthKey } from "../extrato/filters";
+import { AnaliseFiltersPanel, GroupTabs } from "./analise-filters";
 import { AnaliseRows } from "./analise-rows";
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
@@ -18,22 +25,25 @@ export function AnaliseScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
-  const from = sp.get("from");
-  const to = sp.get("to");
-  const range = from && to && ISO.test(from) && ISO.test(to) ? { from, to } : null;
-  const periodParam = sp.get("period");
-  const period =
-    !range && periodParam && /^\d{4}-(0[1-9]|1[0-2])$/.test(periodParam) ? periodParam : undefined;
-  const type = sp.get("type") === "INCOME" ? "INCOME" : "EXPENSE";
-  const q = useAnalysis({ ...(range ?? {}), ...(period ? { period } : {}), type });
+  const url = parseAnaliseUrl(sp);
+  const { type, groupBy } = url;
+  const range = url.from && url.to ? { from: url.from, to: url.to } : null;
+  const period = url.period;
+  const q = useAnalysis(url);
   const [custom, setCustom] = useState(Boolean(range));
   const [draft, setDraft] = useState({ from: range?.from ?? "", to: range?.to ?? "" });
 
-  const go = (next: Record<string, string | undefined>) => {
-    const p = new URLSearchParams();
-    for (const [k, v] of Object.entries({ type, ...next })) if (v) p.set(k, v);
-    router.replace(`${pathname}?${p}`);
+  /** `time` troca o período; `patch` altera tipo, agrupamento e filtros (o resto da URL é mantido). */
+  const go = (
+    time: { period?: string; from?: string; to?: string },
+    patch: Partial<typeof url> = {},
+  ) => {
+    const { period: _p, from: _f, to: _t, ...rest } = { ...url, ...patch };
+    router.replace(`${pathname}?${toAnaliseSearch({ ...rest, ...time })}`);
   };
+  const timeNow = { ...(range ?? {}), ...(period ? { period } : {}) };
+  const setFilters = (patch: Partial<AnaliseFilters>) => go(timeNow, patch);
+  const filtered = hasFilters(url);
   const key = q.data?.period.key;
   const monthKey = range ? null : (period ?? (key && !key.includes("..") ? key : null));
   const d = q.data;
@@ -135,6 +145,9 @@ export function AnaliseScreen() {
         {total("Resultado", d?.totals.resultInCents, "analysis-result")}
       </section>
 
+      <GroupTabs value={groupBy} onChange={(g) => go(timeNow, { groupBy: g })} />
+      <AnaliseFiltersPanel filters={url} onChange={setFilters} />
+
       <div role="tablist" aria-label="Tipo" className="flex gap-2">
         {(["EXPENSE", "INCOME"] as const).map((t) => (
           <button
@@ -142,7 +155,7 @@ export function AnaliseScreen() {
             type="button"
             role="tab"
             aria-selected={type === t}
-            onClick={() => go({ ...(range ?? {}), ...(period ? { period } : {}), type: t })}
+            onClick={() => go(timeNow, { type: t })}
             className={cn(
               "min-h-11 flex-1 rounded-lg border px-3 text-sm font-medium",
               type === t
@@ -177,10 +190,16 @@ export function AnaliseScreen() {
 
       {d && d.rows.length === 0 ? (
         <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 dark:bg-slate-100">
-          {d.isEmpty ? "Nada lançado neste período" : "Nada deste tipo neste período"}
+          {filtered
+            ? "Nada lançado com esses filtros"
+            : d.isEmpty
+              ? "Nada lançado neste período"
+              : "Nada deste tipo neste período"}
         </p>
       ) : null}
-      {d && d.rows.length > 0 ? <AnaliseRows rows={d.rows} type={d.type} /> : null}
+      {d && d.rows.length > 0 ? (
+        <AnaliseRows rows={d.rows} type={d.type} groupBy={d.groupBy} overlap={d.tagOverlapNotice} />
+      ) : null}
     </main>
   );
 }

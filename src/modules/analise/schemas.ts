@@ -8,7 +8,7 @@ import {
   UNTAGGED_WITH_TAGS_MSG,
 } from "@/modules/transacoes/schemas";
 
-/** US-048 (ADR-022): consulta da visão sintética. As quebras além de categoria chegam na US-049. */
+/** US-048 (ADR-022): consulta da visão sintética. US-049: quebras por membro, conta/cartão e tag. */
 export const AnalysisQuerySchema = z
   .object({
     period: periodKeySchema.optional(), // padrão: período corrente
@@ -39,7 +39,7 @@ export type AnalysisGroupBy = AnalysisQuery["groupBy"];
 
 export type AnalysisRowDTO = {
   key: string;
-  kind: "category" | "member" | "account" | "tag";
+  kind: "CATEGORY" | "MEMBER" | "ACCOUNT" | "CARD" | "TAG" | "NO_TAG";
   label: string;
   archived: boolean;
   amountInCents: number;
@@ -55,6 +55,6 @@ export type AnalysisDTO = {
   type: "EXPENSE" | "INCOME";
   rows: AnalysisRowDTO[];
   rowsTotalInCents: number;
-  tagOverlapNotice: string | null;
+  tagOverlapNotice: boolean; // quebra por tag: linhas somam mais que o total do lado
   isEmpty: boolean;
 };

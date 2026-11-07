@@ -1,10 +1,10 @@
-import { badRequest } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { apportion } from "@/lib/apportion";
 import { todayInFamilyTz } from "@/lib/dates";
 import { periodFromKey, periodOf } from "@/lib/period";
 import { buildDrillUrl } from "@/modules/analise/drill";
 import { categoryRows } from "@/modules/analise/rows";
+import { accountRows, type GroupRow, memberRows, tagRows } from "@/modules/analise/rows-groups";
 import type { AnalysisDTO, AnalysisQuery } from "@/modules/analise/schemas";
 import { splitRepo } from "@/modules/split/repo";
 import { ledgerTotals } from "@/modules/transacoes/extrato";
@@ -16,9 +16,6 @@ export async function getAnalysis(
   ctx: RequestContext,
   q: AnalysisQuery,
 ): Promise<AnalysisDTO> {
-  if (q.groupBy !== "category") {
-    throw badRequest("GROUP_BY_UNAVAILABLE", "Esta quebra ainda não está disponível.");
-  }
   const cutDay = await splitRepo(tx, ctx.familyId).cutDay();
   const current = periodOf(todayInFamilyTz(ctx.clock), cutDay);
   const range =
@@ -41,11 +38,27 @@ export async function getAnalysis(
     ...(q.untagged ? { untagged: true } : {}),
   };
   const totals = await ledgerTotals(tx, base);
-  const found = await categoryRows(tx, { ...base, type: q.type });
+  const side = { ...base, type: q.type };
+  const found: GroupRow[] =
+    q.groupBy === "member"
+      ? await memberRows(tx, side)
+      : q.groupBy === "account"
+        ? await accountRows(tx, side)
+        : q.groupBy === "tag"
+          ? await tagRows(tx, side)
+          : (await categoryRows(tx, side)).map((r) => ({
+              id: r.categoryId,
+              kind: "CATEGORY" as const,
+              label: r.label,
+              archived: r.archived,
+              amountInCents: r.amountInCents,
+              count: r.count,
+            }));
+  const sideTotal = q.type === "EXPENSE" ? totals.expenseInCents : totals.incomeInCents;
 
   const sum = found.reduce((s, r) => s + r.amountInCents, 0);
   const shares =
-    sum > 0
+    sum > 0 && q.groupBy !== "tag"
       ? apportion(
           1000,
           found.map((r, i) => ({ key: String(i), weight: r.amountInCents, ordinal: i })),
@@ -62,17 +75,33 @@ export async function getAnalysis(
     groupBy: q.groupBy,
     type: q.type,
     rows: found.map((r, i) => ({
-      key: r.categoryId ?? "none",
-      kind: "category" as const,
+      key: r.id ?? (r.kind === "NO_TAG" ? "no-tag" : "none"),
+      kind: r.kind,
       label: r.label,
       archived: r.archived,
       amountInCents: r.amountInCents,
       count: r.count,
       permille: shares ? (shares[String(i)] ?? 0) : null,
-      drillUrl: buildDrillUrl(q, range.key, { categoryId: r.categoryId }),
+      drillUrl: buildDrillUrl(q, range.key, drillRow(r)),
     })),
     rowsTotalInCents: sum,
-    tagOverlapNotice: null,
+    tagOverlapNotice: q.groupBy === "tag" && sum > sideTotal,
     isEmpty: totals.incomeInCents === 0 && totals.expenseInCents === 0 && found.length === 0,
   };
+}
+
+function drillRow(r: GroupRow) {
+  switch (r.kind) {
+    case "MEMBER":
+      return { payerId: r.id };
+    case "ACCOUNT":
+    case "CARD":
+      return { sourceId: r.id };
+    case "TAG":
+      return { tagId: r.id };
+    case "NO_TAG":
+      return { untagged: true };
+    default:
+      return { categoryId: r.id };
+  }
 }

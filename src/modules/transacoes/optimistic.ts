@@ -16,6 +16,9 @@ export type LedgerUiFilters = {
   cardId?: string;
   memberId?: string;
   categoryId?: string;
+  categoryIds?: string[]; // US-049: drill-down da Análise (plurais, repetidos na URL)
+  payerIds?: string[];
+  sourceIds?: string[]; // conta OU cartão
   tagIds?: string[]; // US-047: qualquer uma das tags (repetido na URL)
   untagged?: boolean; // drill-down "Sem tag" (chip)
   type?: "EXPENSE" | "INCOME" | "TRANSFER" | "INVOICE_PAYMENT";
@@ -52,6 +55,9 @@ export function admits(
     return false;
   // tags provisórias não têm id: com filtro de tag o servidor decide (a lista é recarregada)
   if (filters.tagIds && filters.tagIds.length > 0) return false;
+  if (filters.categoryIds?.length || filters.payerIds?.length || filters.sourceIds?.length) {
+    return false;
+  }
   if (filters.untagged && item.tags.length > 0) return false;
   if (filters.origin === "ASSISTANT") return false; // criado pelo app nunca é "via assistente"
   if (filters.type === "TRANSFER") return false;

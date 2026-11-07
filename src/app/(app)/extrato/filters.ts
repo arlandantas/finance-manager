@@ -42,6 +42,11 @@ export function parseFilters(
     20,
   );
   if (tagIds.length > 0) f.tagIds = tagIds;
+  // US-049: drill-down da Análise (plurais; mesmos nomes da API)
+  for (const key of ["categoryIds", "payerIds", "sourceIds"] as const) {
+    const ids = [...new Set((sp.getAll?.(key) ?? []).filter((v) => UUID.test(v)))].slice(0, 20);
+    if (ids.length > 0) f[key] = ids;
+  }
   if (sp.get("untagged") === "true") f.untagged = true;
   return f;
 }
