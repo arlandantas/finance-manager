@@ -8,6 +8,18 @@ export const MyInvitationSchema = z
     inviterName: z.string(),
     role: z.enum(["ADMIN", "MEMBER"]),
     expiresAt: z.iso.datetime(),
+    // US-094b (ADR-038 §4): só contagens, nunca valores nem nomes de terceiros
+    linked: z
+      .object({
+        label: z.string(),
+        accounts: z.number().int(),
+        cards: z.number().int(),
+        transactions: z.number().int(),
+        planned: z.number().int(),
+        wasMemberBefore: z.boolean(),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 export type MyInvitationDTO = z.infer<typeof MyInvitationSchema>;
@@ -20,6 +32,7 @@ export type MyInvitationsResponse = z.infer<typeof MyInvitationsResponseSchema>;
 export const AcceptInvitationBodySchema = z
   .object({
     token: z.string().min(20).max(200).optional(), // presente quando veio de /convite/[token]
+    name: z.string().max(200).optional(), // US-094b: só no convite vinculado (ignorado no comum)
   })
   .strict();
 

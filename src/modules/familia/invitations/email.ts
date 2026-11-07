@@ -40,3 +40,19 @@ export function invitationEmail(a: {
   ].join("\n");
   return { subject, text, html };
 }
+
+/** US-094b: aviso aos Administradores. Sem e-mail do cadastro; o nome é o escolhido, saneado. */
+export function memberLinkedEmail(a: { name: string; familyName: string }): {
+  subject: string;
+  text: string;
+  html: string;
+} {
+  const name = cleanLabel(a.name, 60);
+  const familyName = cleanLabel(a.familyName, 60);
+  const line = `${name} entrou no app e assumiu o cadastro na família ${familyName}.`;
+  return {
+    subject: `${name} entrou no app`,
+    text: `Olá!\n\n${line}`,
+    html: `<p>Olá!</p>\n<p>${escapeHtml(line)}</p>`,
+  };
+}

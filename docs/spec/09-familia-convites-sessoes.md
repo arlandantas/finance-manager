@@ -1,6 +1,6 @@
 # Spec 09 — Família, convites, membros e sessões
 
-Atualizado: 2026-11-07. Fonte de verdade: código + testes. Membro sem conta: US-092a/092b/093a/093b/094a implementadas; 094b/095 especificadas (regras 28b-28c, ADR-038), não iniciadas.
+Atualizado: 2026-11-07. Fonte de verdade: código + testes. Membro sem conta: US-092a/092b/093a/093b/094a/094b implementadas; 095 especificada (regra 28c, ADR-038), não iniciada.
 
 ## Resumo
 - Login só com Google. Admin convida por e-mail (7 dias); vínculo só no aceite explícito em `/convites`. Papéis ADMIN/MEMBER, sempre >=1 ADMIN.
@@ -46,7 +46,7 @@ Atualizado: 2026-11-07. Fonte de verdade: código + testes. Membro sem conta: US
 | 27b | Cartão de sem conta | Cartão cujo titular ATUAL é sem conta ativo: só ADMIN troca (403 `CARD_OWNER_ONLY`, avaliado antes; `CARD_OWNER_CHANGED` com o ator real) |
 | 27c | Selo na UI | `UnlinkedBadge` e `memberOptionLabel` ("Ana · sem acesso ao app") nos seletores (opção `disabled` "(só Administrador)" para MEMBER), chips, Contas, Cartões, A pagar, detalhe, Acerto e Regra; ex-membro sem conta sem selo |
 | 28 | Convite vinculado (US-094a; ADR-038) | `POST /members/{id}/invitations` `{email}` só ADMIN sob `lockFamilyAdmins`; cadastro inexistente/removido/com conta/outra família 404 uniforme; e-mail = `pendingEmail` (`INVITATION_EMAIL_MISMATCH` 422) ou grava-o; recusas (`DUPLICATE_MEMBER`, `EMAIL_BELONGS_TO_OTHER_MEMBER`, `DUPLICATE_INVITATION`) antes das cotas; papel MEMBER; mesmas cotas/validade/reenvio/e-mail (sem nome); `InvitationDTO.memberId`; `MemberDTO.pendingInvitation {id, expiresAt}` só ADMIN; lista "Convites pendentes" omite vinculados; `INVITATION_RESENT` só `{invitationId, resendCount}` (SEC-061); UI: "Convidar" no menu do sem conta, selo "Convite pendente" com reenviar/copiar/cancelar |
-| 28b | Aceite vinculado (PLANEJADA, US-094b) | Advisory `family:{id}` primeiro; `{token?, name}` (`NAME_REQUIRED` 422, `NAME_TAKEN` 409 com convite ainda PENDING); claim; `UPDATE members` com GUC `app.link_member` (0 linhas `MEMBER_NO_LONGER_AVAILABLE`); `MEMBER_LINKED` sem PII; e-mail aos ADMIN após o commit; nada financeiro escrito. Prévia com contagens só ao e-mail verificado |
+| 28b | Aceite vinculado (US-094b) | `accept` `{token?, name?}` `.strict()`; convite com `memberId`: advisory `family:{id}` antes das checagens; `name` obrigatório (422 `NAME_REQUIRED`; `NAME_INVALID`, `NAME_RESERVED`, 409 `NAME_TAKEN` com convite ainda PENDING); claim; `UPDATE members` sob GUC `app.link_member` (0 linhas 409 `MEMBER_NO_LONGER_AVAILABLE`); `MEMBER_LINKED {invitationId, nameChanged}` sem PII; e-mail aos ADMIN com conta após o commit (falha não desfaz); nada financeiro escrito. `GET /me/invitations` traz `linked {label, accounts, cards, transactions, planned, wasMemberBefore}` (só contagens) ao e-mail verificado; UI `/convites` pede "Seu nome na família" (pré-preenchido com o nome Google) e "Assumir meu cadastro"; link `/convite/[token]` redireciona a `/convites` em `NAME_REQUIRED` |
 | 28c | Editar sem conta (PLANEJADA, US-095) | `PATCH /members/{id}/profile` `{name?, email?: string\|null}` só ADMIN; com conta 409 `MEMBER_IS_LINKED`; com convite vinculado pendente 409 `MEMBER_HAS_PENDING_INVITATION`; trocar/remover e-mail anonimiza convites encerrados; `MEMBER_UPDATED` só flags |
 
 ## Invariantes
@@ -63,12 +63,12 @@ Atualizado: 2026-11-07. Fonte de verdade: código + testes. Membro sem conta: US
 - Editar/remover o e-mail do cadastro é 095 (convite vinculado pendente bloqueia).
 
 ## Fontes
-Código: `src/modules/familia/{service,manage,removal,repo,schemas,hooks,settings,members,display-name}.ts`, `familia/invitations/{linked,...}`, `src/lib/auth/*`, `src/proxy.ts`, `modules/cron/retention.ts`; rotas `src/app/api/v1/{families,family,members,invitations,me/invitations,me/sessions/revoke-others}`; telas `src/app/{convites,(app)/familia,(public)/convite/[token]}`; `components/ui/unlinked-badge.tsx`, `privacidade/delete-*`.
-Testes: int `us-094a-convite-vinculado`, `us-093a-*`, `us-092b-cadastrar-membro`, `us-092a-*`, `sec036-travas`, `us-00{1,2,3}-*`, `u6-*`, `us-039-*`, `sec040-*`, `us-034-*`, `us-035-*`, `sec018-sessao`, `sec017d-*`; unit `familia/{display-name,create-unlinked-member-schema}`, `meta/member-reads`, `auth/auth-pure`; E2E `US-092-*`, `US-093-*`, `US-094a-*` (.feature).
+Código: `src/modules/familia/{service,manage,removal,repo,schemas,hooks,settings,members,display-name}.ts`, `familia/invitations/{linked,accept-linked,...}`, `src/lib/auth/*`, `src/proxy.ts`, `modules/cron/retention.ts`; rotas `src/app/api/v1/{families,family,members,invitations,me/invitations,me/sessions/revoke-others}`; telas `src/app/{convites,(app)/familia,(public)/convite/[token]}`; `components/ui/unlinked-badge.tsx`, `privacidade/delete-*`.
+Testes: int `us-094a-convite-vinculado`, `us-094b-{aceite-vinculado,propriedade-historico}`, `us-093a-*`, `us-092b-cadastrar-membro`, `us-092a-*`, `sec036-travas`, `us-00{1,2,3}-*`, `u6-*`, `us-039-*`, `sec040-*`, `us-034-*`, `us-035-*`, `sec018-sessao`, `sec017d-*`; unit `familia/{display-name,create-unlinked-member-schema}`, `meta/member-reads`, `auth/auth-pure`; E2E `US-092-*`, `US-093-*`, `US-094a-*`, `US-094b-*` (.feature).
 Migrações: `20261030020000`, `20261030020100`, `20261031000000`.
 
 ## Pendências
-- 094b (aceite, nome escolhido, SEC-062/063/064), 095 (editar nome/e-mail; remoção do sem conta já entregue). Contrato nas regras 28-28c e no ADR-038.
+- 095 (editar nome/e-mail; remoção do sem conta já entregue). Contrato nas regras 28-28c e no ADR-038. SEC-062: sem "Desvincular conta"; SEC-060: só aviso; SEC-037: confirmação digitada + e-mail mantidos.
 - Usuário: SEC-060 "Entra na divisão?" (hipótese: só aviso); SEC-062 "Desvincular conta" (hipótese: não); `ALLOWED_SIGNUP_EMAILS`; SEC-037. LGPD: titular sem conta exerce direitos via Admin; citar em `/privacidade`.
 - Fase 2 da SEC-018 (`prisma/pending/20261027000000_*`); schema ainda mantém `sessionToken`.
 - Não verificado: UI do aviso da remoção; migração `20261031000000` fora de produção.

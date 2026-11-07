@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiFetch } from "@/lib/http";
 import type { MyInvitationsResponse } from "@/modules/familia/invitations/schemas";
+import { LinkedInvitationCard } from "./linked-invitation-card";
 
 /** SEC-004 (SDD-028 §1.4): "Você foi convidado" — lista todos os convites válidos, sem escolher nenhum. */
 export function InvitationsScreen() {
@@ -51,13 +52,21 @@ export function InvitationsScreen() {
       ) : null}
       {items.length > 0 ? (
         <ul className="flex flex-col gap-3">
-          {items.map((inv) => (
-            <InvitationCard
-              key={inv.id}
-              invitation={inv}
-              onGone={(id) => setGone((g) => [...g, id])}
-            />
-          ))}
+          {items.map((inv) =>
+            inv.linked ? (
+              <LinkedInvitationCard
+                key={inv.id}
+                invitation={{ ...inv, linked: inv.linked }}
+                onGone={(id) => setGone((g) => [...g, id])}
+              />
+            ) : (
+              <InvitationCard
+                key={inv.id}
+                invitation={inv}
+                onGone={(id) => setGone((g) => [...g, id])}
+              />
+            ),
+          )}
         </ul>
       ) : null}
       <Link

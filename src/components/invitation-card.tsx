@@ -59,7 +59,9 @@ export function InvitationCard({
     },
     onError: (e) => {
       if (e instanceof NetworkError) setBanner(e.message);
-      else if (e instanceof ApiClientError && e.code === "ALREADY_IN_FAMILY") {
+      else if (e instanceof ApiClientError && e.code === "NAME_REQUIRED") {
+        router.replace("/convites"); // convite vinculado ao cadastro: o nome é pedido lá (US-094b)
+      } else if (e instanceof ApiClientError && e.code === "ALREADY_IN_FAMILY") {
         setBanner(
           "Você já faz parte de uma família. Para entrar em outra, saia da atual em Família.",
         );

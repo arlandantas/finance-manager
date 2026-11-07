@@ -2,8 +2,8 @@ import { ApiError, notFound } from "@/lib/api/errors";
 import { hitInvitationDecisionRate } from "@/lib/api/rate-limit";
 import { withApi } from "@/lib/api/with-api";
 import { uuidSchema } from "@/lib/schemas";
+import { acceptMyInvitation } from "@/modules/familia/invitations/accept-linked";
 import { AcceptInvitationBodySchema } from "@/modules/familia/invitations/schemas";
-import { acceptInvitation } from "@/modules/familia/invitations/service";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +24,7 @@ export const POST = withApi(
   async ({ ctx, tx, body, params }) => {
     const id = uuidSchema.safeParse(params.id);
     if (!id.success) throw notFound("Convite não encontrado.");
-    return { status: 200, body: await acceptInvitation(tx, ctx, id.data, body) };
+    const { body: out, afterCommit } = await acceptMyInvitation(tx, ctx, id.data, body);
+    return { status: 200, body: out, ...(afterCommit ? { afterCommit } : {}) };
   },
 );

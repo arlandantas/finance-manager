@@ -381,10 +381,10 @@ export async function listMyInvitations(
   return { invitations: out };
 }
 
-type MyInvitationRow = NonNullable<Awaited<ReturnType<typeof loginInvitations.findOwn>>>;
+export type MyInvitationRow = NonNullable<Awaited<ReturnType<typeof loginInvitations.findOwn>>>;
 
 /** Convite do e-mail da sessão; de outro e-mail ou inexistente => 404 uniforme. */
-async function ownInvitation(
+export async function ownInvitation(
   tx: Tx,
   ctx: Pick<UserContext, "email">,
   id: string,
@@ -394,7 +394,7 @@ async function ownInvitation(
   return inv;
 }
 
-function assertStillPending(inv: MyInvitationRow, now: Date) {
+export function assertStillPending(inv: MyInvitationRow, now: Date) {
   if (inv.status !== "PENDING") {
     throw conflict("INVITATION_NOT_PENDING", "Este convite não está mais disponível");
   }
@@ -403,7 +403,7 @@ function assertStillPending(inv: MyInvitationRow, now: Date) {
   }
 }
 
-const ALREADY_IN_FAMILY = "Você já faz parte de uma família.";
+export const ALREADY_IN_FAMILY = "Você já faz parte de uma família.";
 
 /** POST /me/invitations/{id}/accept. Sem sobrescrita: quem já tem família recebe 409 e o convite segue pendente. */
 export async function acceptInvitation(

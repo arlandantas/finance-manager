@@ -44,6 +44,7 @@ describe("leituras de membro (SEC-058, D-033-2)", () => {
     const allowed = [
       "src/modules/familia/display-name.ts",
       "src/lib/auth/",
+      "src/app/convites/linked-invitation-card.tsx", // US-094b: pré-preenche o campo com o nome Google do USUÁRIO da sessão (nunca o rótulo do cadastro)
       "src/app/perfil/",
       "src/app/onboarding/",
       "src/app/(app)/layout.tsx",
@@ -86,7 +87,8 @@ describe("leituras de membro (SEC-058, D-033-2)", () => {
   it("(c) nenhum member.update* com `userId` em data fora do aceite de convite (094b)", () => {
     const bad: string[] = [];
     for (const f of files) {
-      if (f.p === "src/modules/familia/invitations/service.ts") continue;
+      // o aceite comum (service.ts) e o vinculado (accept-linked.ts, GUC `app.link_member`) são os únicos autorizados
+      if (/^src\/modules\/familia\/invitations\/(service|accept-linked)\.ts$/.test(f.p)) continue;
       const re =
         /member\.(update|updateMany|upsert)\(\s*\{[\s\S]{0,400}?data:\s*\{[^}]*\buserId\s*:/g;
       if (re.test(f.text)) bad.push(f.p);
