@@ -18,3 +18,4 @@ Regra vigente por área (≤120 linhas cada). Código e testes vencem em caso de
 | [10b-lancamentos-tags-cor.md](10b-lancamentos-tags-cor.md) | Spec 10b — Tags e cor de conta/cartão |
 | [10-lancamentos-contas-extrato.md](10-lancamentos-contas-extrato.md) | Spec 10a — Lançamentos, contas, extrato e base |
 | [11-hospedagem-producao.md](11-hospedagem-producao.md) | Spec 11 — Hospedagem e produção (Vercel + Prisma Postgres) |
+| [12-assinaturas.md](12-assinaturas.md) | Spec 12 — Assinaturas no cartão (planejada, US-096..099) |

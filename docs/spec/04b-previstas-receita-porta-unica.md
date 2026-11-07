@@ -1,6 +1,6 @@
 # Spec 04b — Previstas: receita prevista, saldo previsto, resumo por conta, porta única
 
-Atualizado: 2026-11-02
+Atualizado: 2026-11-07
 Base de previstas/séries: [04](04-previstas-series.md).
 
 ## Resumo
@@ -36,6 +36,13 @@ Porta única (US-090/091, SDD-031):
 - Chave de idempotência regerada ao mudar de serviço, salvo após falha de rede (seletor travado): `useDoorKey` (SDD-031 §8.1-7).
 - Chave repetida devolve 422 `IDEMPOTENCY_KEY_REUSED`, não 409; futura em NOW devolve "Para contas futuras, use Despesa prevista" (DEV-159).
 
+Transferência prevista (PLANEJADA: US-100, 100b, 101, 101b; ADR-037):
+- Tabela própria `planned_transfers` (não é `kind` de `planned_expenses`): origem ≠ destino, contas ativas da família, valor > 0, vencimento, descrição opcional, `PREVISTA | EFETIVADA`, `version`, exclusão lógica; atrasada = `PREVISTA` e `dueOn < hoje`. Sem "Só meu": qualquer membro ativo cadastra, edita, exclui e efetiva.
+- Sem efeito até efetivar: fora de saldo, extrato, totais, acerto, "A pagar", Resumo e MCP. Só o resumo por conta soma `plannedTransfersInCents` (- na origem, + no destino; coluna "Transferências previstas" só quando há); Σ `dueInCents` = total do "A pagar" segue.
+- Efetivar = transferência real (`createTransferGroup`, valor/data efetivos, data <= hoje) + `EFETIVADA` na mesma transação (`lockFamilySplit` → prevista `FOR UPDATE` → contas). Desfazer a transferência devolve `PREVISTA`. Efetivada não edita nem exclui. Conta arquivada impede efetivar; conta com prevista pendente ou série ativa não arquiva (`ACCOUNT_HAS_PLANNED_TRANSFERS`).
+- Série mensal `recurring_transfers` gerada por `ensureRecurrenceHorizon` (mesmas regras 9-13 da spec 04: 12 meses, chave única sem filtro de exclusão, editar reescreve só futuras pendentes não alteradas, encerrar exclui futuras pendentes).
+- Entrada só pela tela Previstas (aba "Transferências"); a porta única não ganha transferência nesta fase.
+
 ## Invariantes
 1. Receita prevista nunca entra em `incomeInCents`, extrato, saldo atual nem acerto antes do recebimento; `kind` nunca muda.
 2. Σ `byAccount` = total do A pagar (fonte única, sem segunda consulta).
@@ -52,6 +59,10 @@ Porta única (US-090/091, SDD-031):
 Código: `src/modules/previstas/{by-account,payables,rules,repo,copy,service}.ts`; `transacoes/{service,mutations}.ts`; `home/{service,copy}.ts`; `contas/{service,hooks}.ts`; `mcp/tools/previstas.ts`; `privacidade/export*.ts`; `src/modules/lancamento/{door,use-door-submit}.ts`; `src/components/{transaction-drawer,door-parts}.tsx`; `src/app/(app)/previstas/{previstas-screen,planned-drawer,pay-drawer,by-account-block}.tsx`, `home-screen.tsx`; migração `20261031020000_us051_previstas_receita`.
 Testes: `tests/unit/home/projected-balance.test.ts`, `tests/unit/previstas/{copy-receivables,by-account}.test.ts`, `tests/unit/lancamento/{door.test.ts,use-door-submit.test.tsx}`; `tests/integration/us-051-receitas-previstas.int.test.ts`, `us-060-resumo-por-conta`, `us-090-091-porta-unica.int.test.ts`; E2E `US-051-receitas-previstas-e-saldo-previsto.feature`, `US-060*`, `US-090*`, `US-091*` (+ steps).
 Âncoras: US-051/060/090/091; SDD-017, SDD-029, SDD-031; ADR-023 (receita por kind).
+
+## Perguntas ao usuário
+- Transferência prevista para conta de reserva (`excludeFromAvailable`) muda o "disponível" futuro, mas o saldo previsto do Resumo foi mantido sem ela (hipótese: transferência interna soma zero). Confirmar.
+- Escopo: a porta única ("Vai acontecer"/"Repetir todo mês") NÃO cobre transferência prevista; só a tela Previstas. Confirmar ou pedir história extra.
 
 ## Pendências
 - US-051 implementada; aguarda validação do Gestor. Testes ESCRITOS e NÃO executados (por instrução do usuário); só lint, typecheck e check:imports rodaram. Regressão de previstas/Resumo/acerto, QA executor e exploratório (UI, claro/escuro, 375/desktop) NÃO rodaram. Migração (expand: enum, coluna com DEFAULT, índice, CHECK) a aplicar em produção antes do código.

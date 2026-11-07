@@ -116,12 +116,17 @@ Ordem das pendentes: US-042 e US-043 só após a janela de reversão do rateio (
 | US-092b | UR-2 | Cadastrar membro sem conta | done | US-092a |
 | US-093a | UR-2 | Membro sem conta como titular, selo e acerto | done | US-092 |
 | US-093b | UR-2 | Só meu, pagador/responsável e tutor do membro sem conta | done | US-093a, US-084 |
-| US-094a | UR-2 | Convite vinculado ao membro cadastrado | todo | US-092, US-093, US-003, US-035 |
-| US-094b | UR-2 | Aceite do convite e herança do histórico | todo | US-094a |
-| US-095 | UR-2 | Ciclo de vida do membro sem conta | todo | US-092, US-093, US-035 |
-| US-096 | UR-2 | Assinatura mensal no cartão (lançada sozinha todo mês) | todo | US-016a, US-017a, US-058, US-059 |
-| US-097 | UR-2 | Corrigir o valor do mês, reajustar e encerrar a assinatura | todo | US-096 |
-| US-098 | UR-2 | Lista de assinaturas ativas e total mensal | todo | US-096 |
-| US-099 | UR-2 | Assinatura dividida entra no acerto | todo | US-096, EN-002, US-028, US-030 |
-| US-100 | UR-2 | Transferência prevista entre contas | todo | US-060, US-090, US-010 |
-| US-101 | UR-2 | Transferência prevista recorrente (todo mês) | todo | US-100, US-091 |
+| US-094a | UR-2 | Convite vinculado ao membro cadastrado | todo | US-092b, US-093b, US-003, US-035 |
+| US-094b | UR-2 | Aceite do convite vinculado e herança do histórico | todo | US-094a |
+| US-095 | UR-2 | Editar o membro sem conta (nome e e-mail) | todo | US-094a |
+| US-096 | UR-2 | Assinatura no cartão: modelo, cadastro e lançamento automático (servidor) | todo | US-016a, US-017a, US-058 |
+| US-096b | UR-2 | Assinatura: lançamento ao abrir telas, arquivar cartão, remoção e exportação | todo | US-096 |
+| US-096c | UR-2 | Assinatura: telas do cartão, fatura e selo no Extrato | todo | US-096, US-096b |
+| US-096d | UR-2 | "Assinatura (todo mês)" na porta única com cartão | todo | US-096c, US-091 |
+| US-097 | UR-2 | Corrigir a cobrança do mês, reajustar e encerrar a assinatura | todo | US-096c |
+| US-098 | UR-2 | Lista de assinaturas e total mensal | todo | US-097 |
+| US-099 | UR-2 | Assinatura dividida entra no acerto | todo | US-097, US-028, US-030 |
+| US-100 | UR-2 | Transferência prevista: modelo, cadastro e efetivação (servidor) | todo | US-060, US-010 |
+| US-100b | UR-2 | Transferência prevista: telas, coluna no resumo por conta e arquivamento | todo | US-100, US-054 |
+| US-101 | UR-2 | Transferência prevista recorrente: série e geração (servidor) | todo | US-100 |
+| US-101b | UR-2 | Transferência recorrente: telas e arquivamento de conta | todo | US-101, US-100b |

@@ -1,7 +1,5 @@
 # Índice de ADRs
-
 Decisões de arquitetura e de regra vigente. Molde: `../templates/adr.md`.
-
 - [ADR-001](ADR-001-stack-tecnologica.md) — Stack tecnológica da aplicação web — aceito
 - [ADR-002](ADR-002-autenticacao-google.md) — Autenticação com Google via Auth.js — aceito
 - [ADR-003](ADR-003-jobs-e-agendamento.md) — Jobs e agendamento com pg-boss — aceito
@@ -37,3 +35,6 @@ Decisões de arquitetura e de regra vigente. Molde: `../templates/adr.md`.
 - [ADR-033](ADR-033-membro-sem-conta-e-convite-vinculado.md) — Membro sem conta (`Member.userId` anulável) e convite vinculado ao membro — aceito
 - [ADR-034](ADR-034-membro-sem-conta-decisoes-de-produto.md) — Membro sem conta: decisões de produto do usuário (divisão, acerto, cartão, remoção) — aceito
 - [ADR-035](ADR-035-ambiente-local-de-desenvolvimento.md) — Ambiente local de desenvolvimento: portas e acesso por rede — aceito
+- [ADR-036](ADR-036-assinatura-no-cartao.md) — Assinatura mensal no cartão: tabela própria, lançamento preguiçoso e valor por vigência — aceito
+- [ADR-037](ADR-037-transferencia-prevista-tabela-propria.md) — Transferência prevista em tabela própria (`planned_transfers`) e série própria — aceito
+- [ADR-038](ADR-038-convite-aceite-e-edicao-do-sem-conta.md) — Membro sem conta: contrato do convite vinculado, do aceite e da edição — aceito

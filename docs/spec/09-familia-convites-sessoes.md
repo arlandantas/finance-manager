@@ -1,6 +1,6 @@
 # Spec 09 — Família, convites, membros e sessões
 
-Atualizado: 2026-10-31. Fonte de verdade: código + testes. Membro sem conta: US-092a/092b/093a/093b implementadas; 094a em diante não iniciadas.
+Atualizado: 2026-11-07. Fonte de verdade: código + testes. Membro sem conta: US-092a/092b/093a/093b implementadas; 094a/094b/095 especificadas (regras 28-28c, ADR-038), não iniciadas.
 
 ## Resumo
 - Login só com Google. Admin convida por e-mail (7 dias); vínculo só no aceite explícito em `/convites`. Papéis ADMIN/MEMBER, sempre >=1 ADMIN.
@@ -45,6 +45,9 @@ Atualizado: 2026-10-31. Fonte de verdade: código + testes. Membro sem conta: US
 | 27 | Titular sem conta (093a) | Conta/cartão com titular sem conta só por ADMIN: não-ADMIN 422 `UNLINKED_OWNER_ADMIN_ONLY` (`path: ownerMemberId`) em `createAccount`/`createCard`/troca de titular; candidato = ativo da família (senão 422 `INVALID_REFERENCE`) |
 | 27b | Cartão de sem conta | Cartão cujo titular ATUAL é sem conta ativo: só ADMIN troca (403 `CARD_OWNER_ONLY`, avaliado antes; `CARD_OWNER_CHANGED` com o ator real) |
 | 27c | Selo na UI | `UnlinkedBadge` e `memberOptionLabel` ("Ana · sem acesso ao app") nos seletores (opção `disabled` "(só Administrador)" para MEMBER), chips, Contas, Cartões, A pagar, detalhe, Acerto e Regra; ex-membro sem conta sem selo |
+| 28 | Convite vinculado (PLANEJADA, US-094a; ADR-038) | `POST /members/{id}/invitations` `{email}` só ADMIN sob `lockFamilyAdmins`; e-mail = `pendingEmail` (`INVITATION_EMAIL_MISMATCH` 422) ou grava-o; papel MEMBER; mesmas cotas/validade/reenvio; `MemberDTO.pendingInvitation` só ADMIN; `INVITATION_RESENT` só `{invitationId, resendCount}` (SEC-061) |
+| 28b | Aceite vinculado (PLANEJADA, US-094b) | Advisory `family:{id}` primeiro; `{token?, name}` (`NAME_REQUIRED` 422, `NAME_TAKEN` 409 com convite ainda PENDING); claim; `UPDATE members` com GUC `app.link_member` (0 linhas `MEMBER_NO_LONGER_AVAILABLE`); `MEMBER_LINKED` sem PII; e-mail aos ADMIN após o commit; nada financeiro escrito. Prévia com contagens só ao e-mail verificado |
+| 28c | Editar sem conta (PLANEJADA, US-095) | `PATCH /members/{id}/profile` `{name?, email?: string\|null}` só ADMIN; com conta 409 `MEMBER_IS_LINKED`; com convite vinculado pendente 409 `MEMBER_HAS_PENDING_INVITATION`; trocar/remover e-mail anonimiza convites encerrados; `MEMBER_UPDATED` só flags |
 
 ## Invariantes
 1. Só `acceptInvitation` cria `Member` por convite ou grava `userId` em linha existente (gatilho + teste estático).
@@ -65,7 +68,7 @@ Testes: int `us-093a-*`, `us-092b-cadastrar-membro`, `us-092a-*`, `sec036-travas
 Migrações: `20261030020000`, `20261030020100`, `20261031000000`.
 
 ## Pendências
-- US-094a (convite vinculado, SEC-061), 094b (aceite, nome escolhido, SEC-062/063/064), 095 (editar). O aceite grava o nome escolhido em `members.name` (nunca em eventos); remoção/edição anonimiza e-mails dos convites do cadastro.
+- US-094a (convite vinculado, SEC-061), 094b (aceite, nome escolhido, SEC-062/063/064), 095 (editar nome/e-mail; remoção do sem conta já entregue). Contrato nas regras 28-28c e no ADR-038.
 - Usuário: SEC-060 "Entra na divisão?" (hipótese: só aviso); SEC-062 "Desvincular conta" (hipótese: não); `ALLOWED_SIGNUP_EMAILS`; SEC-037. LGPD: titular sem conta exerce direitos via Admin; citar em `/privacidade`.
 - Fase 2 da SEC-018 (`prisma/pending/20261027000000_*`); schema ainda mantém `sessionToken`.
 - Não verificado: UI do aviso da remoção; migração `20261031000000` fora de produção.

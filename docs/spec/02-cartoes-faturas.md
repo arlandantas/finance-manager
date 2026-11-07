@@ -82,6 +82,7 @@ Integração (`tests/integration/`): `us-089-conta-pagadora`, `us-015-cartoes`, 
 ## Pendências
 - US-089 implementada (TASK-092), aguarda validação do Gestor; migrações `20261030010000_us089_enum_family_event_card_payer` e `20261030010100_us089_card_payment_account`. Não verificada no navegador real (só E2E).
 - US-042 (rateio por parcela) e US-041 "Aprovada p/ Dev, não iniciada" (ver spec 03).
+- Assinaturas no cartão (US-096..099, ADR-036) planejadas na [spec 12](12-assinaturas.md): novo impedimento de arquivar `CARD_HAS_ACTIVE_SUBSCRIPTIONS` e `origin = SUBSCRIPTION` em compras.
 - UI de cartões e fatura nunca verificada no navegador após correções de titular (SEC-042/047); `pay-drawer`/Fatura mostrando "Só meu" alheios a todos (API lista para todos, como o Extrato) não confirmado na tela.
 - Usuário: veto a D-GES-57; decidir se/quando liberar US-042.
 - Divergências doc x código (código vence): SDD-008 diz "titular informativo" e "sem cartão arquivável" (superado por SEC-042/047 e US-033); SDD-008 §4.5 diz `payerMemberId: null` no pagamento (código grava só `authorMemberId` + `isSharedExpense=false`).
