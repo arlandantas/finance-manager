@@ -4,7 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/http";
 import type {
   CreatePlannedTransferInput,
+  CreateTransferSeriesParsed,
   PlannedTransferDTO,
+  TransferSeriesDTO,
+  TransferSeriesImpactDTO,
 } from "@/modules/previstas/transfer-schemas";
 
 /** US-100b (ADR-037): chave por período (`undefined` = corrente); começa com "planned-transfers". */
@@ -40,6 +43,7 @@ function useInvalidateTransfers() {
     Promise.all(
       [
         ["planned-transfers"],
+        ["recurring-transfers"],
         ["payables"],
         ["accounts"],
         ["transactions"],
@@ -99,6 +103,70 @@ export function useRealizePlannedTransfer(idempotencyKey: string) {
         `/api/v1/planned-transfers/${a.id}/realize`,
         { method: "POST", body: a.input, idempotencyKey },
       ),
+    onSuccess: invalidate,
+  });
+}
+
+// US-101b: série mensal de transferência prevista.
+const SERIES = "/api/v1/recurring-transfers";
+
+export function useTransferSeries(id: string | null) {
+  return useQuery({
+    queryKey: ["recurring-transfers", id],
+    queryFn: () => apiFetch<{ series: TransferSeriesDTO }>(`${SERIES}/${id}`),
+    enabled: id !== null,
+    staleTime: 0,
+  });
+}
+
+/** Impacto de editar/encerrar a partir de um mês (`YYYY-MM`); lido antes de confirmar. */
+export function useTransferSeriesImpact(id: string | null, impactFrom: string | undefined) {
+  return useQuery({
+    queryKey: ["recurring-transfers", id, "impact", impactFrom],
+    queryFn: () =>
+      apiFetch<{ series: TransferSeriesDTO; impact: TransferSeriesImpactDTO }>(
+        `${SERIES}/${id}?impactFrom=${impactFrom}`,
+      ),
+    enabled: id !== null && Boolean(impactFrom),
+    staleTime: 0,
+  });
+}
+
+export function useCreateTransferSeries(idempotencyKey: string) {
+  const invalidate = useInvalidateTransfers();
+  return useMutation({
+    mutationFn: (input: CreateTransferSeriesParsed) =>
+      apiFetch<{ series: TransferSeriesDTO; generatedCount: number }>(SERIES, {
+        method: "POST",
+        body: input,
+        idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateTransferSeries(idempotencyKey: string) {
+  const invalidate = useInvalidateTransfers();
+  return useMutation({
+    mutationFn: (a: { id: string; input: Record<string, unknown> & { version: number } }) =>
+      apiFetch<{ series: TransferSeriesDTO; affectedCount: number }>(`${SERIES}/${a.id}`, {
+        method: "PATCH",
+        body: a.input,
+        idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useEndTransferSeries() {
+  const invalidate = useInvalidateTransfers();
+  return useMutation({
+    mutationFn: (a: { id: string; version: number; idempotencyKey: string }) =>
+      apiFetch<{ series: TransferSeriesDTO; removedCount: number }>(`${SERIES}/${a.id}/end`, {
+        method: "POST",
+        body: { version: a.version },
+        idempotencyKey: a.idempotencyKey,
+      }),
     onSuccess: invalidate,
   });
 }

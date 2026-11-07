@@ -1,5 +1,6 @@
 import { conflict, forbidden, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
+import { todayInFamilyTz } from "@/lib/dates";
 import { accountBalances, neverUsedAccountIds } from "@/modules/contas/ledger-queries";
 import { contasRepo } from "@/modules/contas/repo";
 import type { AccountDTO } from "@/modules/contas/schemas";
@@ -80,7 +81,23 @@ async function accountArchiveBlockers(
       OR: [{ fromAccountId: id }, { toAccountId: id }],
     },
   });
-  if (planned > 0) {
+  // US-101b: série ativa (não encerrada e com mês final futuro) também usa a conta; a mensagem da série vence,
+  // pois excluir as ocorrências não adianta (a série gera de novo).
+  const month = todayInFamilyTz(ctx.clock).slice(0, 7);
+  const activeSeries = await tx.recurringTransfer.count({
+    where: {
+      familyId: ctx.familyId,
+      endedAt: null,
+      OR: [{ endMonth: null }, { endMonth: { gte: new Date(`${month}-01T00:00:00Z`) } }],
+      AND: [{ OR: [{ fromAccountId: id }, { toAccountId: id }] }],
+    },
+  });
+  if (activeSeries > 0) {
+    out.push({
+      code: "ACCOUNT_HAS_PLANNED_TRANSFERS",
+      message: "Encerre a transferência mensal ou troque a conta",
+    });
+  } else if (planned > 0) {
     out.push({
       code: "ACCOUNT_HAS_PLANNED_TRANSFERS",
       message: "Exclua ou efetive as transferências previstas desta conta",

@@ -1,13 +1,10 @@
 "use client";
 
-import { ArrowRight, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { Plus } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/drawer";
-import { Menu, MenuItem } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import {
@@ -19,108 +16,9 @@ import type { PlannedTransferDTO } from "@/modules/previstas/transfer-schemas";
 import { useDefaults } from "@/modules/transacoes/hooks";
 import { PlannedTransferDrawer } from "./planned-transfer-drawer";
 import { RealizeTransferDrawer } from "./realize-transfer-drawer";
-
-const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-
-function Chip({ children, tone }: { children: string; tone: "late" | "done" }) {
-  return (
-    <span
-      className={
-        tone === "late"
-          ? "rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800 dark:text-red-300"
-          : "rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:text-emerald-300"
-      }
-    >
-      {children}
-    </span>
-  );
-}
-
-function TransferRow({
-  item,
-  onRealize,
-  onEdit,
-  onDelete,
-}: {
-  item: PlannedTransferDTO;
-  onRealize: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const label = item.description ?? `${item.from.name} para ${item.to.name}`;
-  const done = item.status === "EFETIVADA";
-  return (
-    <li
-      id={item.id}
-      data-testid="planned-transfer-item"
-      data-overdue={item.isOverdue ? "true" : undefined}
-      className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-3 dark:bg-slate-100"
-    >
-      <div className="min-w-0">
-        <p className="flex flex-wrap items-center gap-x-1 font-semibold text-slate-900">
-          <span className="break-words">{item.from.name}</span>
-          <ArrowRight size={14} aria-hidden="true" className="shrink-0" />
-          <span className="break-words">{item.to.name}</span>
-        </p>
-        <p className="text-sm text-slate-600">
-          Vence {brDate(item.dueOn)}
-          {item.description ? ` · ${item.description}` : ""}
-        </p>
-      </div>
-      <div className="flex flex-wrap items-center gap-1">
-        <span className="mr-auto font-semibold tabular-nums text-slate-900">
-          <Money cents={item.amountInCents} />
-        </span>
-        {done ? null : (
-          <Button variant="secondary" aria-label={`Efetivar ${label}`} onClick={onRealize}>
-            Efetivar
-          </Button>
-        )}
-        {done ? null : (
-          <Menu
-            label={`Ações de ${label}`}
-            trigger={<MoreHorizontal size={20} aria-hidden="true" />}
-          >
-            {(close) => (
-              <>
-                <MenuItem
-                  onClick={() => {
-                    close();
-                    onEdit();
-                  }}
-                >
-                  <Pencil size={16} aria-hidden="true" />
-                  Editar
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    close();
-                    onDelete();
-                  }}
-                >
-                  <Trash2 size={16} aria-hidden="true" />
-                  Excluir
-                </MenuItem>
-              </>
-            )}
-          </Menu>
-        )}
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {item.isOverdue ? <Chip tone="late">Atrasada</Chip> : null}
-        {done ? <Chip tone="done">Efetivada</Chip> : null}
-        {done ? (
-          <Link
-            href="/extrato"
-            className="inline-flex min-h-11 items-center text-sm font-medium text-brand-700 underline"
-          >
-            Ver transferência
-          </Link>
-        ) : null}
-      </div>
-    </li>
-  );
-}
+import { TransferRow } from "./transfer-row";
+import { TransferSeriesEditDrawer } from "./transfer-series-edit";
+import { TransferSeriesEndDrawer } from "./transfer-series-end";
 
 /** US-100b: aba "Transferências" da tela Previstas (lista, cadastro, edição, exclusão, efetivação). */
 export function TransfersTab({
@@ -149,6 +47,8 @@ export function TransfersTab({
   const [editing, setEditing] = useState<PlannedTransferDTO | null>(null);
   const [realizing, setRealizing] = useState<PlannedTransferDTO | null>(null);
   const [deleting, setDeleting] = useState<PlannedTransferDTO | null>(null);
+  const [editingSeries, setEditingSeries] = useState<string | null>(null);
+  const [endingSeries, setEndingSeries] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const deleteKey = useRef(newIdempotencyKey());
 
@@ -219,6 +119,8 @@ export function TransfersTab({
               item={item}
               onRealize={() => setRealizing(item)}
               onEdit={() => setEditing(item)}
+              onEditSeries={() => setEditingSeries(item.seriesId)}
+              onEndSeries={() => setEndingSeries(item.seriesId)}
               onDelete={() => {
                 deleteKey.current = newIdempotencyKey();
                 setDeleteError(null);
@@ -236,6 +138,8 @@ export function TransfersTab({
         onClose={() => setEditing(null)}
       />
       <RealizeTransferDrawer transfer={realizing} onClose={() => setRealizing(null)} />
+      <TransferSeriesEditDrawer seriesId={editingSeries} onClose={() => setEditingSeries(null)} />
+      <TransferSeriesEndDrawer seriesId={endingSeries} onClose={() => setEndingSeries(null)} />
 
       <Drawer
         open={deleting !== null}

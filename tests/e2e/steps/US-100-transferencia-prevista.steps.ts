@@ -140,7 +140,7 @@ When(/^(?:Mariana|Lucas) efetiva a transferência prevista pela tela$/, async ({
     .click();
   const d = dlg(page);
   await expect(d.getByRole("heading", { name: "Efetivar transferência" })).toBeVisible();
-  await expect(d.getByLabel("Valor", { exact: true })).toHaveValue(/1\.000,00|700,00/);
+  await expect(d.getByLabel("Valor", { exact: true })).toHaveValue(/1\.000,00|700,00|500,00/);
   await d.getByRole("button", { name: "Efetivar", exact: true }).click();
   await expect(d).toBeHidden();
   world.data.realized = true;

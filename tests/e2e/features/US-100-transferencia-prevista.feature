@@ -55,3 +55,47 @@ Funcionalidade: Transferência prevista entre contas
     Dado uma transferência prevista de "R$ 700,00" de "Itaú" para "Poupança" vencendo em "2026-12-10"
     Quando Mariana abre a aba de transferências de dezembro em 375px no tema escuro
     Então a tela de transferências não tem rolagem horizontal nem erros de console
+
+  # US-101b: transferência mensal (série) pela tela Previstas
+  Cenário: Transferência mensal: criar, efetivar uma e encerrar
+    Quando Mariana cadastra a transferência mensal de "R$ 500,00" de "Itaú" para "Poupança" no dia 15
+    Então a aba de transferências lista "Itaú" para "Poupança" de "500,00" com o selo "Todo mês"
+    E a família tem 12 ocorrências mensais e os saldos de "Itaú" e "Poupança" seguem "5.000,00" e "1.000,00"
+    Quando Mariana efetiva a transferência prevista pela tela
+    Então a transferência prevista aparece "Efetivada" sem ações de edição
+    Quando Mariana encerra a transferência mensal
+    Então a família não tem ocorrência mensal pendente e a efetivada permanece
+
+  Cenário: Editar a série mostra o impacto antes de salvar e vale para as próximas
+    Quando Mariana cadastra a transferência mensal de "R$ 500,00" de "Itaú" para "Poupança" no dia 15
+    E Mariana efetiva a transferência prevista pela tela
+    E Mariana abre "Editar série" da transferência mensal
+    Então o impacto da série mostra "Muda 11; ficam 1 efetivada e 0 alteradas"
+    Quando Mariana salva a série com o valor "R$ 600,00"
+    Então a ocorrência de janeiro de 2027 mostra "600,00" e a efetivada segue "500,00"
+
+  Cenário: Conta com série ativa não arquiva; encerrar a série libera
+    Dado a conta "Reserva" sem saldo
+    Quando Mariana cadastra a transferência mensal de "R$ 100,00" de "Reserva" para "Poupança" no dia 15
+    E Mariana abre o arquivamento da conta "Reserva"
+    Então o diálogo mostra "Encerre a transferência mensal ou troque a conta"
+    E o botão de arquivar conta está desabilitado
+    Quando Mariana encerra a transferência mensal
+    E Mariana abre o arquivamento da conta "Reserva"
+    Então o botão de arquivar conta está habilitado
+    Quando Mariana arquiva a conta aberta
+    Então a conta "Reserva" está arquivada
+
+  Cenário: Lucas, segundo membro, edita a série de Mariana, vê o conflito e não vê a série de outra família
+    Dado uma transferência mensal de "R$ 500,00" de "Itaú" para "Poupança" criada por Mariana
+    E outra família com uma transferência mensal própria
+    Quando Lucas abre a aba de transferências de dezembro
+    Então a aba de transferências lista só "Itaú" para "Poupança" de "500,00"
+    Quando Lucas abre "Editar série" da transferência mensal
+    E Mariana altera a série enquanto Lucas edita
+    E Lucas salva a série com o valor "R$ 700,00"
+    Então o aviso mostra "alterada por Mariana"
+
+  Cenário: Cadastro mensal no celular e no tema escuro sem rolagem horizontal nem erros de console
+    Quando Mariana abre o cadastro da transferência mensal em 375px no tema escuro
+    Então a tela de transferências não tem rolagem horizontal nem erros de console
