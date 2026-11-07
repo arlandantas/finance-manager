@@ -70,7 +70,7 @@ Ordem das pendentes: US-042 e US-043 só após a janela de reversão do rateio (
 | US-044 | R3 | Lembrar "dividir" por categoria e revisar despesas não divididas no fechamento | todo | US-043, US-014 |
 | US-045 | R3 | Tags livres no lançamento | done | US-005, US-006, US-016a, US-024 |
 | US-047 | R3 | Filtrar o Extrato por tag | done | US-045, US-007 |
-| US-046 | R3 | Gerenciar tags (listar, renomear, remover) | todo | US-045 |
+| US-046 | R3 | Gerenciar tags (listar, renomear, remover) | done | US-045 |
 | US-048 | R3 | Visão sintética: período, totais e quebra por categoria | todo | US-007, US-025, US-040b |
 | US-049 | R3 | Visão sintética: quebras por membro, conta/cartão e tag, com filtros combináveis | todo | US-048, US-045, US-047 |
 | US-050 | R3 | Cor por conta e cartão | done | US-004, US-015, US-037 |
