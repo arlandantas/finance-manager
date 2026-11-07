@@ -3,7 +3,7 @@
 Atualizado: 2026-10-31. Complementa a spec 10a (Lançamentos, contas, extrato).
 
 ## Resumo
-- Tags livres no lançamento (US-045) e filtro do Extrato por tag (US-047) implementadas; gerenciar tags (US-046) e Análise (US-048/049) não.
+- Tags livres no lançamento (US-045) e filtro do Extrato por tag (US-047) implementadas; gerenciar tags (US-046) implementada; Análise (US-048/049) não.
 - Cada conta e cartão tem uma cor (10 opções, US-050), sempre ao lado do nome.
 
 ## Regras
@@ -20,7 +20,9 @@ Atualizado: 2026-10-31. Complementa a spec 10a (Lançamentos, contas, extrato).
 | 26 | Filtro por tag: `tagIds` = `EXISTS` em `buildLedgerWhere` (lista e totais; NUNCA `JOIN`; lançamento com duas tags aparece e soma uma vez) | `transacoes/extrato.ts` |
 | 26b | `untagged=true` = só despesa/receita sem tag (chip "Sem tag"); `untagged` com `tagIds` = 400 `Use tags ou "sem tag", não os dois`. Plurais OU-dentro/E-entre: `categoryIds`, `payerIds`, `sourceIds` (conta ou cartão), máx. 20 valores; parâmetro repetido vira array (`withApi`) | `extrato/{filters,tag-filter}` |
 | 26c | Estado do filtro na URL (`tagIds` repetido); chips fora do painel; vazio = "Nenhum lançamento com essa tag neste período" | `extrato/*` |
-| 27 | Privacidade: exportação "Baixar meus dados" inclui `tags` (nomes) em cada lançamento visível; excluir família apaga `transaction_tags` e `tags` antes de `transactions`. `FamilyEventType` tem `TAG_RENAMED/MERGED/DELETED` (sem uso até a US-046) | `privacidade/{export,delete-family}.ts` |
+| 27 | Privacidade: exportação "Baixar meus dados" inclui `tags` (nomes) em cada lançamento visível; excluir família apaga `transaction_tags` e `tags` antes de `transactions`. `FamilyEventType` tem `TAG_RENAMED/MERGED/DELETED` (usados pela US-046) | `privacidade/{export,delete-family}.ts` |
+| 27b | Gerenciar (US-046, qualquer membro, `Idempotency-Key`): `PATCH /tags/:id {version,name}` (mesma `nameKey` = só `name`; colisão 409 `TAG_NAME_EXISTS` com `details{mergeIntoId,mergeIntoName}`), `POST /tags/:id/merge {version,intoId}` (travas `FOR UPDATE` por `id` crescente, `ON CONFLICT DO NOTHING`, `movedCount` = ligações novas, mesma tag 422 `TAG_MERGE_SAME`), `POST /tags/:id/delete {version}` (`removedFromCount` = lançamentos ativos). `FamilyEvent` TAG_*; `VERSION_CONFLICT` cita o autor; outra família 404; nunca toca `transactions`/ledger | `tags/{manage,schemas}.ts`, `api/v1/tags/[id]` |
+| 27c | `GET /tags`: `usageCount` = lançamentos ativos distintos; `TagDTO.updatedBy` = `memberId`. UI `/tags` (menu Configurações): lista por uso, Renomear/Mesclar/Remover, oferta "Mesclar X nela?" na colisão | `(app)/tags/*` |
 | 28 | Cor: enum fechado `AccountColor` (10 cores; nomes em `ACCOUNT_COLOR_LABEL`), `color` NOT NULL (DEFAULT `BLUE`) em contas e cartões; só conta/cartão | `contas/colors.ts` |
 | 28b | `POST` sem `color` => `pickNextColor` (1ª não usada entre contas/cartões não excluídos, arquivados contam; senão a menos usada); pode repetir. `PATCH` de conta e cartão aceita `color`; fora da paleta 400 "Escolha uma cor"; arquivar mantém. DTOs trazem `color` | `contas/colors.ts` |
 | 28c | UI: `SourceBadge` (ponto `aria-hidden` + nome), `ColorPicker`, `SourceSelect` (seletores nativos mostram o ponto só da opção ESCOLHIDA; filtros do Extrato e edição de lançamento sem ponto); contraste >= 3:1 lido do `globals.css` (mín. 3,01:1 claro, 5,21:1 escuro) | `components/{source-badge,color-picker,source-select}.tsx`, `lib/contrast.ts` |
@@ -32,12 +34,12 @@ Atualizado: 2026-10-31. Complementa a spec 10a (Lançamentos, contas, extrato).
 3. Toda conta/cartão tem `color` válida; a cor nunca é o único identificador (sempre ao lado do nome).
 
 ## Riscos aceitos
-- Tags só aparecem no Extrato e no detalhe até a US-046; sem renomear/mesclar/remover.
+- Criar lançamento concorrente com a tag de origem de uma mesclagem pode perder essa tag no novo lançamento (nunca deixa ligação órfã).
 
 ## Fontes
-Código: `tags/{normalize,schemas,service,hooks}.ts`, `api/v1/tags`, `components/tag-input.tsx`, `transacoes/{mutations,extrato}.ts`, `extrato/{filters,tag-filter}`, `contas/{colors,use-suggested-color}.ts`, `lib/contrast.ts`, `components/{source-badge,color-picker,source-select}.tsx`, `privacidade/{export,delete-family}.ts`.
-Testes: int `us-045-tags`, `us-047-filtro-tags`, `us-050-cores` (com backfill); unit `tags/normalize`, `contas/colors`, `ui/{colors-contrast,color-picker}`; E2E `US-045`, `US-047`, `US-050`.
+Código: `tags/{normalize,schemas,service,hooks}.ts`, `api/v1/tags`, `tags/manage.ts`, `(app)/tags`, `components/tag-input.tsx`, `transacoes/{mutations,extrato}.ts`, `extrato/{filters,tag-filter}`, `contas/{colors,use-suggested-color}.ts`, `lib/contrast.ts`, `components/{source-badge,color-picker,source-select}.tsx`, `privacidade/{export,delete-family}.ts`.
+Testes: int `us-045-tags`, `us-046-gerenciar-tags`, `us-047-filtro-tags`, `us-050-cores` (com backfill); unit `tags/normalize`, `contas/colors`, `ui/{colors-contrast,color-picker}`; E2E `US-045`, `US-046`, `US-047`, `US-050`.
 
 ## Pendências
-- US-046 (renomear/mesclar/remover tags; tela `/tags`) e Análise US-048/049 não iniciadas; US-045/047/050 aguardam validação do Gestor.
+- Análise US-048/049 não iniciadas; US-045/046/047/050 aguardam validação do Gestor.
 - Divergência: migração de `color` tem `DEFAULT 'BLUE'` (compatibilidade com o código anterior).

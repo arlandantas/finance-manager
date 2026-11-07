@@ -5,6 +5,7 @@ import {
   CreditCard,
   Eye,
   EyeOff,
+  Hash,
   Home,
   ListOrdered,
   LogOut,
@@ -125,6 +126,15 @@ function UserMenu({ user }: { user: ShellUser }) {
           >
             <Tags size={16} aria-hidden="true" />
             Categorias
+          </Link>
+          <Link
+            href="/tags"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-sm font-medium text-slate-800 hover:bg-slate-100"
+          >
+            <Hash size={16} aria-hidden="true" />
+            Tags
           </Link>
           <Link
             href="/perfil"

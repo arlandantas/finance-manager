@@ -144,9 +144,9 @@ export async function listTags(
   const prefix = q.q ? `${likeEscape(normalizeTagKey(q.q))}%` : null;
   const filter = prefix ? Prisma.sql`AND g."nameKey" LIKE ${prefix} ESCAPE '\\'` : Prisma.empty;
   const rows = await tx.$queryRaw<
-    Array<{ id: string; name: string; version: number; usage: number }>
+    Array<{ id: string; name: string; version: number; usage: number; updatedBy: string | null }>
   >`
-    SELECT g.id, g.name, g.version,
+    SELECT g.id, g.name, g.version, g."updatedByMemberId" AS "updatedBy",
       (SELECT count(DISTINCT t.id) FROM transaction_tags tt
          JOIN transactions t ON t.id = tt."transactionId" AND t."familyId" = tt."familyId"
         WHERE tt."tagId" = g.id AND t."deletedAt" IS NULL)::int AS usage
@@ -160,6 +160,7 @@ export async function listTags(
       name: r.name,
       usageCount: r.usage,
       version: r.version,
+      updatedBy: r.updatedBy,
     })),
   };
 }

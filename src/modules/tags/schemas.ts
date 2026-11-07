@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { uuidSchema, versionSchema } from "@/lib/schemas";
 import { MAX_TAGS_PER_TRANSACTION, TAG_MAX, TAG_MIN } from "@/modules/tags/normalize";
 
 export const TAG_LEN_MSG = "A tag precisa ter entre 2 e 30 caracteres";
@@ -27,5 +28,22 @@ export const ListTagsQuerySchema = z
   .strict();
 export type ListTagsQuery = z.output<typeof ListTagsQuerySchema>;
 
+export const RenameTagSchema = z.object({ version: versionSchema, name: TagNameSchema }).strict();
+export const MergeTagSchema = z.object({ version: versionSchema, intoId: uuidSchema }).strict();
+export const DeleteTagSchema = z.object({ version: versionSchema }).strict();
+export type RenameTagInput = z.output<typeof RenameTagSchema>;
+export type MergeTagInput = z.output<typeof MergeTagSchema>;
+export type DeleteTagInput = z.output<typeof DeleteTagSchema>;
+
+export type MergeTagResponse = { tag: TagDTO; movedCount: number };
+export type DeleteTagResponse = { removedFromCount: number };
+
 export type TagRef = { id: string; name: string };
-export type TagDTO = { id: string; name: string; usageCount: number; version: number };
+export type TagDTO = {
+  id: string;
+  name: string;
+  usageCount: number;
+  version: number;
+  /** `memberId` de quem alterou por último (nulo = nunca renomeada). */
+  updatedBy: string | null;
+};
