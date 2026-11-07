@@ -77,6 +77,7 @@ export const ListSubscriptionsQuerySchema = z
   .object({
     status: z.enum(["active", "ended"]).default("active"),
     cardId: z.uuid().optional(),
+    payerId: z.uuid().optional(),
   })
   .strict();
 export type ListSubscriptionsQuery = z.output<typeof ListSubscriptionsQuerySchema>;
@@ -96,5 +97,15 @@ export type SubscriptionDTO = {
   endMonth: string | null;
   endedOn: string | null;
   version: number;
+  amendedThisMonth: boolean; // US-098: a cobrança do mês corrente foi corrigida (selo "alterada")
+  canEdit: boolean; // US-098: mesmo predicado da US-097 (ativa e "Só meu" controlada por quem pede)
   recentSkips: Array<{ month: string; reason: SubscriptionSkipReason }>; // últimos 3, mais recente primeiro
+};
+
+// US-098: total do mês corrente das ATIVAS do filtro (centavos inteiros) e por cartão
+export type SubscriptionCardTotal = { cardId: string; cardName: string; totalInCents: number };
+export type SubscriptionListResult = {
+  items: SubscriptionDTO[];
+  totalInCents: number;
+  byCard: SubscriptionCardTotal[];
 };

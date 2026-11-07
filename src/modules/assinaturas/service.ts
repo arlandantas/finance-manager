@@ -3,6 +3,7 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 import { fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { toCents } from "@/lib/money";
 import type { MemberRef } from "@/lib/schemas";
+import { canEditSubscription } from "@/modules/assinaturas/access";
 import { assinaturasRepo } from "@/modules/assinaturas/repo";
 import {
   type AmountRow,
@@ -10,11 +11,7 @@ import {
   endMonthOfSubscription,
   firstChargeOn,
 } from "@/modules/assinaturas/schedule";
-import type {
-  CreateSubscriptionParsed,
-  ListSubscriptionsQuery,
-  SubscriptionDTO,
-} from "@/modules/assinaturas/schemas";
+import type { CreateSubscriptionParsed, SubscriptionDTO } from "@/modules/assinaturas/schemas";
 import { addMonths, type MonthISO, monthOf } from "@/modules/previstas/recurrence";
 import { previstasRepo } from "@/modules/previstas/repo";
 import { memberMap } from "@/modules/previstas/service";
@@ -42,7 +39,14 @@ const toAmountRow = (a: AmountDb): AmountRow => ({
 
 function toDTO(
   row: Row,
-  ctx: { members: Map<string, MemberRef>; amounts: AmountDb[]; skips: Skip[]; month: MonthISO },
+  ctx: {
+    members: Map<string, MemberRef>;
+    amounts: AmountDb[];
+    skips: Skip[];
+    month: MonthISO;
+    amended: Set<string>;
+    editable: Set<string>;
+  },
 ): SubscriptionDTO {
   const mine = (x: { subscriptionId: string }) => x.subscriptionId === row.id;
   const payer = ctx.members.get(row.payerMemberId) ?? {
@@ -74,6 +78,8 @@ function toDTO(
     endMonth: row.endMonth ? monthStr(row.endMonth) : null,
     endedOn: row.endedOn ? fromDbDate(row.endedOn) : null,
     version: row.version,
+    amendedThisMonth: ctx.amended.has(row.id),
+    canEdit: ctx.editable.has(row.id),
     recentSkips: ctx.skips
       .filter(mine)
       .slice(0, 3)
@@ -84,17 +90,20 @@ function toDTO(
   };
 }
 
-async function toDTOs(tx: Tx, ctx: RequestContext, rows: Row[]): Promise<SubscriptionDTO[]> {
+export async function toDTOs(tx: Tx, ctx: RequestContext, rows: Row[]): Promise<SubscriptionDTO[]> {
   if (rows.length === 0) return [];
   const repo = assinaturasRepo(tx, ctx.familyId);
   const ids = rows.map((r) => r.id);
-  const [members, amounts, skips] = await Promise.all([
+  const month = monthOf(todayInFamilyTz(ctx.clock)) as MonthISO;
+  const [members, amounts, skips, amended] = await Promise.all([
     memberMap(previstasRepo(tx, ctx.familyId)),
     repo.amountsOf(ids),
     repo.recentSkips(ids),
+    repo.amendedIn(ids, month),
   ]);
-  const month = monthOf(todayInFamilyTz(ctx.clock)) as MonthISO;
-  return rows.map((r) => toDTO(r, { members, amounts, skips, month }));
+  const editable = new Set<string>();
+  for (const r of rows) if (await canEditSubscription(tx, ctx, r)) editable.add(r.id);
+  return rows.map((r) => toDTO(r, { members, amounts, skips, month, amended, editable }));
 }
 
 /**
@@ -154,9 +163,4 @@ export async function loadOne(tx: Tx, ctx: RequestContext, id: string): Promise<
 
 export async function getSubscription(tx: Tx, ctx: RequestContext, id: string) {
   return { subscription: await loadOne(tx, ctx, id) };
-}
-
-export async function listSubscriptions(tx: Tx, ctx: RequestContext, q: ListSubscriptionsQuery) {
-  const rows = await assinaturasRepo(tx, ctx.familyId).list(q.status, q.cardId);
-  return { items: await toDTOs(tx, ctx, rows) };
 }

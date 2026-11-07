@@ -24,6 +24,7 @@ import type { CardDTO } from "@/modules/cartoes/schemas";
 import { useFamily } from "@/modules/familia/hooks";
 import { ArchiveBlockers } from "./archive-blockers";
 import { CardDrawer } from "./card-drawer";
+import { CartoesTitle } from "./cartoes-title";
 import { PayerLine } from "./payer-line";
 
 function UsageBar({ card }: { card: CardDTO }) {
@@ -287,7 +288,7 @@ export function CartoesScreen() {
   return (
     <main className="flex flex-col gap-4 pb-24 lg:pb-0">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-slate-900">Cartões</h1>
+        <CartoesTitle />
         <Button onClick={() => setDrawer({ open: true, card: null })}>
           <Plus size={18} aria-hidden="true" />
           Novo cartão

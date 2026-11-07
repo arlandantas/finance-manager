@@ -125,12 +125,13 @@ export function assinaturasRepo(tx: Tx, familyId: string) {
       return { posted, amended };
     },
     findById: (id: string) => tx.cardSubscription.findFirst({ where: { id, familyId }, include }),
-    list: (status: "active" | "ended", cardId?: string) =>
+    list: (status: "active" | "ended", cardId?: string, payerId?: string) =>
       tx.cardSubscription.findMany({
         where: {
           familyId,
           endedAt: status === "active" ? null : { not: null },
           ...(cardId ? { cardId } : {}),
+          ...(payerId ? { payerMemberId: payerId } : {}),
         },
         include,
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -140,6 +141,20 @@ export function assinaturasRepo(tx: Tx, familyId: string) {
         where: { familyId, subscriptionId: { in: subscriptionIds } },
         select: { subscriptionId: true, fromMonth: true, amountInCents: true, createdAt: true },
       }),
+    /** US-098: assinaturas cuja cobrança do mês (dia 1) foi corrigida no Extrato. */
+    amendedIn: async (subscriptionIds: string[], month: MonthISO): Promise<Set<string>> => {
+      const rows = await tx.subscriptionCharge.findMany({
+        where: {
+          familyId,
+          subscriptionId: { in: subscriptionIds },
+          chargeMonth: toDbDate(`${month}-01`),
+          status: "POSTED",
+          isAmended: true,
+        },
+        select: { subscriptionId: true },
+      });
+      return new Set(rows.map((r) => r.subscriptionId));
+    },
     recentSkips: (subscriptionIds: string[]) =>
       tx.subscriptionCharge.findMany({
         where: { familyId, subscriptionId: { in: subscriptionIds }, status: { not: "POSTED" } },

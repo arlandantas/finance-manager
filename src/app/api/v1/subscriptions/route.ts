@@ -1,10 +1,11 @@
 import { withApi } from "@/lib/api/with-api";
 import { ensureSubscriptionChargesStandalone } from "@/modules/assinaturas/charges";
+import { listSubscriptions } from "@/modules/assinaturas/list";
 import {
   CreateSubscriptionSchema,
   ListSubscriptionsQuerySchema,
 } from "@/modules/assinaturas/schemas";
-import { createSubscription, listSubscriptions } from "@/modules/assinaturas/service";
+import { createSubscription } from "@/modules/assinaturas/service";
 
 export const dynamic = "force-dynamic";
 

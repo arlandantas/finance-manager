@@ -6,17 +6,23 @@ import type {
   CreateSubscriptionInput,
   SubscriptionDTO,
   SubscriptionImpact,
+  SubscriptionListResult,
   UpdateSubscriptionInput,
 } from "@/modules/assinaturas/schemas";
 
 export const subscriptionsKey = ["subscriptions"] as const;
 
-export function useSubscriptions(f: { status: "active" | "ended"; cardId?: string }) {
+export function useSubscriptions(f: {
+  status: "active" | "ended";
+  cardId?: string | undefined;
+  payerId?: string | undefined;
+}) {
   const qs = new URLSearchParams({ status: f.status });
   if (f.cardId) qs.set("cardId", f.cardId);
+  if (f.payerId) qs.set("payerId", f.payerId);
   return useQuery({
     queryKey: [...subscriptionsKey, f],
-    queryFn: () => apiFetch<{ items: SubscriptionDTO[] }>(`/api/v1/subscriptions?${qs}`),
+    queryFn: () => apiFetch<SubscriptionListResult>(`/api/v1/subscriptions?${qs}`),
     // o GET lança o que venceu; sempre rebusca ao montar a tela do cartão
     staleTime: 0,
   });

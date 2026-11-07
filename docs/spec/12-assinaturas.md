@@ -1,6 +1,6 @@
 # Spec 12 — Assinaturas no cartão
 
-Atualizado: 2026-11-07. Estado: **US-096..096d e 097 implementadas (cadastro, lançamento, telas, porta única, reajuste e encerramento)**; 098, 099 não iniciadas. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
+Atualizado: 2026-11-07. Estado: **US-096..096d, 097 e 098 implementadas (cadastro, lançamento, telas, porta única, reajuste, encerramento e lista)**; 099 não iniciada. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
 
 ## Resumo
 - Assinatura = compra mensal fixa num cartão (Netflix, Spotify) que o app lança sozinho no dia da cobrança, como compra à vista normal na fatura do ciclo.
@@ -23,7 +23,7 @@ Atualizado: 2026-11-07. Estado: **US-096..096d e 097 implementadas (cadastro, la
 | 10 | Corrigir a cobrança do mês = `PATCH /transactions/:id`; marca `isAmended`; fatura paga => `INVOICE_PAID_LOCKED` | 097 |
 | 11 | Encerrar: lança antes o que vence até hoje; depois nada com data > `endedOn`; encerrada não edita nem encerra (409 `SUBSCRIPTION_ENDED`); reativar = cadastrar nova. Dia e cartão não mudam | 097 |
 | 12 | Controle: "Só meu" segue a compra no cartão (titular/pagador, spec 01), checado no cadastro e na edição; o lançamento automático não confere o ator de novo. Dividida: qualquer membro edita | 096, 097 |
-| 13 | Lista: total mensal = Σ valor do mês corrente das ativas no filtro; `byCard`; abas Ativas/Encerradas; informativo | 098 |
+| 13 | Lista: total mensal = Σ valor do mês corrente (vigência) das ativas no filtro, em centavos inteiros; `byCard`; encerradas fora do total (0); abas Ativas/Encerradas; informativo | 098 |
 | 14 | Dividida: exige acerto ligado (`SETTLEMENT_DISABLED`); rateio pela regra vigente no dia da cobrança; acerto desligado no lançamento => cobrança "Só meu" com `sharedDowngraded`; crédito ao pagador, não a quem paga a fatura; alternar vale da próxima cobrança | 099 |
 
 ## Visibilidade e controle (spec 01)
@@ -75,8 +75,14 @@ Atualizado: 2026-11-07. Estado: **US-096..096d e 097 implementadas (cadastro, la
 - Tela: clicar na assinatura do bloco abre `subscription-edit-drawer.tsx` (valor com "A partir de" e aviso do impacto, encerrar com confirmação); chave de idempotência nova a cada erro.
 - Testes: `tests/integration/us-097-assinatura-editar-encerrar.int.test.ts`, E2E `US-097-assinatura-reajustar-encerrar.feature`.
 
+## Implementação (US-098)
+- Sem migração. `GET /subscriptions?status=&cardId=&payerId=` => `{ items, totalInCents, byCard }` (`list.ts`: `summarize` pura, `sortSubscriptions` valor desc/descrição pt-BR/id; `ended` => total 0, `byCard` vazio). Reajuste futuro não altera o mês corrente; cartão arquivado segue na lista.
+- DTO ganha `amendedThisMonth` (cobrança do mês com `isAmended`) e `canEdit` (`access.ts`: ativa + `assertCanWriteTransaction`, mesmo predicado da US-097; só informa a UI, o servidor continua recusando com 403).
+- Tela `/assinaturas` (`subscriptions-screen.tsx`, `subscription-filters.tsx`): total, blocos por cartão, abas (`?tab=encerradas`, "Encerrada em {data}", sem ações), filtros em chips fechados, selo "alterada", vazio com seletor de cartão. Entrada: link "Assinaturas" no topo de Cartões.
+- Testes: `tests/unit/assinaturas/list.test.ts`, `tests/integration/us-098-lista-assinaturas.int.test.ts`, E2E `US-098-lista-de-assinaturas.feature`.
+
 ## Perguntas ao usuário
 - Nenhuma bloqueante. Hipóteses assumidas (reversíveis, ADR-036): primeira cobrança não retroativa; encerrar não lança cobrança futura do mês corrente.
 
 ## Fontes
-Código (US-096): `src/modules/assinaturas/{schemas,schedule,repo,service,charges}.ts`, `createExpenseCore(opts.subscription)`, rota `POST|GET /api/v1/subscriptions` (GET lança o vencido antes de ler). Telas (US-096c): `src/app/(app)/cartoes/[id]/{subscription-drawer,subscriptions-block}.tsx`. Planejado: `list`, demais rotas, `src/app/(app)/assinaturas/`.
+Código (US-096): `src/modules/assinaturas/{schemas,schedule,repo,service,charges}.ts`, `createExpenseCore(opts.subscription)`, rota `POST|GET /api/v1/subscriptions` (GET lança o vencido antes de ler). Telas (US-096c): `src/app/(app)/cartoes/[id]/{subscription-drawer,subscriptions-block}.tsx`. Lista (US-098): `list.ts`, `access.ts`, `src/app/(app)/assinaturas/`.
