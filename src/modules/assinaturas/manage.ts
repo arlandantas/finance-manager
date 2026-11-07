@@ -14,8 +14,16 @@ import { loadOne, NOT_FOUND } from "@/modules/assinaturas/service";
 import { addMonths, type MonthISO, monthOf, monthSpan } from "@/modules/previstas/recurrence";
 import { previstasRepo } from "@/modules/previstas/repo";
 import { memberMap } from "@/modules/previstas/service";
+import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
-import { assertCanWriteTransaction, assertPersonalForSelf } from "@/modules/transacoes/ownership";
+import {
+  adminFullPower,
+  assertCanMakePersonal,
+  assertCanWriteTransaction,
+  assertPersonalForSelf,
+  ownerStanding,
+  personalOwnerId,
+} from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 
 // US-097 (ADR-036, spec 12): reajustar/editar e encerrar. Travas: `lockFamilySplit` → advisory → linha `FOR UPDATE`.
@@ -76,7 +84,12 @@ export async function updateSubscription(
 ): Promise<{ subscription: SubscriptionDTO }> {
   const { repo, row } = await loadForWrite(tx, ctx, id, input.version);
   const tr = transacoesRepo(tx, ctx.familyId);
-  const data: { description?: string; categoryId?: string; payerMemberId?: string } = {};
+  const data: {
+    description?: string;
+    categoryId?: string;
+    payerMemberId?: string;
+    isSharedExpense?: boolean;
+  } = {};
   if (input.description !== undefined && input.description !== row.description) {
     data.description = input.description;
   }
@@ -92,13 +105,23 @@ export async function updateSubscription(
     }
     data.categoryId = input.categoryId;
   }
+  const nextShared = input.isSharedExpense ?? row.isSharedExpense;
+  const nextPayer = input.payerMemberId ?? row.payerMemberId;
+  if (input.isSharedExpense !== undefined && input.isSharedExpense !== row.isSharedExpense) {
+    // US-099: alternar vale da próxima cobrança; mesmas travas de "Só meu" da compra (spec 01)
+    if (input.isSharedExpense) await assertCanShare(tx, ctx);
+    const standing = await ownerStanding(tx, ctx, personalOwnerId(row), [], [row.cardId]);
+    assertCanMakePersonal(ctx, { ...row, kind: "EXPENSE" }, input, {
+      fullPower: adminFullPower(ctx, standing) && !row.isSharedExpense,
+      ownerIsActor: standing.ownerIsActor && !row.isSharedExpense,
+      payerGone: standing.ownerRemoved,
+    });
+    data.isSharedExpense = input.isSharedExpense;
+  }
   if (input.payerMemberId !== undefined && input.payerMemberId !== row.payerMemberId) {
     if (!(await tr.findMember(input.payerMemberId)))
       throw invalid("payerMemberId", "Membro inválido");
-    await assertPersonalForSelf(tx, ctx, {
-      isSharedExpense: false,
-      payerMemberId: input.payerMemberId,
-    });
+    await assertPersonalForSelf(tx, ctx, { isSharedExpense: nextShared, payerMemberId: nextPayer });
     data.payerMemberId = input.payerMemberId;
   }
   let newAmount: { fromMonth: MonthISO; amountInCents: number } | null = null;

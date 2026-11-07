@@ -21,8 +21,10 @@ import { useCategories } from "@/modules/categorias/hooks";
 import { memberOptionLabel } from "@/modules/familia/display-name";
 import { useFamily } from "@/modules/familia/hooks";
 import { addMonths, type MonthISO, monthOf } from "@/modules/previstas/recurrence";
+import { useDefaults } from "@/modules/transacoes/hooks";
 import { monthLabel } from "../../extrato/filters";
 import { useOnline } from "./subscription-drawer";
+import { SubscriptionShareSwitch } from "./subscription-share-switch";
 
 type FieldKey = "description" | "amountInCents" | "categoryId";
 const errMsg = (e: unknown) =>
@@ -41,6 +43,8 @@ export function SubscriptionEditDrawer({
   const family = useFamily();
   const categories = useCategories("EXPENSE");
   const online = useOnline();
+  const defaults = useDefaults(sub !== null);
+  const splitAvailable = defaults.data?.split.available ?? false;
   const [key, setKey] = useState(newIdempotencyKey);
   const [endKey, setEndKey] = useState(newIdempotencyKey);
   const update = useUpdateSubscription(sub?.id ?? "", key);
@@ -50,6 +54,7 @@ export function SubscriptionEditDrawer({
   const [cents, setCents] = useState(0);
   const [categoryId, setCategoryId] = useState("");
   const [payerId, setPayerId] = useState("");
+  const [shared, setShared] = useState(false);
   const [from, setFrom] = useState("");
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
@@ -64,6 +69,7 @@ export function SubscriptionEditDrawer({
     setCents(sub.currentAmountInCents);
     setCategoryId(sub.category.id);
     setPayerId(sub.payer.id);
+    setShared(sub.isSharedExpense);
     setFrom(sub.nextChargeOn ? monthOf(sub.nextChargeOn) : "");
     setConfirmEnd(false);
     setErrors({});
@@ -98,6 +104,7 @@ export function SubscriptionEditDrawer({
     if (description !== sub.description) body.description = description;
     if (categoryId !== sub.category.id) body.categoryId = categoryId;
     if (payerId !== sub.payer.id) body.payerMemberId = payerId;
+    if (shared !== sub.isSharedExpense) body.isSharedExpense = shared;
     if (amountChanged) {
       body.amountInCents = cents;
       if (from) body.effectiveFromMonth = from;
@@ -248,6 +255,14 @@ export function SubscriptionEditDrawer({
             ))}
           </select>
         </Field>
+        {splitAvailable || sub?.isSharedExpense ? (
+          <SubscriptionShareSwitch
+            shared={shared}
+            onChange={setShared}
+            ruleShares={defaults.data?.split.ruleShares}
+            notice="Vale a partir da próxima cobrança"
+          />
+        ) : null}
         <Button type="submit" disabled={update.isPending || endIt.isPending || !online}>
           {update.isPending ? "Salvando…" : "Salvar alterações"}
         </Button>

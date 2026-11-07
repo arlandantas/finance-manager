@@ -15,6 +15,7 @@ import type { CreateSubscriptionParsed, SubscriptionDTO } from "@/modules/assina
 import { addMonths, type MonthISO, monthOf } from "@/modules/previstas/recurrence";
 import { previstasRepo } from "@/modules/previstas/repo";
 import { memberMap } from "@/modules/previstas/service";
+import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
 import { assertPersonalForSelf } from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
@@ -64,6 +65,7 @@ function toDTO(
     description: row.description,
     category: { id: row.category.id, name: row.category.name },
     payer,
+    isSharedExpense: row.isSharedExpense,
     dayOfMonth: row.dayOfMonth,
     // antes da 1ª cobrança o "valor atual" é o da 1ª vigência
     currentAmountInCents:
@@ -136,7 +138,9 @@ export async function createSubscription(
   if (!(await transacoesRepo(tx, ctx.familyId).findMember(payerMemberId))) {
     throw invalidRef("payerMemberId", "Membro inválido");
   }
-  await assertPersonalForSelf(tx, ctx, { isSharedExpense: false, payerMemberId });
+  const isSharedExpense = input.isSharedExpense === true;
+  if (isSharedExpense) await assertCanShare(tx, ctx); // O2: acerto desligado => 422
+  await assertPersonalForSelf(tx, ctx, { isSharedExpense, payerMemberId });
 
   const first = firstChargeOn(startMonth, input.dayOfMonth, today);
   const created = await repo.insert({
@@ -144,6 +148,7 @@ export async function createSubscription(
     description: input.description,
     categoryId: input.categoryId,
     payerMemberId,
+    isSharedExpense,
     dayOfMonth: input.dayOfMonth,
     firstChargeOn: first,
     endMonth: endMonthOfSubscription(first, input.end),

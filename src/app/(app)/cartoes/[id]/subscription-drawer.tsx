@@ -17,6 +17,7 @@ import { useFamily } from "@/modules/familia/hooks";
 import { addMonths, type MonthISO, monthOf } from "@/modules/previstas/recurrence";
 import { useDefaults } from "@/modules/transacoes/hooks";
 import { monthLabel } from "../../extrato/filters";
+import { SubscriptionShareSwitch } from "./subscription-share-switch";
 
 type FieldKey = "description" | "amountInCents" | "categoryId" | "dayOfMonth" | "end";
 
@@ -37,7 +38,7 @@ export const useOnline = () =>
 
 const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
-/** Nova assinatura no cartão (US-096c, spec 12). Nasce "Só meu"; o interruptor de divisão vem na US-099. */
+/** Nova assinatura no cartão (US-096c, spec 12). Nasce "Só meu"; "Dividir com a família" só com acerto ligado e ≥2 ativos (US-099). */
 export function SubscriptionDrawer({
   open,
   card,
@@ -63,6 +64,7 @@ export function SubscriptionDrawer({
   const [startMonth, setStartMonth] = useState("");
   const [endKind, setEndKind] = useState<"NONE" | "COUNT">("NONE");
   const [endCount, setEndCount] = useState("");
+  const [shared, setShared] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [banner, setBanner] = useState<string | null>(null);
 
@@ -76,10 +78,12 @@ export function SubscriptionDrawer({
     setStartMonth("");
     setEndKind("NONE");
     setEndCount("");
+    setShared(false);
     setErrors({});
     setBanner(null);
   }, [open]);
 
+  const splitAvailable = defaults.data?.split.available ?? false;
   const me = family.data?.currentMemberId ?? "";
   const payer = payerId || me;
   const currentMonth = today ? monthOf(today) : null;
@@ -105,6 +109,7 @@ export function SubscriptionDrawer({
       amountInCents: cents,
       categoryId: categoryId || undefined,
       ...(payer ? { payerMemberId: payer } : {}),
+      ...(splitAvailable && shared ? { isSharedExpense: true } : {}),
       dayOfMonth: day === "" ? undefined : dayNum,
       ...(start ? { startMonth: start } : {}),
       end: endKind === "NONE" ? { type: "NONE" } : { type: "COUNT", count: Number(endCount) },
@@ -274,6 +279,13 @@ export function SubscriptionDrawer({
             ))}
           </select>
         </Field>
+        {splitAvailable ? (
+          <SubscriptionShareSwitch
+            shared={shared}
+            onChange={setShared}
+            ruleShares={defaults.data?.split.ruleShares}
+          />
+        ) : null}
         {effect ? (
           <p data-testid="subscription-effect" className="text-sm text-slate-700">
             {effect}

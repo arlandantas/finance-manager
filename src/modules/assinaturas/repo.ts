@@ -35,6 +35,7 @@ export function assinaturasRepo(tx: Tx, familyId: string) {
       description: string;
       categoryId: string;
       payerMemberId: string;
+      isSharedExpense: boolean;
       dayOfMonth: number;
       firstChargeOn: string;
       endMonth: MonthISO | null;
@@ -49,6 +50,7 @@ export function assinaturasRepo(tx: Tx, familyId: string) {
           description: d.description,
           categoryId: d.categoryId,
           payerMemberId: d.payerMemberId,
+          isSharedExpense: d.isSharedExpense,
           dayOfMonth: d.dayOfMonth,
           firstChargeOn: toDbDate(d.firstChargeOn),
           nextChargeOn: toDbDate(d.firstChargeOn),
@@ -82,6 +84,7 @@ export function assinaturasRepo(tx: Tx, familyId: string) {
         description?: string;
         categoryId?: string;
         payerMemberId?: string;
+        isSharedExpense?: boolean;
         updatedByMemberId: string;
       },
     ) =>
@@ -200,6 +203,7 @@ export function assinaturasRepo(tx: Tx, familyId: string) {
       chargeOn: string;
       status: "POSTED" | "SKIPPED_INVOICE_PAID" | "SKIPPED_CARD_ARCHIVED";
       transactionId: string | null;
+      sharedDowngraded?: boolean;
     }) =>
       tx.subscriptionCharge.create({
         data: {
@@ -209,6 +213,7 @@ export function assinaturasRepo(tx: Tx, familyId: string) {
           chargeOn: toDbDate(d.chargeOn),
           status: d.status,
           transactionId: d.transactionId,
+          sharedDowngraded: d.sharedDowngraded ?? false,
         },
       }),
     setNext: (id: string, next: string | null) =>

@@ -1,6 +1,6 @@
 # Spec 12 — Assinaturas no cartão
 
-Atualizado: 2026-11-07. Estado: **US-096..096d, 097 e 098 implementadas (cadastro, lançamento, telas, porta única, reajuste, encerramento e lista)**; 099 não iniciada. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
+Atualizado: 2026-11-07. Estado: **US-096..096d e 097..099 implementadas (cadastro, lançamento, telas, porta única, reajuste, encerramento, lista e divisão)**. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
 
 ## Resumo
 - Assinatura = compra mensal fixa num cartão (Netflix, Spotify) que o app lança sozinho no dia da cobrança, como compra à vista normal na fatura do ciclo.
@@ -13,7 +13,7 @@ Atualizado: 2026-11-07. Estado: **US-096..096d, 097 e 098 implementadas (cadastr
 | :-- | :-- | :-- |
 | 1 | Campos: cartão ativo da família, descrição 2..100, valor 1..9.999.999.999 centavos, categoria de DESPESA ativa, pagador (padrão quem cria), dia 1..31 (29..31 = último dia em meses curtos), início entre o mês atual e +11, fim "sem fim" ou após 1..120 cobranças | 096 |
 | 2 | Primeira cobrança = primeiro dia de cobrança >= dia do cadastro a partir do mês de início (nunca retroativa) | 096 |
-| 3 | Lançamento preguiçoso ao abrir Início, A pagar, Previstas, Resumo, Cartões, Fatura, Extrato e MCP: cada mês vencido (dia <= hoje) vira `Transaction` EXPENSE no cartão, `origin = SUBSCRIPTION`, `occurredOn` = dia da cobrança, fatura por `invoiceRefFor`; até 12 por chamada; atrasadas entram cada uma na sua fatura | 096, 096b |
+| 3 | Lançamento preguiçoso ao abrir Início, A pagar, Previstas, Resumo, Cartões, Fatura, Extrato, Acerto (US-099) e MCP: cada mês vencido (dia <= hoje) vira `Transaction` EXPENSE no cartão, `origin = SUBSCRIPTION`, `occurredOn` = dia da cobrança, fatura por `invoiceRefFor`; até 12 por chamada; atrasadas entram cada uma na sua fatura | 096, 096b |
 | 4 | Registro único por (família, assinatura, mês) em `subscription_charges`: nunca duplica (inclusive `Promise.all`) nem recria cobrança excluída no Extrato | 096 |
 | 5 | Fatura do ciclo já paga: cobrança pulada (`SKIPPED_INVOICE_PAID`) com aviso "Cobrança de {mês} não lançada: fatura paga"; cartão arquivado: `SKIPPED_CARD_ARCHIVED` | 096, 096c |
 | 6 | Limite e total da fatura contam só cobranças lançadas; limite estourado não bloqueia; sem "parcela x/y" | 096 |
@@ -80,6 +80,13 @@ Atualizado: 2026-11-07. Estado: **US-096..096d, 097 e 098 implementadas (cadastr
 - DTO ganha `amendedThisMonth` (cobrança do mês com `isAmended`) e `canEdit` (`access.ts`: ativa + `assertCanWriteTransaction`, mesmo predicado da US-097; só informa a UI, o servidor continua recusando com 403).
 - Tela `/assinaturas` (`subscriptions-screen.tsx`, `subscription-filters.tsx`): total, blocos por cartão, abas (`?tab=encerradas`, "Encerrada em {data}", sem ações), filtros em chips fechados, selo "alterada", vazio com seletor de cartão. Entrada: link "Assinaturas" no topo de Cartões.
 - Testes: `tests/unit/assinaturas/list.test.ts`, `tests/integration/us-098-lista-assinaturas.int.test.ts`, E2E `US-098-lista-de-assinaturas.feature`.
+
+## Implementação (US-099)
+- Sem migração (`isSharedExpense` e `sharedDowngraded` vieram da US-096). `isSharedExpense?: boolean` em `POST` e `PATCH` (`.strict()`); `true` exige `assertCanShare` (422 `SETTLEMENT_DISABLED`); DTO ganha `isSharedExpense`.
+- `PATCH` ao alternar passa por `assertCanMakePersonal` (spec 01): só o dono torna "Só meu" ou divide a "Só meu" alheia (403); dividida em nome de outro é permitida no cadastro.
+- `chargeMonth`: lê `isSettlementEnabled` no lançamento; ligado => `createExpenseCore(isSharedExpense = true)` (STORED grava `RULE` e `transaction_splits` por `splitAmount`; LEGACY só a flag); desligado => "Só meu" + `sharedDowngraded = true`, assinatura intacta.
+- Tela: `subscription-share-switch.tsx` no cadastro e na edição ("Vale a partir da próxima cobrança"); só com acerto ligado e ≥2 ativos (`defaults.split.available`). Porta única segue só "Só meu".
+- Testes: `tests/integration/us-099-assinatura-dividida.int.test.ts` (ACs, varredura, reconciliação acerto = Extrato = Resumo, `Promise.all`, isolamento), `tests/unit/assinaturas/split-sweep.test.ts`, E2E `US-099-assinatura-dividida.feature`.
 
 ## Perguntas ao usuário
 - Nenhuma bloqueante. Hipóteses assumidas (reversíveis, ADR-036): primeira cobrança não retroativa; encerrar não lança cobrança futura do mês corrente.

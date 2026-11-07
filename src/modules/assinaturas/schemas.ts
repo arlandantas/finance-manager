@@ -31,6 +31,7 @@ export const CreateSubscriptionSchema = z
     amountInCents: amountInCentsSchema,
     categoryId: z.uuid({ error: "Escolha uma categoria" }),
     payerMemberId: uuidSchema.optional(),
+    isSharedExpense: z.boolean().optional(), // US-099: dividida com a família (acerto ligado)
     dayOfMonth: z
       .number({ error: "Informe o dia do mês" })
       .int("Informe o dia do mês")
@@ -50,6 +51,7 @@ export const UpdateSubscriptionSchema = z
     description: description.optional(),
     categoryId: z.uuid({ error: "Escolha uma categoria" }).optional(),
     payerMemberId: uuidSchema.optional(),
+    isSharedExpense: z.boolean().optional(), // US-099: vale da próxima cobrança
     amountInCents: amountInCentsSchema.optional(),
     effectiveFromMonth: monthISOSchema.optional(),
   })
@@ -90,6 +92,7 @@ export type SubscriptionDTO = {
   description: string;
   category: { id: string; name: string };
   payer: MemberRef;
+  isSharedExpense: boolean; // US-099
   dayOfMonth: number;
   currentAmountInCents: number;
   firstChargeOn: string;

@@ -8,6 +8,7 @@ import { type AmountRow, amountFor, nextAfter } from "@/modules/assinaturas/sche
 import { invoiceRefFor } from "@/modules/cartoes/cycle";
 import { activePayments } from "@/modules/cartoes/queries";
 import { type MonthISO, monthOf } from "@/modules/previstas/recurrence";
+import { isSettlementEnabled } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
 import { createExpenseCore } from "@/modules/transacoes/service";
 
@@ -49,6 +50,9 @@ async function chargeMonth(
     });
     return false;
   }
+  // US-099: dividida só com o acerto ligado AGORA; desligado => "Só meu" + `sharedDowngraded`, sem erro
+  const downgraded = sub.isSharedExpense && !(await isSettlementEnabled(tx, ctx.familyId));
+  const shared = sub.isSharedExpense && !downgraded;
   const amountInCents = amountFor(month, amounts);
   if (amountInCents === null) throw new Error("Assinatura sem valor vigente");
   const res = await createExpenseCore(
@@ -62,7 +66,7 @@ async function chargeMonth(
       occurredOn: chargeOn,
       payerMemberId: sub.payerMemberId,
       description: sub.description,
-      isSharedExpense: false,
+      isSharedExpense: shared,
       installments: 1,
       paidBeforeApp: 0,
     },
@@ -77,6 +81,7 @@ async function chargeMonth(
     chargeOn,
     status: "POSTED",
     transactionId: res.transaction.id,
+    sharedDowngraded: downgraded,
   });
   return true;
 }
