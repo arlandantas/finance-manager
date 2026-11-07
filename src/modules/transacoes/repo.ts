@@ -10,6 +10,7 @@ const loadInclude = {
   category: true,
   group: true,
   paidPlanned: { select: { id: true, kind: true } },
+  subscriptionCharge: { select: { isAmended: true } }, // US-097: selo "alterada"
   tags: { select: { tag: { select: { id: true, name: true } } } }, // US-045
 } as const;
 
@@ -208,28 +209,42 @@ export function transacoesRepo(tx: Tx, familyId: string) {
         updatedByMemberId: string;
       },
     ) =>
-      tx.transaction.updateMany({
-        where: { id, familyId, version, deletedAt: null },
-        data: {
-          ...(data.accountId !== undefined ? { accountId: data.accountId } : {}),
-          ...(data.invoiceId !== undefined ? { invoiceId: data.invoiceId } : {}),
-          ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
-          ...(data.amountInCents !== undefined
-            ? { amountInCents: fromCents(data.amountInCents) }
-            : {}),
-          ...(data.occurredOn !== undefined ? { occurredOn: toDbDate(data.occurredOn) } : {}),
-          ...(data.payerMemberId !== undefined ? { payerMemberId: data.payerMemberId } : {}),
-          ...(data.description !== undefined ? { description: data.description } : {}),
-          ...(data.note !== undefined ? { note: data.note } : {}),
-          ...(data.isSharedExpense !== undefined ? { isSharedExpense: data.isSharedExpense } : {}),
-          ...(data.splitMode !== undefined ? { splitMode: data.splitMode } : {}),
-          ...(data.splitRuleVersionId !== undefined
-            ? { splitRuleVersionId: data.splitRuleVersionId }
-            : {}),
-          updatedByMemberId: data.updatedByMemberId,
-          version: { increment: 1 },
-        },
-      }),
+      tx.transaction
+        .updateMany({
+          where: { id, familyId, version, deletedAt: null },
+          data: {
+            ...(data.accountId !== undefined ? { accountId: data.accountId } : {}),
+            ...(data.invoiceId !== undefined ? { invoiceId: data.invoiceId } : {}),
+            ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
+            ...(data.amountInCents !== undefined
+              ? { amountInCents: fromCents(data.amountInCents) }
+              : {}),
+            ...(data.occurredOn !== undefined ? { occurredOn: toDbDate(data.occurredOn) } : {}),
+            ...(data.payerMemberId !== undefined ? { payerMemberId: data.payerMemberId } : {}),
+            ...(data.description !== undefined ? { description: data.description } : {}),
+            ...(data.note !== undefined ? { note: data.note } : {}),
+            ...(data.isSharedExpense !== undefined
+              ? { isSharedExpense: data.isSharedExpense }
+              : {}),
+            ...(data.splitMode !== undefined ? { splitMode: data.splitMode } : {}),
+            ...(data.splitRuleVersionId !== undefined
+              ? { splitRuleVersionId: data.splitRuleVersionId }
+              : {}),
+            updatedByMemberId: data.updatedByMemberId,
+            version: { increment: 1 },
+          },
+        })
+        .then(async (res) => {
+          // US-097: corrigir valor/data/descrição/categoria da cobrança de assinatura a marca "alterada"
+          const k = ["amountInCents", "occurredOn", "description", "categoryId"] as const;
+          if (res.count > 0 && k.some((f) => data[f] !== undefined)) {
+            await tx.subscriptionCharge.updateMany({
+              where: { familyId, transactionId: id },
+              data: { isAmended: true },
+            });
+          }
+          return res;
+        }),
     markDeleted: (id: string, version: number, memberId: string, now: Date) =>
       tx.transaction.updateMany({
         where: { id, familyId, version, deletedAt: null },

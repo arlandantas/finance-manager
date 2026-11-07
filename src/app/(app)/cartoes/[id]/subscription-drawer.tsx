@@ -28,7 +28,7 @@ const subscribe = (cb: () => void) => {
     window.removeEventListener("offline", cb);
   };
 };
-const useOnline = () =>
+export const useOnline = () =>
   useSyncExternalStore(
     subscribe,
     () => navigator.onLine,

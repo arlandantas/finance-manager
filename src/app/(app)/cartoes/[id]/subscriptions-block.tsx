@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { Money } from "@/components/money";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscriptions } from "@/modules/assinaturas/hooks";
 import { projectedInCycle } from "@/modules/assinaturas/schedule";
+import type { SubscriptionDTO } from "@/modules/assinaturas/schemas";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
+import { SubscriptionEditDrawer } from "./subscription-edit-drawer";
 
 /** "Assinaturas previstas neste ciclo" (US-096c): informativo, nunca somado ao total da fatura. */
 export function ProjectedLine({
@@ -36,6 +39,7 @@ const SKIP_TEXT = {
 export function SubscriptionsBlock({ cardId, onNew }: { cardId: string; onNew: () => void }) {
   const subs = useSubscriptions({ status: "active", cardId });
   const items = subs.data?.items ?? [];
+  const [editing, setEditing] = useState<SubscriptionDTO | null>(null);
   return (
     <section
       aria-label="Assinaturas do cartão"
@@ -70,14 +74,20 @@ export function SubscriptionsBlock({ cardId, onNew }: { cardId: string; onNew: (
               data-testid="subscription-item"
               className="flex flex-col gap-1 rounded-lg border border-slate-200 p-3"
             >
-              <div className="flex items-baseline justify-between gap-3">
+              <button
+                type="button"
+                data-testid="subscription-open"
+                aria-label={`Editar assinatura ${s.description}`}
+                onClick={() => setEditing(s)}
+                className="flex min-h-11 items-baseline justify-between gap-3 text-left"
+              >
                 <span className="min-w-0 break-words font-medium text-slate-900">
                   {s.description}
                 </span>
                 <span className="whitespace-nowrap font-semibold tabular-nums text-slate-900">
                   <Money cents={s.currentAmountInCents} />
                 </span>
-              </div>
+              </button>
               <span className="text-sm text-slate-600">Todo dia {s.dayOfMonth}</span>
               {s.recentSkips.map((k) => (
                 <p
@@ -93,6 +103,7 @@ export function SubscriptionsBlock({ cardId, onNew }: { cardId: string; onNew: (
           ))}
         </ul>
       )}
+      <SubscriptionEditDrawer sub={editing} onClose={() => setEditing(null)} />
     </section>
   );
 }

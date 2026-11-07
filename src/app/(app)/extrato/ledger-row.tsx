@@ -155,6 +155,14 @@ export function LedgerRow({
                   Assinatura
                 </span>
               ) : null}
+              {item.isSubscriptionAmended ? (
+                <span
+                  data-testid="subscription-amended-badge"
+                  className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900"
+                >
+                  alterada
+                </span>
+              ) : null}
               {item.invoice ? (
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
                   Fatura {formatInvoiceLabel(item.invoice.ref)}

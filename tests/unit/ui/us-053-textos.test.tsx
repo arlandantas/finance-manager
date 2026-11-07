@@ -22,6 +22,7 @@ const item = {
   tags: [],
   viaAssistant: null,
   isSubscription: false,
+  isSubscriptionAmended: false,
   invoice: null,
   installment: null,
   deletedAt: null,

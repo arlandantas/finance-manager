@@ -22,7 +22,7 @@ import { lockFamilySplit } from "@/modules/split/lock";
 import { assertPersonalForSelf } from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 
-const NOT_FOUND = "Assinatura não encontrada.";
+export const NOT_FOUND = "Assinatura não encontrada.";
 const HORIZON = 12;
 
 type Repo = ReturnType<typeof assinaturasRepo>;
@@ -145,7 +145,7 @@ export async function createSubscription(
   return { subscription: await loadOne(tx, ctx, created.id) };
 }
 
-async function loadOne(tx: Tx, ctx: RequestContext, id: string): Promise<SubscriptionDTO> {
+export async function loadOne(tx: Tx, ctx: RequestContext, id: string): Promise<SubscriptionDTO> {
   const row = await assinaturasRepo(tx, ctx.familyId).findById(id);
   if (!row) throw notFound(NOT_FOUND);
   const [dto] = await toDTOs(tx, ctx, [row]);

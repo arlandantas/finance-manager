@@ -43,6 +43,36 @@ export const CreateSubscriptionSchema = z
 export type CreateSubscriptionInput = z.input<typeof CreateSubscriptionSchema>;
 export type CreateSubscriptionParsed = z.output<typeof CreateSubscriptionSchema>;
 
+// US-097: dia e cartão não mudam (encerre e crie outra); campo extra = 400.
+export const UpdateSubscriptionSchema = z
+  .object({
+    version: z.number().int().min(1),
+    description: description.optional(),
+    categoryId: z.uuid({ error: "Escolha uma categoria" }).optional(),
+    payerMemberId: uuidSchema.optional(),
+    amountInCents: amountInCentsSchema.optional(),
+    effectiveFromMonth: monthISOSchema.optional(),
+  })
+  .strict()
+  .refine((v) => v.effectiveFromMonth === undefined || v.amountInCents !== undefined, {
+    path: ["effectiveFromMonth"],
+    message: "Informe o novo valor para escolher o mês",
+  });
+export type UpdateSubscriptionInput = z.input<typeof UpdateSubscriptionSchema>;
+export type UpdateSubscriptionParsed = z.output<typeof UpdateSubscriptionSchema>;
+
+export const EndSubscriptionSchema = z.object({ version: z.number().int().min(1) }).strict();
+
+export const GetSubscriptionQuerySchema = z
+  .object({ impactFrom: monthISOSchema.optional() })
+  .strict();
+
+export type SubscriptionImpact = {
+  affectedCount: number | null; // null = sem fim
+  keptPostedCount: number;
+  keptAmendedCount: number;
+};
+
 export const ListSubscriptionsQuerySchema = z
   .object({
     status: z.enum(["active", "ended"]).default("active"),

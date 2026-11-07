@@ -68,6 +68,62 @@ export function assinaturasRepo(tx: Tx, familyId: string) {
       });
       return row;
     },
+    /** US-097: a linha da assinatura travada `FOR UPDATE` (edição/encerramento serializados). */
+    lockForUpdate: async (id: string) => {
+      const rows = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM card_subscriptions WHERE id = ${id}::uuid AND "familyId" = ${familyId}::uuid FOR UPDATE`;
+      return rows[0] ?? null;
+    },
+    /** Controle otimista: 0 linhas => `version` antiga ou já encerrada. */
+    updateVersioned: (
+      id: string,
+      version: number,
+      data: {
+        description?: string;
+        categoryId?: string;
+        payerMemberId?: string;
+        updatedByMemberId: string;
+      },
+    ) =>
+      tx.cardSubscription.updateMany({
+        where: { id, familyId, version, endedAt: null },
+        data: { ...data, version: { increment: 1 } },
+      }),
+    insertAmount: (d: {
+      subscriptionId: string;
+      fromMonth: MonthISO;
+      amountInCents: number;
+      authorMemberId: string;
+    }) =>
+      tx.cardSubscriptionAmount.create({
+        data: {
+          familyId,
+          subscriptionId: d.subscriptionId,
+          fromMonth: toDbDate(`${d.fromMonth}-01`),
+          amountInCents: fromCents(d.amountInCents),
+          authorMemberId: d.authorMemberId,
+        },
+      }),
+    /** Encerra (US-097): `nextChargeOn = NULL`; 0 linhas => `version` antiga ou já encerrada. */
+    markEnded: (id: string, version: number, d: { memberId: string; on: string; at: Date }) =>
+      tx.cardSubscription.updateMany({
+        where: { id, familyId, version, endedAt: null },
+        data: {
+          endedAt: d.at,
+          endedOn: toDbDate(d.on),
+          endedByMemberId: d.memberId,
+          nextChargeOn: null,
+          version: { increment: 1 },
+        },
+      }),
+    postedCounts: async (subscriptionId: string) => {
+      const where = { familyId, subscriptionId, status: "POSTED" as const };
+      const [posted, amended] = await Promise.all([
+        tx.subscriptionCharge.count({ where }),
+        tx.subscriptionCharge.count({ where: { ...where, isAmended: true } }),
+      ]);
+      return { posted, amended };
+    },
     findById: (id: string) => tx.cardSubscription.findFirst({ where: { id, familyId }, include }),
     list: (status: "active" | "ended", cardId?: string) =>
       tx.cardSubscription.findMany({

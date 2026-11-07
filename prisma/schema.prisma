@@ -299,6 +299,7 @@ model Member {
   subscriptionPayer            CardSubscription[]            @relation("SubscriptionPayer")
   subscriptionAuthor           CardSubscription[]            @relation("SubscriptionAuthor")
   subscriptionEnded            CardSubscription[]            @relation("SubscriptionEnder")
+  subscriptionUpdated          CardSubscription[]            @relation("SubscriptionUpdater")
   subscriptionAmountsAuthored  CardSubscriptionAmount[]
   planPayer                    InstallmentPlan[]             @relation("PlanPayer")
   planAuthor                   InstallmentPlan[]             @relation("PlanAuthor")
@@ -1205,6 +1206,7 @@ model CardSubscription {
   endedOn         DateTime? @db.Date
   endedByMemberId String?   @db.Uuid
   authorMemberId  String    @db.Uuid
+  updatedByMemberId String? @db.Uuid // US-097: quem editou por último ("alterada por")
   version         Int       @default(1)
   createdAt       DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
@@ -1215,6 +1217,7 @@ model CardSubscription {
   payer    Member                   @relation("SubscriptionPayer", fields: [familyId, payerMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
   author   Member                   @relation("SubscriptionAuthor", fields: [familyId, authorMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
   endedBy  Member?                  @relation("SubscriptionEnder", fields: [familyId, endedByMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  updatedBy Member?                 @relation("SubscriptionUpdater", fields: [familyId, updatedByMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
   amounts  CardSubscriptionAmount[]
   charges  SubscriptionCharge[]
 

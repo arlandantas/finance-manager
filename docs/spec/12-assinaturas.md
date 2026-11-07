@@ -1,6 +1,6 @@
 # Spec 12 — Assinaturas no cartão
 
-Atualizado: 2026-11-07. Estado: **US-096, 096b, 096c e 096d implementadas (servidor, telas do cartão, fatura, Extrato e porta única)**; 097, 098, 099 não iniciadas. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
+Atualizado: 2026-11-07. Estado: **US-096..096d e 097 implementadas (cadastro, lançamento, telas, porta única, reajuste e encerramento)**; 098, 099 não iniciadas. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
 
 ## Resumo
 - Assinatura = compra mensal fixa num cartão (Netflix, Spotify) que o app lança sozinho no dia da cobrança, como compra à vista normal na fatura do ciclo.
@@ -66,8 +66,17 @@ Atualizado: 2026-11-07. Estado: **US-096, 096b, 096c e 096d implementadas (servi
 - Sempre "Só meu" do próprio autor (sem divisão até a US-099; parcelas e "Dividir" somem); outros membros desabilitados em "Quem pagou?". Linha "Lança sozinha todo dia {d} no cartão {nome}. Primeira cobrança em {data}" via `firstChargeOn`; botão "Salvar assinatura".
 - Cria só a assinatura; a cobrança do dia nasce no lançamento preguiçoso (nunca uma compra avulsa). Teste: `tests/integration/us-096d-assinatura-porta.int.test.ts`; E2E no mesmo `.feature`.
 
+## Implementação (US-097)
+- Migração `20261107000200_us097_subscription_updated_by` (expand: `updatedByMemberId` anulável + FK composta): nome no 409 "alterada por {nome}".
+- `PATCH /subscriptions/{id}` `.strict()` (`manage.ts`): `lockFamilySplit` → advisory → linha `FOR UPDATE`; ordem das recusas: encerrada 409 `SUBSCRIPTION_ENDED`, controle 403 (`assertCanWriteTransaction`, como a compra no cartão), `version` 409. Trocar pagador passa por `assertPersonalForSelf`. `amountInCents` insere vigência em `effectiveFromMonth` (padrão: mês de `nextChargeOn`; anterior => 422); `effectiveFromMonth` sem valor = 400. Sem diferença efetiva = 200 sem subir `version`.
+- `GET /subscriptions/{id}?impactFrom=YYYY-MM` devolve `impact`: `affectedCount` (null sem fim; vigência posterior limita), `keptPostedCount`, `keptAmendedCount`.
+- `POST /subscriptions/{id}/end`: lança antes o vencido (laço, sem perder pelo teto de 12), grava `endedAt/endedOn/endedByMemberId`, `nextChargeOn = NULL`.
+- Corrigir a cobrança: `transacoesRepo.updateVersioned` marca `subscription_charges.isAmended` quando valor, data, descrição ou categoria mudam (mesma transação); `TransactionDTO.isSubscriptionAmended` => selo "alterada" no Extrato.
+- Tela: clicar na assinatura do bloco abre `subscription-edit-drawer.tsx` (valor com "A partir de" e aviso do impacto, encerrar com confirmação); chave de idempotência nova a cada erro.
+- Testes: `tests/integration/us-097-assinatura-editar-encerrar.int.test.ts`, E2E `US-097-assinatura-reajustar-encerrar.feature`.
+
 ## Perguntas ao usuário
 - Nenhuma bloqueante. Hipóteses assumidas (reversíveis, ADR-036): primeira cobrança não retroativa; encerrar não lança cobrança futura do mês corrente.
 
 ## Fontes
-Código (US-096): `src/modules/assinaturas/{schemas,schedule,repo,service,charges}.ts`, `createExpenseCore(opts.subscription)`, rota `POST|GET /api/v1/subscriptions` (GET lança o vencido antes de ler). Telas (US-096c): `src/app/(app)/cartoes/[id]/{subscription-drawer,subscriptions-block}.tsx`. Planejado: `manage,list`, demais rotas, `src/app/(app)/assinaturas/`.
+Código (US-096): `src/modules/assinaturas/{schemas,schedule,repo,service,charges}.ts`, `createExpenseCore(opts.subscription)`, rota `POST|GET /api/v1/subscriptions` (GET lança o vencido antes de ler). Telas (US-096c): `src/app/(app)/cartoes/[id]/{subscription-drawer,subscriptions-block}.tsx`. Planejado: `list`, demais rotas, `src/app/(app)/assinaturas/`.

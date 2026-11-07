@@ -138,8 +138,8 @@ export type TransactionDTO = {
   accountOwnerId?: string | null;
   /** US-076a: selo "via assistente" (rótulo da conexão; "assistente removido" se expurgada). */
   viaAssistant: { label: string } | null;
-  /** US-096c: cobrança automática de assinatura (selo "Assinatura"). */
-  isSubscription: boolean;
+  isSubscription: boolean; // US-096c: cobrança automática de assinatura (selo "Assinatura")
+  isSubscriptionAmended: boolean; // US-097: cobrança corrigida no Extrato (selo "alterada")
   transferGroupId: string | null;
   plannedExpenseId: string | null; // previsão que originou esta despesa (baixa), SDD-009 §4.5
   isSettlement: boolean;
