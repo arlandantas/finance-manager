@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { splitOf } from "@/modules/split/split-input";
 import { CreateTransactionSchema } from "@/modules/transacoes/schemas";
 
 const uuid = "11111111-1111-4111-8111-111111111111";
@@ -84,7 +85,13 @@ describe("US-005 Descrição omitida", () => {
 
 describe("US-005/US-006 padrões e campos proibidos", () => {
   it("despesa: isSharedExpense padrão false (Só meu, US-030)", () => {
-    expect(CreateTransactionSchema.parse(base)).toMatchObject({ isSharedExpense: false });
+    // US-043: ausente == "Só meu" (modo efetivo NONE); `split` e `isSharedExpense` juntos => 400
+    const parsed = CreateTransactionSchema.parse(base);
+    expect(splitOf(parsed as never)).toEqual({ mode: "NONE" });
+    expect(
+      CreateTransactionSchema.safeParse({ ...base, isSharedExpense: true, split: { mode: "RULE" } })
+        .success,
+    ).toBe(false);
   });
 
   it("(infra) .strict(): familyId e authorMemberId são rejeitados", () => {

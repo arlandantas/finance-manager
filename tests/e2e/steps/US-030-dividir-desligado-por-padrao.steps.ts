@@ -15,8 +15,9 @@ import {
 } from "../support/lancamento";
 
 const db = testDb();
-const sw = (page: Page) => drawer(page).getByRole("switch", { name: "Dividir com a família" });
-const label = (page: Page) => drawer(page).getByTestId("split-label");
+const rule = (page: Page) => drawer(page).getByRole("radio", { name: /^Pela regra da família/ });
+const radio = (page: Page, name: string | RegExp) =>
+  page.getByRole("dialog").getByRole("radio", { name });
 
 Given(
   'a família Silva do "Só meu" com a conta {string} e Lucas autenticado',
@@ -32,17 +33,15 @@ When('Lucas abre o formulário de despesa do "Só meu"', async ({ page }) => {
   await openDrawer(page);
 });
 
-Then(
-  "o interruptor {string} está desligado e o rótulo é {string}",
-  async ({ page }, _n: string, rotulo: string) => {
-    const d = page.getByRole("dialog");
-    await expect(d.getByRole("switch", { name: "Dividir com a família" })).not.toBeChecked();
-    await expect(d.getByTestId("split-label")).toHaveText(rotulo);
-  },
-);
+Then("o seletor {string} marca {string}", async ({ page }, grupo: string, opcao: string) => {
+  const d = page.getByRole("dialog");
+  await expect(
+    d.getByRole("radiogroup", { name: grupo }).getByRole("radio", { name: opcao }),
+  ).toBeChecked();
+});
 
 When(
-  "Lucas lança {string} em {string} sem tocar no interruptor",
+  "Lucas lança {string} em {string} sem tocar no seletor",
   async ({ page }, v: string, c: string) => {
     await gotoReady(page, "/");
     await openDrawer(page);
@@ -65,19 +64,19 @@ Then('a despesa mais recente fica como "Só meu" e o acerto do mês não muda', 
 });
 
 When(
-  "Lucas liga {string} e salva {string} em {string}",
+  "Lucas escolhe {string} e salva {string} em {string}",
   async ({ page, world }, _n: string, v: string, c: string) => {
     await gotoReady(page, "/");
     await openDrawer(page);
     await fillAmount(page, v);
     await pickCategory(page, c);
-    await sw(page).click();
-    world.data.labelOn = await label(page).innerText();
+    await rule(page).click();
+    world.data.labelOn = await rule(page).innerText();
     await save(page, "Salvar Despesa");
     await waitSaved(page);
   },
 );
-Then("o formulário mostrou {string} ao ligar", async ({ world }, texto: string) => {
+Then("o formulário mostrou {string} ao escolher", async ({ world }, texto: string) => {
   expect(world.data.labelOn).toBe(texto);
 });
 Then(
@@ -89,12 +88,12 @@ Then(
   },
 );
 
-Given("que Lucas salvou a despesa anterior com o interruptor ligado", async ({ page }) => {
+Given("que Lucas salvou a despesa anterior dividida pela regra", async ({ page }) => {
   await gotoReady(page, "/");
   await openDrawer(page);
   await fillAmount(page, "R$ 100,00");
   await pickCategory(page, "Supermercado");
-  await sw(page).click();
+  await rule(page).click();
   await save(page, "Salvar Despesa");
   await waitSaved(page);
 });
@@ -105,9 +104,9 @@ Given('que o acerto de contas foi desligado no "Só meu"', async ({ world }) => 
     data: { settlementEnabled: false },
   });
 });
-Then("não vê o interruptor {string}", async ({ page }, nome: string) => {
+Then("não vê o seletor {string}", async ({ page }, nome: string) => {
   await expect(page.getByLabel("Valor", { exact: true })).toBeVisible();
-  await expect(page.getByRole("switch", { name: nome })).toHaveCount(0);
+  await expect(page.getByRole("radiogroup", { name: nome })).toHaveCount(0);
 });
 
 When('Lucas abre o cadastro de despesa prevista do "Só meu"', async ({ page }) => {

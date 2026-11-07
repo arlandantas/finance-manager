@@ -57,6 +57,7 @@ const existing = (id: string, occurredOn: string): TransactionDTO => ({
   author: lucas,
   updatedBy: null,
   isSharedExpense: true,
+  split: null,
   viaAssistant: null,
   isSubscription: false,
   isSubscriptionAmended: false,

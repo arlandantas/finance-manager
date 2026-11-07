@@ -2,6 +2,7 @@ import { z } from "zod";
 import { dateISOSchema } from "@/lib/dates";
 import { amountInCentsSchema } from "@/lib/money";
 import { type MemberRef, periodKeySchema, uuidSchema, versionSchema } from "@/lib/schemas";
+import { refineSplitXor, SplitInputSchema } from "@/modules/split/split-input";
 import type { TransactionDTO } from "@/modules/transacoes/schemas";
 
 // SDD-009 §2 (Zod 4).
@@ -25,13 +26,16 @@ export const CreatePlannedExpenseSchema = z
     dueOn: dateISOSchema.optional(), // padrão: hoje (servidor)
     categoryId: z.uuid({ error: "Escolha uma categoria" }), // categoria de DESPESA, ativa
     responsibleMemberId: uuidSchema.optional(), // padrão: membro logado (RN-001.2)
-    isSharedExpense: z.boolean().default(false), // "Só meu" por padrão (US-030, D-GES-15)
+    // "Só meu" por padrão (US-030, D-GES-15). US-043: `split` OU `isSharedExpense` (juntos => 400; true == RULE)
+    isSharedExpense: z.boolean().optional(),
+    split: SplitInputSchema.optional(),
     note: noteSchema.optional(),
     paymentAccountId: z.uuid({ error: "Escolha uma conta ativa" }).nullable().optional(), // US-059
   })
   .strict()
   .superRefine((v, ctx) => {
-    if (v.kind === "INCOME" && v.isSharedExpense) {
+    refineSplitXor(v, ctx);
+    if (v.kind === "INCOME" && (v.isSharedExpense || (v.split && v.split.mode !== "NONE"))) {
       ctx.addIssue({
         code: "custom",
         path: ["isSharedExpense"],
@@ -51,10 +55,12 @@ export const UpdatePlannedExpenseSchema = z
     categoryId: z.uuid({ error: "Escolha uma categoria" }).optional(),
     responsibleMemberId: uuidSchema.optional(),
     isSharedExpense: z.boolean().optional(),
+    split: SplitInputSchema.optional(), // US-043 (juntos com isSharedExpense => 400)
     note: noteSchema.nullable().optional(),
     paymentAccountId: z.uuid({ error: "Escolha uma conta ativa" }).nullable().optional(),
   })
-  .strict();
+  .strict()
+  .superRefine(refineSplitXor);
 export type UpdatePlannedExpenseInput = z.input<typeof UpdatePlannedExpenseSchema>;
 export type UpdatePlannedExpenseParsed = z.output<typeof UpdatePlannedExpenseSchema>;
 
@@ -100,6 +106,8 @@ export type PlannedExpenseDTO = {
   author: MemberRef;
   updatedBy: MemberRef | null;
   isSharedExpense: boolean;
+  /** US-043: modo da divisão (`null` em "Só meu"); na ocorrência de série e no legado, RULE. */
+  split: { mode: "RULE" | "CUSTOM"; shares: Array<{ memberId: string; bps: number }> } | null;
   note: string | null;
   // US-058/059 (SDD-019 §3.5)
   series: { id: string; dayOfMonth: number } | null;

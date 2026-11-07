@@ -5,6 +5,7 @@ import { type MemberRef, periodKeySchema, uuidSchema, versionSchema } from "@/li
 import type { InvoiceStatus } from "@/modules/cartoes/cycle";
 import { addMonthsClamped, MAX_INSTALLMENTS } from "@/modules/cartoes/installments";
 import type { AccountColor } from "@/modules/contas/colors";
+import { refineSplitXor, SplitInputSchema } from "@/modules/split/split-input";
 import { TagNamesSchema, type TagRef } from "@/modules/tags/schemas";
 
 /** Mensagem única de descrição inválida em despesa/receita/cartão (SDD-013 §1; previstas mantêm as suas). */
@@ -53,12 +54,15 @@ export const CreateExpenseSchema = z
     ...common,
     accountId: common.accountId.optional(),
     cardId: z.uuid({ error: "Escolha um cartão" }).optional(),
-    isSharedExpense: z.boolean().default(false), // "Só meu" por padrão (US-030, D-GES-15)
+    // "Só meu" por padrão (US-030, D-GES-15). US-043: `split` OU `isSharedExpense` (juntos => 400; true == RULE)
+    isSharedExpense: z.boolean().optional(),
+    split: SplitInputSchema.optional(),
     installments: installmentsSchema,
     paidBeforeApp: paidBeforeAppSchema,
   })
   .strict()
   .superRefine((v, c) => {
+    refineSplitXor(v, c);
     if (!v.accountId && !v.cardId) {
       c.addIssue({
         code: "custom",
@@ -109,6 +113,12 @@ export type TransactionType =
 
 export type InstallmentDTO = { planId: string; no: number; count: number };
 
+export type SplitDTO = {
+  mode: "RULE" | "CUSTOM";
+  ruleVersionId: string | null;
+  shares: Array<{ member: MemberRef; bps: number; amountInCents: number }>;
+};
+
 export type TransactionDTO = {
   id: string;
   type: TransactionType; // = coluna Prisma `kind`
@@ -134,6 +144,8 @@ export type TransactionDTO = {
   author: MemberRef; // autor do cadastro (RN-001.1)
   updatedBy: MemberRef | null;
   isSharedExpense: boolean; // "Dividir com a família"
+  /** US-043: modo e rateio gravados (`null` em "Só meu" e em quem não é despesa); a regra é só a sugestão. */
+  split: SplitDTO | null;
   /** D-GES-50: dono da conta (ou do cartão) do lançamento; quem controla um "Só meu" junto com o pagador e o autor. */
   accountOwnerId?: string | null;
   /** US-076a: selo "via assistente" (rótulo da conexão; "assistente removido" se expurgada). */
@@ -226,6 +238,7 @@ export type TransactionDefaults = {
   split: {
     available: boolean;
     ruleShares: Array<{ memberId: string; bps: number }> | null;
+    modes: Array<"NONE" | "RULE" | "CUSTOM">; // US-043: "De outro jeito" (CUSTOM) disponível
     installmentsAvailable: boolean; // US-042 liga (compra parcelada dividida)
   };
 };
@@ -330,9 +343,11 @@ export const UpdateTransactionSchema = z
       .nullable()
       .optional(),
     isSharedExpense: z.boolean().optional(), // só despesa; em receita => 400
+    split: SplitInputSchema.optional(), // US-043: troca o modo (juntos com isSharedExpense => 400)
     tags: TagNamesSchema.optional(), // US-045: SUBSTITUI o conjunto ([] limpa; ausente não toca)
   })
-  .strict();
+  .strict()
+  .superRefine(refineSplitXor);
 export type UpdateTransactionInput = z.input<typeof UpdateTransactionSchema>;
 export type UpdateTransactionParsed = z.output<typeof UpdateTransactionSchema>;
 

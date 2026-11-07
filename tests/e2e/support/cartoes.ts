@@ -96,7 +96,9 @@ export async function fillExpense(page: Page, o: BuyOptions) {
   }
   // "Só meu" é o padrão (US-030): o interruptor só é tocado para dividir
   if (o.shared === true) {
-    await drawer(page).getByRole("switch", { name: "Dividir com a família" }).click();
+    await drawer(page)
+      .getByRole("radio", { name: /^Pela regra da família/ })
+      .click();
   }
   if (o.payer) await drawer(page).getByRole("radio", { name: o.payer, exact: true }).click();
   if (o.date) await setDate(page, o.date);

@@ -1,3 +1,4 @@
+import { Prisma } from "@/generated/prisma/client";
 import type { Tx } from "@/lib/api/types";
 import { toDbDate } from "@/lib/dates";
 import { fromCents } from "@/lib/money";
@@ -81,6 +82,8 @@ export function previstasRepo(tx: Tx, familyId: string) {
       categoryId: string;
       responsibleMemberId: string;
       isSharedExpense: boolean;
+      splitMode?: "NONE" | "RULE" | "CUSTOM";
+      splitShares?: Array<{ memberId: string; bps: number }> | null;
       note: string | null;
       authorMemberId: string;
       paymentAccountId?: string | null;
@@ -89,6 +92,7 @@ export function previstasRepo(tx: Tx, familyId: string) {
         data: {
           familyId,
           ...d,
+          splitShares: d.splitShares ?? Prisma.DbNull,
           kind: d.kind ?? "EXPENSE",
           amountInCents: fromCents(d.amountInCents),
           dueOn: toDbDate(d.dueOn),
@@ -105,6 +109,8 @@ export function previstasRepo(tx: Tx, familyId: string) {
         categoryId?: string;
         responsibleMemberId?: string;
         isSharedExpense?: boolean;
+        splitMode?: "NONE" | "RULE" | "CUSTOM";
+        splitShares?: Array<{ memberId: string; bps: number }> | null;
         note?: string | null;
         paymentAccountId?: string | null;
         isException?: boolean;
@@ -122,6 +128,8 @@ export function previstasRepo(tx: Tx, familyId: string) {
             ? { responsibleMemberId: d.responsibleMemberId }
             : {}),
           ...(d.isSharedExpense !== undefined ? { isSharedExpense: d.isSharedExpense } : {}),
+          ...(d.splitMode !== undefined ? { splitMode: d.splitMode } : {}),
+          ...(d.splitShares !== undefined ? { splitShares: d.splitShares ?? Prisma.DbNull } : {}),
           ...(d.note !== undefined ? { note: d.note } : {}),
           ...(d.paymentAccountId !== undefined ? { paymentAccountId: d.paymentAccountId } : {}),
           ...(d.isException !== undefined ? { isException: d.isException } : {}),

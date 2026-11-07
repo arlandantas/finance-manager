@@ -6,30 +6,30 @@ Funcionalidade: Dividir desligado por padrão
 
   Cenário: Nova despesa nasce como Só meu
     Quando Lucas abre o formulário de despesa do "Só meu"
-    Então o interruptor "Dividir com a família" está desligado e o rótulo é "Só meu"
+    Então o seletor "Dividir com a família" marca "Só meu"
 
   Cenário: Lançamento rápido sem dividir mantém os quatro toques
-    Quando Lucas lança "R$ 80,00" em "Saúde" sem tocar no interruptor
+    Quando Lucas lança "R$ 80,00" em "Saúde" sem tocar no seletor
     Então a despesa mais recente fica como "Só meu" e o acerto do mês não muda
 
-  Cenário: Ligar o interruptor divide pela regra vigente
-    Quando Lucas liga "Dividir com a família" e salva "R$ 300,00" em "Supermercado"
-    Então o formulário mostrou "Divisão igual (50% / 50%)" ao ligar
+  Cenário: Escolher a regra divide pela regra vigente
+    Quando Lucas escolhe "Pela regra da família" e salva "R$ 300,00" em "Supermercado"
+    Então o formulário mostrou "Pela regra da família (50% / 50%)" ao escolher
     E a despesa entra no acerto com cota de "R$ 150,00" para cada membro
 
   Cenário: O padrão não lembra a escolha anterior
-    Dado que Lucas salvou a despesa anterior com o interruptor ligado
+    Dado que Lucas salvou a despesa anterior dividida pela regra
     Quando Lucas abre o formulário de despesa do "Só meu"
-    Então o interruptor "Dividir com a família" está desligado e o rótulo é "Só meu"
+    Então o seletor "Dividir com a família" marca "Só meu"
 
   Cenário: Campo some com o acerto desligado
     Dado que o acerto de contas foi desligado no "Só meu"
     Quando Lucas abre o formulário de despesa do "Só meu"
-    Então não vê o interruptor "Dividir com a família"
+    Então não vê o seletor "Dividir com a família"
 
   Cenário: Despesa prevista também nasce como Só meu
     Quando Lucas abre o cadastro de despesa prevista do "Só meu"
-    Então o interruptor "Dividir com a família" está desligado e o rótulo é "Só meu"
+    Então o seletor "Dividir com a família" marca "Só meu"
 
   Cenário: Painel de Acerto informa as despesas Só meu do mês
     Dado duas despesas "Só meu" de "R$ 80,00" e "R$ 45,00" em outubro de 2026

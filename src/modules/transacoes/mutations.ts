@@ -21,7 +21,7 @@ import { splitRepo } from "@/modules/split/repo";
 import {
   clearSplitRows,
   insertSplitRows,
-  resolveRuleSplit,
+  resolveSplit,
   rewriteSplitAmounts,
 } from "@/modules/split/write";
 import { replaceTags, type TagSetChange } from "@/modules/tags/service";
@@ -43,6 +43,7 @@ import type {
   UpdateTransactionResponse,
 } from "@/modules/transacoes/schemas";
 import { getTransaction, memberRefOf } from "@/modules/transacoes/service";
+import { planSplitChange, SPLIT_MODE_LABEL } from "@/modules/transacoes/split-edit";
 
 const NOT_EDITABLE = "Transferências e acertos não podem ser editados. Use Desfazer.";
 const INVOICE_PAID_LOCKED =
@@ -191,6 +192,7 @@ const FINANCIAL_KEYS = [
   "description",
   "note",
   "isSharedExpense",
+  "split",
 ] as const;
 
 /** SDD-016 §1: PATCH cujos campos ⊆ { tags } é edição NÃO financeira (não pede acerto, não é barrada por fatura/conta/parcela). */
@@ -296,7 +298,13 @@ export async function updateTransaction(
       : { ownerIsActor: false, ownerRemoved: false, ownerUnlinked: false };
   // US-093b: o tutor (Admin sobre dono sem conta) tem os mesmos poderes plenos do Admin sobre ex-membro
   const fullPower = adminFullPower(ctx, standing) && isPersonalExpense(row);
-  assertCanMakePersonal(ctx, row, input, {
+  // US-043: `split` vale como `isSharedExpense` para as travas de propriedade ("Só meu" x dividida)
+  const ownershipNext = {
+    ...input,
+    isSharedExpense:
+      input.isSharedExpense ?? (input.split ? input.split.mode !== "NONE" : undefined),
+  };
+  assertCanMakePersonal(ctx, row, ownershipNext, {
     fullPower,
     ownerIsActor: standing.ownerIsActor && isPersonalExpense(row), // SEC-049
     payerGone: standing.ownerRemoved,
@@ -312,13 +320,18 @@ export async function updateTransaction(
       "Este lançamento foi excluído. Restaure para editar.",
     );
   }
-  if (input.isSharedExpense === true && row.kind === "EXPENSE" && !row.isSharedExpense) {
-    await assertCanShare(tx, ctx);
-  }
-  if (row.kind === "INCOME" && input.isSharedExpense !== undefined) {
+  if (row.kind === "INCOME" && (input.isSharedExpense !== undefined || input.split !== undefined)) {
     throw badRequest("VALIDATION_ERROR", "Receita não pode ser dividida com a família", [
       { path: "isSharedExpense", message: "Receita não pode ser dividida com a família" },
     ]);
+  }
+  const plan = await planSplitChange(tx, ctx.familyId, row, input);
+  if (plan.changed && plan.target?.mode !== "NONE") await assertCanShare(tx, ctx);
+  if (plan.changed && plan.target?.mode === "CUSTOM" && engine !== "STORED") {
+    throw unprocessable(
+      "CUSTOM_SPLIT_UNAVAILABLE",
+      "Esta família ainda não aceita divisão personalizada",
+    );
   }
   const today = todayInFamilyTz(ctx.clock);
 
@@ -387,19 +400,24 @@ export async function updateTransaction(
     if (v !== undefined && v !== before[k]) (wanted as Record<string, unknown>)[k] = v;
   }
   if (input.note === null && row.note === null) delete wanted.note;
+  // `isSharedExpense` do modo efetivo: só entra em `wanted` quando a divisão liga/desliga (como antes)
+  delete wanted.isSharedExpense;
+  const sharedBefore = plan.modeBefore !== "NONE";
+  const sharedAfter = plan.target ? plan.target.mode !== "NONE" : sharedBefore;
+  if (plan.changed && sharedAfter !== row.isSharedExpense) wanted.isSharedExpense = sharedAfter;
   const keys = Object.keys(wanted) as Array<keyof Fields>;
-  if (keys.length === 0) {
+  if (keys.length === 0 && !plan.changed) {
     // nada financeiro mudou: só as tags (se vieram) ainda podem mudar
     return input.tags === undefined
       ? respond(tx, ctx, id)
       : updateTagsOnly(tx, ctx, repo, id, input);
   }
 
-  const touchesSettlement = keys.some((k) =>
-    ["amountInCents", "occurredOn", "payerMemberId", "isSharedExpense"].includes(k),
-  );
-  const sharedBefore = row.kind === "EXPENSE" && row.isSharedExpense;
-  const sharedAfter = row.kind === "EXPENSE" && (wanted.isSharedExpense ?? row.isSharedExpense);
+  const touchesSettlement =
+    plan.changed ||
+    keys.some((k) =>
+      ["amountInCents", "occurredOn", "payerMemberId", "isSharedExpense"].includes(k),
+    );
   if (touchesSettlement && (sharedBefore || sharedAfter)) {
     await requireSettledConfirmation(
       tx,
@@ -415,15 +433,16 @@ export async function updateTransaction(
 
   // EN-002a (SDD-015 §4.3): famílias STORED mantêm o rateio junto do lançamento, na mesma transação
   const stored = engine === "STORED" && row.kind === "EXPENSE";
-  const becomesShared = stored && !sharedBefore && sharedAfter;
   const becomesPersonal = stored && sharedBefore && !sharedAfter;
-  const rule = becomesShared
-    ? await resolveRuleSplit(tx, ctx.familyId, {
+  // vira dividida OU troca de modo/percentuais (RULE <-> CUSTOM, CUSTOM com outros bps): resolve e regrava
+  const resolve = stored && plan.changed && plan.target && sharedAfter ? plan.target : null;
+  const rule = resolve
+    ? await resolveSplit(tx, ctx.familyId, resolve, {
         occurredOn: wanted.occurredOn ?? before.occurredOn,
       })
     : null;
   const res = await repo.updateVersioned(id, input.version, {
-    ...(rule ? { splitMode: "RULE" as const, splitRuleVersionId: rule.ruleVersionId } : {}),
+    ...(rule && resolve ? { splitMode: resolve.mode, splitRuleVersionId: rule.ruleVersionId } : {}),
     ...(becomesPersonal ? { splitMode: "NONE" as const, splitRuleVersionId: null } : {}),
     ...(wanted.accountId !== undefined ? { accountId: wanted.accountId } : {}),
     ...("newInvoiceId" in locked && locked.newInvoiceId ? { invoiceId: locked.newInvoiceId } : {}),
@@ -441,6 +460,7 @@ export async function updateTransaction(
     const amountAfter = wanted.amountInCents ?? before.amountInCents;
     const payerAfter = (wanted.payerMemberId ?? before.payerMemberId) as string;
     if (rule) {
+      if (sharedBefore) await clearSplitRows(tx, ctx.familyId, id);
       await insertSplitRows(tx, ctx.familyId, {
         transactionId: id,
         amountInCents: amountAfter,
@@ -467,6 +487,9 @@ export async function updateTransaction(
     from: before[field],
     to: wanted[field],
   }));
+  if (plan.changed && plan.target) {
+    changes.push({ field: "split", from: plan.modeBefore, to: plan.target.mode });
+  }
   if (input.tags !== undefined) {
     const [diff] = await replaceTags(tx, ctx, [id], input.tags);
     if (diff?.changed) {
@@ -564,6 +587,7 @@ const FIELD_LABELS: Record<string, string> = {
   occurredOn: "Data",
   payerMemberId: "Quem pagou",
   isSharedExpense: "Dividir com a família",
+  split: "Divisão",
   accountId: "Conta",
   note: "Observação",
   tags: "Tags",
@@ -596,6 +620,7 @@ export async function listHistory(
     if (field === "payerMemberId") return members.get(String(v))?.name;
     if (field === "amountInCents") return formatBRL(Number(v));
     if (field === "isSharedExpense") return v ? "Comum" : "Pessoal";
+    if (field === "split") return SPLIT_MODE_LABEL[v as "NONE" | "RULE" | "CUSTOM"];
     return undefined;
   };
   const rows = await repo.listRevisions(id);

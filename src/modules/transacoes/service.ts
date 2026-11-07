@@ -17,7 +17,8 @@ import { type MemberRefSource, toMemberRef } from "@/modules/familia/display-nam
 import { currentRuleShares } from "@/modules/split/current-rule";
 import { assertCanShare, isSettlementEnabled } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
-import { insertSplitRows, resolveRuleSplit } from "@/modules/split/write";
+import { splitOf } from "@/modules/split/split-input";
+import { insertSplitRows, resolveSplit } from "@/modules/split/write";
 import type { TagRef } from "@/modules/tags/schemas";
 import { attachTagsOnCreate, sortTagRefs } from "@/modules/tags/service";
 import {
@@ -36,6 +37,7 @@ import type {
   LedgerFilters,
   ListTransactionsQuery,
   ListTransactionsResponse,
+  SplitDTO,
   TransactionDefaults,
   TransactionDetailDTO,
   TransactionDTO,
@@ -61,6 +63,10 @@ type TxRow = {
   authorMemberId: string;
   updatedByMemberId: string | null;
   isSharedExpense: boolean;
+  /** US-043: modo e linhas do rateio (ausentes em linhas montadas sem `splits`). */
+  splitMode?: "NONE" | "RULE" | "CUSTOM";
+  splitRuleVersionId?: string | null;
+  splits?: Array<{ memberId: string; bps: number; amountInCents: bigint }>;
   transferGroupId: string | null;
   version: number;
   createdAt: Date;
@@ -132,6 +138,7 @@ export function toTransactionDTO(
     author,
     updatedBy: member(row.updatedByMemberId),
     isSharedExpense: row.isSharedExpense,
+    split: splitDtoOf(row, ctx.members),
     ...(ctx.accountOwnerId !== undefined ? { accountOwnerId: ctx.accountOwnerId } : {}),
     ...originFlags(row, ctx.assistantLabels),
     transferGroupId: row.transferGroupId,
@@ -143,6 +150,20 @@ export function toTransactionDTO(
     updatedAt: row.updatedAt.toISOString(),
     deletedAt: row.deletedAt ? row.deletedAt.toISOString() : null,
     deletionReason: row.deletionReason,
+  };
+}
+
+/** US-043: `TransactionDTO.split`; só despesa dividida e STORED tem modo gravado. */
+function splitDtoOf(row: TxRow, members: Map<string, MemberRef>): SplitDTO | null {
+  if (!row.splitMode || row.splitMode === "NONE" || row.kind !== "EXPENSE") return null;
+  return {
+    mode: row.splitMode,
+    ruleVersionId: row.splitRuleVersionId ?? null,
+    shares: (row.splits ?? []).map((s) => ({
+      member: members.get(s.memberId) ?? { id: s.memberId, name: "Membro", image: null },
+      bps: s.bps,
+      amountInCents: toCents(s.amountInCents),
+    })),
   };
 }
 
@@ -159,6 +180,10 @@ export async function getDefaults(tx: Tx, ctx: RequestContext): Promise<Transact
   const cardId = await repo.lastCardUsedBy(ctx.memberId, todayInFamilyTz(ctx.clock));
   const members = await repo.countMembers();
   const enabled = await isSettlementEnabled(tx, ctx.familyId);
+  // "De outro jeito" (CUSTOM) só em famílias que gravam o rateio por lançamento (STORED)
+  const stored =
+    (await tx.family.findFirst({ where: { id: ctx.familyId }, select: { splitEngine: true } }))
+      ?.splitEngine === "STORED";
   return {
     accountId,
     cardId,
@@ -167,6 +192,7 @@ export async function getDefaults(tx: Tx, ctx: RequestContext): Promise<Transact
     split: {
       available: enabled && members >= 2,
       ruleShares: enabled && members >= 2 ? await currentRuleShares(tx, ctx) : null,
+      modes: stored ? ["NONE", "RULE", "CUSTOM"] : ["NONE", "RULE"],
       installmentsAvailable: INSTALLMENT_SPLIT_RELEASED,
     },
   };
@@ -181,7 +207,7 @@ export async function createTransaction(
   ctx: RequestContext,
   input: CreateTransactionParsed,
 ): Promise<CreateTransactionResponse> {
-  if (input.type === "EXPENSE" && input.isSharedExpense) await assertCanShare(tx, ctx);
+  if (input.type === "EXPENSE" && splitOf(input).mode !== "NONE") await assertCanShare(tx, ctx);
   return input.type === "EXPENSE"
     ? createExpenseCore(tx, ctx, input, {})
     : createIncomeCore(tx, ctx, input, {});
@@ -207,6 +233,14 @@ export async function createExpenseCore(
 ): Promise<CreateTransactionResponse> {
   // ADR-021 §2: a trava de família é a PRIMEIRA trava; o motor lido depois dela decide se grava rateio
   const engine = await lockFamilySplit(tx, ctx.familyId);
+  const split = splitOf(input); // US-043: `split` ou legado `isSharedExpense` (true == RULE)
+  const shared = split.mode !== "NONE";
+  if (shared && engine !== "STORED" && split.mode === "CUSTOM") {
+    throw unprocessable(
+      "CUSTOM_SPLIT_UNAVAILABLE",
+      "Esta família ainda não aceita divisão personalizada",
+    );
+  }
   const repo = transacoesRepo(tx, ctx.familyId);
   const today = todayInFamilyTz(ctx.clock);
   const occurredOn = input.occurredOn ?? today;
@@ -228,7 +262,7 @@ export async function createExpenseCore(
     await assertPersonalForSelf(
       tx,
       ctx,
-      { isSharedExpense: input.isSharedExpense, payerMemberId },
+      { isSharedExpense: shared, payerMemberId },
       { assistant: opts.assistant },
     ); // SEC-026c; US-093b: exceção do Admin, nunca pelo MCP
   }
@@ -267,9 +301,7 @@ export async function createExpenseCore(
   const description = input.description ?? category.name;
   // EN-002a: famílias STORED gravam o rateio por lançamento ("Pela regra" na data da despesa)
   const rule =
-    engine === "STORED" && input.isSharedExpense
-      ? await resolveRuleSplit(tx, ctx.familyId, { occurredOn })
-      : null;
+    engine === "STORED" ? await resolveSplit(tx, ctx.familyId, split, { occurredOn }) : null;
   const row = await repo.insert({
     kind: "EXPENSE",
     direction: "DEBIT",
@@ -283,9 +315,9 @@ export async function createExpenseCore(
     note: input.note ?? null,
     payerMemberId,
     authorMemberId: opts.subscription?.authorMemberId ?? ctx.memberId,
-    isSharedExpense: input.isSharedExpense,
+    isSharedExpense: shared,
     ...(opts.subscription ? { origin: "SUBSCRIPTION" as const } : {}),
-    ...(rule ? { splitMode: "RULE" as const, splitRuleVersionId: rule.ruleVersionId } : {}),
+    ...(rule ? { splitMode: split.mode, splitRuleVersionId: rule.ruleVersionId } : {}),
     ...(opts.assistant
       ? {
           origin: "ASSISTANT" as const,
@@ -303,21 +335,30 @@ export async function createExpenseCore(
       shares: rule.shares,
     });
   }
+  const splits = rule
+    ? await tx.transactionSplit.findMany({
+        where: { familyId: ctx.familyId, transactionId: row.id },
+        orderBy: { memberId: "asc" },
+      })
+    : [];
   const tags = await attachTagsOnCreate(tx, ctx, [row.id], input.tags); // US-045: mesma transação
 
-  const dto = toTransactionDTO(row, {
-    tags,
-    account,
-    card: card ? { id: card.id, name: card.name, color: card.color } : null,
-    invoice: invoice
-      ? { ref: invoice.ref, closingDate: invoice.closingDate, dueDate: invoice.dueDate }
-      : null,
-    category: categoryRefOf(category),
-    members: memberRefsWithReturn(await repo.listMembers(), memberRefOf),
-    ...(opts.assistant
-      ? { assistantLabels: new Map([[opts.assistant.grantId, opts.assistant.label]]) }
-      : {}),
-  });
+  const dto = toTransactionDTO(
+    { ...row, splits },
+    {
+      tags,
+      account,
+      card: card ? { id: card.id, name: card.name, color: card.color } : null,
+      invoice: invoice
+        ? { ref: invoice.ref, closingDate: invoice.closingDate, dueDate: invoice.dueDate }
+        : null,
+      category: categoryRefOf(category),
+      members: memberRefsWithReturn(await repo.listMembers(), memberRefOf),
+      ...(opts.assistant
+        ? { assistantLabels: new Map([[opts.assistant.grantId, opts.assistant.label]]) }
+        : {}),
+    },
+  );
   await recordRevision(tx, {
     familyId: ctx.familyId,
     transactionId: row.id,
@@ -338,7 +379,8 @@ export async function createExpenseCore(
           occurredOn,
           description,
           payerMemberId,
-          isSharedExpense: input.isSharedExpense,
+          isSharedExpense: shared,
+          ...(shared && split.mode === "CUSTOM" ? { splitMode: "CUSTOM" } : {}),
           ...(tags.length > 0 ? { tags: tags.map((t) => t.name) } : {}),
         },
       },

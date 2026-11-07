@@ -120,8 +120,8 @@ Then("a porta mostra {string}", async ({ page }, texto: string) => {
 });
 
 Then('a despesa nasce como "Só meu"', async ({ page }) => {
-  const sw = drawer(page).getByRole("switch", { name: /Dividir com a família/ });
-  if ((await sw.count()) > 0) await expect(sw).toHaveAttribute("aria-checked", "false");
+  const own = drawer(page).getByRole("radio", { name: "Só meu" });
+  if ((await own.count()) > 0) await expect(own).toBeChecked();
   await expect(drawer(page).getByTestId("mode-default-note")).toBeVisible();
 });
 

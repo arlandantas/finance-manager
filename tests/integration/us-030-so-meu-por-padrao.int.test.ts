@@ -100,7 +100,12 @@ describe("US-030 Só meu por padrão", () => {
     const sd = (
       await at(() => call(solo.members[0]?.as ?? null, "GET", "/api/v1/transactions/defaults"))
     ).body.split;
-    expect(sd).toEqual({ available: false, ruleShares: null, installmentsAvailable: false });
+    expect(sd).toEqual({
+      available: false,
+      ruleShares: null,
+      modes: expect.arrayContaining(["NONE", "RULE"]),
+      installmentsAvailable: false,
+    });
   });
 
   it("settlement.personal: conta despesas Só meu de todos os pagadores, ignora excluídas, comuns e receitas", async () => {

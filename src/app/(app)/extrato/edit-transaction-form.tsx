@@ -3,6 +3,11 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { MoneyInput } from "@/components/money-input";
+import {
+  SplitModeSelector,
+  type SplitModeValue,
+  splitModeValid,
+} from "@/components/split-mode-selector";
 import { TagInput } from "@/components/tag-input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
@@ -12,8 +17,10 @@ import { useCategories } from "@/modules/categorias/hooks";
 import { useAccounts } from "@/modules/contas/hooks";
 import { memberOptionLabel } from "@/modules/familia/display-name";
 import { useFamily } from "@/modules/familia/hooks";
+import { customSharesOf, initialCustomPct } from "@/modules/split/custom-input";
+import { formatBps } from "@/modules/split/rules";
 import { normalizeTagKey } from "@/modules/tags/normalize";
-import { useUpdateTransaction } from "@/modules/transacoes/hooks";
+import { useDefaults, useUpdateTransaction } from "@/modules/transacoes/hooks";
 import {
   canChangeStructure,
   effectiveOwner,
@@ -30,7 +37,8 @@ type FieldKey =
   | "description"
   | "note"
   | "payerMemberId"
-  | "tags";
+  | "tags"
+  | "split";
 
 export function EditTransactionForm({
   t,
@@ -55,6 +63,17 @@ export function EditTransactionForm({
   const [categoryId, setCategoryId] = useState(t.category?.id ?? "");
   const [payerId, setPayerId] = useState(effectiveOwner(t.payer).id ?? "");
   const [shared, setShared] = useState(t.isSharedExpense);
+  const defaults = useDefaults(true);
+  // US-043: modo gravado; linha legada dividida sem modo vale "Pela regra"
+  const [customOn, setCustomOn] = useState(t.split?.mode === "CUSTOM");
+  const [customPct, setCustomPct] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      (t.split?.mode === "CUSTOM" ? t.split.shares : []).map((s) => [
+        s.member.id,
+        formatBps(s.bps),
+      ]),
+    ),
+  );
   const [date, setDate] = useState(t.occurredOn);
   const [description, setDescription] = useState(t.description);
   const [note, setNote] = useState(t.note ?? "");
@@ -118,6 +137,32 @@ export function EditTransactionForm({
   const tagKeys = (list: string[]) => list.map(normalizeTagKey).sort().join("|");
   const tagsChanged = tagKeys(tags) !== tagKeys(t.tags.map((x) => x.name));
 
+  const splitMode: SplitModeValue = !shared ? "NONE" : customOn ? "CUSTOM" : "RULE";
+  const splitBefore: SplitModeValue = t.split?.mode ?? (t.isSharedExpense ? "RULE" : "NONE");
+  const members = family.data?.members ?? [];
+  const customShares = customSharesOf(members, customPct).shares;
+  const splitBody =
+    splitMode === "CUSTOM"
+      ? { mode: "CUSTOM" as const, shares: customShares }
+      : { mode: splitMode };
+  const splitChanged =
+    splitMode !== splitBefore ||
+    (splitMode === "CUSTOM" &&
+      customShares.some(
+        (s) => (t.split?.shares.find((x) => x.member.id === s.memberId)?.bps ?? 0) !== s.bps,
+      ));
+  const splitInvalid = kind === "EXPENSE" && !splitModeValid(splitMode, members, customPct);
+
+  function changeSplitMode(m: SplitModeValue) {
+    if (controllerOnly) return;
+    setShared(m !== "NONE");
+    setCustomOn(m === "CUSTOM");
+    setErrors((e) => ({ ...e, split: undefined }));
+    if (m === "CUSTOM" && Object.keys(customPct).length === 0) {
+      setCustomPct(initialCustomPct(members, defaults.data?.split.ruleShares));
+    }
+  }
+
   function payload(confirmSettledPeriod?: boolean) {
     const financialChanged =
       cents !== t.amountInCents ||
@@ -127,7 +172,7 @@ export function EditTransactionForm({
       effectivePayerId !== (effectiveOwner(t.payer).id ?? "") ||
       description !== t.description ||
       (note.trim() === "" ? null : note) !== t.note ||
-      (kind === "EXPENSE" && shared !== t.isSharedExpense);
+      (kind === "EXPENSE" && splitChanged);
     // SDD-016 §1: só as tags mudaram => edição NÃO financeira (não pede acerto, vale em fatura paga/parcela)
     if (tagsChanged && !financialChanged) return { version: t.version, tags };
     return {
@@ -139,7 +184,7 @@ export function EditTransactionForm({
       payerMemberId: effectivePayerId,
       description,
       note: note.trim() === "" ? null : note,
-      ...(kind === "EXPENSE" ? { isSharedExpense: shared } : {}),
+      ...(kind === "EXPENSE" ? { split: splitBody } : {}),
       ...(tagsChanged ? { tags } : {}),
       ...(confirmSettledPeriod ? { confirmSettledPeriod: true } : {}),
     };
@@ -340,32 +385,19 @@ export function EditTransactionForm({
         unlinkedPayerHint,
       )}
       {kind === "EXPENSE" ? (
-        <div className="flex min-h-11 items-center justify-between gap-3">
-          <span id="ed-shared-label" className="text-sm font-medium text-slate-800">
-            Dividir com a família
-          </span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={shared}
-            aria-labelledby="ed-shared-label"
-            aria-disabled={controllerOnly ? true : undefined}
-            onClick={() => {
-              if (!controllerOnly) setShared((v) => !v);
-            }}
-            className={cn(
-              "relative h-7 w-12 shrink-0 rounded-full transition-colors",
-              shared ? "bg-brand-700" : "bg-slate-300",
-            )}
-          >
-            <span
-              className={cn(
-                "absolute top-0.5 h-6 w-6 rounded-full bg-white dark:bg-slate-100 shadow transition-all",
-                shared ? "left-[22px]" : "left-0.5",
-              )}
-            />
-          </button>
-        </div>
+        <SplitModeSelector
+          idPrefix="ed"
+          mode={splitMode}
+          onModeChange={changeSplitMode}
+          ruleShares={defaults.data?.split.ruleShares}
+          members={members}
+          pct={customPct}
+          onPctChange={(id, v) => setCustomPct((c) => ({ ...c, [id]: v }))}
+          allowCustom={
+            splitBefore === "CUSTOM" || (defaults.data?.split.modes ?? []).includes("CUSTOM")
+          }
+          serverError={errors.split}
+        />
       ) : null}
       <Field id="ed-date" label="Data" error={errors.occurredOn}>
         <input
@@ -406,7 +438,7 @@ export function EditTransactionForm({
         }}
         error={errors.tags}
       />
-      <Button type="submit" className="w-full" disabled={update.isPending}>
+      <Button type="submit" className="w-full" disabled={update.isPending || splitInvalid}>
         {update.isPending ? "Salvando…" : "Salvar alterações"}
       </Button>
     </form>

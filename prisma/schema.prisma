@@ -683,6 +683,9 @@ model PlannedExpense {
   isException         Boolean              @default(false)
   paymentAccountId    String?              @db.Uuid
   kind                PlannedKind          @default(EXPENSE) // US-051: imutável após a criação
+  // US-043: rateio da previsão. `splitShares` = [{ memberId, bps }] só em CUSTOM; RULE resolve na data da baixa.
+  splitMode           SplitMode            @default(NONE)
+  splitShares         Json?
 
   family         Family            @relation(fields: [familyId], references: [id])
   series         RecurringExpense? @relation(fields: [familyId, seriesId], references: [familyId, id])

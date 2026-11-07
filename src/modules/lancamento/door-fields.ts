@@ -12,7 +12,8 @@ export type DoorField =
   | "tags"
   | "day"
   | "startMonth"
-  | "end";
+  | "end"
+  | "split";
 
 const FIELD_OF: Record<string, DoorField> = {
   amountInCents: "amountInCents",
@@ -32,6 +33,8 @@ const FIELD_OF: Record<string, DoorField> = {
   dayOfMonth: "day",
   startMonth: "startMonth",
   end: "end",
+  split: "split", // US-043: "Os percentuais precisam somar 100%"
+  isSharedExpense: "split",
 };
 
 export function fieldsFromIssues(

@@ -80,7 +80,7 @@ Then("o formulário de nova despesa não mostra {string}", async ({ page }, camp
   await gotoReady(page, "/");
   await page.getByRole("button", { name: "Novo lançamento" }).click();
   await expect(page.getByLabel("Valor", { exact: true })).toBeVisible();
-  await expect(page.getByRole("switch", { name: campo })).toHaveCount(0);
+  await expect(page.getByRole("radiogroup", { name: campo })).toHaveCount(0);
 });
 
 Given(

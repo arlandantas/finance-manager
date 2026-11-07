@@ -85,7 +85,7 @@ When("abro o lançamento no modo {string}", async ({ page, world }, modo: string
 });
 
 Then("o switch {string} não é exibido", async ({ page }, rotulo: string) => {
-  await expect(drawer(page).getByRole("switch", { name: rotulo })).toHaveCount(0);
+  await expect(drawer(page).getByRole("radiogroup", { name: rotulo })).toHaveCount(0);
 });
 
 Then("as categorias exibidas são as de receita", async ({ page }) => {

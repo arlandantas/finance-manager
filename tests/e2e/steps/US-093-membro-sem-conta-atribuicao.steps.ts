@@ -142,7 +142,7 @@ When(
     await pickCategory(page, "Supermercado");
     await drawer(page).getByLabel("Descrição").fill(desc);
     await drawer(page)
-      .getByRole("switch", { name: /Dividir com a família/ })
+      .getByRole("radio", { name: /^Pela regra da família/ })
       .click();
     const nome = quem.replace(/^Quem pagou\?:\s*/, "");
     await drawer(page)

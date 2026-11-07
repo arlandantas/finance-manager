@@ -6,6 +6,11 @@ import { toast } from "sonner";
 import { CategoryIcon } from "@/components/category-icon";
 import { MoneyInput } from "@/components/money-input";
 import { SourceSelect } from "@/components/source-select";
+import {
+  SplitModeSelector,
+  type SplitModeValue,
+  splitModeValid,
+} from "@/components/split-mode-selector";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
@@ -35,7 +40,8 @@ import {
   type PlannedKind,
   UpdatePlannedExpenseSchema,
 } from "@/modules/previstas/schemas";
-import { splitSwitchLabel } from "@/modules/split/shares-label";
+import { customSharesOf, initialCustomPct } from "@/modules/split/custom-input";
+import { formatBps } from "@/modules/split/rules";
 import { useDefaults } from "@/modules/transacoes/hooks";
 import {
   canChangeStructure,
@@ -57,7 +63,8 @@ type FieldKey =
   | "paymentAccountId"
   | "dayOfMonth"
   | "startMonth"
-  | "end";
+  | "end"
+  | "split";
 
 /**
  * Drawer de nova/edição de despesa prevista (SDD-009 §5, SDD-019 §3.6). `planned` nulo = criar.
@@ -88,6 +95,8 @@ export function PlannedDrawer({
   const [categoryId, setCategoryId] = useState("");
   const [responsibleId, setResponsibleId] = useState("");
   const [shared, setShared] = useState(false); // "Só meu" por padrão (US-030)
+  const [customOn, setCustomOn] = useState(false); // US-043: "De outro jeito" (só previsão pontual)
+  const [customPct, setCustomPct] = useState<Record<string, string>>({});
   const defaultsQ = useDefaults(open);
   const splitAvailable = defaultsQ.data?.split.available ?? false;
   const [dueOn, setDueOn] = useState("");
@@ -144,6 +153,15 @@ export function PlannedDrawer({
       setCategoryId(planned.category.id);
       setResponsibleId(effectiveOwner(planned.responsible).id ?? planned.responsible.id);
       setShared(planned.isSharedExpense);
+      setCustomOn(planned.split?.mode === "CUSTOM");
+      setCustomPct(
+        Object.fromEntries(
+          (planned.split?.mode === "CUSTOM" ? planned.split.shares : []).map((s) => [
+            s.memberId,
+            formatBps(s.bps),
+          ]),
+        ),
+      );
       setDueOn(planned.dueOn);
       setNote(planned.note ?? "");
       setDetailsOpen(false);
@@ -154,6 +172,8 @@ export function PlannedDrawer({
       setCategoryId("");
       setResponsibleId("");
       setShared(false);
+      setCustomOn(false);
+      setCustomPct({});
       setDueOn("");
       setNote("");
       setDetailsOpen(false);
@@ -391,6 +411,21 @@ export function PlannedDrawer({
       );
       return;
     }
+    const customShares = customSharesOf(members, customPct).shares;
+    // US-043: na edição o modo vai sempre explícito (`isSharedExpense: true` não troca CUSTOM por RULE)
+    const splitBody = isIncome
+      ? { isSharedExpense: false }
+      : !splitAvailable
+        ? { isSharedExpense: planned?.isSharedExpense ?? false }
+        : !shared
+          ? planned
+            ? { split: { mode: "NONE" as const } }
+            : { isSharedExpense: false }
+          : customOn && !repeat
+            ? { split: { mode: "CUSTOM" as const, shares: customShares } }
+            : planned
+              ? { split: { mode: "RULE" as const } }
+              : { isSharedExpense: true };
     const base = {
       ...(accountId ? { paymentAccountId: accountId } : {}),
       // edição: conta de destino limpa vira null (a receita pode ficar sem conta sugerida)
@@ -401,11 +436,7 @@ export function PlannedDrawer({
       amountInCents: cents,
       categoryId,
       ...(effectiveResponsibleId ? { responsibleMemberId: effectiveResponsibleId } : {}),
-      isSharedExpense: isIncome
-        ? false
-        : splitAvailable
-          ? shared
-          : (planned?.isSharedExpense ?? false),
+      ...splitBody,
       ...(dueOn ? { dueOn } : {}),
     };
     const parsed = planned
@@ -459,6 +490,24 @@ export function PlannedDrawer({
     ? Array.from({ length: 12 }, (_, i) => addMonths(currentMonth as MonthISO, i))
     : [];
   const members = family.data?.members ?? [];
+  const splitMode: SplitModeValue = !shared
+    ? "NONE"
+    : customOn && !repeat && !seriesMode
+      ? "CUSTOM"
+      : "RULE";
+  const splitInvalid =
+    splitAvailable && !isIncome && !splitModeValid(splitMode, members, customPct);
+
+  function changeSplitMode(m: SplitModeValue) {
+    // SEC-043/044: quem só controla não muda a divisão; dividida alheia não vira "Só meu"
+    if (controllerOnly || (m === "NONE" && shared && cannotBePersonal)) return;
+    setShared(m !== "NONE");
+    setCustomOn(m === "CUSTOM");
+    setErrors((e) => ({ ...e, split: undefined }));
+    if (m === "CUSTOM" && Object.keys(customPct).length === 0) {
+      setCustomPct(initialCustomPct(members, defaultsQ.data?.split.ruleShares));
+    }
+  }
 
   return (
     <Drawer
@@ -726,39 +775,19 @@ export function PlannedDrawer({
           </div>
 
           {splitAvailable && !isIncome ? (
-            <div className="flex min-h-11 items-center justify-between gap-3">
-              <span id="pl-shared-label" className="text-sm font-medium text-slate-800">
-                Dividir com a família
-                <span
-                  data-testid="split-label"
-                  className="block text-xs font-normal text-slate-500"
-                >
-                  {splitSwitchLabel(shared, defaultsQ.data?.split.ruleShares)}
-                </span>
-              </span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={shared}
-                aria-labelledby="pl-shared-label"
-                aria-disabled={controllerOnly || (shared && cannotBePersonal) ? true : undefined}
-                onClick={() => {
-                  if (controllerOnly || (shared && cannotBePersonal)) return;
-                  setShared((v) => !v);
-                }}
-                className={cn(
-                  "relative h-7 w-12 shrink-0 rounded-full transition-colors",
-                  shared ? "bg-brand-700" : "bg-slate-300",
-                )}
-              >
-                <span
-                  className={cn(
-                    "absolute top-0.5 h-6 w-6 rounded-full bg-white dark:bg-slate-100 shadow transition-all",
-                    shared ? "left-[22px]" : "left-0.5",
-                  )}
-                />
-              </button>
-            </div>
+            <SplitModeSelector
+              idPrefix="pl"
+              mode={splitMode}
+              onModeChange={changeSplitMode}
+              ruleShares={defaultsQ.data?.split.ruleShares}
+              members={members}
+              pct={customPct}
+              onPctChange={(id, v) => setCustomPct((c) => ({ ...c, [id]: v }))}
+              allowCustom={
+                !repeat && !seriesMode && (defaultsQ.data?.split.modes ?? []).includes("CUSTOM")
+              }
+              serverError={errors.split}
+            />
           ) : null}
 
           <Field
@@ -978,7 +1007,7 @@ export function PlannedDrawer({
           </details>
 
           <div className="sticky bottom-0 -mx-4 -mb-4 border-t border-slate-200 bg-white dark:bg-slate-100 p-4">
-            <Button type="submit" className="w-full" disabled={pending}>
+            <Button type="submit" className="w-full" disabled={pending || splitInvalid}>
               {pending ? "Salvando…" : "Salvar"}
             </Button>
           </div>

@@ -37,6 +37,8 @@ export type DoorState = {
   payerId: string;
   shared: boolean;
   sharedTouched: boolean;
+  /** US-043: "De outro jeito" (dividido + percentuais em bps por membro); ausente/null = "Pela regra". */
+  customSplit?: Array<{ memberId: string; bps: number }> | null;
   /** "" = padrão do servidor (hoje). */
   date: string;
   note: string;
@@ -197,6 +199,11 @@ export function buildSubmission(s: DoorState, ctx: DoorCtx): DoorSubmission {
   if (service === "PLANNED" || service === "SERIES") {
     const accountId = s.source.startsWith("acc:") ? s.source.slice(4) : "";
     const shared = ctx.splitAvailable ? s.shared : false;
+    // "De outro jeito" só em previsão pontual: a série fica "Pela regra" (US-043)
+    const splitBody =
+      shared && service === "PLANNED" && s.customSplit
+        ? { split: { mode: "CUSTOM" as const, shares: s.customSplit } }
+        : { isSharedExpense: shared };
     if (service === "SERIES") {
       return {
         service,
@@ -224,7 +231,7 @@ export function buildSubmission(s: DoorState, ctx: DoorCtx): DoorSubmission {
         amountInCents: s.cents,
         categoryId: s.categoryId,
         ...(payer ? { responsibleMemberId: payer } : {}),
-        isSharedExpense: shared,
+        ...splitBody,
         ...(s.date ? { dueOn: s.date } : {}),
         ...(s.note.trim() ? { note: s.note } : {}),
       },
@@ -254,7 +261,11 @@ export function buildSubmission(s: DoorState, ctx: DoorCtx): DoorSubmission {
       ...(s.description.trim() ? { description: s.description } : {}),
       ...(s.note.trim() ? { note: s.note } : {}),
       ...(s.tags.length > 0 ? { tags: s.tags } : {}),
-      ...(s.kind === "EXPENSE" ? { isSharedExpense: sharedOf(s, ctx) } : {}),
+      ...(s.kind === "EXPENSE"
+        ? sharedOf(s, ctx) && s.customSplit
+          ? { split: { mode: "CUSTOM" as const, shares: s.customSplit } }
+          : { isSharedExpense: sharedOf(s, ctx) }
+        : {}),
       ...(fromCard && s.installments > 1 ? { installments: s.installments } : {}),
       ...(fromCard && s.installments > 1 && s.paidBeforeApp >= 1
         ? { paidBeforeApp: s.paidBeforeApp }

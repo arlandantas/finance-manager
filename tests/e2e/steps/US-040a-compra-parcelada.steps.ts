@@ -274,10 +274,11 @@ When("Lucas escolhe {string} parcelas", async ({ page, world }, parcelas: string
 
 Then("o campo {string} mostra {string}", async ({ page }, _campo: string, texto: string) => {
   await expect(drawer(page).getByTestId("split-label")).toHaveText(texto);
-  await expect(drawer(page).getByRole("switch", { name: /Dividir com a família/ })).toHaveAttribute(
-    "aria-checked",
-    "false",
-  );
+  await expect(
+    drawer(page)
+      .getByRole("radiogroup", { name: /Dividir com a família/ })
+      .getByRole("radio", { name: "Só meu" }),
+  ).toBeChecked();
 });
 
 When(

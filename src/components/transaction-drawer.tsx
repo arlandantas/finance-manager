@@ -10,6 +10,11 @@ import { InstallmentPreviewText } from "@/components/installment-preview";
 import { useFormatMoney } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
 import { SourceSelect } from "@/components/source-select";
+import {
+  SplitModeSelector,
+  type SplitModeValue,
+  splitModeValid,
+} from "@/components/split-mode-selector";
 import { TagInput } from "@/components/tag-input";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -51,7 +56,7 @@ import {
 } from "@/modules/lancamento/door";
 import { subscriptionEffectLine } from "@/modules/lancamento/door-subscription";
 import { successText, useDoorKey, useDoorSubmit } from "@/modules/lancamento/use-door-submit";
-import { splitSwitchLabel } from "@/modules/split/shares-label";
+import { customSharesOf, initialCustomPct } from "@/modules/split/custom-input";
 import { useDefaults } from "@/modules/transacoes/hooks";
 import {
   DESCRIPTION_MSG,
@@ -83,6 +88,8 @@ export function TransactionDrawer({
   const [payerId, setPayerId] = useState("");
   const [shared, setShared] = useState(false); // nasce "Só meu" e não lembra a escolha (US-030)
   const [sharedTouched, setSharedTouched] = useState(false);
+  const [customOn, setCustomOn] = useState(false); // US-043: "De outro jeito"
+  const [customPct, setCustomPct] = useState<Record<string, string>>({});
   // US-090/091: "Quando?" e "Repetir"; a data é uma só (occurredOn em NOW, dueOn em LATER)
   const [when, setWhen] = useState<DoorWhen>("NOW");
   const [repeat, setRepeat] = useState<DoorRepeat>("NONE");
@@ -110,6 +117,7 @@ export function TransactionDrawer({
   const accounts = useAccounts();
   const cards = useCards();
   const family = useFamily();
+  const members = family.data?.members ?? [];
   const categories = useCategories(kind);
   // "Todo mês" só vale em "Vai acontecer" (série) ou com cartão em "Já aconteceu" (assinatura, US-096d)
   const repeatNow: DoorRepeat =
@@ -127,6 +135,8 @@ export function TransactionDrawer({
     setCategoryId("");
     setShared(false);
     setSharedTouched(false);
+    setCustomOn(false);
+    setCustomPct({});
     setWhen("NOW");
     setRepeat("NONE");
     setDay(null);
@@ -229,6 +239,7 @@ export function TransactionDrawer({
     payerId,
     shared,
     sharedTouched,
+    customSplit: shared && customOn && !seriesOn ? customSharesOf(members, customPct).shares : null,
     date,
     note,
     tags,
@@ -257,6 +268,22 @@ export function TransactionDrawer({
     !isLater && selectedCard && kind === "EXPENSE"
       ? subscriptionOn && subscriptionEffectLine(selectedCard.name, dayValue, startValue, today)
       : undefined;
+
+  const splitMode: SplitModeValue = !shared ? "NONE" : customOn && !seriesOn ? "CUSTOM" : "RULE";
+  const splitInvalid =
+    kind === "EXPENSE" && splitAvailable && !subscriptionOn && !splitBlocked
+      ? !splitModeValid(splitMode, members, customPct)
+      : false;
+
+  function changeSplitMode(m: SplitModeValue) {
+    setShared(m !== "NONE");
+    setSharedTouched(true);
+    setCustomOn(m === "CUSTOM");
+    setErrors((e) => ({ ...e, split: undefined }));
+    if (m === "CUSTOM" && Object.keys(customPct).length === 0) {
+      setCustomPct(initialCustomPct(members, defaults.data?.split.ruleShares));
+    }
+  }
 
   function changeWhen(next: DoorWhen) {
     if (next === when) return;
@@ -324,7 +351,6 @@ export function TransactionDrawer({
       ? DESCRIPTION_MSG
       : undefined;
   const text = TEXT[kind];
-  const members = family.data?.members ?? [];
   const overLimit =
     kind === "EXPENSE" && selectedCard !== undefined && cents > selectedCard.availableInCents;
 
@@ -663,41 +689,18 @@ export function TransactionDrawer({
         </div>
 
         {kind === "EXPENSE" && splitAvailable && !subscriptionOn ? (
-          <div className="flex min-h-11 items-center justify-between gap-3">
-            <span id="tx-shared-label" className="text-sm font-medium text-slate-800">
-              Dividir com a família
-              <span data-testid="split-label" className="block text-xs font-normal text-slate-500">
-                {splitBlocked
-                  ? "Disponível em breve para compras parceladas"
-                  : splitSwitchLabel(shared, defaults.data?.split.ruleShares)}
-              </span>
-            </span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={shared && !splitBlocked}
-              aria-disabled={splitBlocked || undefined}
-              aria-describedby={splitBlocked ? "tx-installment-notice" : undefined}
-              aria-labelledby="tx-shared-label"
-              onClick={() => {
-                if (splitBlocked) return;
-                setShared((v) => !v);
-                setSharedTouched(true);
-              }}
-              className={cn(
-                "relative h-7 w-12 shrink-0 rounded-full transition-colors",
-                shared && !splitBlocked ? "bg-brand-700" : "bg-slate-300",
-                splitBlocked && "opacity-50",
-              )}
-            >
-              <span
-                className={cn(
-                  "absolute top-0.5 h-6 w-6 rounded-full bg-white dark:bg-slate-100 shadow transition-all",
-                  shared && !splitBlocked ? "left-[22px]" : "left-0.5",
-                )}
-              />
-            </button>
-          </div>
+          <SplitModeSelector
+            idPrefix="tx"
+            mode={splitMode}
+            onModeChange={changeSplitMode}
+            ruleShares={defaults.data?.split.ruleShares}
+            members={members}
+            pct={customPct}
+            onPctChange={(id, v) => setCustomPct((c) => ({ ...c, [id]: v }))}
+            allowCustom={!seriesOn && (defaults.data?.split.modes ?? []).includes("CUSTOM")}
+            blockedText={splitBlocked ? "Disponível em breve para compras parceladas" : undefined}
+            serverError={errors.split}
+          />
         ) : null}
         {isLater && personalExpense ? (
           <p role="note" data-testid="mode-default-note" className="text-xs text-slate-600">
@@ -812,7 +815,10 @@ export function TransactionDrawer({
             variant={overLimit ? "danger" : "primary"}
             className="w-full"
             disabled={
-              door.isPending || liveDescriptionError !== undefined || paidError !== undefined
+              door.isPending ||
+              liveDescriptionError !== undefined ||
+              paidError !== undefined ||
+              splitInvalid
             }
           >
             {door.isPending

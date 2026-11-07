@@ -12,6 +12,7 @@ import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { recordRevision } from "@/modules/contas/ledger";
 import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
+import { splitOf } from "@/modules/split/split-input";
 import { attachTagsOnCreate } from "@/modules/tags/service";
 import { loadInstallmentPlanDTO } from "@/modules/transacoes/installment-plan";
 import { assertPersonalForSelf } from "@/modules/transacoes/ownership";
@@ -52,7 +53,8 @@ export async function createInstallmentPurchase(
   if (!category) throw invalidRef("categoryId", "Escolha uma categoria");
   const payer = await repo.findMember(payerMemberId);
   if (!payer) throw invalidRef("payerMemberId", "Membro inválido");
-  await assertPersonalForSelf(tx, ctx, { isSharedExpense: input.isSharedExpense, payerMemberId }); // SEC-026c; US-093b
+  const shared = splitOf(input).mode !== "NONE"; // US-043
+  await assertPersonalForSelf(tx, ctx, { isSharedExpense: shared, payerMemberId }); // SEC-026c; US-093b
   if (category.kind !== "EXPENSE") {
     throw unprocessable(
       "CATEGORY_KIND_MISMATCH",
@@ -78,7 +80,7 @@ export async function createInstallmentPurchase(
   }
 
   // 2) guarda da divisão: só depois da US-042 (rateio por parcela, motor STORED)
-  if (input.isSharedExpense) {
+  if (shared) {
     await assertCanShare(tx, ctx); // acerto desligado => SETTLEMENT_DISABLED
     if (!INSTALLMENT_SPLIT_RELEASED) {
       throw unprocessable(

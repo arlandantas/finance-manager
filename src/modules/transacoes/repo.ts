@@ -12,6 +12,10 @@ const loadInclude = {
   paidPlanned: { select: { id: true, kind: true } },
   subscriptionCharge: { select: { isAmended: true } }, // US-097: selo "alterada"
   tags: { select: { tag: { select: { id: true, name: true } } } }, // US-045
+  splits: {
+    select: { memberId: true, bps: true, amountInCents: true },
+    orderBy: { memberId: "asc" },
+  }, // US-043
 } as const;
 
 /** Lançamentos e categorias sempre escopados por `familyId` (ADR-013). */

@@ -21,8 +21,16 @@ import type {
   PlannedListResponse,
   UpdatePlannedExpenseParsed,
 } from "@/modules/previstas/schemas";
+import {
+  plannedModeOf,
+  plannedSplitColumns,
+  plannedSplitDto,
+  sameShares,
+  sharesOf,
+} from "@/modules/previstas/split";
 import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
+import { splitOf } from "@/modules/split/split-input";
 import {
   adminFullPower,
   assertCanWritePlanned,
@@ -88,6 +96,7 @@ export function toPlannedDTO(
     author: ref(row.authorMemberId),
     updatedBy: row.updatedByMemberId ? ref(row.updatedByMemberId) : null,
     isSharedExpense: row.isSharedExpense,
+    split: plannedSplitDto(row),
     note: row.note,
     series: row.series ? { id: row.series.id, dayOfMonth: row.series.dayOfMonth } : null,
     isException: row.isException,
@@ -157,15 +166,16 @@ export async function createPlannedExpense(
   const repo = previstasRepo(tx, ctx.familyId);
   const today = todayInFamilyTz(ctx.clock);
   const responsibleMemberId = input.responsibleMemberId ?? ctx.memberId;
-  if (input.kind === "INCOME" && input.isSharedExpense) {
+  const split = splitOf(input); // US-043: `split` ou legado `isSharedExpense` (true == RULE)
+  if (input.kind === "INCOME" && split.mode !== "NONE") {
     throw badRequest("VALIDATION_ERROR", "Receita não é dividida", [
       { path: "isSharedExpense", message: "Receita não é dividida" },
     ]); // defesa: o schema já recusa
   }
-  if (input.isSharedExpense) await assertCanShare(tx, ctx);
+  if (split.mode !== "NONE") await assertCanShare(tx, ctx);
   await shareLockAccounts(tx, ctx.familyId, [input.paymentAccountId]); // SDD-034 R2: a FK da criação também trava a conta
   await assertPlannedResultAllowed(tx, ctx, {
-    isSharedExpense: input.isSharedExpense,
+    isSharedExpense: split.mode !== "NONE",
     responsibleMemberId,
   }); // SEC-026; US-093b: exceção do Administrador para dono sem conta
   await checkCategory(repo, input.categoryId, input.kind);
@@ -181,7 +191,7 @@ export async function createPlannedExpense(
     dueOn: input.dueOn ?? today,
     categoryId: input.categoryId,
     responsibleMemberId,
-    isSharedExpense: input.isSharedExpense,
+    ...(await plannedSplitColumns(tx, ctx.familyId, split)),
     note: input.note ?? null,
     authorMemberId: ctx.memberId,
   });
@@ -262,9 +272,15 @@ export async function updatePlannedExpense(
   tx: Tx,
   ctx: RequestContext,
   id: string,
-  input: UpdatePlannedExpenseParsed,
+  rawInput: UpdatePlannedExpenseParsed,
 ): Promise<{ plannedExpense: PlannedExpenseDTO }> {
   const repo = previstasRepo(tx, ctx.familyId);
+  // US-043: `split` vale como `isSharedExpense` para as travas de propriedade ("Só meu" x dividida)
+  const input = {
+    ...rawInput,
+    isSharedExpense:
+      rawInput.isSharedExpense ?? (rawInput.split ? rawInput.split.mode !== "NONE" : undefined),
+  };
   const row = await loadForChange(tx, ctx, repo, id, input.version);
   if (row.kind === "INCOME" && input.isSharedExpense === true) {
     throw badRequest("VALIDATION_ERROR", "Receita não é dividida", [
@@ -311,7 +327,22 @@ export async function updatePlannedExpense(
   ) {
     throw invalidRef("responsibleMemberId", "Responsável inválido");
   }
-  if (input.isSharedExpense === true && !row.isSharedExpense) await assertCanShare(tx, ctx);
+  // US-043: modo efetivo; `isSharedExpense: true` numa previsão já dividida mantém o modo
+  const modeBefore = plannedModeOf(row);
+  const target =
+    rawInput.split ??
+    (rawInput.isSharedExpense === undefined
+      ? undefined
+      : rawInput.isSharedExpense
+        ? modeBefore === "NONE"
+          ? ({ mode: "RULE" } as const)
+          : undefined
+        : ({ mode: "NONE" } as const));
+  const splitChanged =
+    target !== undefined &&
+    (target.mode !== modeBefore ||
+      (target.mode === "CUSTOM" && !sameShares(sharesOf(row.splitShares), target.shares)));
+  if (splitChanged && target.mode !== "NONE") await assertCanShare(tx, ctx);
   if (
     input.paymentAccountId &&
     input.paymentAccountId !== row.paymentAccountId &&
@@ -335,9 +366,7 @@ export async function updatePlannedExpense(
     input.responsibleMemberId !== row.responsibleMemberId
       ? { responsibleMemberId: input.responsibleMemberId }
       : {}),
-    ...(input.isSharedExpense !== undefined && input.isSharedExpense !== row.isSharedExpense
-      ? { isSharedExpense: input.isSharedExpense }
-      : {}),
+    ...(splitChanged ? await plannedSplitColumns(tx, ctx.familyId, target) : {}),
     ...(input.note !== undefined &&
     input.note !== row.note &&
     !(input.note === null && row.note === null)
@@ -504,7 +533,10 @@ export async function payPlannedExpense(
             payerMemberId,
             description: row.description,
             ...note,
-            isSharedExpense: row.isSharedExpense,
+            // US-043: a baixa herda o rateio (RULE resolvida na data do pagamento; CUSTOM copiado)
+            ...(plannedModeOf(row) === "CUSTOM"
+              ? { split: { mode: "CUSTOM" as const, shares: sharesOf(row.splitShares) } }
+              : { isSharedExpense: row.isSharedExpense }),
             installments: 1,
             paidBeforeApp: 0,
           },

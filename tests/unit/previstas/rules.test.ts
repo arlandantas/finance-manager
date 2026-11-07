@@ -15,6 +15,7 @@ import {
   PayPlannedExpenseSchema,
   UpdatePlannedExpenseSchema,
 } from "@/modules/previstas/schemas";
+import { splitOf } from "@/modules/split/split-input";
 
 const uuid = "11111111-1111-4111-8111-111111111111";
 const issues = (input: unknown) => {
@@ -118,10 +119,16 @@ describe("US-018 Campos obrigatórios (CreatePlannedExpenseSchema)", () => {
     expect(issues(ok)).toEqual([]);
   });
   it("padrão de 'Dividir com a família' é desligado: Só meu (US-030, D-GES-15)", () => {
+    // US-043: sem `split` nem `isSharedExpense` o modo efetivo é NONE
     expect(
-      CreatePlannedExpenseSchema.parse({ description: "Luz", amountInCents: 1, categoryId: uuid })
-        .isSharedExpense,
-    ).toBe(false);
+      splitOf(
+        CreatePlannedExpenseSchema.parse({
+          description: "Luz",
+          amountInCents: 1,
+          categoryId: uuid,
+        }),
+      ),
+    ).toEqual({ mode: "NONE" });
   });
 });
 

@@ -175,7 +175,13 @@ export function buildPendingItem(
     payer,
     author: l.me,
     updatedBy: null,
-    isSharedExpense: input.type === "EXPENSE" ? (input.isSharedExpense ?? false) : false,
+    isSharedExpense:
+      input.type === "EXPENSE"
+        ? input.split
+          ? input.split.mode !== "NONE"
+          : (input.isSharedExpense ?? false)
+        : false,
+    split: null, // o rateio em centavos só o servidor calcula
     viaAssistant: null,
     isSubscription: false,
     isSubscriptionAmended: false,
