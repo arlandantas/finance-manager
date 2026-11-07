@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { withClock } from "@/lib/clock";
 import { call } from "../support/call";
-import { resetDb } from "../support/db";
+import { resetDb, testDb } from "../support/db";
 import {
   type AccountFixture,
   attachTags,
@@ -157,6 +157,52 @@ describe("US-049 quebras da análise", () => {
     const res = await analysis(`groupBy=tag&untagged=true&tagIds=${await tagId("x-tag")}`);
     expect(res.status).toBe(400);
     expect(res.body.error.message).toBe('Use tags ou "sem tag", não os dois');
+  });
+
+  it("ex-membro aparece em groupBy=member com archived=true", async () => {
+    await seedTrip();
+    await testDb().member.update({
+      where: { id: fx.byName.Mariana?.memberId as string },
+      data: {
+        removedAt: new Date(),
+        removalKind: "REMOVED",
+        removedByMemberId: fx.byName.Lucas?.memberId as string,
+      },
+    });
+    const rows = (await analysis("groupBy=member")).body.rows as Array<Row & { archived: boolean }>;
+    expect(byLabel(rows, "Mariana")).toMatchObject({ archived: true, amountInCents: 105000 });
+    expect(byLabel(rows, "Lucas")).toMatchObject({ archived: false });
+  });
+
+  it("dados de outra família nunca aparecem em member, account e tag", async () => {
+    await seedTrip();
+    const other = await makeFamily({
+      members: [{ email: "x49@exemplo.com", name: "Xis", role: "ADMIN" }],
+    });
+    const oa = await makeAccount(other, { name: "Outra Conta", owner: "Xis" });
+    await makeTransaction(other, {
+      account: oa,
+      category: "Moradia",
+      amountInCents: 99999,
+      occurredOn: "2026-10-03",
+      tags: ["tag-alheia"],
+    });
+    for (const g of ["member", "account", "tag"]) {
+      const res = await analysis(`groupBy=${g}`);
+      const labels = (res.body.rows as Row[]).map((r) => r.label).join("|");
+      expect(labels).not.toMatch(/Xis|Outra Conta|tag-alheia/);
+      expect(res.body.rowsTotalInCents).toBeLessThanOrEqual(225000);
+    }
+  });
+
+  it("limite de 20 ids (21 => 400) e COUNT(DISTINCT) com duas tags", async () => {
+    const id = (i: number) => `${String(i).padStart(8, "0")}-1111-4111-8111-111111111111`;
+    const ids = Array.from({ length: 21 }, (_, i) => `tagIds=${id(i)}`).join("&");
+    expect((await analysis(`groupBy=tag&${ids}`)).status).toBe(400);
+    await seedTrip("lazer-familia");
+    const rows = (await analysis("groupBy=tag")).body.rows as Row[];
+    expect(byLabel(rows, "viagem-nordeste")?.count).toBe(2);
+    expect(byLabel(rows, "lazer-familia")?.count).toBe(1);
   });
 
   it("AC8: reconciliação com 200 conjuntos aleatórios de filtros", async () => {
