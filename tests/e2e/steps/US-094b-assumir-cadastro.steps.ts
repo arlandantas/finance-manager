@@ -81,13 +81,21 @@ Then(
 );
 Then("o lançamento e a conta seguem com o mesmo cadastro", async ({ world }) => {
   const id = world.data.memberId as string;
-  expect(await db.transaction.count({ where: { payerMemberId: id, kind: "EXPENSE" } })).toBe(1);
-  expect(await db.bankAccount.count({ where: { ownerMemberId: id } })).toBe(1);
+  const familyId = (world.family as { family: { id: string } }).family.id;
+  await expect
+    .poll(async () => ({
+      transactions: await db.transaction.count({
+        where: { familyId, payerMemberId: id, kind: "EXPENSE" },
+      }),
+      accounts: await db.bankAccount.count({ where: { familyId, ownerMemberId: id } }),
+    }))
+    .toEqual({ transactions: 1, accounts: 1 });
 });
 
 Then("vê o erro de nome {string}", async ({ page }, msg: string) => {
   await expect(page.locator("[id^='linked-name-'][id$='-error']")).toHaveText(msg);
 });
-Then("o convite continua pendente", async () => {
-  expect((await db.invitation.findFirstOrThrow()).status).toBe("PENDING");
+Then("o convite continua pendente", async ({ world }) => {
+  const familyId = (world.family as { family: { id: string } }).family.id;
+  expect((await db.invitation.findFirstOrThrow({ where: { familyId } })).status).toBe("PENDING");
 });

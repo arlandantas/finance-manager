@@ -185,6 +185,23 @@ describe("094b aceite vinculado", () => {
     expect(await row()).toMatchObject({ userId: null, pendingEmail: EMAIL, name: "Ana Rótulo" });
   });
 
+  it("AC6b: convite expirado 410 e cancelado 409; cadastro intacto", async () => {
+    await db.invitation.update({
+      where: { id: invId },
+      data: { expiresAt: new Date("2026-11-01T00:00:00Z") },
+    });
+    expect((await accept()).status).toBe(410);
+    expect(await row()).toMatchObject({ userId: null, pendingEmail: EMAIL, name: "Ana Rótulo" });
+    await db.invitation.update({
+      where: { id: invId },
+      data: { expiresAt: new Date("2026-12-01T00:00:00Z"), status: "CANCELED" },
+    });
+    const res = await accept();
+    expect(res.status).toBe(409);
+    expect(res.body.error.code).toBe("INVITATION_NOT_PENDING");
+    expect(await row()).toMatchObject({ userId: null, pendingEmail: EMAIL, name: "Ana Rótulo" });
+  });
+
   it("AC7a: dois aceites simultâneos => um 200, um 409", async () => {
     const [a, b] = await Promise.all([accept({ name: "Ana Um" }), accept({ name: "Ana Dois" })]);
     expect([a.status, b.status].sort()).toEqual([200, 409]);
