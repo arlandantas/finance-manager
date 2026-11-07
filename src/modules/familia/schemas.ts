@@ -72,6 +72,15 @@ export const CreateUnlinkedMemberSchema = z
   })
   .strict();
 export const CreateLinkedInvitationSchema = z.object({ email: emailSchema }).strict();
+// US-095 (ADR-038 §5): editar o sem conta; `email: null` remove o e-mail. Ao menos um campo.
+export const UpdateUnlinkedMemberSchema = z
+  .object({ name: memberNameSchema.optional(), email: emailSchema.nullable().optional() })
+  .strict()
+  .refine((v) => v.name !== undefined || v.email !== undefined, {
+    message: "Informe o nome ou o e-mail",
+  });
+export type UpdateUnlinkedMemberInput = z.infer<typeof UpdateUnlinkedMemberSchema>;
+export type UpdateUnlinkedMemberResponse = { member: MemberDTO & { canChangeRole: false } };
 export type CreateLinkedInvitationInput = z.infer<typeof CreateLinkedInvitationSchema>;
 
 export type CreateUnlinkedMemberInput = z.infer<typeof CreateUnlinkedMemberSchema>;

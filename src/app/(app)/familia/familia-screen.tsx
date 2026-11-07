@@ -37,6 +37,7 @@ import {
 } from "@/modules/familia/hooks";
 import type { FamilyDTO, InvitationDTO, Role } from "@/modules/familia/schemas";
 import { AddMemberDrawer } from "./add-member-drawer";
+import { EditMemberDrawer, type EditTarget } from "./edit-member-drawer";
 import { InviteUnlinkedDrawer } from "./invite-unlinked-drawer";
 import { RemoveMemberDialog } from "./remove-member-dialog";
 
@@ -409,6 +410,7 @@ export function FamiliaScreen() {
     name: string;
     pendingEmail: string | null;
   } | null>(null);
+  const [editing, setEditing] = useState<EditTarget | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [removing, setRemoving] = useState<{
     memberId: string;
@@ -560,6 +562,22 @@ export function FamiliaScreen() {
                             >
                               <UserCog size={16} aria-hidden="true" />
                               Alterar papel
+                            </MenuItem>
+                          ) : null}
+                          {m.unlinked && isAdmin ? (
+                            <MenuItem
+                              onClick={() => {
+                                close();
+                                setEditing({
+                                  memberId: m.memberId,
+                                  name: m.name,
+                                  pendingEmail: m.pendingEmail ?? null,
+                                  pendingInvitationId: m.pendingInvitation?.id ?? null,
+                                });
+                              }}
+                            >
+                              <Pencil size={16} aria-hidden="true" />
+                              Editar
                             </MenuItem>
                           ) : null}
                           {m.unlinked && isAdmin && !m.pendingInvitation ? (
@@ -790,6 +808,7 @@ export function FamiliaScreen() {
         settlementEnabled={data?.family.settlementEnabled ?? false}
       />
 
+      <EditMemberDrawer target={editing} onClose={() => setEditing(null)} />
       <InviteUnlinkedDrawer target={invitingUnlinked} onClose={() => setInvitingUnlinked(null)} />
 
       <Drawer open={inviting} onOpenChange={setInviting} title="Convidar membro">

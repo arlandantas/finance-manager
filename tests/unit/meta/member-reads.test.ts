@@ -79,7 +79,8 @@ describe("leituras de membro (SEC-058, D-033-2)", () => {
           !p.startsWith("src/modules/familia/") &&
           !p.startsWith("src/modules/privacidade/delete-") &&
           p !== "src/app/(app)/familia/familia-screen.tsx" && // US-092b: lista da tela Família (só ADMIN recebe o campo)
-          p !== "src/app/(app)/familia/invite-unlinked-drawer.tsx", // US-094a: drawer da tela Família
+          p !== "src/app/(app)/familia/invite-unlinked-drawer.tsx" && // US-094a: drawer da tela Família
+          p !== "src/app/(app)/familia/edit-member-drawer.tsx", // US-095: drawer de edição da tela Família
       );
     expect(bad).toEqual([]);
   });

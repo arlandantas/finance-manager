@@ -10,6 +10,7 @@ import type {
   RemovalReviewDTO,
   Role,
   RotatedInvitationResponse,
+  UpdateUnlinkedMemberResponse,
 } from "@/modules/familia/schemas";
 
 export const familyKey = ["family"] as const;
@@ -188,6 +189,25 @@ export function useCreateUnlinkedMember(idempotencyKey: string) {
     onSuccess: () =>
       Promise.all(
         ["family", "me", "split-rule", "settlement", "accounts", "home"].map((k) =>
+          qc.invalidateQueries({ queryKey: [k] }),
+        ),
+      ),
+  });
+}
+
+/** PATCH /members/:id/profile (US-095): nome e e-mail do sem conta; o nome aparece em telas que leem o membro. */
+export function useUpdateUnlinkedMember(memberId: string, idempotencyKey: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name?: string; email?: string | null }) =>
+      apiFetch<UpdateUnlinkedMemberResponse>(`/api/v1/members/${memberId}/profile`, {
+        method: "PATCH",
+        body: input,
+        idempotencyKey,
+      }),
+    onSuccess: () =>
+      Promise.all(
+        ["family", "me", "split-rule", "settlement", "accounts", "home", "transactions"].map((k) =>
           qc.invalidateQueries({ queryKey: [k] }),
         ),
       ),
