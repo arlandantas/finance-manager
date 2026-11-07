@@ -71,6 +71,9 @@ export const CreateUnlinkedMemberSchema = z
     ),
   })
   .strict();
+export const CreateLinkedInvitationSchema = z.object({ email: emailSchema }).strict();
+export type CreateLinkedInvitationInput = z.infer<typeof CreateLinkedInvitationSchema>;
+
 export type CreateUnlinkedMemberInput = z.infer<typeof CreateUnlinkedMemberSchema>;
 
 export const DevLoginSchema = z
@@ -103,6 +106,8 @@ export type MemberDTO = {
   unlinked?: true;
   /** US-092b: só para ADMIN e só em membro sem conta; ausente para os demais (e nunca em `MemberRef`). */
   pendingEmail?: string | null;
+  /** US-094a (ADR-038 §6): só ADMIN e só em sem conta; vencido conta como sem convite. */
+  pendingInvitation?: { id: string; expiresAt: string } | null;
 };
 
 export type CreateUnlinkedMemberResponse = { member: MemberDTO & { canChangeRole: false } };
@@ -117,6 +122,8 @@ export type InvitationDTO = {
   createdAt: string;
   invitedBy: { memberId: string; name: string };
   resendCount: number;
+  /** US-094a: id do cadastro sem conta quando o convite é vinculado. */
+  memberId: string | null;
   canResend: boolean; // PENDING, não vencido e resendCount < 3
 };
 

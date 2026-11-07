@@ -37,6 +37,7 @@ import {
 } from "@/modules/familia/hooks";
 import type { FamilyDTO, InvitationDTO, Role } from "@/modules/familia/schemas";
 import { AddMemberDrawer } from "./add-member-drawer";
+import { InviteUnlinkedDrawer } from "./invite-unlinked-drawer";
 import { RemoveMemberDialog } from "./remove-member-dialog";
 
 const ROLE_LABEL = { ADMIN: "Administrador", MEMBER: "Membro" } as const;
@@ -325,7 +326,11 @@ function RoleDialog({
   );
 }
 
-function InvitationActions({ inv }: { inv: InvitationDTO }) {
+function InvitationActions({
+  inv,
+}: {
+  inv: { id: string; isExpired: boolean; resendCount?: number };
+}) {
   const rotate = useRotateInvitation();
   const [link, setLink] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -375,9 +380,11 @@ function InvitationActions({ inv }: { inv: InvitationDTO }) {
         <Button variant="secondary" disabled={rotate.isPending} onClick={() => run("resend")}>
           Reenviar e-mail
         </Button>
-        <span className="self-center text-xs text-slate-500">
-          {Math.max(0, 3 - inv.resendCount)} reenvios restantes
-        </span>
+        {inv.resendCount === undefined ? null : (
+          <span className="self-center text-xs text-slate-500">
+            {Math.max(0, 3 - inv.resendCount)} reenvios restantes
+          </span>
+        )}
       </div>
       {msg ? (
         <p role="alert" className="text-sm text-red-800 dark:text-red-300">
@@ -396,7 +403,12 @@ export function FamiliaScreen() {
   const cancel = useCancelInvitation();
   const [inviting, setInviting] = useState(false);
   const [adding, setAdding] = useState(false);
-  const [canceling, setCanceling] = useState<InvitationDTO | null>(null);
+  const [canceling, setCanceling] = useState<{ id: string; email: string } | null>(null);
+  const [invitingUnlinked, setInvitingUnlinked] = useState<{
+    memberId: string;
+    name: string;
+    pendingEmail: string | null;
+  } | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [removing, setRemoving] = useState<{
     memberId: string;
@@ -495,10 +507,36 @@ export function FamiliaScreen() {
                             {m.pendingEmail}
                           </p>
                         ) : null}
+                        {m.pendingInvitation ? (
+                          <span
+                            data-testid="member-pending-invitation"
+                            className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-900"
+                          >
+                            Convite pendente
+                          </span>
+                        ) : null}
                       </div>
                     ) : (
                       <p className="truncate text-sm text-slate-500">{m.email}</p>
                     )}
+                    {m.pendingInvitation && m.pendingEmail ? (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <InvitationActions inv={{ id: m.pendingInvitation.id, isExpired: false }} />
+                        <Button
+                          variant="secondary"
+                          onClick={() => {
+                            cancelKey.current = newIdempotencyKey();
+                            setCanceling({
+                              id: (m.pendingInvitation as { id: string }).id,
+                              email: m.pendingEmail as string,
+                            });
+                          }}
+                        >
+                          <X size={16} aria-hidden="true" />
+                          Cancelar convite
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
                   <span
                     data-testid="member-role"
@@ -522,6 +560,21 @@ export function FamiliaScreen() {
                             >
                               <UserCog size={16} aria-hidden="true" />
                               Alterar papel
+                            </MenuItem>
+                          ) : null}
+                          {m.unlinked && isAdmin && !m.pendingInvitation ? (
+                            <MenuItem
+                              onClick={() => {
+                                close();
+                                setInvitingUnlinked({
+                                  memberId: m.memberId,
+                                  name: m.name,
+                                  pendingEmail: m.pendingEmail ?? null,
+                                });
+                              }}
+                            >
+                              <UserPlus size={16} aria-hidden="true" />
+                              Convidar
                             </MenuItem>
                           ) : null}
                           {m.memberId === data.currentMemberId ? (
@@ -736,6 +789,8 @@ export function FamiliaScreen() {
         onOpenChange={setAdding}
         settlementEnabled={data?.family.settlementEnabled ?? false}
       />
+
+      <InviteUnlinkedDrawer target={invitingUnlinked} onClose={() => setInvitingUnlinked(null)} />
 
       <Drawer open={inviting} onOpenChange={setInviting} title="Convidar membro">
         <InviteForm onDone={() => setInviting(false)} />

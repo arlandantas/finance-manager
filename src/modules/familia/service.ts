@@ -6,6 +6,7 @@ import { localPart } from "@/lib/auth/dev-login-guard";
 import type { SessionUser } from "@/lib/auth/session";
 import { getClock } from "@/lib/clock";
 import { memberDisplayName } from "@/modules/familia/display-name";
+import { convitesRepo } from "@/modules/familia/invitations/repo";
 import {
   invitationGateState,
   listDeclinedInvitations,
@@ -140,12 +141,22 @@ async function listFamilyEvents(tx: Tx, ctx: RequestContext): Promise<FamilyDTO[
   }));
 }
 
+function pendingInvitationOf(
+  linked: Array<{ id: string; memberId: string | null; expiresAt: Date }>,
+  memberId: string,
+) {
+  const inv = linked.find((l) => l.memberId === memberId);
+  return inv ? { id: inv.id, expiresAt: inv.expiresAt.toISOString() } : null;
+}
+
 export async function getFamily(tx: Tx, ctx: RequestContext): Promise<FamilyDTO> {
   const repos = makeRepos(tx, ctx);
   const [family, members] = await Promise.all([
     repos.familia.getFamily(),
     repos.familia.listMembers(),
   ]);
+  const linked =
+    ctx.role === "ADMIN" ? await convitesRepo(tx, ctx.familyId).linkedPending(ctx.clock.now()) : [];
   return {
     family: {
       id: ctx.familyId,
@@ -165,6 +176,9 @@ export async function getFamily(tx: Tx, ctx: RequestContext): Promise<FamilyDTO>
       ...(m.user === null ? { unlinked: true as const } : {}),
       // PII de terceiro (US-092b): o e-mail pendente só sai para ADMIN, em sem conta; a chave some para os demais
       ...(m.user === null && ctx.role === "ADMIN" ? { pendingEmail: m.pendingEmail } : {}),
+      ...(m.user === null && ctx.role === "ADMIN"
+        ? { pendingInvitation: pendingInvitationOf(linked, m.id) }
+        : {}),
       canChangeRole: ctx.role === "ADMIN" && m.user !== null,
     })),
     exMembers: (await repos.familia.listExMembers()).map((m) => ({

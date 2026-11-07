@@ -24,10 +24,11 @@ export function convitesRepo(tx: Tx, familyId: string) {
       tokenHash: string;
       expiresAt: Date;
       invitedByMemberId: string;
+      memberId?: string;
     }) => tx.invitation.create({ data: { ...data, familyId, emailStatus: "FAILED" } }),
     listPending: () =>
       tx.invitation.findMany({
-        where: { familyId, status: "PENDING" },
+        where: { familyId, status: "PENDING", memberId: null }, // vinculados aparecem no cadastro (US-094a)
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       }),
     /** SEC-004: recusas dos últimos 30 dias, para o Administrador ver "Recusado". */
@@ -40,6 +41,16 @@ export function convitesRepo(tx: Tx, familyId: string) {
     findById: (id: string) => tx.invitation.findFirst({ where: { id, familyId } }),
     cancel: (id: string, now: Date) =>
       tx.invitation.update({ where: { id }, data: { status: "CANCELED", canceledAt: now } }),
+    /** Convites vinculados PENDING e não vencidos, por cadastro (selo "Convite pendente"). */
+    linkedPending: (now: Date) =>
+      tx.invitation.findMany({
+        where: { familyId, status: "PENDING", memberId: { not: null }, expiresAt: { gt: now } },
+        select: { id: true, memberId: true, expiresAt: true },
+      }),
+    pendingForEmail: (email: string, now: Date) =>
+      tx.invitation.count({
+        where: { familyId, email, status: "PENDING", expiresAt: { gt: now } },
+      }),
     family: () =>
       tx.family.findFirst({ where: { id: familyId }, select: { id: true, name: true } }),
     members: () =>

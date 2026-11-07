@@ -193,3 +193,17 @@ export function useCreateUnlinkedMember(idempotencyKey: string) {
       ),
   });
 }
+
+/** POST /members/:id/invitations (US-094a): convida o cadastro sem conta. */
+export function useCreateLinkedInvitation(memberId: string, idempotencyKey: string) {
+  const invalidate = useInvalidateFamily();
+  return useMutation({
+    mutationFn: (input: { email: string }) =>
+      apiFetch<CreateInvitationResponse>(`/api/v1/members/${memberId}/invitations`, {
+        method: "POST",
+        body: input,
+        idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}

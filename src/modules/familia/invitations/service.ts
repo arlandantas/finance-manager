@@ -44,6 +44,7 @@ type InvitationRow = {
   createdAt: Date;
   invitedByMemberId: string;
   resendCount: number;
+  memberId: string | null;
 };
 
 export const MAX_RESENDS = 3;
@@ -65,6 +66,7 @@ export function toInvitationDTO(
     createdAt: row.createdAt.toISOString(),
     invitedBy: { memberId: row.invitedByMemberId, name: inviterName(row.invitedByMemberId) },
     resendCount: row.resendCount,
+    memberId: row.memberId,
     canResend:
       row.status === "PENDING" &&
       row.expiresAt.getTime() > now.getTime() &&
@@ -72,7 +74,7 @@ export function toInvitationDTO(
   };
 }
 
-async function memberNames(tx: Tx, familyId: string): Promise<(id: string) => string> {
+export async function memberNames(tx: Tx, familyId: string): Promise<(id: string) => string> {
   const members = await convitesRepo(tx, familyId).members();
   const map = new Map(members.map((m) => [m.id, memberDisplayName(m)] as const));
   return (id) => map.get(id) ?? "Alguém";
@@ -98,7 +100,7 @@ export async function listDeclinedInvitations(
   return rows.map((r) => toInvitationDTO(r, name, ctx.clock.now()));
 }
 
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+export function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("timeout no envio de e-mail")), ms);
     p.then(
@@ -124,7 +126,7 @@ export const INVITES_PER_DAY = 10;
  * Balde em `mcp_rate_buckets` (sobrevive à exclusão da família); como roda dentro da transação, o pedido recusado
  * (429) ou revertido não consome cota.
  */
-async function assertInviterQuota(tx: Tx, userId: string, now: Date) {
+export async function assertInviterQuota(tx: Tx, userId: string, now: Date) {
   const hour = await hit(tx, `invite:${userId}:hour`, INVITES_PER_HOUR, 3600, now);
   const day = await hit(tx, `invite:${userId}:day`, INVITES_PER_DAY, 86_400, now);
   if (!hour.ok || !day.ok) throw invitationLimit();
@@ -137,7 +139,7 @@ const invitationLimit = () =>
     "Você atingiu o limite de convites por período. Tente novamente mais tarde.",
   );
 
-async function assertInvitationQuota(tx: Tx, familyId: string, now: Date) {
+export async function assertInvitationQuota(tx: Tx, familyId: string, now: Date) {
   // SEC-027: contagem + insert precisam ser atômicos por família; o lock dura até o fim da transação
   // (que também faz o insert), então pedidos paralelos veem a contagem uns dos outros.
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`invite-quota:${familyId}`}, 0))`;
@@ -283,7 +285,7 @@ export async function rotateInvitation(
         familyId: ctx.familyId,
         type: "INVITATION_RESENT",
         actorMemberId: ctx.memberId,
-        changes: { email: inv.email, resendCount: row.resendCount },
+        changes: { invitationId: id, resendCount: row.resendCount }, // SEC-061: sem e-mail,
       },
     });
   }
