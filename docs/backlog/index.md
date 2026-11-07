@@ -118,7 +118,7 @@ Ordem das pendentes: US-042 e US-043 só após a janela de reversão do rateio (
 | US-093b | UR-2 | Só meu, pagador/responsável e tutor do membro sem conta | done | US-093a, US-084 |
 | US-094a | UR-2 | Convite vinculado ao membro cadastrado | done | US-092b, US-093b, US-003, US-035 |
 | US-094b | UR-2 | Aceite do convite vinculado e herança do histórico | done | US-094a |
-| US-095 | UR-2 | Editar o membro sem conta (nome e e-mail) | todo | US-094a |
+| US-095 | UR-2 | Editar o membro sem conta (nome e e-mail) | done | US-094a |
 | US-096 | UR-2 | Assinatura no cartão: modelo, cadastro e lançamento automático (servidor) | todo | US-016a, US-017a, US-058 |
 | US-096b | UR-2 | Assinatura: lançamento ao abrir telas, arquivar cartão, remoção e exportação | todo | US-096 |
 | US-096c | UR-2 | Assinatura: telas do cartão, fatura e selo no Extrato | todo | US-096, US-096b |
