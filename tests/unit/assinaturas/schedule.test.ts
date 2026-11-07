@@ -5,6 +5,7 @@ import {
   endMonthOfSubscription,
   firstChargeOn,
   nextAfter,
+  projectedInCycle,
 } from "@/modules/assinaturas/schedule";
 import type { MonthISO } from "@/modules/previstas/recurrence";
 
@@ -85,5 +86,35 @@ describe("amountFor", () => {
       { fromMonth: "2027-02" as const, amountInCents: 200, createdAt: d("2027-01-02T00:00:00Z") },
     ];
     expect(amountFor("2027-03", tie)).toBe(200);
+  });
+});
+
+describe("projectedInCycle (US-096c)", () => {
+  const sub = (nextChargeOn: string | null, cents: number, endedOn: string | null = null) => ({
+    currentAmountInCents: cents,
+    nextChargeOn,
+    endedOn,
+  });
+
+  it("soma as que cobram dentro do ciclo da fatura (fechamento 25)", () => {
+    // ciclo de nov/2026 = 26/10..25/11
+    const subs = [sub("2026-11-10", 5590), sub("2026-11-25", 1000), sub("2026-10-26", 300)];
+    expect(projectedInCycle(subs, "2026-11", 25)).toBe(6890);
+  });
+
+  it("dia depois do fechamento cai na fatura seguinte", () => {
+    const subs = [sub("2026-11-26", 5590)];
+    expect(projectedInCycle(subs, "2026-11", 25)).toBe(0);
+    expect(projectedInCycle(subs, "2026-12", 25)).toBe(5590);
+  });
+
+  it("encerrada e sem próxima cobrança ficam de fora", () => {
+    const subs = [sub("2026-11-10", 5590, "2026-11-05"), sub(null, 900)];
+    expect(projectedInCycle(subs, "2026-11", 25)).toBe(0);
+  });
+
+  it("soma exata em centavos inteiros", () => {
+    const subs = [sub("2026-11-10", 1), sub("2026-11-11", 2), sub("2026-11-12", 3)];
+    expect(projectedInCycle(subs, "2026-11", 25)).toBe(6);
   });
 });

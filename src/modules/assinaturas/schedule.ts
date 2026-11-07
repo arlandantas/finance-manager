@@ -1,4 +1,5 @@
 import type { DateISO } from "@/lib/dates";
+import { invoiceRefFor } from "@/modules/cartoes/cycle";
 import {
   addMonths,
   endMonthFromCount,
@@ -55,4 +56,25 @@ export function amountFor(month: MonthISO, rows: AmountRow[]): number | null {
     }
   }
   return best ? best.amountInCents : null;
+}
+
+/**
+ * "Assinaturas previstas neste ciclo" (US-096c): Σ valor das ativas cuja próxima cobrança cai na
+ * fatura `ref` do cartão (`invoiceRefFor`). Informativo: nunca entra no total da fatura.
+ */
+export function projectedInCycle(
+  subs: Array<{
+    currentAmountInCents: number;
+    nextChargeOn: string | null;
+    endedOn: string | null;
+  }>,
+  ref: string,
+  closingDay: number,
+): number {
+  let total = 0;
+  for (const s of subs) {
+    if (s.endedOn !== null || s.nextChargeOn === null) continue;
+    if (invoiceRefFor(s.nextChargeOn, closingDay) === ref) total += s.currentAmountInCents;
+  }
+  return total;
 }

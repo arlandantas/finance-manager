@@ -1,6 +1,6 @@
 # Spec 12 — Assinaturas no cartão
 
-Atualizado: 2026-11-07. Estado: **US-096 e 096b implementadas (servidor: modelo, cadastro, lançamento, ganchos, arquivar, remoção, exportação)**; 096c, 096d, 097, 098, 099 não iniciadas. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
+Atualizado: 2026-11-07. Estado: **US-096, 096b e 096c implementadas (servidor e telas do cartão, fatura e Extrato)**; 096d, 097, 098, 099 não iniciadas. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
 
 ## Resumo
 - Assinatura = compra mensal fixa num cartão (Netflix, Spotify) que o app lança sozinho no dia da cobrança, como compra à vista normal na fatura do ciclo.
@@ -50,8 +50,15 @@ Atualizado: 2026-11-07. Estado: **US-096 e 096b implementadas (servidor: modelo,
 - Exportação: `familiaAtual.assinaturas[]` (ids, sem nomes de terceiros). "Só meu" de outra pessoa (não dividida, pagador não sou eu) não sai, como previstas e recorrentes.
 - Teste: `tests/integration/us-096b-assinatura-integracao.int.test.ts`.
 
+## Implementação (US-096c)
+- Hooks `assinaturas/hooks.ts` (`useSubscriptions`, `useCreateSubscription`; invalida subscriptions, cards, card, invoice, transactions, home).
+- Tela do cartão: `subscriptions-block.tsx` (bloco "Assinaturas do cartão", aviso de `recentSkips`, estados skeleton/vazio/erro) e `subscription-drawer.tsx` ("Nova assinatura", nasce "Só meu", frase "Primeira cobrança em {data}, na fatura de {mês}" via `firstChargeOn` + `invoiceRefFor`, offline bloqueia salvar).
+- Fatura ABERTA: "Assinaturas previstas neste ciclo" = `projectedInCycle(subs, ref, closingDay)` (Σ valor das ativas cuja `nextChargeOn` cai no ciclo); só informativa, some quando a cobrança é lançada (invariante 1).
+- Extrato: `TransactionDTO.isSubscription` (`transacoes/origin.ts`) e selo "Assinatura" na linha, sem "parcela x/y".
+- Testes: `tests/unit/assinaturas/schedule.test.ts`, E2E `US-096-assinatura-no-cartao.feature`.
+
 ## Perguntas ao usuário
 - Nenhuma bloqueante. Hipóteses assumidas (reversíveis, ADR-036): primeira cobrança não retroativa; encerrar não lança cobrança futura do mês corrente.
 
 ## Fontes
-Código (US-096): `src/modules/assinaturas/{schemas,schedule,repo,service,charges}.ts`, `createExpenseCore(opts.subscription)`, rota `POST|GET /api/v1/subscriptions` (GET lança o vencido antes de ler). Planejado: `manage,list,hooks`, demais rotas, telas `src/app/(app)/cartoes/[id]/subscription-drawer.tsx`, `src/app/(app)/assinaturas/`.
+Código (US-096): `src/modules/assinaturas/{schemas,schedule,repo,service,charges}.ts`, `createExpenseCore(opts.subscription)`, rota `POST|GET /api/v1/subscriptions` (GET lança o vencido antes de ler). Telas (US-096c): `src/app/(app)/cartoes/[id]/{subscription-drawer,subscriptions-block}.tsx`. Planejado: `manage,list`, demais rotas, `src/app/(app)/assinaturas/`.

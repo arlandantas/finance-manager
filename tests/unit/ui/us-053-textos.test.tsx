@@ -21,6 +21,7 @@ const item = {
   author: { id: "m" },
   tags: [],
   viaAssistant: null,
+  isSubscription: false,
   invoice: null,
   installment: null,
   deletedAt: null,

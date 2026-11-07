@@ -27,6 +27,7 @@ import {
   ledgerPageIds,
   ledgerTotals,
 } from "@/modules/transacoes/extrato";
+import { originFlags } from "@/modules/transacoes/origin";
 import { assertPersonalForSelf, memberRefsWithReturn } from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
@@ -132,14 +133,7 @@ export function toTransactionDTO(
     updatedBy: member(row.updatedByMemberId),
     isSharedExpense: row.isSharedExpense,
     ...(ctx.accountOwnerId !== undefined ? { accountOwnerId: ctx.accountOwnerId } : {}),
-    viaAssistant:
-      row.origin === "ASSISTANT"
-        ? {
-            label:
-              (row.assistantGrantId ? ctx.assistantLabels?.get(row.assistantGrantId) : undefined) ??
-              "assistente removido",
-          }
-        : null,
+    ...originFlags(row, ctx.assistantLabels),
     transferGroupId: row.transferGroupId,
     plannedExpenseId: ctx.plannedExpenseId ?? null,
     isSettlement: false,

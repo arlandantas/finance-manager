@@ -16,42 +16,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
 import { cycleSentence, formatInvoiceLabel } from "@/modules/cartoes/cycle";
 import { useCard, useInvoice, useUndoInvoicePayment } from "@/modules/cartoes/hooks";
-import type { InvoiceDTO } from "@/modules/cartoes/schemas";
 import { LedgerRow } from "../../extrato/ledger-row";
 import { TransactionDetailDrawer } from "../../extrato/transaction-detail-drawer";
 import { PayerLine } from "../payer-line";
 import { PayInvoiceDrawer } from "./pay-invoice-drawer";
+import { StatusChip } from "./status-chip";
+import { SubscriptionDrawer } from "./subscription-drawer";
+import { ProjectedLine, SubscriptionsBlock } from "./subscriptions-block";
 
 const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-
-function StatusChip({ invoice }: { invoice: InvoiceDTO }) {
-  const label = invoice.isOverdue
-    ? "Vencida"
-    : invoice.isFuture
-      ? "Futura"
-      : invoice.status === "OPEN"
-        ? "Aberta"
-        : invoice.status === "PAID"
-          ? "Paga"
-          : "Fechada";
-  const tone = invoice.isFuture
-    ? "bg-violet-50 text-violet-800"
-    : invoice.isOverdue
-      ? "bg-red-100 text-red-800 dark:text-red-300"
-      : invoice.status === "PAID"
-        ? "bg-emerald-100 text-emerald-800 dark:text-emerald-300"
-        : invoice.status === "CLOSED"
-          ? "bg-amber-100 text-amber-900 dark:text-amber-200"
-          : "bg-slate-100 text-slate-700";
-  return (
-    <span
-      data-testid="invoice-status"
-      className={cn("rounded-full px-3 py-1 text-sm font-semibold", tone)}
-    >
-      {label}
-    </span>
-  );
-}
 
 export function InvoiceScreen({ cardId }: { cardId: string }) {
   const router = useRouter();
@@ -65,6 +38,7 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [planId, setPlanId] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
+  const [newSub, setNewSub] = useState(false);
   const [undoing, setUndoing] = useState(false);
   const [undoError, setUndoError] = useState<string | null>(null);
   const undoKey = useRef(newIdempotencyKey());
@@ -247,6 +221,9 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
             <p data-testid="invoice-dates" className="text-sm text-slate-600">
               Fecha em {brDate(inv.closingDate)} · vence em {brDate(inv.dueDate)}
             </p>
+            {inv.status === "OPEN" && !inv.isFuture ? (
+              <ProjectedLine cardId={cardId} invoiceRef={inv.ref} closingDay={c.closingDay} />
+            ) : null}
             {inv.futureInstallmentsInCents > 0 ? (
               <p data-testid="invoice-future-installments" className="text-sm text-slate-600">
                 Parcelas futuras: <Money cents={inv.futureInstallmentsInCents} />
@@ -281,6 +258,8 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
             </ul>
           </section>
 
+          <SubscriptionsBlock cardId={cardId} onNew={() => setNewSub(true)} />
+
           {inv.purchases.length === 0 ? (
             <p className="rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-6 text-center text-slate-700">
               Nenhuma compra nesta fatura
@@ -313,6 +292,14 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
           }
           invoice={inv}
           onClose={() => setPaying(false)}
+        />
+      ) : null}
+
+      {c ? (
+        <SubscriptionDrawer
+          open={newSub}
+          card={{ id: c.id, name: c.name, closingDay: c.closingDay }}
+          onClose={() => setNewSub(false)}
         />
       ) : null}
 
