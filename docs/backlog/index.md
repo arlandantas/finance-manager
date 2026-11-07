@@ -121,7 +121,7 @@ Ordem das pendentes: US-042 e US-043 só após a janela de reversão do rateio (
 | US-095 | UR-2 | Editar o membro sem conta (nome e e-mail) | done | US-094a |
 | US-096 | UR-2 | Assinatura no cartão: modelo, cadastro e lançamento automático (servidor) | done | US-016a, US-017a, US-058 |
 | US-096b | UR-2 | Assinatura: lançamento ao abrir telas, arquivar cartão, remoção e exportação | done | US-096 |
-| US-096c | UR-2 | Assinatura: telas do cartão, fatura e selo no Extrato | todo | US-096, US-096b |
+| US-096c | UR-2 | Assinatura: telas do cartão, fatura e selo no Extrato | done | US-096, US-096b |
 | US-096d | UR-2 | "Assinatura (todo mês)" na porta única com cartão | todo | US-096c, US-091 |
 | US-097 | UR-2 | Corrigir a cobrança do mês, reajustar e encerrar a assinatura | todo | US-096c |
 | US-098 | UR-2 | Lista de assinaturas e total mensal | todo | US-097 |
