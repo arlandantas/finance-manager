@@ -50,3 +50,25 @@ Funcionalidade: Assinatura no cartão
     Quando hoje passa a ser 10/11/2026
     E Mariana abre o Extrato para ver a assinatura
     Então a linha "Netflix" do Extrato tem o selo "Assinatura" e nenhuma parcela
+
+  Cenário: Assinatura pela porta única
+    Quando Lucas abre a porta de lançar escolhendo o cartão "Nubank Mariana"
+    E Lucas escolhe "Assinatura (todo mês)" e preenche "Netflix" de "R$ 55,90" no dia 10 com a categoria "Moradia"
+    Então a linha de efeito da assinatura é "Lança sozinha todo dia 10 no cartão Nubank Mariana. Primeira cobrança em 10/11/2026"
+    E o botão de salvar da porta é "Salvar assinatura"
+    Quando Lucas salva a assinatura pela porta
+    Então a família tem 1 assinatura "Netflix" e nenhuma compra avulsa
+
+  Cenário: Porta única com assinatura cabe em 375 px no tema escuro
+    Dado a tela tem 375 por 800 pixels
+    E o tema do sistema é escuro
+    Quando Lucas abre a porta de lançar escolhendo o cartão "Nubank Mariana"
+    E Lucas escolhe "Assinatura (todo mês)" e preenche "Netflix" de "R$ 55,90" no dia 10 com a categoria "Moradia"
+    Então a porta com assinatura não tem rolagem horizontal e não há erros no console
+
+  Cenário: Porta única da assinatura, segundo membro não cadastra em nome de Lucas
+    Dado a assinatura "Netflix" de "R$ 55,90" no dia 10 cadastrada pela tela do cartão
+    Quando Mariana abre a porta de lançar escolhendo o cartão "Nubank Mariana"
+    E Mariana escolhe "Assinatura (todo mês)" na porta
+    Então "Lucas" não pode ser escolhido em "Quem pagou?" na porta
+    E o bloco de assinaturas do cartão mostra "Netflix" para Mariana

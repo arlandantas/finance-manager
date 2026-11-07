@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { newIdempotencyKey } from "@/lib/http";
+import { useCreateSubscription } from "@/modules/assinaturas/hooks";
 import { useCreatePlanned } from "@/modules/previstas/hooks";
 import { useCreateSeries } from "@/modules/previstas/recurring-hooks";
 import { useCreateTransaction } from "@/modules/transacoes/hooks";
@@ -10,6 +11,7 @@ import type { DoorService, DoorSubmission } from "./door";
 /** Textos de sucesso por serviço (SDD-031 §5.3); a série informa quantas previstas nasceram. */
 export function successText(service: DoorService, kind: "EXPENSE" | "INCOME", generated?: number) {
   if (service === "PLANNED") return "Previsão cadastrada!";
+  if (service === "SUBSCRIPTION") return "Assinatura cadastrada";
   if (service === "SERIES")
     return `Despesa recorrente cadastrada: ${generated ?? 12} previstas criadas`;
   return kind === "INCOME" ? "Receita registrada com sucesso!" : "Despesa registrada com sucesso!";
@@ -41,8 +43,9 @@ export function useDoorSubmit(key: string) {
   const tx = useCreateTransaction(key);
   const planned = useCreatePlanned(key);
   const series = useCreateSeries(key);
+  const subscription = useCreateSubscription(key);
   return {
-    isPending: tx.isPending || planned.isPending || series.isPending,
+    isPending: tx.isPending || planned.isPending || series.isPending || subscription.isPending,
     submit(
       sub: DoorSubmission,
       cb: {
@@ -56,6 +59,8 @@ export function useDoorSubmit(key: string) {
         tx.mutate(sub.input, { ...done, onSuccess: () => cb.onSuccess() });
       else if (sub.service === "PLANNED")
         planned.mutate(sub.input, { ...done, onSuccess: () => cb.onSuccess() });
+      else if (sub.service === "SUBSCRIPTION")
+        subscription.mutate(sub.input, { ...done, onSuccess: () => cb.onSuccess() });
       else series.mutate(sub.input, { ...done, onSuccess: (r) => cb.onSuccess(r.generatedCount) });
     },
   };

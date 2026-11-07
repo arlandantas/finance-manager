@@ -1,6 +1,6 @@
 # Spec 12 — Assinaturas no cartão
 
-Atualizado: 2026-11-07. Estado: **US-096, 096b e 096c implementadas (servidor e telas do cartão, fatura e Extrato)**; 096d, 097, 098, 099 não iniciadas. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
+Atualizado: 2026-11-07. Estado: **US-096, 096b, 096c e 096d implementadas (servidor, telas do cartão, fatura, Extrato e porta única)**; 097, 098, 099 não iniciadas. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
 
 ## Resumo
 - Assinatura = compra mensal fixa num cartão (Netflix, Spotify) que o app lança sozinho no dia da cobrança, como compra à vista normal na fatura do ciclo.
@@ -60,6 +60,11 @@ Atualizado: 2026-11-07. Estado: **US-096, 096b e 096c implementadas (servidor e 
 - Fatura ABERTA: "Assinaturas previstas neste ciclo" = `projectedInCycle(subs, ref, closingDay)` (Σ valor das ativas cuja `nextChargeOn` cai no ciclo); só informativa, some quando a cobrança é lançada (invariante 1).
 - Extrato: `TransactionDTO.isSubscription` (`transacoes/origin.ts`) e selo "Assinatura" na linha, sem "parcela x/y".
 - Testes: `tests/unit/assinaturas/schedule.test.ts`, E2E `US-096-assinatura-no-cartao.feature`.
+
+## Implementação (US-096d)
+- Porta única (`lancamento/door.ts`): cartão + "Já aconteceu" + "Repetir: Assinatura (todo mês)" => serviço `SUBSCRIPTION` (`POST /subscriptions`, sem rota nova); corpo de `door-subscription.ts` (dia e início do formulário, fim de `RepeatFields`); "Vai acontecer" com cartão segue indisponível.
+- Sempre "Só meu" do próprio autor (sem divisão até a US-099; parcelas e "Dividir" somem); outros membros desabilitados em "Quem pagou?". Linha "Lança sozinha todo dia {d} no cartão {nome}. Primeira cobrança em {data}" via `firstChargeOn`; botão "Salvar assinatura".
+- Cria só a assinatura; a cobrança do dia nasce no lançamento preguiçoso (nunca uma compra avulsa). Teste: `tests/integration/us-096d-assinatura-porta.int.test.ts`; E2E no mesmo `.feature`.
 
 ## Perguntas ao usuário
 - Nenhuma bloqueante. Hipóteses assumidas (reversíveis, ADR-036): primeira cobrança não retroativa; encerrar não lança cobrança futura do mês corrente.

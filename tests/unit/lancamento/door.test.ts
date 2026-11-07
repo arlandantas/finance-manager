@@ -15,6 +15,7 @@ import {
   validateDateForWhen,
   validateSubmission,
 } from "@/modules/lancamento/door";
+import { subscriptionEffect } from "@/modules/lancamento/door-subscription";
 
 const ACC = "11111111-1111-4111-8111-111111111111";
 const CARD = "22222222-2222-4222-8222-222222222222";
@@ -318,5 +319,69 @@ describe("textos e padrões", () => {
   it("seriesDefaults: da data digitada, senão de hoje", () => {
     expect(seriesDefaults("2026-11-05", "2026-10-12")).toEqual({ day: "5", startMonth: "2026-11" });
     expect(seriesDefaults("", "2026-10-12")).toEqual({ day: "12", startMonth: "2026-10" });
+  });
+});
+
+describe("US-096d: assinatura (cartão + Todo mês em 'Já aconteceu')", () => {
+  const card = {
+    source: `card:${CARD}`,
+    repeat: "MONTHLY" as const,
+    day: "10",
+    startMonth: "2026-10",
+  };
+  it("cartão + NOW + Todo mês => SUBSCRIPTION; conta segue compra/série; cartão + LATER indisponível", () => {
+    expect(serviceOf(st(card))).toBe("SUBSCRIPTION");
+    expect(serviceOf(st({ ...card, source: `acc:${ACC}` }))).toBe("TRANSACTION");
+    expect(serviceOf(st({ ...card, repeat: "NONE" }))).toBe("TRANSACTION");
+    expect(serviceOf(st({ when: "LATER", repeat: "MONTHLY", source: `acc:${ACC}` }))).toBe(
+      "SERIES",
+    );
+    expect(availability(st(card), ctx).later).toEqual({ enabled: false, reason: "CARD_SELECTED" });
+    expect(availability(st(card), ctx).repeat.enabled).toBe(true);
+  });
+  it("monta o corpo da CreateSubscriptionSchema (dia, mês de início, fim, sempre 'Só meu')", () => {
+    const sub = buildSubmission(
+      st({
+        ...card,
+        description: "Netflix",
+        cents: 5590,
+        shared: true,
+        endKind: "COUNT",
+        endMonths: "6",
+        installments: 3,
+      }),
+      ctx,
+    );
+    expect(sub).toEqual({
+      service: "SUBSCRIPTION",
+      input: {
+        cardId: CARD,
+        description: "Netflix",
+        amountInCents: 5590,
+        categoryId: CAT,
+        payerMemberId: ME,
+        dayOfMonth: 10,
+        startMonth: "2026-10",
+        end: { type: "COUNT", count: 6 },
+      },
+    });
+    const v = validateSubmission(st({ ...card, description: "Netflix" }), ctx);
+    expect(v.ok && v.submission.service).toBe("SUBSCRIPTION");
+  });
+  it("valida com o schema da assinatura e mapeia erros aos campos", () => {
+    const v = validateSubmission(st({ ...card, description: "", day: "40" }), ctx);
+    expect(v.ok).toBe(false);
+    if (!v.ok) {
+      expect(v.errors.description).toBeDefined();
+      expect(v.errors.day).toBeDefined();
+    }
+  });
+  it("saveLabel e effectLine da assinatura", () => {
+    expect(saveLabel({ kind: "EXPENSE", when: "NOW", service: "SUBSCRIPTION" })).toBe(
+      "Salvar assinatura",
+    );
+    expect(subscriptionEffect("Nubank", 10, "2026-11-10")).toBe(
+      "Lança sozinha todo dia 10 no cartão Nubank. Primeira cobrança em 10/11/2026",
+    );
   });
 });

@@ -73,6 +73,7 @@ const ROUTE = {
   TRANSACTION: "/api/v1/transactions",
   PLANNED: "/api/v1/planned-expenses",
   SERIES: "/api/v1/recurring-expenses",
+  SUBSCRIPTION: "/api/v1/subscriptions",
 } as const;
 
 async function viaDoor(o: Partial<DoorState>, key = randomUUID()) {

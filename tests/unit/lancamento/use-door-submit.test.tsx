@@ -32,7 +32,10 @@ describe("SDD-031 §5.1/§5.3 useDoorKey: regeração e preservação da chave",
     const k1 = result.current.key;
     expect(k1).not.toBe(k0);
     rerender({ s: "SERIES" });
-    expect(result.current.key).not.toBe(k1);
+    const k2 = result.current.key;
+    expect(k2).not.toBe(k1);
+    rerender({ s: "SUBSCRIPTION" });
+    expect(result.current.key).not.toBe(k2);
   });
 
   it("resultado desconhecido (falha de rede) preserva a chave mesmo se o serviço mudar", () => {
@@ -66,6 +69,7 @@ describe("SDD-031 §5.3 useDoorSubmit: mutação do serviço e Idempotency-Key",
     ],
     ["PLANNED", { service: "PLANNED", input: {} } as never, "/api/v1/planned-expenses"],
     ["SERIES", { service: "SERIES", input: {} } as never, "/api/v1/recurring-expenses"],
+    ["SUBSCRIPTION", { service: "SUBSCRIPTION", input: {} } as never, "/api/v1/subscriptions"],
   ];
 
   it.each(subs)("%s: rota certa com a chave recebida", async (_n, sub, url) => {

@@ -1,3 +1,4 @@
+import { CreateSubscriptionSchema } from "@/modules/assinaturas/schemas";
 import {
   type CreateRecurringExpenseInput,
   CreateRecurringExpenseSchema,
@@ -7,6 +8,10 @@ import {
   CreatePlannedExpenseSchema,
 } from "@/modules/previstas/schemas";
 import { type CreateTransactionInput, CreateTransactionSchema } from "@/modules/transacoes/schemas";
+import { type DoorField, fieldsFromIssues } from "./door-fields";
+import { buildSubscription, type SubscriptionBody } from "./door-subscription";
+
+export { type DoorField, fieldsFromIssues };
 
 /**
  * Porta única "Já aconteceu / Vai acontecer" (US-090) e "Repetir todo mês" (US-091), SDD-031.
@@ -15,9 +20,9 @@ import { type CreateTransactionInput, CreateTransactionSchema } from "@/modules/
  */
 
 export type DoorKind = "EXPENSE" | "INCOME"; // US-100 acrescenta "TRANSFER"
-export type DoorWhen = "NOW" | "LATER"; // US-096 acrescenta "SUBSCRIPTION"
-export type DoorRepeat = "NONE" | "MONTHLY"; // só vale com LATER
-export type DoorService = "TRANSACTION" | "PLANNED" | "SERIES";
+export type DoorWhen = "NOW" | "LATER";
+export type DoorRepeat = "NONE" | "MONTHLY"; // LATER: série; NOW com cartão: assinatura (US-096d)
+export type DoorService = "TRANSACTION" | "PLANNED" | "SERIES" | "SUBSCRIPTION";
 
 export type DoorState = {
   kind: DoorKind;
@@ -61,7 +66,6 @@ export type DoorCtx = {
   unlinkedIds?: readonly string[];
 };
 
-/** Ponto de extensão da US-051: liga a receita prevista sem reescrever a porta. */
 export const DOOR_FLAGS = { incomePlanned: false } as const;
 
 /** Padrão por modo em tabela (D-TL-U7-4): hoje os dois modos nascem "Só meu". */
@@ -86,9 +90,16 @@ export const SERIES_NOTE_NOTICE =
   "A observação não é guardada em séries; ela volta se você desmarcar Repetir";
 
 export function serviceOf(
-  s: Pick<DoorState, "kind" | "when" | "repeat">,
+  s: Pick<DoorState, "kind" | "when" | "repeat"> & { source?: string },
   flags: DoorCtx["flags"] = DOOR_FLAGS,
 ): DoorService | null {
+  if (
+    s.when === "NOW" &&
+    s.kind === "EXPENSE" &&
+    s.repeat === "MONTHLY" &&
+    s.source?.startsWith("card:")
+  )
+    return "SUBSCRIPTION";
   if (s.when === "NOW") return DOOR_SERVICES[`${s.kind}|NOW|NONE`] ?? null;
   if (s.kind === "INCOME") return flags.incomePlanned ? "PLANNED" : null;
   return DOOR_SERVICES[`${s.kind}|LATER|${s.repeat}`] ?? null;
@@ -109,7 +120,8 @@ export function availability(
   } else if (s.source.startsWith("card:")) {
     later = { enabled: false, reason: "CARD_SELECTED" };
   }
-  return { later, repeat: { enabled: later.enabled && s.kind === "EXPENSE" } };
+  const subscription = s.kind === "EXPENSE" && s.source.startsWith("card:"); // US-096d: só em NOW
+  return { later, repeat: { enabled: (later.enabled || subscription) && s.kind === "EXPENSE" } };
 }
 
 export function laterHint(reason: "CARD_SELECTED" | "INCOME_NOT_AVAILABLE" | undefined) {
@@ -134,6 +146,8 @@ export function sharedAfterModeChange(
 }
 
 export function effectLine(when: DoorWhen, repeat: DoorRepeat): string {
+  if (when === "NOW" && repeat === "MONTHLY")
+    return "Assinatura: o app lança a compra no cartão todo mês; nada entra no extrato antes do dia";
   if (when === "NOW") return "Já aconteceu: entra no extrato e nos saldos agora";
   const base = "Vai acontecer: fica em A pagar até você dar baixa; não muda saldo nem extrato";
   return repeat === "MONTHLY"
@@ -141,7 +155,10 @@ export function effectLine(when: DoorWhen, repeat: DoorRepeat): string {
     : base;
 }
 
-export function saveLabel(s: Pick<DoorState, "kind" | "when">): string {
+export function saveLabel(
+  s: Pick<DoorState, "kind" | "when"> & { service?: DoorService | null },
+): string {
+  if (s.service === "SUBSCRIPTION") return "Salvar assinatura";
   if (s.when === "LATER") return "Salvar previsão";
   return s.kind === "INCOME" ? "Salvar receita" : "Salvar despesa";
 }
@@ -156,7 +173,7 @@ export function seriesDefaults(date: string, today: string) {
 }
 
 function sharedOf(s: DoorState, ctx: DoorCtx): boolean {
-  if (s.kind !== "EXPENSE") return false;
+  if (s.kind !== "EXPENSE" || serviceOf(s, ctx.flags) === "SUBSCRIPTION") return false; // US-099 divide
   return ctx.splitAvailable && s.shared && !(s.when === "NOW" && ctx.splitBlocked);
 }
 
@@ -170,11 +187,13 @@ export function effectivePayerOf(s: DoorState, ctx: DoorCtx): string {
 export type DoorSubmission =
   | { service: "TRANSACTION"; input: CreateTransactionInput }
   | { service: "PLANNED"; input: CreatePlannedExpenseInput }
-  | { service: "SERIES"; input: CreateRecurringExpenseInput };
+  | { service: "SERIES"; input: CreateRecurringExpenseInput }
+  | SubscriptionBody;
 
 export function buildSubmission(s: DoorState, ctx: DoorCtx): DoorSubmission {
   const payer = effectivePayerOf(s, ctx);
   const service = serviceOf(s, ctx.flags);
+  if (service === "SUBSCRIPTION") return buildSubscription(s, payer);
   if (service === "PLANNED" || service === "SERIES") {
     const accountId = s.source.startsWith("acc:") ? s.source.slice(4) : "";
     const shared = ctx.splitAvailable ? s.shared : false;
@@ -244,53 +263,6 @@ export function buildSubmission(s: DoorState, ctx: DoorCtx): DoorSubmission {
   };
 }
 
-/** Campos do formulário (SDD-031 §6.3): vários caminhos da API caem no mesmo campo. */
-export type DoorField =
-  | "amountInCents"
-  | "source"
-  | "categoryId"
-  | "date"
-  | "description"
-  | "note"
-  | "payer"
-  | "installments"
-  | "paidBeforeApp"
-  | "tags"
-  | "day"
-  | "startMonth"
-  | "end";
-
-const FIELD_OF: Record<string, DoorField> = {
-  amountInCents: "amountInCents",
-  accountId: "source",
-  cardId: "source",
-  paymentAccountId: "source",
-  categoryId: "categoryId",
-  occurredOn: "date",
-  dueOn: "date",
-  description: "description",
-  note: "note",
-  payerMemberId: "payer",
-  responsibleMemberId: "payer",
-  installments: "installments",
-  paidBeforeApp: "paidBeforeApp",
-  tags: "tags",
-  dayOfMonth: "day",
-  startMonth: "startMonth",
-  end: "end",
-};
-
-export function fieldsFromIssues(
-  issues: Array<{ path: string; message: string }>,
-): Partial<Record<DoorField, string>> {
-  const out: Partial<Record<DoorField, string>> = {};
-  for (const i of issues) {
-    const f = FIELD_OF[i.path.split(".")[0] as string];
-    if (f && !out[f]) out[f] = i.message;
-  }
-  return out;
-}
-
 export type DoorValidation =
   | { ok: true; submission: DoorSubmission }
   | { ok: false; errors: Partial<Record<DoorField, string>> };
@@ -304,9 +276,11 @@ export function validateSubmission(s: DoorState, ctx: DoorCtx): DoorValidation {
   const schema =
     sub.service === "TRANSACTION"
       ? CreateTransactionSchema
-      : sub.service === "PLANNED"
-        ? CreatePlannedExpenseSchema
-        : CreateRecurringExpenseSchema;
+      : sub.service === "SUBSCRIPTION"
+        ? CreateSubscriptionSchema
+        : sub.service === "PLANNED"
+          ? CreatePlannedExpenseSchema
+          : CreateRecurringExpenseSchema;
   const parsed = schema.safeParse(sub.input);
   const errors = {
     ...(parsed.success

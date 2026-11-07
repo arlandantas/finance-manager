@@ -2,6 +2,7 @@
 
 import { CalendarClock, CheckCircle2 } from "lucide-react";
 import { useRef } from "react";
+import { monthLabel } from "@/app/(app)/extrato/filters";
 import { cn } from "@/components/ui/cn";
 import { Field, inputClass } from "@/components/ui/field";
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
@@ -12,6 +13,7 @@ import {
   effectLine,
   laterHint,
 } from "@/modules/lancamento/door";
+import { addMonths, type MonthISO, monthOf } from "@/modules/previstas/recurrence";
 
 /** "Quando? Já aconteceu | Vai acontecer" + linha de efeito + dica de indisponibilidade (SDD-031 §4.1, §6.1). */
 export function WhenSwitch({
@@ -77,6 +79,7 @@ export function RepeatFields({
   repeat,
   onRepeat,
   locked,
+  subscriptionEffect,
   day,
   onDay,
   startMonth,
@@ -91,6 +94,8 @@ export function RepeatFields({
   repeat: DoorRepeat;
   onRepeat: (r: DoorRepeat) => void;
   locked: boolean;
+  /** US-096d: com cartão em "Já aconteceu", "Todo mês" é "Assinatura (todo mês)" e mostra a linha de efeito. */
+  subscriptionEffect?: string | false | null | undefined;
   day: string;
   onDay: (v: string) => void;
   startMonth: string;
@@ -114,12 +119,25 @@ export function RepeatFields({
           onChange={onRepeat}
           options={[
             { value: "NONE", label: "Não", disabled: locked && repeat !== "NONE" },
-            { value: "MONTHLY", label: "Todo mês", disabled: locked && repeat !== "MONTHLY" },
+            {
+              value: "MONTHLY",
+              label: subscriptionEffect !== undefined ? "Assinatura (todo mês)" : "Todo mês",
+              disabled: locked && repeat !== "MONTHLY",
+            },
           ]}
         />
       </div>
       {repeat === "MONTHLY" ? (
         <div className="flex flex-col gap-4 rounded-lg border border-slate-200 p-3">
+          {subscriptionEffect ? (
+            <p
+              data-testid="subscription-effect"
+              aria-live="polite"
+              className="text-sm text-slate-700"
+            >
+              {subscriptionEffect}
+            </p>
+          ) : null}
           <Field
             id="tx-day"
             label="Dia do mês"
@@ -205,4 +223,17 @@ export function RepeatFields({
       ) : null}
     </>
   );
+}
+
+/** "Começa em": mês de hoje e os 11 seguintes (mais o já escolhido). */
+export function monthOptionsFor(today: string, startValue: string) {
+  if (!today) return [];
+  const current = monthOf(today);
+  const all = [
+    ...Array.from({ length: 12 }, (_, i) => addMonths(current as MonthISO, i)),
+    startValue,
+  ].filter(Boolean);
+  return Array.from(new Set(all))
+    .sort()
+    .map((m) => ({ value: m, label: monthLabel(m) }));
 }

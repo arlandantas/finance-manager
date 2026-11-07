@@ -4,9 +4,8 @@ import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { monthLabel } from "@/app/(app)/extrato/filters";
 import { CategoryIcon } from "@/components/category-icon";
-import { RepeatFields, WhenSwitch } from "@/components/door-parts";
+import { monthOptionsFor, RepeatFields, WhenSwitch } from "@/components/door-parts";
 import { InstallmentPreviewText } from "@/components/installment-preview";
 import { useFormatMoney } from "@/components/money";
 import { MoneyInput } from "@/components/money-input";
@@ -50,8 +49,8 @@ import {
   validateDateForWhen,
   validateSubmission,
 } from "@/modules/lancamento/door";
+import { subscriptionEffectLine } from "@/modules/lancamento/door-subscription";
 import { successText, useDoorKey, useDoorSubmit } from "@/modules/lancamento/use-door-submit";
-import { addMonths, type MonthISO, monthOf } from "@/modules/previstas/recurrence";
 import { splitSwitchLabel } from "@/modules/split/shares-label";
 import { useDefaults } from "@/modules/transacoes/hooks";
 import {
@@ -112,7 +111,11 @@ export function TransactionDrawer({
   const cards = useCards();
   const family = useFamily();
   const categories = useCategories(kind);
-  const doorService = serviceOf({ kind, when, repeat: kind === "EXPENSE" ? repeat : "NONE" });
+  // "Todo mês" só vale em "Vai acontecer" (série) ou com cartão em "Já aconteceu" (assinatura, US-096d)
+  const repeatNow: DoorRepeat =
+    kind === "EXPENSE" && (when === "LATER" || source.startsWith("card:")) ? repeat : "NONE";
+  const doorService = serviceOf({ kind, when, repeat: repeatNow, source });
+  const subscriptionOn = doorService === "SUBSCRIPTION";
   const { key, renew: renewKey } = useDoorKey(doorService, unknownOutcome);
   const door = useDoorSubmit(key);
 
@@ -164,7 +167,8 @@ export function TransactionDrawer({
   const selectedCard = effectiveSource.startsWith("card:")
     ? cardList.find((c) => `card:${c.id}` === effectiveSource)
     : undefined;
-  const parcelado = kind === "EXPENSE" && selectedCard !== undefined && installments > 1;
+  const parcelado =
+    kind === "EXPENSE" && selectedCard !== undefined && installments > 1 && !subscriptionOn;
   const paidBeforeApp = paidText.trim() === "" ? 0 : Number(paidText);
   const paidActive = parcelado && paidBeforeApp >= 1;
   // fatura fechada e não paga imediatamente anterior à aberta (SDD-020 §1)
@@ -196,7 +200,8 @@ export function TransactionDrawer({
   const splitBlocked = parcelado && !splitInstallmentsAvailable;
   // SEC-026: "Só meu" é sempre em nome de quem lança; para registrar o gasto de outra pessoa, divida.
   const myMemberId = family.data?.currentMemberId ?? defaults.data?.payerMemberId ?? "";
-  const personalExpense = kind === "EXPENSE" && !(shared && splitAvailable && !splitBlocked);
+  const personalExpense =
+    kind === "EXPENSE" && (subscriptionOn || !(shared && splitAvailable && !splitBlocked));
   // US-093b: o ADMIN lança "Só meu" em nome de membro ATIVO sem conta (único caso de "Só meu" em nome de outro)
   const unlinkedIds =
     family.data?.currentRole === "ADMIN"
@@ -209,13 +214,14 @@ export function TransactionDrawer({
   const nowIso = today || new Date().toISOString().slice(0, 10);
   const isLater = when === "LATER";
   const seriesOn = isLater && kind === "EXPENSE" && repeat === "MONTHLY";
+  const recurringOn = seriesOn || subscriptionOn; // sem "Mais detalhes": dia/mês/fim definem a data
   const derived = seriesDefaults(date, today);
   const dayValue = day ?? derived.day;
   const startValue = startMonth ?? derived.startMonth;
   const doorState: DoorState = {
     kind,
     when,
-    repeat: kind === "EXPENSE" ? repeat : "NONE",
+    repeat: repeatNow,
     cents,
     description,
     categoryId,
@@ -245,20 +251,12 @@ export function TransactionDrawer({
   const effectivePayerId = effectivePayerOf(doorState, doorCtx);
   const avail = availability(doorState, doorCtx);
   const dateError = errors.date ?? validateDateForWhen(date, when, today) ?? undefined;
-  const currentMonth = today ? monthOf(today) : null;
-  const monthOptions = currentMonth
-    ? Array.from(
-        new Set(
-          [
-            ...Array.from({ length: 12 }, (_, i) => addMonths(currentMonth as MonthISO, i)),
-            startValue,
-          ].filter(Boolean),
-        ),
-      )
-        .sort()
-        .map((m) => ({ value: m, label: monthLabel(m) }))
-    : [];
+  const monthOptions = monthOptionsFor(today, startValue);
   const locked = door.isPending || unknownOutcome;
+  const subEffect =
+    !isLater && selectedCard && kind === "EXPENSE"
+      ? subscriptionOn && subscriptionEffectLine(selectedCard.name, dayValue, startValue, today)
+      : undefined;
 
   function changeWhen(next: DoorWhen) {
     if (next === when) return;
@@ -436,7 +434,7 @@ export function TransactionDrawer({
             Cadastrar cartão
           </Link>
         ) : null}
-        {selectedCard && kind === "EXPENSE" ? (
+        {selectedCard && kind === "EXPENSE" && !subscriptionOn ? (
           <p data-testid="invoice-hint" className="-mt-3 text-sm text-slate-600">
             {invoiceHint(
               paidActive
@@ -447,7 +445,7 @@ export function TransactionDrawer({
             )}
           </p>
         ) : null}
-        {selectedCard && kind === "EXPENSE" ? (
+        {selectedCard && kind === "EXPENSE" && !subscriptionOn ? (
           <>
             <Field id="tx-installments" label="Parcelas" error={errors.installments}>
               <select
@@ -664,7 +662,7 @@ export function TransactionDrawer({
           </div>
         </div>
 
-        {kind === "EXPENSE" && splitAvailable ? (
+        {kind === "EXPENSE" && splitAvailable && !subscriptionOn ? (
           <div className="flex min-h-11 items-center justify-between gap-3">
             <span id="tx-shared-label" className="text-sm font-medium text-slate-800">
               Dividir com a família
@@ -743,11 +741,12 @@ export function TransactionDrawer({
             />
           </Field>
         ) : null}
-        {isLater && kind === "EXPENSE" ? (
+        {(isLater || selectedCard) && kind === "EXPENSE" ? (
           <RepeatFields
             repeat={doorState.repeat}
             onRepeat={setRepeat}
             locked={locked}
+            subscriptionEffect={subEffect}
             day={dayValue}
             onDay={(v) => setDay(v)}
             startMonth={startValue}
@@ -761,7 +760,7 @@ export function TransactionDrawer({
           />
         ) : null}
 
-        {seriesOn ? (
+        {recurringOn ? (
           note.trim() ? (
             <p
               role="note"
@@ -820,7 +819,7 @@ export function TransactionDrawer({
               ? "Salvando…"
               : overLimit
                 ? "Confirmar mesmo assim"
-                : saveLabel({ kind, when })}
+                : saveLabel({ kind, when, service: doorService })}
           </Button>
         </div>
       </form>
