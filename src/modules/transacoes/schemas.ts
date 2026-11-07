@@ -249,7 +249,7 @@ export const ListTransactionsQuerySchema = z
     cardId: uuidSchema.optional(),
     type: z.enum(["EXPENSE", "INCOME", "TRANSFER", "INVOICE_PAYMENT"]).optional(),
     shared: boolParam.optional(), // true = comum; false = pessoal (só despesas)
-    origin: z.enum(["APP", "ASSISTANT"]).optional(), // US-076a: "Pelo app" / "Via assistente"
+    origin: z.enum(["APP", "ASSISTANT", "SUBSCRIPTION"]).optional(), // US-076a: "Pelo app" / "Via assistente"
     categoryIds: idListParam.optional(), // SDD-016 §1: plurais (OU dentro, E entre filtros)
     payerIds: idListParam.optional(), // quem pagou/recebeu (difere de `memberId`: pagador OU autor)
     sourceIds: idListParam.optional(), // ids de conta OU cartão
@@ -289,7 +289,7 @@ export type LedgerFilters = {
   untagged?: boolean; // sem nenhuma tag (só despesa/receita têm tags)
   type?: "EXPENSE" | "INCOME" | "TRANSFER" | "INVOICE_PAYMENT";
   shared?: boolean;
-  origin?: "APP" | "ASSISTANT"; // US-076a: predicado a mais, como `shared` (totais continuam reconciliados)
+  origin?: "APP" | "ASSISTANT" | "SUBSCRIPTION"; // US-076a: predicado a mais, como `shared` (totais continuam reconciliados)
   q?: string; // busca por descrição (ILIKE; sem acento-insensibilidade)
   includeDeleted: boolean;
   occurredUntil?: string; // interno (Home "recentes", ADR-020 §4): nada com data de calendário futura

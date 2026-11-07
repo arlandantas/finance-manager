@@ -66,7 +66,7 @@ type TxRow = {
   updatedAt: Date;
   deletedAt: Date | null;
   deletionReason: "DELETED" | "UNDONE" | null;
-  origin?: "APP" | "ASSISTANT";
+  origin?: "APP" | "ASSISTANT" | "SUBSCRIPTION";
   assistantGrantId?: string | null;
 };
 
@@ -207,6 +207,8 @@ export async function createExpenseCore(
     personalFromPlanned?: boolean;
     /** US-076a: lançamento direto pelo assistente (só a ferramenta `lancar_despesa` informa). */
     assistant?: { grantId: string; idemKey: string | null; label: string };
+    /** US-096 (ADR-036): cobrança automática de assinatura; autor = o da assinatura, sem checar ator × pagador. */
+    subscription?: { subscriptionId: string; authorMemberId: string };
   },
 ): Promise<CreateTransactionResponse> {
   // ADR-021 §2: a trava de família é a PRIMEIRA trava; o motor lido depois dela decide se grava rateio
@@ -228,7 +230,7 @@ export async function createExpenseCore(
   if (!category) throw invalidRef("categoryId", "Escolha uma categoria");
   const payer = await repo.findMember(payerMemberId);
   if (!payer) throw invalidRef("payerMemberId", "Membro inválido");
-  if (!opts.personalFromPlanned) {
+  if (!opts.personalFromPlanned && !opts.subscription) {
     await assertPersonalForSelf(
       tx,
       ctx,
@@ -286,8 +288,9 @@ export async function createExpenseCore(
     description,
     note: input.note ?? null,
     payerMemberId,
-    authorMemberId: ctx.memberId,
+    authorMemberId: opts.subscription?.authorMemberId ?? ctx.memberId,
     isSharedExpense: input.isSharedExpense,
+    ...(opts.subscription ? { origin: "SUBSCRIPTION" as const } : {}),
     ...(rule ? { splitMode: "RULE" as const, splitRuleVersionId: rule.ruleVersionId } : {}),
     ...(opts.assistant
       ? {
@@ -326,7 +329,7 @@ export async function createExpenseCore(
     transactionId: row.id,
     revision: 1,
     action: "CREATE",
-    actorMemberId: ctx.memberId,
+    actorMemberId: opts.subscription?.authorMemberId ?? ctx.memberId,
     changes: [
       {
         field: "*",

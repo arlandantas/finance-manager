@@ -1,6 +1,6 @@
 # Spec 12 — Assinaturas no cartão
 
-Atualizado: 2026-11-07. Estado: **planejada** (US-096, 096b, 096c, 096d, 097, 098, 099 não iniciadas). Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
+Atualizado: 2026-11-07. Estado: **US-096 implementada (servidor: modelo, cadastro, lançamento)**; 096b, 096c, 096d, 097, 098, 099 não iniciadas. Decisão: ADR-036. Cartões e faturas: spec 02. Propriedade: spec 01.
 
 ## Resumo
 - Assinatura = compra mensal fixa num cartão (Netflix, Spotify) que o app lança sozinho no dia da cobrança, como compra à vista normal na fatura do ciclo.
@@ -36,8 +36,15 @@ Atualizado: 2026-11-07. Estado: **planejada** (US-096, 096b, 096c, 096d, 097, 09
 - Sem cron: família que não abre o app recebe as cobranças atrasadas na próxima abertura (cada uma na fatura do seu ciclo, possivelmente já fechada e não paga).
 - Assinatura encerrada no mesmo dia da cobrança mantém a cobrança do dia.
 
+## Implementação (US-096)
+- Migrações `20261107000000_us096_enum_origin_subscription` (enum sozinha) e `20261107000100_us096_card_subscriptions` (tabelas, CHECKs, únicos, FKs compostas; reversão no topo do SQL).
+- `ensureSubscriptionCharges(tx, ctx)`: atalho sem trava; senão `lockFamilySplit` → advisory → relê; ordem de id, até 12 por chamada; mês já em `subscription_charges` só avança `nextChargeOn`. `...Standalone`: uma transação por assinatura vencida; falha é logada sem PII e não quebra a leitura. Ganchos nas demais leituras: US-096b.
+- Cobrança = `createExpenseCore` com `subscription` (origem `SUBSCRIPTION`, autor da assinatura, revisão CREATE com esse autor, categoria arquivada aceita, sem checar ator × pagador). Cartão arquivado/excluído: `SKIPPED_CARD_ARCHIVED`; fatura do ciclo com pagamento ativo: `SKIPPED_INVOICE_PAID`.
+- Cadastro: ordem `lockFamilySplit` → advisory → cartão ativo `FOR SHARE`; categoria inativa/outra família `INVALID_REFERENCE`, de receita `CATEGORY_KIND_MISMATCH`; pagador pela `assertPersonalForSelf` (403 como na compra). `currentAmountInCents` antes da 1ª cobrança = valor da 1ª vigência.
+- Testes: `tests/unit/assinaturas/schedule.test.ts`, `tests/integration/us-096-assinatura-lancamento.int.test.ts`, `lock-coverage` cobre `createSubscription` e `ensureSubscriptionCharges`.
+
 ## Perguntas ao usuário
 - Nenhuma bloqueante. Hipóteses assumidas (reversíveis, ADR-036): primeira cobrança não retroativa; encerrar não lança cobrança futura do mês corrente.
 
 ## Fontes
-Planejado: `src/modules/assinaturas/{schemas,schedule,charges,service,manage,list,hooks}.ts`, rotas `src/app/api/v1/subscriptions/**`, telas `src/app/(app)/cartoes/[id]/subscription-drawer.tsx`, `src/app/(app)/assinaturas/`.
+Código (US-096): `src/modules/assinaturas/{schemas,schedule,repo,service,charges}.ts`, `createExpenseCore(opts.subscription)`, rota `POST|GET /api/v1/subscriptions` (GET lança o vencido antes de ler). Planejado: `manage,list,hooks`, demais rotas, telas `src/app/(app)/cartoes/[id]/subscription-drawer.tsx`, `src/app/(app)/assinaturas/`.

@@ -1,0 +1,162 @@
+import { notFound, unprocessable } from "@/lib/api/errors";
+import type { RequestContext, Tx } from "@/lib/api/types";
+import { fromDbDate, todayInFamilyTz } from "@/lib/dates";
+import { toCents } from "@/lib/money";
+import type { MemberRef } from "@/lib/schemas";
+import { assinaturasRepo } from "@/modules/assinaturas/repo";
+import {
+  type AmountRow,
+  amountFor,
+  endMonthOfSubscription,
+  firstChargeOn,
+} from "@/modules/assinaturas/schedule";
+import type {
+  CreateSubscriptionParsed,
+  ListSubscriptionsQuery,
+  SubscriptionDTO,
+} from "@/modules/assinaturas/schemas";
+import { addMonths, type MonthISO, monthOf } from "@/modules/previstas/recurrence";
+import { previstasRepo } from "@/modules/previstas/repo";
+import { memberMap } from "@/modules/previstas/service";
+import { lockFamilySplit } from "@/modules/split/lock";
+import { assertPersonalForSelf } from "@/modules/transacoes/ownership";
+import { transacoesRepo } from "@/modules/transacoes/repo";
+
+const NOT_FOUND = "Assinatura não encontrada.";
+const HORIZON = 12;
+
+type Repo = ReturnType<typeof assinaturasRepo>;
+type Row = NonNullable<Awaited<ReturnType<Repo["findById"]>>>;
+type Skip = Awaited<ReturnType<Repo["recentSkips"]>>[number];
+type AmountDb = Awaited<ReturnType<Repo["amountsOf"]>>[number];
+
+const monthStr = (d: Date) => fromDbDate(d).slice(0, 7) as MonthISO;
+const invalidRef = (path: string, message: string) =>
+  unprocessable("INVALID_REFERENCE", message, [{ path, message }]);
+
+const toAmountRow = (a: AmountDb): AmountRow => ({
+  fromMonth: monthStr(a.fromMonth),
+  amountInCents: toCents(a.amountInCents),
+  createdAt: a.createdAt,
+});
+
+function toDTO(
+  row: Row,
+  ctx: { members: Map<string, MemberRef>; amounts: AmountDb[]; skips: Skip[]; month: MonthISO },
+): SubscriptionDTO {
+  const mine = (x: { subscriptionId: string }) => x.subscriptionId === row.id;
+  const payer = ctx.members.get(row.payerMemberId) ?? {
+    id: row.payerMemberId,
+    name: "Membro",
+    image: null,
+  };
+  return {
+    id: row.id,
+    card: {
+      id: row.card.id,
+      name: row.card.name,
+      archived: row.card.archivedAt !== null || row.card.deletedAt !== null,
+    },
+    description: row.description,
+    category: { id: row.category.id, name: row.category.name },
+    payer,
+    dayOfMonth: row.dayOfMonth,
+    // antes da 1ª cobrança o "valor atual" é o da 1ª vigência
+    currentAmountInCents:
+      amountFor(
+        ctx.month > monthOf(fromDbDate(row.firstChargeOn))
+          ? ctx.month
+          : (monthOf(fromDbDate(row.firstChargeOn)) as MonthISO),
+        ctx.amounts.filter(mine).map(toAmountRow),
+      ) ?? 0,
+    firstChargeOn: fromDbDate(row.firstChargeOn),
+    nextChargeOn: row.nextChargeOn ? fromDbDate(row.nextChargeOn) : null,
+    endMonth: row.endMonth ? monthStr(row.endMonth) : null,
+    endedOn: row.endedOn ? fromDbDate(row.endedOn) : null,
+    version: row.version,
+    recentSkips: ctx.skips
+      .filter(mine)
+      .slice(0, 3)
+      .map((s) => ({
+        month: monthStr(s.chargeMonth),
+        reason: s.status === "SKIPPED_CARD_ARCHIVED" ? "CARD_ARCHIVED" : "INVOICE_PAID",
+      })),
+  };
+}
+
+async function toDTOs(tx: Tx, ctx: RequestContext, rows: Row[]): Promise<SubscriptionDTO[]> {
+  if (rows.length === 0) return [];
+  const repo = assinaturasRepo(tx, ctx.familyId);
+  const ids = rows.map((r) => r.id);
+  const [members, amounts, skips] = await Promise.all([
+    memberMap(previstasRepo(tx, ctx.familyId)),
+    repo.amountsOf(ids),
+    repo.recentSkips(ids),
+  ]);
+  const month = monthOf(todayInFamilyTz(ctx.clock)) as MonthISO;
+  return rows.map((r) => toDTO(r, { members, amounts, skips, month }));
+}
+
+/**
+ * Cadastro (US-096, ADR-036). Ordem de travas: `lockFamilySplit` → advisory `subscriptions:{familyId}` →
+ * cartão `FOR SHARE`. As travas de propriedade são as da compra no cartão (`assertPersonalForSelf`, spec 01).
+ */
+export async function createSubscription(
+  tx: Tx,
+  ctx: RequestContext,
+  input: CreateSubscriptionParsed,
+): Promise<{ subscription: SubscriptionDTO }> {
+  await lockFamilySplit(tx, ctx.familyId);
+  const repo = assinaturasRepo(tx, ctx.familyId);
+  await repo.lockSubscriptions();
+  if (!(await repo.lockActiveCard(input.cardId))) throw invalidRef("cardId", "Escolha um cartão");
+  const category = await transacoesRepo(tx, ctx.familyId).findCategory(input.categoryId);
+  if (!category) throw invalidRef("categoryId", "Escolha uma categoria");
+  if (category.kind !== "EXPENSE") {
+    const message = "A categoria não combina com o tipo do lançamento";
+    throw unprocessable("CATEGORY_KIND_MISMATCH", message, [{ path: "categoryId", message }]);
+  }
+  const today = todayInFamilyTz(ctx.clock);
+  const current = monthOf(today) as MonthISO;
+  const startMonth = (input.startMonth ?? current) as MonthISO;
+  if (startMonth < current || startMonth > addMonths(current, HORIZON - 1)) {
+    const message = "O início deve estar entre o mês atual e os próximos 11 meses";
+    throw unprocessable("INVALID_START_MONTH", message, [{ path: "startMonth", message }]);
+  }
+  const payerMemberId = input.payerMemberId ?? ctx.memberId;
+  if (!(await transacoesRepo(tx, ctx.familyId).findMember(payerMemberId))) {
+    throw invalidRef("payerMemberId", "Membro inválido");
+  }
+  await assertPersonalForSelf(tx, ctx, { isSharedExpense: false, payerMemberId });
+
+  const first = firstChargeOn(startMonth, input.dayOfMonth, today);
+  const created = await repo.insert({
+    cardId: input.cardId,
+    description: input.description,
+    categoryId: input.categoryId,
+    payerMemberId,
+    dayOfMonth: input.dayOfMonth,
+    firstChargeOn: first,
+    endMonth: endMonthOfSubscription(first, input.end),
+    authorMemberId: ctx.memberId,
+    amountInCents: input.amountInCents,
+    fromMonth: monthOf(first) as MonthISO,
+  });
+  return { subscription: await loadOne(tx, ctx, created.id) };
+}
+
+async function loadOne(tx: Tx, ctx: RequestContext, id: string): Promise<SubscriptionDTO> {
+  const row = await assinaturasRepo(tx, ctx.familyId).findById(id);
+  if (!row) throw notFound(NOT_FOUND);
+  const [dto] = await toDTOs(tx, ctx, [row]);
+  return dto as SubscriptionDTO;
+}
+
+export async function getSubscription(tx: Tx, ctx: RequestContext, id: string) {
+  return { subscription: await loadOne(tx, ctx, id) };
+}
+
+export async function listSubscriptions(tx: Tx, ctx: RequestContext, q: ListSubscriptionsQuery) {
+  const rows = await assinaturasRepo(tx, ctx.familyId).list(q.status, q.cardId);
+  return { items: await toDTOs(tx, ctx, rows) };
+}

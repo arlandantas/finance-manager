@@ -71,6 +71,38 @@ export async function seedEverything(fx: FamilyFixture): Promise<void> {
       authorMemberId: mariana,
     },
   });
+  // US-096: assinatura com valor e cobrança pulada (cobre as três tabelas novas na exclusão da família)
+  const subscription = await db.cardSubscription.create({
+    data: {
+      familyId,
+      cardId: card.id,
+      description: "Netflix",
+      categoryId: category.id,
+      payerMemberId: mariana,
+      dayOfMonth: 10,
+      firstChargeOn: new Date("2026-11-10T00:00:00Z"),
+      nextChargeOn: new Date("2026-12-10T00:00:00Z"),
+      authorMemberId: mariana,
+    },
+  });
+  await db.cardSubscriptionAmount.create({
+    data: {
+      familyId,
+      subscriptionId: subscription.id,
+      fromMonth: new Date("2026-11-01T00:00:00Z"),
+      amountInCents: 3990n,
+      authorMemberId: mariana,
+    },
+  });
+  await db.subscriptionCharge.create({
+    data: {
+      familyId,
+      subscriptionId: subscription.id,
+      chargeMonth: new Date("2026-11-01T00:00:00Z"),
+      chargeOn: new Date("2026-11-10T00:00:00Z"),
+      status: "SKIPPED_INVOICE_PAID",
+    },
+  });
   await db.installmentPlan.create({
     data: {
       familyId,

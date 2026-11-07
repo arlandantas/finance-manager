@@ -22,6 +22,8 @@ const COVERED: Array<[string, string[]]> = [
   ["src/modules/split/service.ts", ["putSplitRule", "registerSettlement"]],
   ["src/modules/contas/transfers.ts", ["undoTransferGroup"]],
   ["src/modules/previstas/service.ts", ["payPlannedExpense", "undoPlannedPayment"]],
+  ["src/modules/assinaturas/service.ts", ["createSubscription"]],
+  ["src/modules/assinaturas/charges.ts", ["ensureSubscriptionCharges"]],
 ];
 // outras travas que NÃO podem vir antes da trava de família
 const OTHER_LOCKS = [

@@ -32,6 +32,9 @@ export const FAMILY_TABLES_DELETE_ORDER = [
   "transaction_revisions",
   "transaction_splits",
   "planned_expenses",
+  "subscription_charges", // US-096: antes de transactions e card_subscriptions (FKs RESTRICT)
+  "card_subscription_amounts",
+  "card_subscriptions",
   "transaction_tags", // US-045: antes de transactions e tags (FKs RESTRICT)
   "tags",
   "transactions",
