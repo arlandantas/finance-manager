@@ -416,6 +416,9 @@ export function TransactionDetailDrawer({
                   Lançado via assistente: <strong>{t.viaAssistant.label}</strong>
                 </p>
               ) : null}
+              {t.isInvoiceImport ? (
+                <p data-testid="detail-invoice-import">Importado da fatura</p>
+              ) : null}
               {source === "home" ? (
                 <Link
                   href={`/extrato?period=${t.occurredOn.slice(0, 7)}&highlight=${t.id}`}

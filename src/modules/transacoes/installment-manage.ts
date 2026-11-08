@@ -6,6 +6,7 @@ import { invoiceStatus } from "@/modules/cartoes/cycle";
 import { lockInvoices } from "@/modules/cartoes/invoices";
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { type Change, recordRevision } from "@/modules/contas/ledger";
+import { assertPlanImportNotReverted } from "@/modules/importacao/revert-guard";
 import { lockFamilySplit } from "@/modules/split/lock";
 import { loadInstallmentPlanDTO } from "@/modules/transacoes/installment-plan";
 import { memberNames, requireSettledConfirmation } from "@/modules/transacoes/mutations";
@@ -185,6 +186,7 @@ export async function restoreInstallmentPlan(
     throw unprocessable("NOT_RESTORABLE", "Esta compra não pode ser restaurada.");
   }
   if (plan.version !== input.version) throw await versionConflict(tx, ctx, plan);
+  await assertPlanImportNotReverted(tx, ctx, id); // US-069: lote desfeito não volta
   const card = await cardOf(tx, ctx, plan.cardId);
   if (card.archivedAt !== null || card.deletedAt !== null) {
     throw unprocessable("INVALID_REFERENCE", "Escolha um cartão", [

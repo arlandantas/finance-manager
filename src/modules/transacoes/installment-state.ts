@@ -2,6 +2,7 @@ import { conflict, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { fromDbDate } from "@/lib/dates";
 import { recordRevision } from "@/modules/contas/ledger";
+import { assertImportNotReverted } from "@/modules/importacao/revert-guard";
 import { lockFamilySplit } from "@/modules/split/lock";
 import {
   cardOf,
@@ -87,6 +88,7 @@ export async function restoreInstallment(
     throw unprocessable("NOT_RESTORABLE", "Este lançamento não pode ser restaurado.");
   }
   if (target.row.version !== input.version) throw await versionConflict(tx, ctx, plan);
+  await assertImportNotReverted(tx, ctx, target.row.importBatchId); // US-069: lote desfeito não volta
   const card = await cardOf(tx, ctx, plan.cardId);
   if (card.archivedAt !== null || card.deletedAt !== null) {
     throw unprocessable("INVALID_REFERENCE", "Escolha um cartão", [

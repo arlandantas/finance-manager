@@ -10,6 +10,7 @@ export function originFlags(
   viaAssistant: { label: string } | null;
   isSubscription: boolean;
   isSubscriptionAmended: boolean;
+  isInvoiceImport: boolean;
 } {
   return {
     viaAssistant:
@@ -22,5 +23,6 @@ export function originFlags(
         : null,
     isSubscription: row.origin === "SUBSCRIPTION",
     isSubscriptionAmended: row.subscriptionCharge?.isAmended === true,
+    isInvoiceImport: row.origin === "INVOICE_IMPORT",
   };
 }

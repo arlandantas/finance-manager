@@ -17,6 +17,7 @@ import { useCard, useInvoice } from "@/modules/cartoes/hooks";
 import { LedgerRow } from "../../extrato/ledger-row";
 import { TransactionDetailDrawer } from "../../extrato/transaction-detail-drawer";
 import { PayerLine } from "../payer-line";
+import { ImportsSection } from "./imports-section";
 import { PayInvoiceDrawer } from "./pay-invoice-drawer";
 import { StatusChip } from "./status-chip";
 import { SubscriptionDrawer } from "./subscription-drawer";
@@ -24,7 +25,6 @@ import { ProjectedLine, SubscriptionsBlock } from "./subscriptions-block";
 import { UndoPaymentDrawer } from "./undo-payment-drawer";
 
 const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-
 export function InvoiceScreen({
   cardId,
   importEnabled = false,
@@ -240,6 +240,7 @@ export function InvoiceScreen({
           </section>
 
           <SubscriptionsBlock cardId={cardId} onNew={() => setNewSub(true)} />
+          {importEnabled ? <ImportsSection cardId={cardId} /> : null}
 
           {inv.purchases.length === 0 ? (
             <p className="rounded-xl border border-dashed border-slate-300 bg-white dark:bg-slate-100 p-6 text-center text-slate-700">

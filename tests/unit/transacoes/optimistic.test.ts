@@ -61,6 +61,7 @@ const existing = (id: string, occurredOn: string): TransactionDTO => ({
   viaAssistant: null,
   isSubscription: false,
   isSubscriptionAmended: false,
+  isInvoiceImport: false,
   transferGroupId: null,
   plannedExpenseId: null,
   isSettlement: false,

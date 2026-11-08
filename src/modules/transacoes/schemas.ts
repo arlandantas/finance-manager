@@ -151,6 +151,7 @@ export type TransactionDTO = {
   /** US-076a: selo "via assistente" (rótulo da conexão; "assistente removido" se expurgada). */
   viaAssistant: { label: string } | null;
   isSubscription: boolean; // US-096c: cobrança automática de assinatura (selo "Assinatura")
+  isInvoiceImport: boolean; // US-069: selo "Importado da fatura"
   isSubscriptionAmended: boolean; // US-097: cobrança corrigida no Extrato (selo "alterada")
   transferGroupId: string | null;
   plannedExpenseId: string | null; // previsão que originou esta despesa (baixa), SDD-009 §4.5

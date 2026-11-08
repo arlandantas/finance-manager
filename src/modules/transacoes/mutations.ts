@@ -14,6 +14,7 @@ import {
   shareLockAccounts,
   shareLockCards,
 } from "@/modules/contas/lock";
+import { assertImportNotReverted } from "@/modules/importacao/revert-guard";
 import { plannedCopy } from "@/modules/previstas/copy";
 import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
@@ -559,6 +560,7 @@ export async function restoreTransaction(
   if (!row.deletedAt || row.deletionReason !== "DELETED") {
     throw unprocessable("NOT_RESTORABLE", "Este lançamento não pode ser restaurado.");
   }
+  await assertImportNotReverted(tx, ctx, row.importBatchId); // US-069: lote desfeito não volta
   if (row.cardId) await lockPurchaseInvoices(tx, ctx, repo, row);
   if (row.kind === "EXPENSE" && row.isSharedExpense) {
     await requireSettledConfirmation(

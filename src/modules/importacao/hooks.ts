@@ -68,6 +68,7 @@ export function useConfirmImport() {
           ["payables"],
           ["transactions"],
           ["installment-plan"],
+          ["invoice-imports"],
         ].map((queryKey) => qc.invalidateQueries({ queryKey })),
       ),
   });

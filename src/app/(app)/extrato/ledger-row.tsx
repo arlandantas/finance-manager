@@ -147,6 +147,14 @@ export function LedgerRow({
                   via assistente
                 </span>
               ) : null}
+              {item.isInvoiceImport ? (
+                <span
+                  data-testid="invoice-import-badge"
+                  className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-900"
+                >
+                  Importado da fatura
+                </span>
+              ) : null}
               {item.isSubscription ? (
                 <span
                   data-testid="subscription-badge"
