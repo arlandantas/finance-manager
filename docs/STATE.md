@@ -1,14 +1,14 @@
 # Estado atual
 
-**Fase:** R1–R4 em grande parte entregues; R2.2 concluída. Em 2026-11-07 entregues e aprovadas pelo reviewer (testes pontuais): US-046 (tags), US-048/049 (análise), UR-2 inteira (US-094a/b, 095, 096/096b/c/d, 097, 098, 099, 100/100b, 101/101b). US-050 e US-051 entregues, aceite do Gestor pendente. Em 2026-11-07, janela de reversão do rateio dispensada (ADR-040) e US-043 (seletor Só meu/Pela regra/De outro jeito, CUSTOM) entregue e aprovada (`5b82668`).
-**Verificação (2026-11-07):** por história: lint, typecheck, `pnpm test` (918+), int e E2E da própria história, todos verdes. Bloco UR-2: `test:int` completo verde (125 arquivos, 1485 ok, 1 pulado). E2E completo NÃO foi concluído (cortado por limite de tempo aos ~55 min, sem falhas vistas); dispensado pelo usuário: vale o QA no browser (Análise, Tags, Assinaturas, Previstas/Transferências, Cartões, Família, Extrato abriram sem erro de console; achou e corrigiu hidratação em `/analise`, `196a796`). Telas novas ainda sem conferência visual com dados reais.
+**Fase:** R1–R4 em grande parte entregues; R2.2 concluída; **R3 concluída** (US-041/042/043/044 aprovadas pelo reviewer em 2026-11-07, ADR-040). US-050 e US-051 entregues, aceite do Gestor pendente; UR-2 aceite pendente.
+**Verificação (2026-11-07):** `pnpm test:int` completo verde após o bloco R3 (129 arquivos, 1528 testes); `pnpm test` 936. E2E pontual por história verde; E2E completo não rodado. QA no browser (dev, Mariana): compra 3x dividida entra no acerto de nov (R$ 1.000,00, cotas 333,34/333,33/333,33) e na lista "1/3"; editar parcela ("Somente esta"), Histórico, excluir parcela (acerto recalcula a zero); "Dividir por padrão" em Supermercado liga "Pela regra" no lançamento e "Só meu" manual resiste à troca de categoria; revisão de out ("2 despesas Só meu") pede confirmação em mês acertado. Sem erro de console além do 409 esperado.
 
 **E2E enxuto (ADR-039):** mobile roda só `@mobile` (12 cenários); 132 cenários de regra viraram `@integration` (auditoria das 87 features, só onde o int/unit equivalente foi conferido). Execuções E2E ~1.490 → ~610 (599 desktop + 12 mobile); tempo real ainda não medido. Se continuar lento: paralelizar por schema.
 
 ## Próximo passo
-1. Aceitar o bloco UR-2; QA exploratório com dados reais (convites, assinaturas, transferências previstas, seletor de divisão da US-043 com 4 toques/AC1/AC9 só cobertos em E2E) fica com o usuário.
-2. R3 em ordem (ADR-040): US-041 → US-042 (liga `INSTALLMENT_SPLIT_RELEASED`) → US-044.
-3. Gatilho do CHECK `isSharedExpense=(splitMode<>NONE)` em `transactions`: toda família STORED (LEGACY ainda grava sem modo); entra com a US-042 ou depois. CUSTOM só em STORED (422 `CUSTOM_SPLIT_UNAVAILABLE`).
+1. Aceitar UR-2, US-050/051 e o bloco R3; QA com dados reais fica com o usuário.
+2. Achados do QA a tratar (sem história ainda): seletor de divisão mostra só 2 opções na família demo (CUSTOM só em STORED; AC1 da US-043 pede 3); revisão do mês tem um único "Dividir" abaixo da lista (só vale p/ itens próprios, sem indicar qual); aviso ao excluir parcela diz "Despesa excluída".
+3. CHECK `isSharedExpense=(splitMode<>NONE)` em `transactions` só quando toda família for STORED (LEGACY grava sem modo).
 4. Bloqueadas: US-066..069 (R5 adiada), US-074b e US-076c (decisão do usuário).
 
 ## Pendências do usuário
