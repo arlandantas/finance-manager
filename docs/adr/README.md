@@ -41,3 +41,4 @@
 - [ADR-040](ADR-040-janela-de-reversao-do-rateio-dispensada.md) — Janela de reversão do rateio dispensada; ordem US-043 → 041 → 042 → 044 — aceito
 - [ADR-041](ADR-041-motor-stored-por-padrao.md) — Motor STORED por padrão; migração só vira famílias sem rateio a preencher — aceito
 - [ADR-042](ADR-042-importacao-de-fatura.md) — Importação de fatura: CSV local, PDF por LLM anonimizado, lote atômico sem duplicar e reversão — aceito
+- [ADR-043](ADR-043-token-pessoal-mcp.md) — Token pessoal (PAT) para clientes MCP sem OAuth — aceito

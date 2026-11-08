@@ -1,7 +1,7 @@
 # Backlog
 Uma linha por história/enabler. Status: `todo` · `doing` · `done` · `blocked`. Detalhe das pendentes: `stories/US-NNN.md`.
 Ordem = ordem de execução; as entregues vêm primeiro. Status conferido contra código e testes em 2026-11-02.
-Pendentes: `todo` (pode iniciar quando as deps fecharem) · `blocked` (US-074b fora do POC, decisão do usuário).
+Pendentes: `todo` (pode iniciar quando as deps fecharem) · `blocked` (nenhuma hoje).
 Ordem das pendentes (importação de fatura, ADR-042, spec 13): US-066 → US-066b → US-066c → US-067 → US-068 → US-067b → US-069.
 
 | ID | Marco | Título | Status | Deps |
@@ -99,8 +99,9 @@ Ordem das pendentes (importação de fatura, ADR-042, spec 13): US-066 → US-06
 | US-077 | R4-D | Ver o que o meu assistente leu e lançou (auditoria) | done | EN-006b, US-074 |
 | US-076a | R4-D | Lançar uma despesa direto pelo assistente | done | US-075, US-077, EN-007 |
 | US-076b | R4-D | Limites de lançamento do assistente, configuráveis pelo membro | done | US-076a |
-| US-074b | R4-D | Token pessoal para clientes sem OAuth (backlog, fora do POC) | blocked | US-074, US-075, US-076b |
-| US-076c | R4-D | Modo opcional "exigir confirmação" por conexão | todo | US-076a, US-076b |
+| US-076c | R4-D | Modo opcional "exigir confirmação" por conexão | done | US-076a, US-076b |
+| US-074b | R4-D | Token pessoal (PAT) para clientes MCP sem OAuth: servidor (ADR-043) | todo | US-074, US-075, US-076b, US-076c |
+| US-074c | R4-D | Token pessoal: tela, chave do Administrador e alerta de uso | todo | US-074b |
 | US-083 | R4-S | Cadastro restrito por lista de e-mails permitidos (alpha) | done | — |
 | US-084 | R4-S | Lançamento "Só meu" só pode ser alterado por quem tem controle sobre ele | done | US-005, US-013a |
 | US-078 | R4-S | Encerrar as outras sessões | done | — |
