@@ -33,7 +33,7 @@ finance-manager/
 
 ## 🛠️ Ambiente Local (EN-001)
 
-Pré-requisitos: Node 22 (`.nvmrc`), pnpm 11 (versão travada em `packageManager`; use `corepack enable`), Docker + Docker Compose.
+Pré-requisitos: Node 26 (`.nvmrc`), pnpm 11 (versão travada em `packageManager`; use `corepack enable`), Docker + Docker Compose.
 
 ```bash
 cp .env.example .env.local        # valores de DEV já funcionam; Google fica para depois (EXT-01)

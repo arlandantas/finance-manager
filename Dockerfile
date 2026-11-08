@@ -1,6 +1,6 @@
 # ADR-031: produção = Vercel (não usa este Dockerfile). Mantido para ENSAIAR LOCALMENTE a build de produção
 # (restore, smoke) e como plano B de saída da Vercel. Multi-stage, standalone, usuário não root.
-FROM node:22-alpine AS base
+FROM node:26-alpine AS base
 RUN apk add --no-cache libc6-compat openssl
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN corepack enable
@@ -26,7 +26,7 @@ RUN npm init -y >/dev/null && npm install --no-audit --no-fund prisma@7.10.0 dot
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 
-FROM node:22-alpine AS runner
+FROM node:26-alpine AS runner
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 # Gravado na imagem: ativa as travas (ADR-026 §5 / ADR-031 §4): login de teste/homologação impossíveis.
