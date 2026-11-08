@@ -2,7 +2,7 @@
 
 ## 0. Situação atual (verificável no repositório; o resto fica a confirmar)
 - Em produção na Vercel: https://verbus-finance.vercel.app/ (informado pelo usuário; domínio também em `AUTH_URL`/smoke). Banco: Prisma Postgres provisionado dentro da Vercel (ADR-031).
-- Runtime: Node 22 (`engines` `>=22 <23`, `.nvmrc` 22, `Dockerfile` `node:22-alpine`). Migração para 24/26: US-102.
+- Runtime: alvo Node 26 no repositório (`engines` `>=26 <27`, `.nvmrc` 26, `Dockerfile` `node:26-alpine`; ADR-044, US-102). Pendente do usuário: AC3 (Vercel Project Settings > Node.js Version = 26) e AC5 (`scripts/smoke-prod.sh` com `SMOKE OK` após o deploy). Se houver erro de `fetch` externo, `VERCEL_FETCH_DISABLE_H2=1`.
 - Migrações: `vercel-build` (`scripts/vercel-build.mjs`) roda `prisma generate`, `prisma migrate deploy` só com `VERCEL_ENV=production` e `next build`. O CLI usa a URL direta (`prisma.config.ts` + `src/lib/db-url.ts`); o app usa a pooled.
 - Cron: `vercel.json` agenda `/api/cron/purge` (`0 7 * * *`), autenticado por `CRON_SECRET`. Backup: `.github/workflows/backup.yml` (manual).
 - A confirmar com o usuário: versão de Node em Vercel Project Settings; variáveis realmente definidas (só nomes, seção 1); migrações já aplicadas em produção; região do banco e `regions`; backup/restore ensaiado; `scripts/smoke-prod.sh` rodado; previews desligados.
