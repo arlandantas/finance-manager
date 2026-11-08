@@ -6,6 +6,7 @@ import { activePayments } from "@/modules/cartoes/queries";
 import { cartoesRepo } from "@/modules/cartoes/repo";
 import { parseInvoiceCsv } from "./csv-parser";
 import { detectFormat } from "./file-format";
+import { type PdfPreview, previewInvoicePdf } from "./pdf-preview";
 import { type ImportDraft, ImportDraftSchema } from "./schemas";
 import { hashFile, issueImportToken } from "./token";
 
@@ -44,20 +45,14 @@ export async function previewInvoiceImport(
   tx: Tx,
   ctx: RequestContext,
   cardId: string,
-  input: { bytes: Uint8Array; invoiceRef: string },
-): Promise<ImportDraft> {
+  input: { bytes: Uint8Array; invoiceRef: string; password?: string | undefined },
+): Promise<ImportDraft | PdfPreview> {
   const card = await assertTarget(tx, ctx, cardId, input.invoiceRef);
   const format = detectFormat(input.bytes);
   if (!format) {
     throw new ApiError(415, "IMPORT_FORMAT_NOT_ACCEPTED", "Formato não aceito. Envie PDF ou CSV.");
   }
-  if (format.kind === "PDF") {
-    throw new ApiError(
-      501,
-      "PDF_IMPORT_NOT_READY",
-      "A importação de PDF ainda não está disponível.",
-    );
-  }
+  if (format.kind === "PDF") return previewInvoicePdf(tx, ctx, input);
   const parsed = parseInvoiceCsv(format.text, input.invoiceRef);
   if (!parsed.ok) {
     if (parsed.code === "IMPORT_TOO_LARGE") {

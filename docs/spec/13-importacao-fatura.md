@@ -1,6 +1,6 @@
 # Spec 13 — Importação de fatura (CSV e PDF)
 
-Atualizado: 2026-11-08 · Situação: US-066 entregue (flag, `preview` do CSV, parser local, `importToken`); PLANEJADAS 066b, 067, 067b, 068, 069 (ADR-042).
+Atualizado: 2026-11-08 · Situação: US-066 entregue (flag, `preview` do CSV, parser local, `importToken`) e US-066b (preview do PDF: `unpdf`, linhas redigidas, `previewHash`; resposta `{ source, lines:[{ref,text}], previewHash, estimate? }`); PLANEJADAS 067, 067b, 068, 069 (ADR-042).
 
 ## Resumo
 - No cartão, o membro escolhe a fatura alvo (aberta ou fechada não paga) e envia um CSV ou PDF. O app extrai os itens, o membro revisa e confirma; só a confirmação grava, num lote atômico que pode ser desfeito inteiro.

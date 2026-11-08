@@ -155,9 +155,9 @@ describe("US-066 preview do CSV", () => {
     expect([b.status, b.body.error.code]).toEqual([422, "NOT_AN_INVOICE"]);
   });
 
-  it("PDF reconhecido = 501 PDF_IMPORT_NOT_READY; campo desconhecido = 400; sem sessão = 401", async () => {
+  it("PDF inválido = 422 IMPORT_UNREADABLE; campo desconhecido = 400; sem sessão = 401", async () => {
     const pdf = await send({ file: Uint8Array.from(Buffer.from("%PDF-1.7\n")) });
-    expect([pdf.status, pdf.body.error.code]).toEqual([501, "PDF_IMPORT_NOT_READY"]);
+    expect([pdf.status, pdf.body.error.code]).toEqual([422, "IMPORT_UNREADABLE"]);
     expect((await send({ extra: { familyId: "x" } })).status).toBe(400);
     expect((await send({ as: null })).status).toBe(401);
   });
