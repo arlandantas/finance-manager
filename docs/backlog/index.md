@@ -135,3 +135,4 @@ Ordem das pendentes (importação de fatura, ADR-042, spec 13): US-066 → US-06
 | US-100b | UR-2 | Transferência prevista: telas, coluna no resumo por conta e arquivamento | done | US-100, US-054 |
 | US-101 | UR-2 | Transferência prevista recorrente: série e geração (servidor) | done | US-100 |
 | US-101b | UR-2 | Transferência recorrente: telas e arquivamento de conta | done | US-101, US-100b |
+| US-102 | R4-S | Migrar runtime de Node 22 para 24 (ou 26) | todo | — |

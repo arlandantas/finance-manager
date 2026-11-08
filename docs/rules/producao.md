@@ -1,6 +1,14 @@
-# Produção: roteiro do 1º deploy
+# Produção: situação e roteiro
 
-Vercel + Prisma Postgres (ADR-031, spec 11, ADR-041). Tudo aqui é feito pelo usuário; nenhum segredo entra no repositório. Rode `pnpm check:docs && pnpm lint && pnpm typecheck && pnpm test` e `pnpm test:int` antes.
+## 0. Situação atual (verificável no repositório; o resto fica a confirmar)
+- Em produção na Vercel: https://verbus-finance.vercel.app/ (informado pelo usuário; domínio também em `AUTH_URL`/smoke). Banco: Prisma Postgres provisionado dentro da Vercel (ADR-031).
+- Runtime: Node 22 (`engines` `>=22 <23`, `.nvmrc` 22, `Dockerfile` `node:22-alpine`). Migração para 24/26: US-102.
+- Migrações: `vercel-build` (`scripts/vercel-build.mjs`) roda `prisma generate`, `prisma migrate deploy` só com `VERCEL_ENV=production` e `next build`. O CLI usa a URL direta (`prisma.config.ts` + `src/lib/db-url.ts`); o app usa a pooled.
+- Cron: `vercel.json` agenda `/api/cron/purge` (`0 7 * * *`), autenticado por `CRON_SECRET`. Backup: `.github/workflows/backup.yml` (manual).
+- A confirmar com o usuário: versão de Node em Vercel Project Settings; variáveis realmente definidas (só nomes, seção 1); migrações já aplicadas em produção; região do banco e `regions`; backup/restore ensaiado; `scripts/smoke-prod.sh` rodado; previews desligados.
+
+
+Vercel + Prisma Postgres (ADR-031, spec 11, ADR-041). Roteiro do 1º deploy (passos 1 a 6 abaixo, ainda valem para conferência). Tudo aqui é feito pelo usuário; nenhum segredo entra no repositório. Rode `pnpm check:docs && pnpm lint && pnpm typecheck && pnpm test` e `pnpm test:int` antes.
 
 ## 1. Variáveis (Vercel > Settings > Environment Variables, escopo só Production)
 - Banco (integração Prisma da Vercel): `DATABASE_URL`; opcional `DIRECT_URL` (senão o CLI deriva a direta), `DB_POOL_MAX`.

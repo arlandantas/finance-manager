@@ -1,15 +1,16 @@
 # Estado atual
 
 **Fase:** backlog planejado concluído em 2026-11-08 (nenhuma história `todo`, `doing` ou `blocked`): R3 (US-041..044), importação de fatura (US-066..069, ADR-042), token pessoal MCP (US-074b/c, ADR-043), US-076c, EN-006 (SMTP real) e o motor STORED por padrão (ADR-041). Tudo aprovado pelo reviewer. Aceite do Gestor pendente: UR-2, US-050/051 e este bloco.
+**Produção:** no ar em https://verbus-finance.vercel.app/ (Vercel, Prisma Postgres na Vercel, Node 22); detalhes e itens a confirmar em `docs/rules/producao.md` §0. Migração de Node: US-102 (`todo`; análise em outra sessão, decisão do usuário).
 **Verificação (2026-11-08):** `pnpm test:int` completo verde (141 arquivos, 1638 testes, após ajustar o guarda sec021 às ferramentas `propor_lancamento`/`consultar_proposta`); `pnpm test` 1276; E2E só por história, completo NÃO rodado. QA no browser (dev, Mariana, IA simulada): CSV de 6 linhas → rascunho (compras, parcela 3/10, estorno bloqueado) → 5 itens importados (fatura R$ 428,50; parcelas futuras +R$ 1.750,00; selo "Importado da fatura") → desfazer devolveu limite, fatura e parcelas ao valor anterior; token pessoal criado (formato `fmp_`, valor só no diálogo, nunca no DOM depois), listado e revogado; chaves da família nascem desligadas. Sem erro de console além do ruído do HMR. NÃO conferido no browser: PDF, "Esta e as próximas" na parcela, mobile da importação, e-mail de alerta do token.
 
 ## Próximo passo
-1. Usuário: aceite do bloco e QA com dados reais; produção conforme `docs/rules/producao.md` (roteiro em ordem).
+1. Usuário: aceite do bloco e QA com dados reais; conferir em produção os itens "a confirmar" de `docs/rules/producao.md` §0.
 2. Em produção, após o deploy: `pnpm migrate:split --dry-run`, depois sem a flag, depois `--verify` (ADR-041). Só então o CHECK `isSharedExpense=(splitMode<>NONE)` em `transactions` vira história.
 3. Sem desenvolvimento autônomo pendente. Candidatos se o usuário quiser: dividir as fontes >300 linhas; paginar a lista de lotes importados; E2E completo medido.
 
 ## Pendências do usuário
-- Produção (Vercel + Prisma Postgres, ADR-031): variáveis e segredos, `regions` em `vercel.json` (depende da região do banco), desligar previews, segredos do GitHub de backup (`DATABASE_DIRECT_URL`, `BACKUP_PASSPHRASE`), backup manual + ensaio de restore, primeiro deploy + `scripts/smoke-prod.sh`. Migrações pendentes até `20261108050100_us074b_pat` (expand antes do código).
+- Produção (já no ar): confirmar variáveis, migrações aplicadas até `20261108050100_us074b_pat`, `regions` em `vercel.json` (região do banco), previews desligados, segredos do GitHub de backup (`DATABASE_DIRECT_URL`, `BACKUP_PASSPHRASE`), backup + ensaio de restore, `scripts/smoke-prod.sh`.
 - Validar US-092a/b e US-093a/b (aceite condicionado, D-GES-67).
 - Antes de divulgar: provedor SMTP real (`SMTP_HOST/PORT/USER/PASSWORD`, `MAIL_FROM`; EN-006) + SPF/DKIM/DMARC, `ALLOWED_SIGNUP_EMAILS`, texto de `/privacidade` (US-082) com revisão jurídica, `PRIVACY_CONTACT_EMAIL`.
 - IA real: chave Anthropic (EXT-12), `LLM_PROVIDER=anthropic`, limite de gasto na console, teto (R$ 5/família, global R$ 50), `OPS_ALERT_EMAIL`, `AI_FEATURES_ENABLED`. Importação de PDF: aceite explícito de que a descrição do estabelecimento vai à Anthropic (ADR-042 §4) e faturas reais para validar o parser; `INVOICE_IMPORT_ENABLED` nasce desligado.
