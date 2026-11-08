@@ -74,6 +74,24 @@ describe("SEC-017d excluir a família", () => {
     await seedEverything(other);
     const grants = await oauthDance({ member: mariana() }); // conexão de assistente + auditoria
     expect((await toolCall(grants.accessToken, "consultar_contas")).status).toBe(200);
+    // US-076c: proposta do assistente (pendente) da conexão acima
+    await db.assistantProposal.create({
+      data: {
+        familyId: fx.family.id,
+        memberId: fx.byName.Mariana?.memberId as string,
+        grantId: (await db.mcpGrant.findFirstOrThrow({ where: { familyId: fx.family.id } })).id,
+        contentHash: "hash",
+        description: "Farmácia",
+        amountInCents: 8000n,
+        categoryId: (
+          await db.category.findFirstOrThrow({ where: { familyId: fx.family.id, kind: "EXPENSE" } })
+        ).id,
+        accountId: (await db.bankAccount.findFirstOrThrow({ where: { familyId: fx.family.id } }))
+          .id,
+        occurredOn: new Date("2026-11-10"),
+        expiresAt: new Date("2026-11-10T15:30:00Z"),
+      },
+    });
     const before = await countsOf(fx.family.id);
     // o teste só vale se cada tabela tinha dado
     for (const t of await tablesWithFamilyId())

@@ -1,10 +1,10 @@
-import { ApiError, unprocessable } from "@/lib/api/errors";
+import { unprocessable } from "@/lib/api/errors";
 import type { Tx } from "@/lib/api/types";
 import { addDays, fromDbDate, todayInFamilyTz } from "@/lib/dates";
 import { formatBRL, toCents } from "@/lib/money";
 import { issuerOf } from "@/modules/mcp/config";
 import type { McpContext } from "@/modules/mcp/context";
-import { assistantUsage, effectiveLimits } from "@/modules/mcp/limits";
+import { assertWithinLimits, assistantUsage, effectiveLimits } from "@/modules/mcp/limits";
 import { CreateExpenseSchema } from "@/modules/transacoes/schemas";
 import { createExpenseCore } from "@/modules/transacoes/service";
 
@@ -42,8 +42,6 @@ const money = (cents: number) => formatBRL(cents).replace(/ /g, " ");
 const brDate = (iso: string) => iso.split("-").reverse().join("/");
 /** Descrição "normalizada" para comparar duplicatas: NFKC, sem espaços nas pontas, sem caixa. */
 const norm = (s: string) => s.normalize("NFKC").trim().toLocaleLowerCase("pt-BR");
-
-const limitExceeded = (message: string) => new ApiError(422, "LIMIT_EXCEEDED", message);
 
 type Existing = Awaited<ReturnType<typeof loadExisting>>;
 async function loadExisting(tx: Tx, familyId: string, id: string) {
@@ -96,6 +94,13 @@ export async function lancarDespesa(
   ctx: McpContext,
   input: LancarInput,
 ): Promise<LancarOutput> {
+  // US-076c: conexão com confirmação não grava direto; só propõe
+  if (ctx.requireConfirmation) {
+    throw unprocessable(
+      "CONFIRMATION_REQUIRED",
+      "Esta conexão exige confirmação no app: use propor_lancamento e peça ao usuário para confirmar.",
+    );
+  }
   // 1) trava por membro: contagem dos limites e gravação ficam serializadas
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`assistant-write:${ctx.memberId}`}, 0))`;
   const now = ctx.clock.now();
@@ -169,17 +174,7 @@ export async function lancarDespesa(
   }
 
   // 5) limites do membro (null = sem limite). Excluir não devolve a cota: a contagem inclui excluídos.
-  if (limits.maxAmountPerTxCents !== null && input.amountInCents > limits.maxAmountPerTxCents) {
-    throw limitExceeded(
-      `Valor acima do seu limite por lançamento pelo assistente (${money(limits.maxAmountPerTxCents)}). Lance pelo app ou ajuste o limite em Configurações.`,
-    );
-  }
-  if (limits.maxTxPerDay !== null && usage.today >= limits.maxTxPerDay) {
-    throw limitExceeded("Limite diário de lançamentos pelo assistente atingido");
-  }
-  if (limits.maxTxPerHour !== null && usage.lastHour >= limits.maxTxPerHour) {
-    throw limitExceeded("Limite de lançamentos por hora pelo assistente atingido");
-  }
+  assertWithinLimits(limits, usage, input.amountInCents);
 
   // 6) o MESMO núcleo da despesa do app (conta/cartão ativos, categoria de despesa ativa, fatura não paga…)
   const parsed = CreateExpenseSchema.parse({

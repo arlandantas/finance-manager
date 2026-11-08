@@ -36,6 +36,8 @@ export type ToolDef<I = unknown, O = unknown> = {
   isolationLevel?: "ReadCommitted" | "RepeatableRead" | "Serializable";
   /** Ferramentas que gravam informam o lançamento criado para a auditoria. */
   transactionIdOf?: (output: O) => string | null;
+  /** US-076c: ferramentas de proposta informam a proposta para a auditoria. */
+  proposalIdOf?: (output: O) => string | null;
 };
 
 export type AnyTool = ToolDef<any, any>;
@@ -84,7 +86,12 @@ export async function runTool(
   const clock = ctx.clock;
   const audit = (
     outcome: "OK" | "DENIED_SCOPE" | "INVALID" | "RATE_LIMITED" | "ERROR" | "LIMIT_EXCEEDED",
-    extra: { errorCode?: string; params?: AuditParams; transactionId?: string | null } = {},
+    extra: {
+      errorCode?: string;
+      params?: AuditParams;
+      transactionId?: string | null;
+      proposalId?: string | null;
+    } = {},
   ) =>
     recordAudit(db, {
       familyId: ctx.familyId,
@@ -97,6 +104,7 @@ export async function runTool(
       ...(extra.errorCode ? { errorCode: extra.errorCode } : {}),
       ...(extra.params ? { params: extra.params } : {}),
       ...(extra.transactionId ? { transactionId: extra.transactionId } : {}),
+      ...(extra.proposalId ? { proposalId: extra.proposalId } : {}),
       durationMs: Date.now() - started,
       at: clock.now(),
     });
@@ -169,6 +177,7 @@ export async function runTool(
     await audit("OK", {
       params: scan.total > 0 ? { ...params, flaggedCount: scan.flagged } : params,
       transactionId: def.transactionIdOf?.(output) ?? null,
+      proposalId: def.proposalIdOf?.(output) ?? null,
     });
     return {
       content: [{ type: "text", text }],

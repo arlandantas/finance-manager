@@ -20,6 +20,7 @@ export const NAME_MISMATCH_MSG = "O nome digitado não confere com o da família
  * (`mcp_tokens` via grant, `split_shares` via regra, `transaction_splits` já tem `familyId`).
  */
 export const FAMILY_TABLES_DELETE_ORDER = [
+  "assistant_proposals", // US-076c: antes de mcp_grants, transactions, categories, contas e cartões (FKs RESTRICT)
   "mcp_audit_events",
   "mcp_grants",
   "ai_consent_events",

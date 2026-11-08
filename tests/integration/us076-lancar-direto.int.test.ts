@@ -170,20 +170,24 @@ describe("lança direto, identificado", () => {
     );
   });
 
-  it("tools/list: com escrita = 7 leituras + lancar_despesa (sem excluir/editar); só leitura não vê", async () => {
+  it("tools/list: com escrita = 7 leituras + lancar_despesa + propor_lancamento/consultar_proposta (sem excluir/editar/confirmar); só leitura não vê", async () => {
     const list = await at(0, () => mcpCall(token, "tools/list"));
     const names = list.body.result.tools.map((t: any) => t.name);
     expect(names).toEqual([
       "cartoes_e_faturas",
+      "consultar_proposta", // US-076c
       "consultar_saldos",
       "gastos_por_categoria",
       "lancar_despesa",
       "listar_cadastros",
       "listar_lancamentos",
       "previstas_do_mes",
+      "propor_lancamento", // US-076c
       "resumo_do_mes",
     ]);
-    expect(names.join(" ")).not.toMatch(/excluir|editar|transferir|apagar|pagar_|propor/);
+    expect(names.join(" ")).not.toMatch(
+      /excluir|editar|transferir|apagar|pagar_|confirmar|aprovar/,
+    );
     const w = list.body.result.tools.find((t: any) => t.name === "lancar_despesa");
     expect(w.annotations).toMatchObject({
       readOnlyHint: false,

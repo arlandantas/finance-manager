@@ -172,6 +172,10 @@ export async function deleteAccount(tx: Tx, ctx: UserContext, body: DeleteAccoun
   await tx.mcpToken.deleteMany({ where: { grant: { userId: user.id } } });
   await tx.mcpAuthorizationRequest.deleteMany({ where: { userId: user.id } });
   await tx.memberAssistantLimits.deleteMany({ where: { memberId: { in: memberIds } } });
+  // US-076c: propostas não confirmadas guardam descrição; as confirmadas são só histórico do lançamento
+  await tx.assistantProposal.deleteMany({
+    where: { memberId: { in: memberIds }, status: { not: "CONFIRMED" } },
+  });
 
   // (3) credenciais e rastros técnicos: sessões (todos os aparelhos), vínculo com o Google, tokens por e-mail
   await tx.session.deleteMany({ where: { userId: user.id } });

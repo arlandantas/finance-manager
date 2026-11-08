@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client";
+import { PROPOSAL_RETENTION_DAYS } from "@/modules/mcp/proposals-schemas";
 
 // SDD-024 §2: expurgo do MCP (rota /api/cron/purge e `pnpm mcp:purge`). Idempotente: só DELETE por data.
 type Tx = Prisma.TransactionClient;
@@ -10,6 +11,7 @@ export type McpPurgeCounts = {
   requests: number;
   clients: number;
   buckets: number;
+  proposals: number;
 };
 
 /** Auditoria > 12 meses; tokens vencidos há > 7 dias; pedidos expirados; clientes DCR sem grant e sem uso há 30 dias; buckets > 2 dias. */
@@ -31,6 +33,10 @@ export async function purgeMcp(tx: Tx, now: Date): Promise<McpPurgeCounts> {
       OR: [{ lastUsedAt: { lt: ago(30) } }, { lastUsedAt: null, createdAt: { lt: ago(30) } }],
     },
   });
+  // US-076c: propostas NÃO confirmadas (pendentes esquecidas, recusadas, expiradas) somem após 30 dias; as confirmadas ficam (ligam ao lançamento)
+  const proposals = await tx.assistantProposal.deleteMany({
+    where: { status: { not: "CONFIRMED" }, createdAt: { lt: ago(PROPOSAL_RETENTION_DAYS) } },
+  });
   const buckets = await tx.mcpRateBucket.deleteMany({ where: { windowStart: { lt: ago(2) } } });
   return {
     audit: Number(audit),
@@ -38,5 +44,6 @@ export async function purgeMcp(tx: Tx, now: Date): Promise<McpPurgeCounts> {
     requests: requests.count,
     clients: clients.count,
     buckets: buckets.count,
+    proposals: proposals.count,
   };
 }

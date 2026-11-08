@@ -12,6 +12,8 @@ export type McpContext = RequestContext & {
   scopes: McpScope[];
   clientName: string;
   grantLabel: string;
+  /** US-076c: modo "exigir confirmação" da conexão. */
+  requireConfirmation: boolean;
 };
 
 export type McpAuthReason =
@@ -97,5 +99,6 @@ export async function resolveMcpContext(
     scopes: g.scopes.filter((s): s is McpScope => s === "read" || s === "write"),
     clientName: g.client?.clientName ?? g.label,
     grantLabel: g.label,
+    requireConfirmation: g.requireConfirmation,
   };
 }

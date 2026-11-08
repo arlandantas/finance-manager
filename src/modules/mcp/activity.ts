@@ -23,6 +23,11 @@ const TOOL_LABEL: Record<string, string> = {
   listar_lancamentos: "Consultou lançamentos",
   previstas_do_mes: "Consultou contas a pagar",
   lancar_despesa: "Lançou despesa",
+  propor_lancamento: "Propôs uma despesa (aguarda confirmação)",
+  consultar_proposta: "Consultou uma proposta",
+  confirmacao_no_app: "Você confirmou uma proposta",
+  recusa_no_app: "Você recusou uma proposta",
+  modo_confirmacao: "Você alterou o modo de confirmação",
 };
 
 const OUTCOME_LABEL: Record<ActivityOutcome, string> = {

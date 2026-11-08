@@ -11,7 +11,7 @@ import type { AssistantSettingsDTO, ConnectionDTO } from "@/modules/mcp/connecti
 import { useAssistantSettings, useSetAssistantAccess } from "@/modules/mcp/hooks";
 import { ActivityPanel } from "./activity-panel";
 import { ConnectDialog } from "./connect-dialog";
-import { brDate, brWhen } from "./format";
+import { ConnectionCard } from "./connection-card";
 import { LimitsPanel } from "./limits-panel";
 import { RevokeDialog } from "./revoke-dialog";
 import { Tabs } from "./tabs";
@@ -19,77 +19,6 @@ import { Tabs } from "./tabs";
 function errorText(e: unknown): string {
   if (e instanceof ApiClientError || e instanceof NetworkError) return e.message;
   return "Erro inesperado. Tente novamente.";
-}
-
-const REASON_LABEL: Record<NonNullable<ConnectionDTO["revokedReason"]>, string> = {
-  MEMBER: "Revogado",
-  CLIENT: "Revogado",
-  FAMILY_BLOCKED: "Revogado pelo bloqueio da família",
-  MEMBER_REMOVED: "Revogado pela saída da família",
-  REFRESH_REUSE: "Revogado por segurança",
-  CODE_REUSE: "Revogado por segurança",
-};
-
-function StatusLine({ c }: { c: ConnectionDTO }) {
-  if (c.status === "REVOKED") {
-    const label = c.revokedReason ? REASON_LABEL[c.revokedReason] : "Revogado";
-    const simple = label === "Revogado";
-    return (
-      <p
-        data-testid="connection-status"
-        className="text-xs font-medium text-red-800 dark:text-red-300"
-      >
-        {simple && c.revokedAt ? `Revogado em ${brDate(c.revokedAt)}` : label}
-      </p>
-    );
-  }
-  if (c.status === "EXPIRED") {
-    return (
-      <p
-        data-testid="connection-status"
-        className="text-xs font-medium text-amber-800 dark:text-amber-300"
-      >
-        Expirado em {brDate(c.expiresAt)}
-      </p>
-    );
-  }
-  return null;
-}
-
-function ConnectionCard({
-  c,
-  onRevoke,
-}: {
-  c: ConnectionDTO;
-  onRevoke: (c: ConnectionDTO) => void;
-}) {
-  const active = c.status === "ACTIVE";
-  return (
-    <li
-      data-testid="connection"
-      data-status={c.status}
-      className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-3 dark:bg-slate-100"
-    >
-      <p className="font-medium text-slate-900">
-        {c.label} · {c.scopeLabel}
-        {active ? ` · expira em ${brDate(c.expiresAt)}` : ""}
-      </p>
-      <StatusLine c={c} />
-      {c.redirectHost ? (
-        <p className="text-sm text-slate-600">Conectado a {c.redirectHost}</p>
-      ) : null}
-      <p className="text-sm text-slate-600">
-        {c.lastUsedAt ? `Último uso: ${brWhen(c.lastUsedAt)}` : "Nunca usado"}
-      </p>
-      {active ? (
-        <div className="mt-1 flex gap-2">
-          <Button variant="secondary" onClick={() => onRevoke(c)}>
-            Revogar
-          </Button>
-        </div>
-      ) : null}
-    </li>
-  );
 }
 
 function FamilySwitch({ data }: { data: AssistantSettingsDTO }) {

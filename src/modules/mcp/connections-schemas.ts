@@ -25,6 +25,8 @@ export type ConnectionDTO = {
   lastUsedAt: string | null;
   revokedAt: string | null;
   revokedReason: ConnectionRevokedReason | null;
+  /** US-076c: o pedido do assistente só cria proposta; o membro confirma no app. */
+  requireConfirmation: boolean;
 };
 
 export type AssistantSettingsDTO = {

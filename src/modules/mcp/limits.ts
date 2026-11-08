@@ -1,7 +1,7 @@
-import { badRequest, conflict } from "@/lib/api/errors";
+import { ApiError, badRequest, conflict } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { addDays, todayInFamilyTz } from "@/lib/dates";
-import { fromCents, toCents } from "@/lib/money";
+import { formatBRL, fromCents, toCents } from "@/lib/money";
 import { recordAudit } from "@/modules/mcp/audit";
 import {
   type AssistantLimitsDTO,
@@ -71,6 +71,26 @@ export async function assistantUsage(
     }),
   ]);
   return { today, lastHour };
+}
+
+/** Estouro dos limites do membro (422 `LIMIT_EXCEEDED`). Compartilhado por `lancar_despesa` e pela confirmação no app. */
+export function assertWithinLimits(
+  limits: EffectiveLimits,
+  usage: { today: number; lastHour: number },
+  amountInCents: number,
+): void {
+  const exceeded = (m: string) => new ApiError(422, "LIMIT_EXCEEDED", m);
+  if (limits.maxAmountPerTxCents !== null && amountInCents > limits.maxAmountPerTxCents) {
+    throw exceeded(
+      `Valor acima do seu limite por lançamento pelo assistente (${formatBRL(limits.maxAmountPerTxCents).replace(/\u00a0/g, " ")}). Lance pelo app ou ajuste o limite em Configurações.`,
+    );
+  }
+  if (limits.maxTxPerDay !== null && usage.today >= limits.maxTxPerDay) {
+    throw exceeded("Limite diário de lançamentos pelo assistente atingido");
+  }
+  if (limits.maxTxPerHour !== null && usage.lastHour >= limits.maxTxPerHour) {
+    throw exceeded("Limite de lançamentos por hora pelo assistente atingido");
+  }
 }
 
 export async function getAssistantLimits(tx: Tx, ctx: RequestContext): Promise<AssistantLimitsDTO> {

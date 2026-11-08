@@ -167,12 +167,13 @@ model VerificationToken {
 
 // ───────── Núcleo familiar ─────────
 model Family {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String
-  timezone  String   @default("America/Sao_Paulo")
-  currency  String   @default("BRL")
-  cutDay    Int      @default(1) // CHECK 1..28; sem UI no R1 (ADR-010)
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  assistantProposals AssistantProposal[] // US-076c
+  id                 String              @id @default(uuid()) @db.Uuid
+  name               String
+  timezone           String              @default("America/Sao_Paulo")
+  currency           String              @default("BRL")
+  cutDay             Int                 @default(1) // CHECK 1..28; sem UI no R1 (ADR-010)
+  createdAt          DateTime            @default(now()) @db.Timestamptz(3)
 
   // US-028: acerto de contas opcional; `version` protege o conflito de edição ("alterada por")
   settlementEnabled      Boolean     @default(true)
@@ -273,18 +274,19 @@ model FamilyEvent {
 }
 
 model Member {
-  id                String    @id @default(uuid()) @db.Uuid
-  familyId          String    @db.Uuid
+  assistantProposals AssistantProposal[] // US-076c
+  id                 String              @id @default(uuid()) @db.Uuid
+  familyId           String              @db.Uuid
   // US-092 (ADR-033): nulo = membro cadastrado SEM conta (só metadado). NOT NULL caiu; CHECKs/gatilho em SQL cru
   // (members_unlinked_*_chk, members_pending_email_chk, members_name_len_chk, members_link_guard).
-  userId            String?   @db.Uuid
-  role              Role
-  joinedAt          DateTime  @default(now()) @db.Timestamptz(3)
+  userId             String?             @db.Uuid
+  role               Role
+  joinedAt           DateTime            @default(now()) @db.Timestamptz(3)
   // US-092: rótulo do cadastro (sem conta) ou nome escolhido no aceite (094b); zerado ao excluir a conta
-  name              String?
-  pendingEmail      String? // e-mail do cadastro sem conta; só ADMIN vê; apagado na remoção
-  linkedAt          DateTime? @db.Timestamptz(3)
-  createdByMemberId String?   @db.Uuid // FK composta em SQL cru
+  name               String?
+  pendingEmail       String? // e-mail do cadastro sem conta; só ADMIN vê; apagado na remoção
+  linkedAt           DateTime?           @db.Timestamptz(3)
+  createdByMemberId  String?             @db.Uuid // FK composta em SQL cru
 
   // US-035 (ADR-019): ex-membro. Nunca se apaga `Member`; "ativo" = removedAt nulo
   removedAt           DateTime?          @db.Timestamptz(3)
@@ -364,19 +366,20 @@ model Invitation {
 }
 
 model Category {
-  id                String       @id @default(uuid()) @db.Uuid
-  familyId          String       @db.Uuid
-  name              String
-  kind              CategoryKind
-  icon              String // chave de ícone (ex.: "shopping-cart")
-  sortOrder         Int
-  archivedAt        DateTime?    @db.Timestamptz(3)
+  assistantProposals AssistantProposal[] // US-076c
+  id                 String              @id @default(uuid()) @db.Uuid
+  familyId           String              @db.Uuid
+  name               String
+  kind               CategoryKind
+  icon               String // chave de ícone (ex.: "shopping-cart")
+  sortOrder          Int
+  archivedAt         DateTime?           @db.Timestamptz(3)
   // US-044: lançamentos novos nesta categoria nascem "Pela regra da família" (só despesa)
-  defaultSplit      Boolean      @default(false)
+  defaultSplit       Boolean             @default(false)
   // US-014: conflito de edição ("alterada por {Nome}")
-  version           Int          @default(1)
-  updatedAt         DateTime     @default(now()) @updatedAt @db.Timestamptz(3)
-  updatedByMemberId String?      @db.Uuid
+  version            Int                 @default(1)
+  updatedAt          DateTime            @default(now()) @updatedAt @db.Timestamptz(3)
+  updatedByMemberId  String?             @db.Uuid
 
   family                       Family                        @relation(fields: [familyId], references: [id])
   installmentPlans             InstallmentPlan[]
@@ -394,20 +397,21 @@ model Category {
 
 // ───────── Contas, movimentações (ledger) ─────────
 model BankAccount {
-  id                   String          @id @default(uuid()) @db.Uuid
-  familyId             String          @db.Uuid
+  assistantProposals   AssistantProposal[] // US-076c
+  id                   String              @id @default(uuid()) @db.Uuid
+  familyId             String              @db.Uuid
   name                 String // trim; único por família ignorando caixa (índice em SQL cru)
   institution          String
   type                 BankAccountType
-  ownerMemberId        String          @db.Uuid
-  version              Int             @default(1)
-  createdAt            DateTime        @default(now()) @db.Timestamptz(3)
-  updatedAt            DateTime        @updatedAt @db.Timestamptz(3)
+  ownerMemberId        String              @db.Uuid
+  version              Int                 @default(1)
+  createdAt            DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime            @updatedAt @db.Timestamptz(3)
   // US-057: reserva — movimentável, mas fora do saldo disponível (SDD-019 §2)
-  excludeFromAvailable Boolean         @default(false)
+  excludeFromAvailable Boolean             @default(false)
   // US-050 (SDD-017): cor do marcador; DEFAULT só mantém a migração compatível com a versão anterior
   // (expand); o serviço sempre grava a cor (escolhida ou `pickNextColor`).
-  color                AccountColor    @default(BLUE)
+  color                AccountColor        @default(BLUE)
 
   // US-032: arquivada some das listas; excluída (lógica, terminal) some de tudo e libera o nome
   archivedAt         DateTime? @db.Timestamptz(3)
@@ -445,18 +449,19 @@ enum AccountColor {
 
 // ───────── Cartões de crédito (US-015, SDD-008, ADR-014) ─────────
 model CreditCard {
-  id                String   @id @default(uuid()) @db.Uuid
-  familyId          String   @db.Uuid
-  name              String // trim; único por família ignorando caixa (índice em SQL cru)
-  institution       String   @default("Outro")
-  ownerMemberId     String   @db.Uuid
-  limitInCents      BigInt // > 0
-  closingDay        Int // 1..28
-  dueDay            Int // 1..28
-  version           Int      @default(1)
-  updatedByMemberId String?  @db.Uuid // "alterado por {Nome}" no 409
-  createdAt         DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+  assistantProposals AssistantProposal[] // US-076c
+  id                 String              @id @default(uuid()) @db.Uuid
+  familyId           String              @db.Uuid
+  name               String // trim; único por família ignorando caixa (índice em SQL cru)
+  institution        String              @default("Outro")
+  ownerMemberId      String              @db.Uuid
+  limitInCents       BigInt // > 0
+  closingDay         Int // 1..28
+  dueDay             Int // 1..28
+  version            Int                 @default(1)
+  updatedByMemberId  String?             @db.Uuid // "alterado por {Nome}" no 409
+  createdAt          DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime            @updatedAt @db.Timestamptz(3)
 
   // US-033: arquivar e excluir (lógico, terminal), como nas contas
   archivedAt         DateTime? @db.Timestamptz(3)
@@ -525,42 +530,44 @@ model TransferGroup {
 }
 
 model Transaction {
-  id                 String            @id @default(uuid()) @db.Uuid
-  familyId           String            @db.Uuid
-  kind               TransactionKind
-  direction          Direction
-  accountId          String?           @db.Uuid // NULL só em compra no cartão (CHECK tx_kind_shape_chk)
-  cardId             String?           @db.Uuid
-  invoiceId          String?           @db.Uuid
-  amountInCents      BigInt // magnitude (>0; OPENING pode ser 0)
-  occurredOn         DateTime          @db.Date
-  categoryId         String?           @db.Uuid // EXPENSE/INCOME: obrigatório; demais: nulo
-  description        String // 2..100; padrão = nome da categoria; transferências: texto gerado
-  note               String? // até 500
-  payerMemberId      String?           @db.Uuid // EXPENSE/INCOME: quem pagou/recebeu (D-PO-01)
-  isSharedExpense    Boolean           @default(false) // true só em EXPENSE comum
-  authorMemberId     String            @db.Uuid // imutável
-  updatedByMemberId  String?           @db.Uuid
-  transferGroupId    String?           @db.Uuid
-  version            Int               @default(1)
-  createdAt          DateTime          @default(now()) @db.Timestamptz(3)
-  updatedAt          DateTime          @updatedAt @db.Timestamptz(3)
-  deletedAt          DateTime?         @db.Timestamptz(3)
-  deletedByMemberId  String?           @db.Uuid
-  deletionReason     DeletionReason?
+  assistantProposals  AssistantProposal[] // US-076c
+  id                  String              @id @default(uuid()) @db.Uuid
+  familyId            String              @db.Uuid
+  kind                TransactionKind
+  direction           Direction
+  accountId           String?             @db.Uuid // NULL só em compra no cartão (CHECK tx_kind_shape_chk)
+  cardId              String?             @db.Uuid
+  invoiceId           String?             @db.Uuid
+  amountInCents       BigInt // magnitude (>0; OPENING pode ser 0)
+  occurredOn          DateTime            @db.Date
+  categoryId          String?             @db.Uuid // EXPENSE/INCOME: obrigatório; demais: nulo
+  description         String // 2..100; padrão = nome da categoria; transferências: texto gerado
+  note                String? // até 500
+  payerMemberId       String?             @db.Uuid // EXPENSE/INCOME: quem pagou/recebeu (D-PO-01)
+  isSharedExpense     Boolean             @default(false) // true só em EXPENSE comum
+  authorMemberId      String              @db.Uuid // imutável
+  updatedByMemberId   String?             @db.Uuid
+  transferGroupId     String?             @db.Uuid
+  version             Int                 @default(1)
+  createdAt           DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime            @updatedAt @db.Timestamptz(3)
+  deletedAt           DateTime?           @db.Timestamptz(3)
+  deletedByMemberId   String?             @db.Uuid
+  deletionReason      DeletionReason?
   // US-040 (ADR-017/020): parcela de compra parcelada. `competenceOn` é SEMPRE derivada pelo gatilho
   // tx_sync_competence (sem plano = occurredOn; parcela = closingDate da fatura); o default só evita exigi-la no create.
-  installmentPlanId  String?           @db.Uuid
-  installmentNo      Int?
-  installmentCount   Int?
-  competenceOn       DateTime          @default(dbgenerated("CURRENT_DATE")) @db.Date
+  installmentPlanId   String?             @db.Uuid
+  installmentNo       Int?
+  installmentCount    Int?
+  competenceOn        DateTime            @default(dbgenerated("CURRENT_DATE")) @db.Date
   // EN-002 (ADR-016): rateio por lançamento. `NONE` = "Só meu" = sem linhas em transaction_splits.
-  splitMode          SplitMode         @default(NONE)
-  splitRuleVersionId String?           @db.Uuid
+  splitMode           SplitMode           @default(NONE)
+  splitRuleVersionId  String?             @db.Uuid
   // US-076a (SDD-027 §R2.2): lançamento direto pelo assistente. `assistantGrantId` sem FK rígida (a conexão pode ser expurgada)
-  origin             TransactionOrigin @default(APP)
-  assistantGrantId   String?           @db.Uuid
-  assistantIdemKey   String?
+  origin              TransactionOrigin   @default(APP)
+  assistantGrantId    String?             @db.Uuid
+  assistantIdemKey    String?
+  assistantProposalId String?             @unique @db.Uuid // US-076c: proposta confirmada que originou o lançamento (sem FK: ciclo com a proposta)
 
   family             Family                @relation(fields: [familyId], references: [id])
   plan               InstallmentPlan?      @relation(fields: [familyId, installmentPlanId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
@@ -1042,6 +1049,47 @@ model MemberAssistantLimits {
   @@map("member_assistant_limits")
 }
 
+enum AssistantProposalStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  EXPIRED
+}
+
+// US-076c (ADR-030 §6): proposta de despesa do assistente; só o membro confirma, no app. Sem FK em `transactions.assistantProposalId` (ciclo).
+model AssistantProposal {
+  id             String                  @id @default(uuid()) @db.Uuid
+  familyId       String                  @db.Uuid
+  memberId       String                  @db.Uuid
+  grantId        String                  @db.Uuid
+  idempotencyKey String?
+  contentHash    String
+  description    String // 2..100, saneada (dado, nunca instrução)
+  amountInCents  BigInt
+  categoryId     String                  @db.Uuid
+  accountId      String?                 @db.Uuid
+  cardId         String?                 @db.Uuid
+  occurredOn     DateTime                @db.Date
+  status         AssistantProposalStatus @default(PENDING)
+  createdAt      DateTime                @default(now()) @db.Timestamptz(3)
+  expiresAt      DateTime                @db.Timestamptz(3)
+  decidedAt      DateTime?               @db.Timestamptz(3)
+  transactionId  String?                 @unique @db.Uuid
+
+  family      Family       @relation(fields: [familyId], references: [id])
+  member      Member       @relation(fields: [familyId, memberId], references: [familyId, id])
+  grant       McpGrant     @relation(fields: [familyId, grantId], references: [familyId, id])
+  category    Category     @relation(fields: [familyId, categoryId], references: [familyId, id])
+  account     BankAccount? @relation(fields: [familyId, accountId], references: [familyId, id])
+  card        CreditCard?  @relation(fields: [familyId, cardId], references: [familyId, id])
+  transaction Transaction? @relation(fields: [familyId, transactionId], references: [familyId, id])
+
+  @@unique([grantId, idempotencyKey])
+  @@index([familyId, memberId, status])
+  @@index([grantId, createdAt])
+  @@map("assistant_proposals")
+}
+
 enum McpClientKind {
   CIMD
   DCR
@@ -1134,24 +1182,27 @@ model McpAuthorizationRequest {
 
 // "Conexão" do assistente = consentimento de UM membro a UM cliente
 model McpGrant {
-  id                String            @id @default(uuid()) @db.Uuid
-  familyId          String            @db.Uuid
-  memberId          String            @db.Uuid
-  userId            String            @db.Uuid
-  kind              McpGrantKind      @default(OAUTH)
-  clientId          String?           @db.Uuid
-  label             String
-  scopes            String[]
-  resource          String
-  status            McpGrantStatus    @default(ACTIVE)
-  expiresAt         DateTime          @db.Timestamptz(3)
-  revokedAt         DateTime?         @db.Timestamptz(3)
-  revokedReason     McpRevokedReason?
-  revokedByMemberId String?           @db.Uuid
-  lastUsedAt        DateTime?         @db.Timestamptz(3)
-  createdAt         DateTime          @default(now()) @db.Timestamptz(3)
+  assistantProposals  AssistantProposal[] // US-076c
+  id                  String              @id @default(uuid()) @db.Uuid
+  familyId            String              @db.Uuid
+  memberId            String              @db.Uuid
+  userId              String              @db.Uuid
+  kind                McpGrantKind        @default(OAUTH)
+  clientId            String?             @db.Uuid
+  label               String
+  scopes              String[]
+  resource            String
+  status              McpGrantStatus      @default(ACTIVE)
+  expiresAt           DateTime            @db.Timestamptz(3)
+  revokedAt           DateTime?           @db.Timestamptz(3)
+  revokedReason       McpRevokedReason?
+  revokedByMemberId   String?             @db.Uuid
+  lastUsedAt          DateTime?           @db.Timestamptz(3)
+  createdAt           DateTime            @default(now()) @db.Timestamptz(3)
+  // US-076c: modo "exigir confirmação" (desligado por padrão); o pedido do assistente só cria proposta
+  requireConfirmation Boolean             @default(false)
   // SEC-011: aviso "nova conexão" na Home até ser dispensado
-  noticeDismissedAt DateTime?         @db.Timestamptz(3)
+  noticeDismissedAt   DateTime?           @db.Timestamptz(3)
 
   family Family          @relation(fields: [familyId], references: [id])
   member Member          @relation(fields: [familyId, memberId], references: [familyId, id])

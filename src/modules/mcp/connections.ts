@@ -1,5 +1,6 @@
 import { conflict, forbidden, notFound } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
+import { recordAudit } from "@/modules/mcp/audit";
 import { canonicalResource, mcpEnabled } from "@/modules/mcp/config";
 import {
   type AssistantSettingsDTO,
@@ -8,6 +9,7 @@ import {
   type SetAssistantAccessInput,
 } from "@/modules/mcp/connections-schemas";
 import { revokeGrant, setAssistantAccess } from "@/modules/mcp/grants";
+import type { SetConfirmationInput } from "@/modules/mcp/proposals-schemas";
 
 // SDD-025 §3: lista, revogação e bloqueio da família. Cada membro só enxerga e revoga as SUAS conexões.
 const CLOSED_LIMIT = 20;
@@ -22,6 +24,7 @@ type GrantRow = {
   lastUsedAt: Date | null;
   revokedAt: Date | null;
   revokedReason: ConnectionDTO["revokedReason"];
+  requireConfirmation: boolean;
   client: { clientName: string; redirectUris: string[] } | null;
 };
 
@@ -49,6 +52,7 @@ export function toConnectionDTO(g: GrantRow, now: Date): ConnectionDTO {
     lastUsedAt: g.lastUsedAt ? g.lastUsedAt.toISOString() : null,
     revokedAt: g.revokedAt ? g.revokedAt.toISOString() : null,
     revokedReason: g.revokedReason,
+    requireConfirmation: g.requireConfirmation,
   };
 }
 
@@ -146,4 +150,38 @@ export async function setFamilyAssistantAccess(
     });
   }
   return getAssistantSettings(tx, ctx);
+}
+
+/** PATCH /assistant/connections/:id/confirmation — só o dono; desligado por padrão. Auditado (desligar aumenta o risco). */
+export async function setConnectionConfirmation(
+  tx: Tx,
+  ctx: RequestContext,
+  id: string,
+  input: SetConfirmationInput,
+): Promise<{ connection: ConnectionDTO }> {
+  const rows = await tx.$queryRaw<
+    Array<{ id: string; requireConfirmation: boolean; status: string }>
+  >`SELECT id, "requireConfirmation", status FROM mcp_grants WHERE id = ${id}::uuid AND "familyId" = ${ctx.familyId}::uuid AND "memberId" = ${ctx.memberId}::uuid FOR UPDATE`;
+  const g = rows[0];
+  if (!g) throw notFound("Conexão não encontrada.");
+  if (g.status !== "ACTIVE") throw conflict("CONNECTION_INACTIVE", "A conexão não está ativa.");
+  if (g.requireConfirmation !== input.requireConfirmation) {
+    await tx.mcpGrant.update({
+      where: { id },
+      data: { requireConfirmation: input.requireConfirmation },
+    });
+    await recordAudit(tx, {
+      familyId: ctx.familyId,
+      memberId: ctx.memberId,
+      grantId: id,
+      clientName: "Configurações",
+      kind: "TOOL",
+      tool: "modo_confirmacao",
+      params: { field: "requireConfirmation", reason: input.requireConfirmation ? "on" : "off" },
+      outcome: "OK",
+      at: ctx.clock.now(),
+    });
+  }
+  const row = await tx.mcpGrant.findFirstOrThrow({ where: { id }, include: grantInclude });
+  return { connection: toConnectionDTO(row, ctx.clock.now()) };
 }

@@ -96,7 +96,7 @@ Ordem das pendentes (ADR-040, janela do EN-002 dispensada): US-043 → US-041 �
 | US-076a | R4-D | Lançar uma despesa direto pelo assistente | done | US-075, US-077, EN-007 |
 | US-076b | R4-D | Limites de lançamento do assistente, configuráveis pelo membro | done | US-076a |
 | US-074b | R4-D | Token pessoal para clientes sem OAuth (backlog, fora do POC) | blocked | US-074, US-075, US-076b |
-| US-076c | R4-D | Modo opcional "exigir confirmação" por conexão (backlog) | blocked | US-076a, US-076b |
+| US-076c | R4-D | Modo opcional "exigir confirmação" por conexão | todo | US-076a, US-076b |
 | US-083 | R4-S | Cadastro restrito por lista de e-mails permitidos (alpha) | done | — |
 | US-084 | R4-S | Lançamento "Só meu" só pode ser alterado por quem tem controle sobre ele | done | US-005, US-013a |
 | US-078 | R4-S | Encerrar as outras sessões | done | — |
