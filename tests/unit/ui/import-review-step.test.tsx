@@ -34,14 +34,14 @@ const draftOf = (items: ImportDraftItem[], total = "2000"): ImportDraft => ({
   warnings: [],
 });
 
-function renderStep(d: ImportDraft, onConfirm = vi.fn()) {
+function renderStep(d: ImportDraft, onConfirm = vi.fn(), pending = false) {
   render(
     <PrefsProvider userId="u1">
       <ImportReviewStep
         draft={d}
         categories={[{ id: CAT, name: "Mercado" }]}
         members={[{ id: PAYER, name: "Lucas" }]}
-        pending={false}
+        pending={pending}
         error={null}
         onConfirm={onConfirm}
         onCancel={() => undefined}
@@ -61,6 +61,12 @@ afterEach(cleanup);
 const text = (id: string) => screen.getByTestId(id).textContent?.replace(/\s/g, " ");
 
 describe("US-067b ImportReviewStep", () => {
+  it("AC6: durante o envio o Confirmar fica desabilitado e mostra Importando…", () => {
+    renderStep(draftOf([item({ idx: 0 })], "1000"), vi.fn(), true);
+    const btn = screen.getByRole("button", { name: "Importando…" }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+  });
+
   it("mostra os grupos e as marcas", () => {
     renderStep(
       draftOf([

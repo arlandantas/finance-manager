@@ -116,7 +116,7 @@ export function ImportUploadStep({
     );
   }
 
-  const aiProblem = pdf && feature && !aiOn;
+  const aiProblem = pdf && !aiOn;
   return (
     <div className="flex flex-col gap-4">
       <Field id="imp-ref" label="Fatura">

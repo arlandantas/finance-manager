@@ -33,6 +33,9 @@ export function importErrorMessage(e: unknown): string {
     const when = at ? brDayMonth(at) : "";
     return when ? `Este arquivo já foi importado em ${when}` : "Este arquivo já foi importado.";
   }
+  if (e.code === "PREVIEW_STALE") return "O arquivo mudou desde a pré-visualização. Envie de novo.";
+  if (e.code === "IMPORT_TOKEN_INVALID") return "A revisão expirou. Envie o arquivo de novo.";
+  if (e.code === "INVOICE_PAID_LOCKED") return "Esta fatura já foi paga e não aceita importação.";
   if (e.status === 404) return "Indisponível: envie o CSV.";
   if (e.code === "AI_UNAVAILABLE" || e.code === "LLM_UNAVAILABLE")
     return "Indisponível: envie o CSV.";
