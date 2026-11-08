@@ -1,7 +1,7 @@
 import { conflict, forbidden, notFound } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { recordAudit } from "@/modules/mcp/audit";
-import { canonicalResource, mcpEnabled } from "@/modules/mcp/config";
+import { canonicalResource, mcpEnabled, PAT_CLIENT_NAME } from "@/modules/mcp/config";
 import {
   type AssistantSettingsDTO,
   BLOCKED_NOTICE,
@@ -16,6 +16,7 @@ const CLOSED_LIMIT = 20;
 
 type GrantRow = {
   id: string;
+  kind: "OAUTH" | "PAT";
   label: string;
   scopes: string[];
   status: "ACTIVE" | "REVOKED" | "EXPIRED";
@@ -42,7 +43,8 @@ export function toConnectionDTO(g: GrantRow, now: Date): ConnectionDTO {
   return {
     id: g.id,
     label: g.label,
-    clientName: g.client?.clientName ?? g.label,
+    kind: g.kind,
+    clientName: g.kind === "PAT" ? PAT_CLIENT_NAME : (g.client?.clientName ?? g.label),
     redirectHost: hostOf(g.client?.redirectUris[0]),
     scopes,
     scopeLabel: scopes.includes("write") ? "Consulta e lançamento" : "Consulta",

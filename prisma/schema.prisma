@@ -187,6 +187,8 @@ model Family {
   aiMonthlyCapCents      Int?
   // EN-006a (ADR-030 §4): o Administrador pode bloquear o acesso por assistente (MCP) da família inteira
   assistantAccessEnabled Boolean     @default(true)
+  // US-074b (ADR-043): token pessoal (PAT) só com a chave do Administrador; nasce desligada
+  assistantPatEnabled    Boolean     @default(false)
 
   llmBudgetMonths              LlmBudgetMonth[]
   llmUsageEvents               LlmUsageEvent[]
@@ -1134,6 +1136,7 @@ enum McpTokenKind {
   CODE
   ACCESS
   REFRESH
+  PAT // US-074b (ADR-043)
 }
 
 enum McpAuditOutcome {

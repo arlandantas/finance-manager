@@ -13,6 +13,8 @@ export type ConnectionRevokedReason =
 
 export type ConnectionDTO = {
   id: string;
+  /** US-074b: conexão OAuth ou token pessoal. */
+  kind: "OAUTH" | "PAT";
   label: string;
   clientName: string;
   redirectHost: string;

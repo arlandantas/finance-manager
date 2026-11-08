@@ -3,8 +3,13 @@ import type { RequestContext } from "@/lib/api/types";
 import type { Clock } from "@/lib/clock";
 import { newId } from "@/lib/ids";
 import { findActiveMembership } from "@/modules/familia/repo";
-import { canonicalResource, type McpScope } from "@/modules/mcp/config";
-import { hashToken } from "@/modules/mcp/tokens";
+import {
+  canonicalResource,
+  type McpScope,
+  mcpPatEnabled,
+  PAT_CLIENT_NAME,
+} from "@/modules/mcp/config";
+import { BEARER_REGEX, hashesEqual, hashToken } from "@/modules/mcp/tokens";
 
 // SDD-024 §5.2: a ÚNICA porta de entrada das ferramentas. Monta o mesmo RequestContext do `withApi`.
 export type McpContext = RequestContext & {
@@ -43,15 +48,24 @@ export async function resolveMcpContext(
 ): Promise<McpContext | McpAuthError> {
   if (!bearer) return bad("missing");
   const now = clock.now();
+  if (!BEARER_REGEX.test(bearer)) return bad("unknown"); // formato inválido: sem consulta ao banco
+  const hash = hashToken(bearer);
   const token = await db.mcpToken.findUnique({
-    where: { tokenHash: hashToken(bearer) },
+    where: { tokenHash: hash },
     include: {
       grant: {
-        include: { client: true, family: { select: { assistantAccessEnabled: true } } },
+        include: {
+          client: true,
+          family: { select: { assistantAccessEnabled: true, assistantPatEnabled: true } },
+        },
       },
     },
   });
-  if (!token || token.kind !== "ACCESS") return bad("unknown");
+  if (!token || !hashesEqual(token.tokenHash, hash)) return bad("unknown");
+  // ADR-043 §4: ACCESS só de grant OAUTH e PAT só de grant PAT (cruzado = desconhecido)
+  const isPat = token.kind === "PAT";
+  if (!isPat && token.kind !== "ACCESS") return bad("unknown");
+  if (token.grant.kind !== (isPat ? "PAT" : "OAUTH")) return bad("unknown");
   if (token.expiresAt <= now) return bad("expired");
   const g = token.grant;
   if (g.status === "REVOKED") return bad("revoked");
@@ -66,6 +80,7 @@ export async function resolveMcpContext(
   }
   if (g.resource !== canonicalResource(env)) return bad("audience");
   if (!g.family.assistantAccessEnabled) return bad("blocked");
+  if (isPat && !(mcpPatEnabled(env) && g.family.assistantPatEnabled)) return bad("blocked");
   const member = await findActiveMembership(g.userId, db);
   if (!member || member.id !== g.memberId || member.familyId !== g.familyId) {
     return bad("membership");
@@ -97,7 +112,7 @@ export async function resolveMcpContext(
     role: member.role,
     grantId: g.id,
     scopes: g.scopes.filter((s): s is McpScope => s === "read" || s === "write"),
-    clientName: g.client?.clientName ?? g.label,
+    clientName: isPat ? PAT_CLIENT_NAME : (g.client?.clientName ?? g.label),
     grantLabel: g.label,
     requireConfirmation: g.requireConfirmation,
   };

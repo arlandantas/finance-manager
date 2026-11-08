@@ -44,7 +44,8 @@ Atualizado: 2026-11-08
 | Auditoria | `TOOL propor_lancamento` (com `proposalId`), `confirmacao_no_app` (`proposalId`+`transactionId`) e `recusa_no_app`; sem descrição nem valor |
 | Retenção/LGPD | Não confirmadas apagadas após 30 dias (`purgeMcp`) e na exclusão da conta; exclusão da família apaga tudo |
 
-## Token pessoal (PAT; ADR-043; planejado em US-074b/074c, não implementado)
+## Token pessoal (PAT; ADR-043; servidor na US-074b, tela e chave do Administrador na US-074c; chaves desligadas)
+Rota: `POST /api/v1/assistant/tokens` (`201 {connection, token}`; 404 chave do servidor; 403 chave da família; 429 após 10/dia). Replay da idempotência = `{connection, tokenRedacted: true}`.
 | Regra | Detalhe |
 | :-- | :-- |
 | Uso | Só clientes locais com `Authorization: Bearer` fixo (IDE, CLI, Inspector). Só em `POST /api/mcp`; nunca em `/api/oauth/*`, `/api/v1` ou como sessão. Claude.ai/ChatGPT continuam só por OAuth (ADR-030 §2) |

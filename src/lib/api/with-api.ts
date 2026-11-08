@@ -50,6 +50,8 @@ export type ApiOptions<A extends AuthMode, B, Q> = {
   timeoutMs?: number;
   /** Upload de arquivo (US-066): aceita `multipart/form-data` no CSRF; o handler lê o corpo (`req`). */
   multipart?: boolean;
+  /** Corpo que a idempotência guarda no lugar do real (ex.: sem segredo exibido uma só vez). */
+  redactStoredBody?: (body: unknown) => unknown;
 };
 
 export type HandlerArgs<A extends AuthMode, B, Q> = {
@@ -230,7 +232,7 @@ export function withApi<A extends AuthMode = "family", B = undefined, Q = undefi
               userId,
               key,
               status: result.status,
-              body: result.body,
+              body: opts.redactStoredBody ? opts.redactStoredBody(result.body) : result.body,
             });
           }
           return { result };
@@ -250,7 +252,11 @@ export function withApi<A extends AuthMode = "family", B = undefined, Q = undefi
             await db.idempotencyRecord
               .update({
                 where: { userId_key: { userId, key } },
-                data: { responseBody: result.body as object },
+                data: {
+                  responseBody: (opts.redactStoredBody
+                    ? opts.redactStoredBody(result.body)
+                    : result.body) as object,
+                },
               })
               .catch(() => undefined);
           }

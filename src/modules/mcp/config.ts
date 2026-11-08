@@ -6,6 +6,14 @@ export const ACCESS_TTL_S = 3600; // 60 min (D-GES-36 d)
 export const CODE_TTL_S = 60;
 export const AUTH_REQUEST_TTL_S = 600;
 export const GRANT_VALIDITY_DAYS = [30, 90] as const;
+/** US-074b (ADR-043): token pessoal. */
+export const PAT_VALIDITY_DAYS = [7, 30, 90] as const;
+export const PAT_DEFAULT_VALIDITY_DAYS = 30;
+export const PAT_MAX_ACTIVE = 5;
+export const PAT_CREATE_PER_DAY = 10;
+/** Falhas de autenticação por IP por minuto em /api/mcp. */
+export const AUTH_FAIL_PER_MIN = 30;
+export const PAT_CLIENT_NAME = "Token pessoal";
 export const SCOPES = ["read", "write"] as const;
 export type McpScope = (typeof SCOPES)[number];
 /** Escopos que o AS anuncia/aceita no pedido (`offline_access` não vira permissão: o refresh já é emitido). */
@@ -32,6 +40,11 @@ export const CIMD_TIMEOUT_MS = 5000;
 export function mcpEnabled(env: Env = process.env): boolean {
   if (env.VERCEL_ENV === "preview") return false;
   return env.MCP_ENABLED?.trim().toLowerCase() === "true";
+}
+
+/** Token pessoal: chave do servidor (padrão desligada) e exige `MCP_ENABLED`. */
+export function mcpPatEnabled(env: Env = process.env): boolean {
+  return mcpEnabled(env) && env.MCP_PAT_ENABLED?.trim().toLowerCase() === "true";
 }
 
 /**

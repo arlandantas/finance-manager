@@ -9,7 +9,9 @@ import type { Clock } from "@/lib/clock";
 import { describeError } from "@/lib/log-error";
 import { logger } from "@/lib/logger";
 import { recordAudit } from "@/modules/mcp/audit";
+import { clientIp } from "@/modules/mcp/client-ip";
 import {
+  AUTH_FAIL_PER_MIN,
   issuerOf,
   MAX_BODY_BYTES,
   mcpEnabled,
@@ -93,6 +95,21 @@ export async function handleMcp(req: Request, deps: McpDeps): Promise<Response> 
   }
   const ctxOrErr = await resolveMcpContext(deps.db, bearer, deps.clock, env);
   if ("code" in ctxOrErr) {
+    // ADR-043 §8: falhas de autenticação por IP (qualquer bearer); a 31ª no minuto = 429
+    const fails = await hit(
+      deps.db,
+      `mcp-auth-fail:${clientIp(req.headers)}`,
+      AUTH_FAIL_PER_MIN,
+      60,
+      deps.clock.now(),
+    );
+    if (!fails.ok) {
+      return json(
+        429,
+        { error: "rate_limited", error_description: "limite de uso excedido" },
+        { "retry-after": String(fails.retryAfterS) },
+      );
+    }
     const desc = publicAuthMessage(ctxOrErr.description);
     return json(
       401,

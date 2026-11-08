@@ -26,6 +26,7 @@ export const LOG_REDACT_PATHS = [
   "*.refresh_token",
   "*.code",
   "*.code_verifier",
+  "*.token", // US-074b: token pessoal (ADR-043)
   "headers.authorization",
   "req.headers.authorization",
 ];
