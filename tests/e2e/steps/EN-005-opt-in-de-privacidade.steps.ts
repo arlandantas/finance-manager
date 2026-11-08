@@ -59,5 +59,6 @@ Then("vê o registro {string}", async ({ page }, texto: string) => {
 });
 
 Then("vê o aviso de IA {string}", async ({ page }, texto: string) => {
-  await expect(page.getByTestId("ai-feature").getByText(texto)).toBeVisible();
+  // Há um cartão por finalidade de IA, e cada um repete o aviso: basta o primeiro.
+  await expect(page.getByTestId("ai-feature").getByText(texto).first()).toBeVisible();
 });
