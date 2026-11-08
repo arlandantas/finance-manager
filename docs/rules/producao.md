@@ -8,6 +8,19 @@
 - A confirmar com o usuário: versão de Node em Vercel Project Settings; variáveis realmente definidas (só nomes, seção 1); migrações já aplicadas em produção; região do banco e `regions`; backup/restore ensaiado; `scripts/smoke-prod.sh` rodado; previews desligados.
 
 
+## 0.1 Checklist do usuário: subir a US-102 (Node 26) para produção
+Marque na ordem; nada disto o agente faz (push, deploy e Vercel são seus).
+1. [ ] Vercel > Project > Settings > Build and Deployment > Node.js Version = `26.x`. O `engines` (`>=26 <27`) já manda no build; a configuração deixa o painel coerente.
+2. [ ] (Opcional, recomendado) Testar antes num preview: `git push` de uma branch, abrir o preview e fazer login e uma tela com dados. Previews não levam segredos (seção 1); sem login possível, teste direto em produção com o rollback à mão.
+3. [ ] Conferir o backup recente (seção 2) antes do deploy; o `engines` novo não muda o banco, mas é o ponto de retorno.
+4. [ ] `git push` na `main` (há commits locais não enviados) ou `vercel --prod`; acompanhar o build: `prisma generate`, `migrate deploy` e `next build` em Node 26.
+5. [ ] `scripts/smoke-prod.sh https://verbus-finance.vercel.app` deve imprimir `SMOKE OK`.
+6. [ ] `/api/health` com `Authorization: Bearer $CRON_SECRET`: `database` ok e sem `unsafe_config`; logs da Vercel sem erro de runtime.
+7. [ ] Login Google real; se a IA estiver ligada, uma chamada (o `fetch` agora usa HTTP/2 por padrão). Erro de rede externo: definir `VERCEL_FETCH_DISABLE_H2=1` em Production e refazer o deploy.
+8. [ ] Algo errado: Deployments > Instant Rollback (o banco não muda; ver seção 5) e avisar o agente.
+9. [ ] Ao concluir, dizer ao agente: ele fecha AC3 e AC5 da US-102 no STATE.
+Depois, os itens "a confirmar" da seção 0 e, em produção, `pnpm migrate:split` (seção 3).
+
 Vercel + Prisma Postgres (ADR-031, spec 11, ADR-041). Roteiro do 1º deploy (passos 1 a 6 abaixo, ainda valem para conferência). Tudo aqui é feito pelo usuário; nenhum segredo entra no repositório. Rode `pnpm check:docs && pnpm lint && pnpm typecheck && pnpm test` e `pnpm test:int` antes.
 
 ## 1. Variáveis (Vercel > Settings > Environment Variables, escopo só Production)
