@@ -80,7 +80,7 @@ Ordem das pendentes (importação de fatura, ADR-042, spec 13): US-066 → US-06
 | EN-004 | R4-B | Infra de LLM: chave Anthropic do app, cliente único e teto de custo | done | — |
 | EN-005 | R4-B | Opt-in de privacidade por família para recursos de IA (Habilitadora) | done | EN-004 |
 | EN-006 | R4 | SMTP real com autenticação e TLS (Habilitadora) | done | — |
-| US-066 | R4-B | Importação: enviar o CSV e extrair os itens (servidor, flag) | todo | EN-004, EN-005 |
+| US-066 | R4-B | Importação: enviar o CSV e extrair os itens (servidor, flag) | done | EN-004, EN-005 |
 | US-066b | R4-B | Importação: texto do PDF, linhas candidatas e anonimização (pré-visualização) | todo | US-066 |
 | US-066c | R4-B | Importação: extrair o PDF pela IA (consentimento próprio, provedor simulado) | todo | US-066b, EN-004, EN-005 |
 | US-067 | R4-B | Importação: rascunho revisável (grupos, categoria, duplicados, total) e migração | todo | US-066 |
