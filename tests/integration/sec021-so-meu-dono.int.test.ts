@@ -262,14 +262,22 @@ describe("SEC-021 lançamento Só meu: só o dono altera", () => {
     expect(restoreOther.status).toBe(403);
   });
 
-  it("MCP: a única ferramenta de escrita só cria despesa do próprio membro (sem editar/excluir/pagador)", () => {
+  it("MCP: as ferramentas de escrita só criam despesa ou proposta do próprio membro (sem editar/excluir/pagador)", () => {
+    // Conjunto fechado: uma ferramenta nova com escopo de escrita quebra este teste de propósito.
+    // US-076c: `propor_lancamento` cria só uma proposta; `consultar_proposta` só lê o estado dela.
     const writers = mcpTools.filter((t) => t.scope === "write");
-    expect(writers.map((t) => t.name)).toEqual(["lancar_despesa"]);
-    const keys = Object.keys(
-      (writers[0]?.input as unknown as { shape: Record<string, unknown> }).shape,
-    );
-    expect(keys).not.toEqual(
-      expect.arrayContaining([expect.stringMatching(/payer|transactionId|isShared|memberId/i)]),
-    );
+    expect(writers.map((t) => t.name).sort()).toEqual([
+      "consultar_proposta",
+      "lancar_despesa",
+      "propor_lancamento",
+    ]);
+    for (const writer of writers) {
+      const keys = Object.keys(
+        (writer.input as unknown as { shape: Record<string, unknown> }).shape,
+      );
+      expect(keys).not.toEqual(
+        expect.arrayContaining([expect.stringMatching(/payer|transactionId|isShared|memberId/i)]),
+      );
+    }
   });
 });
