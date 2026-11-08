@@ -86,7 +86,7 @@ Ordem das pendentes (importação de fatura, ADR-042, spec 13): US-066 → US-06
 | US-067 | R4-B | Importação: rascunho revisável (grupos, categoria, duplicados, total) e migração | done | US-066 |
 | US-068 | R4-B | Importação: confirmar e gravar o lote (atômico, idempotente, sem duplicar) | done | US-067 |
 | US-067b | R4-B | Importação: telas de envio, revisão e confirmação | done | US-066c, US-067, US-068 |
-| US-069 | R4-B | Importação: listar e desfazer um lote importado | todo | US-068, US-067b |
+| US-069 | R4-B | Importação: listar e desfazer um lote importado | done | US-068, US-067b |
 | US-070 | R4-C | Análise de gastos por IA: o que pode ser evitado | done | EN-004, EN-005, US-048 |
 | US-071 | R4-C | Descartar uma sugestão ("este gasto é importante para nós") | done | US-070 |
 | US-072 | R4-C | Aceitar, uma a uma, as sugestões de recategorização | done | US-070 |
