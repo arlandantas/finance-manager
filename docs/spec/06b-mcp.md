@@ -54,7 +54,9 @@ Rota: `POST /api/v1/assistant/tokens` (`201 {connection, token}`; 404 chave do s
 | Escopo e validade | `read` padrão; `write` com segunda ciência e nasce com `requireConfirmation = true`. Validade 7/30/90 dias (padrão 30, máx. 90), sem renovação |
 | Chaves | `MCP_PAT_ENABLED` (env, padrão `false`) + `families.assistantPatEnabled` (padrão `false`, só ADMIN; desligar revoga os PAT) + `assistantAccessEnabled`. Qualquer uma desligada: 401 |
 | Limites | 5 ativos por membro (409 `PAT_LIMIT_REACHED`); 10 criações/dia; transporte e limites de escrita iguais ao OAuth (contados por membro); 30 falhas de autenticação/min por IP em `/api/mcp` |
-| Avisos | E-mail e aviso na Home ao criar; e-mail (1/dia por token) ao bater `RATE_LIMITED`/`LIMIT_EXCEEDED`; sem IP guardado |
+| Avisos | E-mail e aviso na Home ao criar; e-mail (`pat-alert.ts`, 1/dia por token, bucket `pat-alert:<grantId>:day`, sem token/valores/descrições) ao bater `RATE_LIMITED`/`LIMIT_EXCEEDED`; sem IP guardado |
+| Tela (US-074c) | Família > Assistente de IA: "Gerar token pessoal" (nome, 7/30/90, lançamento + segunda ciência); valor só no estado do diálogo (aviso, Copiar, "Já copiei" limpa); lista com "Token pessoal"; desligar a confirmação de PAT pede ciência. Botão oculto se `!canCreatePat`, com o motivo |
+| Chave do Administrador | `PATCH /family/assistant-access {patEnabled, familyVersion}` (só ADMIN; 409 versão velha); desligar chama `revokeFamilyPats` (`FAMILY_BLOCKED`, apaga tokens; OAuth segue); evento com `patEnabled {from,to}`; DTO traz `patEnabled {env,family}` e `canCreatePat` |
 
 ## Invariantes
 1. `lancar_despesa` e a confirmação de proposta passam pelo mesmo `createExpenseCore` do app: toda regra de domínio, "Só meu" (US-084) e idempotência (ADR-009) valem; não edita, exclui nem cria dividida.
@@ -75,8 +77,8 @@ Rota: `POST /api/v1/assistant/tokens` (`201 {connection, token}`; 404 chave do s
 | Clientes | Só Claude (CIMD); ChatGPT/Gemini/DCR dependem de ampliação | Backlog (9 pts) |
 
 ## Fontes
-Código `src/modules/mcp/`: `{handler,config,authorize,token-endpoint,tokens,cimd,verified-clients,grants,connections,limits,assistant-write,proposals,proposals-decide,proposals-schemas,audit,activity,review,new-connection,purge,revalidate,run-tool,rate-limit}.ts`, `tools/*.ts` (registro `mcp/tools.ts`). Rotas: `app/api/mcp`, `app/api/oauth/**`, `app/oauth/**`, `app/.well-known/**`. UI: `app/(app)/configuracoes/assistente`, `app/oauth/consent`. Scripts: `scripts/{mcp-admin,mcp-smoke,sec010-revalidate-mcp-clients}.ts`. Modelos `Mcp*`.
-Testes: `tests/unit/mcp/*`; `tests/integration/{en006a-oauth,en006b-mcp,en007-cron-purge,sec009-texto-nao-confiavel,sec011-consentimento,us074-assistente,us075-ferramentas-leitura,us076-lancar-direto,us076c-proposta-confirmacao,us076c-limites-modo-lgpd,us077-atividade}`; `tests/helpers/{mcp-client,mcp-tools}.ts`.
+Código `src/modules/mcp/`: `{pat,pat-alert,handler,config,authorize,token-endpoint,tokens,cimd,verified-clients,grants,connections,limits,assistant-write,proposals,proposals-decide,proposals-schemas,audit,activity,review,new-connection,purge,revalidate,run-tool,rate-limit}.ts`, `tools/*.ts` (registro `mcp/tools.ts`). Rotas: `app/api/mcp`, `app/api/oauth/**`, `app/oauth/**`, `app/.well-known/**`. UI: `app/(app)/configuracoes/assistente`, `app/oauth/consent`. Scripts: `scripts/{mcp-admin,mcp-smoke,sec010-revalidate-mcp-clients}.ts`. Modelos `Mcp*`.
+Testes: `tests/unit/mcp/*`; `tests/integration/{us074b-pat,us074c-pat-tela,en006a-oauth,en006b-mcp,en007-cron-purge,sec009-texto-nao-confiavel,sec011-consentimento,us074-assistente,us075-ferramentas-leitura,us076-lancar-direto,us076c-proposta-confirmacao,us076c-limites-modo-lgpd,us077-atividade}`; `tests/helpers/{mcp-client,mcp-tools}.ts`.
 Âncoras: SDD-024 (§11 normativo), 025, 026, 027 (§R2), 028; ADR-030 (rev. 2), ADR-031, ADR-043; D-GES-35/36/37, SEC-005/009/010/011/013/023/028, US-065..077.
 
 ## Pendências

@@ -62,6 +62,11 @@ export function ConnectionCard({
         {active ? ` · expira em ${brDate(c.expiresAt)}` : ""}
       </p>
       <StatusLine c={c} />
+      {c.kind === "PAT" ? (
+        <p data-testid="connection-kind" className="text-sm text-slate-600">
+          Token pessoal
+        </p>
+      ) : null}
       {c.redirectHost ? (
         <p className="text-sm text-slate-600">Conectado a {c.redirectHost}</p>
       ) : null}
@@ -85,11 +90,18 @@ function ConfirmationToggle({ c }: { c: ConnectionDTO }) {
   const set = useSetConfirmation();
   const keyRef = useRef(newIdempotencyKey());
   const [error, setError] = useState<string | null>(null);
+  const [warn, setWarn] = useState(false);
   const on = c.requireConfirmation;
   const labelId = `confirm-${c.id}`;
 
-  function toggle() {
+  function toggle(confirmed = false) {
     setError(null);
+    // US-074c (ADR-043 §9): desligar a confirmação de um token pessoal aumenta o risco: pede ciência antes
+    if (on && c.kind === "PAT" && !confirmed) {
+      setWarn(true);
+      return;
+    }
+    setWarn(false);
     set.mutate(
       { id: c.id, requireConfirmation: !on, idempotencyKey: keyRef.current },
       {
@@ -128,7 +140,7 @@ function ConfirmationToggle({ c }: { c: ConnectionDTO }) {
           aria-checked={on}
           aria-labelledby={labelId}
           disabled={set.isPending}
-          onClick={toggle}
+          onClick={() => toggle()}
           className="flex min-h-11 min-w-12 shrink-0 items-center justify-center disabled:opacity-60"
         >
           <span
@@ -141,6 +153,26 @@ function ConfirmationToggle({ c }: { c: ConnectionDTO }) {
           </span>
         </button>
       </div>
+      {warn ? (
+        <div
+          role="alert"
+          data-testid="confirmation-risk"
+          className="flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200"
+        >
+          <p>
+            Sem a confirmação, quem tiver este token lança despesas direto, dentro dos seus limites.
+            O token fica em texto claro na máquina onde foi colado. Desligar mesmo assim?
+          </p>
+          <div className="flex gap-2">
+            <Button variant="danger" disabled={set.isPending} onClick={() => toggle(true)}>
+              Desligar mesmo assim
+            </Button>
+            <Button variant="ghost" onClick={() => setWarn(false)}>
+              Manter
+            </Button>
+          </div>
+        </div>
+      ) : null}
       {error ? (
         <p role="alert" className="text-sm text-red-800 dark:text-red-300">
           {error}

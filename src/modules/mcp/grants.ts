@@ -99,3 +99,15 @@ export async function setAssistantAccess(
   });
   await revokeRows(tx, rows, "FAMILY_BLOCKED", now, actorMemberId);
 }
+
+/** Desligar o token pessoal da família: revoga os PAT ativos (`FAMILY_BLOCKED`) e apaga os tokens; OAuth segue. */
+export async function revokeFamilyPats(tx: Tx, familyId: string, actorMemberId: string, now: Date) {
+  const rows = await tx.mcpGrant.findMany({
+    where: { familyId, kind: "PAT", status: "ACTIVE" },
+    select: SELECT,
+  });
+  await revokeRows(tx, rows, "FAMILY_BLOCKED", now, actorMemberId);
+  if (rows.length > 0) {
+    await tx.mcpToken.deleteMany({ where: { grantId: { in: rows.map((g) => g.id) } } });
+  }
+}

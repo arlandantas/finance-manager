@@ -6,6 +6,7 @@ import { logger } from "@/lib/logger";
 import { type AuditParams, recordAudit } from "@/modules/mcp/audit";
 import type { McpScope } from "@/modules/mcp/config";
 import type { McpContext } from "@/modules/mcp/context";
+import { alertPatLimit } from "@/modules/mcp/pat-alert";
 import { hit } from "@/modules/mcp/rate-limit";
 import { attentionLine, DATA_PREAMBLE, scanUserText } from "@/modules/mcp/tools/user-text";
 
@@ -128,6 +129,7 @@ export async function runTool(
       const h = await hit(db, r.key, r.limit, r.windowS, clock.now());
       if (!h.ok) {
         await audit("RATE_LIMITED", { errorCode: "RATE_LIMITED" });
+        await alertPatLimit(db, ctx);
         return toolError("RATE_LIMITED", "Limite de uso excedido. Tente novamente mais tarde.");
       }
     }
@@ -157,6 +159,7 @@ export async function runTool(
               : "ERROR",
           { errorCode: e.code, params },
         );
+        if (e.code === "LIMIT_EXCEEDED") await alertPatLimit(db, ctx);
         return toolError(e.code, e.message);
       }
       logger.error({ tool: def.name, err: describeError(e) }, "mcp tool");

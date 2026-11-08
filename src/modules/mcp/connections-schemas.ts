@@ -39,14 +39,26 @@ export type AssistantSettingsDTO = {
   canEditFamilySwitch: boolean;
   familyVersion: number;
   blockedNotice: string | null;
+  /** US-074c: chaves do token pessoal (servidor e família). */
+  patEnabled: { env: boolean; family: boolean };
+  /** Servidor + família + acesso por assistente ligados. */
+  canCreatePat: boolean;
   items: ConnectionDTO[];
 };
 
 export const BLOCKED_NOTICE = "O Administrador bloqueou o acesso por assistente";
 
 export const SetAssistantAccessSchema = z
-  .object({ enabled: z.boolean(), familyVersion: versionSchema })
-  .strict();
+  .object({
+    enabled: z.boolean().optional(),
+    /** US-074c: chave do token pessoal (só ADMIN). */
+    patEnabled: z.boolean().optional(),
+    familyVersion: versionSchema,
+  })
+  .strict()
+  .refine((v) => v.enabled !== undefined || v.patEnabled !== undefined, {
+    message: "Informe a chave a alterar",
+  });
 export type SetAssistantAccessInput = z.infer<typeof SetAssistantAccessSchema>;
 
 export const RevokeConnectionSchema = z.object({}).strict();

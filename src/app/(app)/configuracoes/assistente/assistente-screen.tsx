@@ -13,6 +13,8 @@ import { ActivityPanel } from "./activity-panel";
 import { ConnectDialog } from "./connect-dialog";
 import { ConnectionCard } from "./connection-card";
 import { LimitsPanel } from "./limits-panel";
+import { PatDialog } from "./pat-dialog";
+import { PatSwitch } from "./pat-switch";
 import { RevokeDialog } from "./revoke-dialog";
 import { Tabs } from "./tabs";
 
@@ -117,8 +119,19 @@ function FamilySwitch({ data }: { data: AssistantSettingsDTO }) {
   );
 }
 
+/** Motivo de o token pessoal não estar disponível (nada de código técnico). */
+function patReason(d: AssistantSettingsDTO): string {
+  if (!d.familyAllows) return "Token pessoal indisponível: o acesso por assistente está bloqueado.";
+  if (!d.patEnabled.env)
+    return "Token pessoal indisponível: o recurso ainda não está liberado neste servidor.";
+  return d.canEditFamilySwitch
+    ? "Token pessoal desligado. Ligue a chave acima para permitir."
+    : "Token pessoal desligado pelo Administrador da família.";
+}
+
 function ConnectionsPanel({ data }: { data: AssistantSettingsDTO }) {
   const [connecting, setConnecting] = useState(false);
+  const [creatingPat, setCreatingPat] = useState(false);
   const [target, setTarget] = useState<ConnectionDTO | null>(null);
   const active = data.items.filter((c) => c.status === "ACTIVE");
 
@@ -144,6 +157,17 @@ function ConnectionsPanel({ data }: { data: AssistantSettingsDTO }) {
         </Button>
       ) : null}
 
+      {data.canCreatePat ? (
+        <Button variant="secondary" className="self-start" onClick={() => setCreatingPat(true)}>
+          Gerar token pessoal
+        </Button>
+      ) : (
+        <p data-testid="pat-unavailable" className="text-xs text-slate-600">
+          {patReason(data)}
+        </p>
+      )}
+
+      <PatDialog open={creatingPat} onOpenChange={setCreatingPat} />
       <ConnectDialog open={connecting} onOpenChange={setConnecting} mcpUrl={data.mcpUrl} />
       <RevokeDialog target={target} onClose={() => setTarget(null)} />
     </div>
@@ -199,6 +223,9 @@ export function AssistenteScreen() {
       {data?.enabled ? (
         <>
           <FamilySwitch data={data} />
+          {data.canEditFamilySwitch && data.patEnabled.env && data.familyAllows ? (
+            <PatSwitch data={data} />
+          ) : null}
           {data.blockedNotice ? (
             <p
               role="status"

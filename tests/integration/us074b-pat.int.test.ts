@@ -226,6 +226,16 @@ describe("AC6: limites", () => {
     expect((await create()).status).toBe(201);
   });
 
+  it("6 criações concorrentes do mesmo membro: no máximo 5 ativos, as demais 409 PAT_LIMIT_REACHED", async () => {
+    const rs = await Promise.all(Array.from({ length: 6 }, () => create()));
+    expect(rs.filter((r) => r.status === 201)).toHaveLength(5);
+    const refused = rs.filter((r) => r.status !== 201);
+    expect(refused).toHaveLength(1);
+    expect(refused[0]?.status).toBe(409);
+    expect(refused[0]?.body.error.code).toBe("PAT_LIMIT_REACHED");
+    expect(await db.mcpGrant.count({ where: { kind: "PAT", status: "ACTIVE" } })).toBe(5);
+  });
+
   it("a 11ª criação do dia = 429 (por membro)", async () => {
     for (let i = 0; i < 10; i++) {
       const r = await create();

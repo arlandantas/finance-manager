@@ -20,6 +20,7 @@ import {
   WWW_AUTH_SCOPE,
 } from "@/modules/mcp/config";
 import { type McpContext, publicAuthMessage, resolveMcpContext } from "@/modules/mcp/context";
+import { alertPatLimit } from "@/modules/mcp/pat-alert";
 import { hit } from "@/modules/mcp/rate-limit";
 import { type AnyTool, runTool, scopeAllows, scopeDeniedResult } from "@/modules/mcp/run-tool";
 import { TEXT_IS_DATA_INSTRUCTIONS } from "@/modules/mcp/tools/user-text";
@@ -151,6 +152,7 @@ export async function handleMcp(req: Request, deps: McpDeps): Promise<Response> 
       errorCode: "RATE_LIMITED",
       at: now,
     });
+    await alertPatLimit(deps.db, ctx);
     return json(
       429,
       { error: "rate_limited", error_description: "limite de uso excedido" },

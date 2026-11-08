@@ -64,6 +64,8 @@ export default defineConfig({
       INVOICE_IMPORT_ENABLED: "true",
       // US-074+: telas do assistente (MCP). Nenhum cliente real é conectado: o OAuth é exercitado em integração.
       MCP_ENABLED: "true",
+      // US-074c: token pessoal ligado no servidor; a chave da família continua desligada até o cenário ligar
+      MCP_PAT_ENABLED: "true",
       // SEC-010/011: o cliente de teste do E2E é o "verificado"
       MCP_CIMD_ALLOWED_CLIENT_IDS: "https://claude.ai/test-client.json",
     },

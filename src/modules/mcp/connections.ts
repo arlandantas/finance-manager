@@ -1,14 +1,19 @@
 import { conflict, forbidden, notFound } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { recordAudit } from "@/modules/mcp/audit";
-import { canonicalResource, mcpEnabled, PAT_CLIENT_NAME } from "@/modules/mcp/config";
+import {
+  canonicalResource,
+  mcpEnabled,
+  mcpPatEnabled,
+  PAT_CLIENT_NAME,
+} from "@/modules/mcp/config";
 import {
   type AssistantSettingsDTO,
   BLOCKED_NOTICE,
   type ConnectionDTO,
   type SetAssistantAccessInput,
 } from "@/modules/mcp/connections-schemas";
-import { revokeGrant, setAssistantAccess } from "@/modules/mcp/grants";
+import { revokeFamilyPats, revokeGrant, setAssistantAccess } from "@/modules/mcp/grants";
 import type { SetConfirmationInput } from "@/modules/mcp/proposals-schemas";
 
 // SDD-025 §3: lista, revogação e bloqueio da família. Cada membro só enxerga e revoga as SUAS conexões.
@@ -68,7 +73,7 @@ export async function getAssistantSettings(
   const now = ctx.clock.now();
   const fam = await tx.family.findFirst({
     where: { id: ctx.familyId },
-    select: { assistantAccessEnabled: true, version: true },
+    select: { assistantAccessEnabled: true, assistantPatEnabled: true, version: true },
   });
   const where = { familyId: ctx.familyId, memberId: ctx.memberId };
   const active = await tx.mcpGrant.findMany({
@@ -86,6 +91,8 @@ export async function getAssistantSettings(
     take: CLOSED_LIMIT,
   });
   const familyAllows = fam?.assistantAccessEnabled ?? true;
+  const patEnv = mcpPatEnabled();
+  const patFamily = fam?.assistantPatEnabled ?? false;
   return {
     mcpUrl: canonicalResource(),
     enabled: mcpEnabled(),
@@ -93,6 +100,8 @@ export async function getAssistantSettings(
     canEditFamilySwitch: ctx.role === "ADMIN",
     familyVersion: fam?.version ?? 1,
     blockedNotice: !familyAllows ? BLOCKED_NOTICE : null,
+    patEnabled: { env: patEnv, family: patFamily },
+    canCreatePat: mcpEnabled() && patEnv && patFamily && familyAllows,
     items: [...active, ...closed].map((g) => toConnectionDTO(g, now)),
   };
 }
@@ -114,7 +123,7 @@ export async function revokeConnection(
   return { connection: toConnectionDTO(g, now) };
 }
 
-/** PATCH /family/assistant-access — só o Administrador; bloquear revoga TODAS as conexões da família. */
+/** PATCH /family/assistant-access — só o Administrador; bloquear revoga TODAS as conexões; desligar o PAT, só os PAT. */
 export async function setFamilyAssistantAccess(
   tx: Tx,
   ctx: RequestContext,
@@ -122,14 +131,15 @@ export async function setFamilyAssistantAccess(
 ): Promise<AssistantSettingsDTO> {
   if (ctx.role !== "ADMIN") throw forbidden("Só o Administrador pode alterar");
   const rows = await tx.$queryRaw<
-    Array<{ version: number; assistantAccessEnabled: boolean }>
-  >`SELECT version, "assistantAccessEnabled" FROM families WHERE id = ${ctx.familyId}::uuid FOR UPDATE`;
+    Array<{ version: number; assistantAccessEnabled: boolean; assistantPatEnabled: boolean }>
+  >`SELECT version, "assistantAccessEnabled", "assistantPatEnabled" FROM families WHERE id = ${ctx.familyId}::uuid FOR UPDATE`;
   const fam = rows[0];
   if (!fam || fam.version !== input.familyVersion) {
     throw conflict("VERSION_CONFLICT", "A família foi alterada. Recarregue para continuar.");
   }
-  if (fam.assistantAccessEnabled !== input.enabled) {
-    const now = ctx.clock.now();
+  const now = ctx.clock.now();
+  const changes: Record<string, { from: boolean; to: boolean }> = {};
+  if (input.enabled !== undefined && fam.assistantAccessEnabled !== input.enabled) {
     const blocked = await tx.mcpGrant.findMany({
       where: { familyId: ctx.familyId, status: "ACTIVE" },
       select: { id: true },
@@ -138,6 +148,17 @@ export async function setFamilyAssistantAccess(
     if (!input.enabled && blocked.length > 0) {
       await tx.mcpToken.deleteMany({ where: { grantId: { in: blocked.map((g) => g.id) } } });
     }
+    changes.enabled = { from: fam.assistantAccessEnabled, to: input.enabled };
+  }
+  if (input.patEnabled !== undefined && fam.assistantPatEnabled !== input.patEnabled) {
+    await tx.family.update({
+      where: { id: ctx.familyId },
+      data: { assistantPatEnabled: input.patEnabled },
+    });
+    if (!input.patEnabled) await revokeFamilyPats(tx, ctx.familyId, ctx.memberId, now);
+    changes.patEnabled = { from: fam.assistantPatEnabled, to: input.patEnabled };
+  }
+  if (Object.keys(changes).length > 0) {
     await tx.family.update({
       where: { id: ctx.familyId },
       data: { version: { increment: 1 }, updatedByMemberId: ctx.memberId },
@@ -147,7 +168,7 @@ export async function setFamilyAssistantAccess(
         familyId: ctx.familyId,
         type: "ASSISTANT_ACCESS_CHANGED",
         actorMemberId: ctx.memberId,
-        changes: { enabled: { from: fam.assistantAccessEnabled, to: input.enabled } },
+        changes,
       },
     });
   }

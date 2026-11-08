@@ -58,6 +58,57 @@ export function useSetAssistantAccess() {
   });
 }
 
+/** US-074c: chave "Token pessoal" do Administrador. */
+export function useSetPatEnabled() {
+  const invalidate = useInvalidateAssistant();
+  return useMutation({
+    mutationFn: (a: { patEnabled: boolean; familyVersion: number; idempotencyKey: string }) =>
+      apiFetch<AssistantSettingsDTO>("/api/v1/family/assistant-access", {
+        method: "PATCH",
+        body: { patEnabled: a.patEnabled, familyVersion: a.familyVersion },
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}
+
+export type CreatePatArgs = {
+  label: string;
+  validityDays: 7 | 30 | 90;
+  allowWrite: boolean;
+  idempotencyKey: string;
+};
+
+/**
+ * US-074c: cria o token pessoal. O valor (`token`) só existe na resposta: quem chama o copia para o estado do
+ * diálogo e chama `reset()`; `gcTime: 0` não o mantém no cache de mutações. Nunca em URL, storage ou log.
+ */
+export function useCreatePat() {
+  const qc = useQueryClient();
+  return useMutation({
+    gcTime: 0,
+    mutationFn: (a: CreatePatArgs) =>
+      apiFetch<{ connection: ConnectionDTO; token?: string; tokenRedacted?: boolean }>(
+        "/api/v1/assistant/tokens",
+        {
+          method: "POST",
+          body: {
+            label: a.label,
+            validityDays: a.validityDays,
+            ...(a.allowWrite ? { allowWrite: true, writeAcknowledged: true } : {}),
+          },
+          idempotencyKey: a.idempotencyKey,
+        },
+      ),
+    onSuccess: () =>
+      Promise.all(
+        [assistantSettingsKey, assistantActivityKey, newConnectionsKey].map((queryKey) =>
+          qc.invalidateQueries({ queryKey }),
+        ),
+      ),
+  });
+}
+
 /** Atividade do assistente (US-077): paginada por cursor, sempre do membro da sessão. */
 export function useAssistantActivity(f: {
   grantId?: string;
