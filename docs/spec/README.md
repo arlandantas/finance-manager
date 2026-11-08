@@ -19,3 +19,4 @@ Regra vigente por área (≤120 linhas cada). Código e testes vencem em caso de
 | [10-lancamentos-contas-extrato.md](10-lancamentos-contas-extrato.md) | Spec 10a — Lançamentos, contas, extrato e base |
 | [11-hospedagem-producao.md](11-hospedagem-producao.md) | Spec 11 — Hospedagem e produção (Vercel + Prisma Postgres) |
 | [12-assinaturas.md](12-assinaturas.md) | Spec 12 — Assinaturas no cartão (US-096..098 implementadas; 099 planejada) |
+| [13-importacao-fatura.md](13-importacao-fatura.md) | Spec 13 — Importação de fatura (CSV e PDF; planejada, ADR-042) |

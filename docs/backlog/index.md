@@ -1,8 +1,8 @@
 # Backlog
 Uma linha por história/enabler. Status: `todo` · `doing` · `done` · `blocked`. Detalhe das pendentes: `stories/US-NNN.md`.
 Ordem = ordem de execução; as entregues vêm primeiro. Status conferido contra código e testes em 2026-11-02.
-Pendentes: `todo` (pode iniciar quando as deps fecharem) · `blocked` (R5 adiada: importação de fatura; US-074b/US-076c fora do POC, decisão do usuário).
-Ordem das pendentes (ADR-040, janela do EN-002 dispensada): US-043 → US-041 → US-042 → US-044.
+Pendentes: `todo` (pode iniciar quando as deps fecharem) · `blocked` (US-074b fora do POC, decisão do usuário).
+Ordem das pendentes (importação de fatura, ADR-042, spec 13): US-066 → US-066b → US-066c → US-067 → US-068 → US-067b → US-069.
 
 | ID | Marco | Título | Status | Deps |
 |---|---|---|---|---|
@@ -79,10 +79,14 @@ Ordem das pendentes (ADR-040, janela do EN-002 dispensada): US-043 → US-041 �
 | US-065 | R4-A | Compra parcelada com parcelas já pagas | done | US-040a, US-040b |
 | EN-004 | R4-B | Infra de LLM: chave Anthropic do app, cliente único e teto de custo | done | — |
 | EN-005 | R4-B | Opt-in de privacidade por família para recursos de IA (Habilitadora) | done | EN-004 |
-| US-066 | R4-B | Enviar o arquivo da fatura e validar se é uma fatura | blocked | EN-004, EN-005 |
-| US-067 | R4-B | Revisar os itens extraídos da fatura antes de gravar | blocked | US-066 |
-| US-068 | R4-B | Confirmar e gravar a importação (lote atômico e sem duplicar) | blocked | US-067 |
-| US-069 | R4-B | Reverter uma importação em lote | blocked | US-068 |
+| EN-006 | R4 | SMTP real com autenticação e TLS (Habilitadora) | done | — |
+| US-066 | R4-B | Importação: enviar o CSV e extrair os itens (servidor, flag) | todo | EN-004, EN-005 |
+| US-066b | R4-B | Importação: texto do PDF, linhas candidatas e anonimização (pré-visualização) | todo | US-066 |
+| US-066c | R4-B | Importação: extrair o PDF pela IA (consentimento próprio, provedor simulado) | todo | US-066b, EN-004, EN-005 |
+| US-067 | R4-B | Importação: rascunho revisável (grupos, categoria, duplicados, total) e migração | todo | US-066 |
+| US-068 | R4-B | Importação: confirmar e gravar o lote (atômico, idempotente, sem duplicar) | todo | US-067 |
+| US-067b | R4-B | Importação: telas de envio, revisão e confirmação | todo | US-066c, US-067, US-068 |
+| US-069 | R4-B | Importação: listar e desfazer um lote importado | todo | US-068, US-067b |
 | US-070 | R4-C | Análise de gastos por IA: o que pode ser evitado | done | EN-004, EN-005, US-048 |
 | US-071 | R4-C | Descartar uma sugestão ("este gasto é importante para nós") | done | US-070 |
 | US-072 | R4-C | Aceitar, uma a uma, as sugestões de recategorização | done | US-070 |

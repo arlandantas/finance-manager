@@ -40,3 +40,4 @@
 - [ADR-039](ADR-039-e2e-enxuto-mobile-smoke-e-regra-em-integracao.md) — E2E enxuto: mobile só smoke e regra de negócio em integração — aceito
 - [ADR-040](ADR-040-janela-de-reversao-do-rateio-dispensada.md) — Janela de reversão do rateio dispensada; ordem US-043 → 041 → 042 → 044 — aceito
 - [ADR-041](ADR-041-motor-stored-por-padrao.md) — Motor STORED por padrão; migração só vira famílias sem rateio a preencher — aceito
+- [ADR-042](ADR-042-importacao-de-fatura.md) — Importação de fatura: CSV local, PDF por LLM anonimizado, lote atômico sem duplicar e reversão — aceito

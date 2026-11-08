@@ -10,6 +10,7 @@ Marcos do backlog (status por história em `docs/backlog/index.md`).
 | R2.2 | 12 | 12/12 |
 | R2 | 8 | 8/8 |
 | R3 | 16 | 16/16 |
+| R4 | 1 | 1/1 |
 | R4-A | 1 | 1/1 |
 | R4-B | 6 | 2/6 |
 | R4-C | 4 | 4/4 |
