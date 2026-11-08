@@ -22,6 +22,7 @@ Ponto de entrada único de qualquer agente. Esteira enxuta: sem papéis por past
 | `src/app/**`, componentes, hooks de UI | `docs/rules/frontend.md` |
 | qualquer teste | `docs/rules/testing.md` |
 | dados pessoais, "Só meu", LLM, MCP, auth | `docs/rules/seguranca-lgpd.md` |
+| deploy, Vercel, backup, migração em produção | `docs/rules/producao.md` |
 
 ## Comandos
 

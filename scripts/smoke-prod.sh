@@ -16,6 +16,9 @@ code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/dev/login" -H '
 
 if curl -s "$BASE/login" | grep -q "Entrar como (teste)"; then bad "/login mostra o login de teste"; else ok "/login sem login de teste"; fi
 
+code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/cron/purge")
+[ "$code" = "401" ] && ok "GET /api/cron/purge sem token 401" || bad "GET /api/cron/purge sem token respondeu $code (esperado 401)"
+
 session=$(curl -s "$BASE/api/auth/session")
 if echo "$session" | grep -Eq '"(sessionToken|userId)"'; then bad "/api/auth/session expõe sessionToken/userId"; else ok "/api/auth/session sem sessionToken/userId"; fi
 
