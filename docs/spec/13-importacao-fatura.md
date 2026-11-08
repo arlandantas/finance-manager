@@ -1,6 +1,6 @@
 # Spec 13 — Importação de fatura (CSV e PDF)
 
-Atualizado: 2026-11-08 · Situação: PLANEJADA (US-066, 066b, 067, 067b, 068, 069; ADR-042). Nada implementado.
+Atualizado: 2026-11-08 · Situação: US-066 entregue (flag, `preview` do CSV, parser local, `importToken`); PLANEJADAS 066b, 067, 067b, 068, 069 (ADR-042).
 
 ## Resumo
 - No cartão, o membro escolhe a fatura alvo (aberta ou fechada não paga) e envia um CSV ou PDF. O app extrai os itens, o membro revisa e confirma; só a confirmação grava, num lote atômico que pode ser desfeito inteiro.
@@ -11,7 +11,7 @@ Atualizado: 2026-11-08 · Situação: PLANEJADA (US-066, 066b, 067, 067b, 068, 0
 ## Rotas (todas `server-only`, sessão + `familyId`, corpo/campos `.strict()`, mutações com `Idempotency-Key`)
 | Rota | Faz |
 | :-- | :-- |
-| `POST /api/v1/cards/:id/invoice-imports/preview` (multipart `file`, `invoiceRef`, `password?`) | Valida e extrai. CSV: devolve o rascunho direto. PDF: devolve linhas redigidas + `previewHash` + estimativa de custo (só Administrador vê valor); não chama o LLM |
+| `POST /api/v1/cards/:id/invoice-imports/preview` (multipart `file`, `invoiceRef`, `password?`; sem `Idempotency-Key`: não grava) | Valida e extrai. CSV: devolve o rascunho direto. PDF: devolve linhas redigidas + `previewHash` + estimativa de custo (só Administrador vê valor); não chama o LLM |
 | `POST /api/v1/cards/:id/invoice-imports/extract` (mesmo arquivo + `previewHash`) | Só PDF: chama `runLlm` (`INVOICE_IMPORT`), reconcilia e devolve o rascunho |
 | `POST /api/v1/cards/:id/invoice-imports` (JSON) | Confirma e grava o lote (US-068) |
 | `GET /api/v1/cards/:id/invoice-imports` | Lista os lotes do cartão (US-069) |

@@ -48,6 +48,8 @@ export type ApiOptions<A extends AuthMode, B, Q> = {
   isolationLevel?: "ReadCommitted" | "RepeatableRead" | "Serializable";
   /** Prazo da transação do handler (padrão 30 s). Rotas que esperam o LLM (US-070) precisam de mais. */
   timeoutMs?: number;
+  /** Upload de arquivo (US-066): aceita `multipart/form-data` no CSRF; o handler lê o corpo (`req`). */
+  multipart?: boolean;
 };
 
 export type HandlerArgs<A extends AuthMode, B, Q> = {
@@ -84,7 +86,7 @@ function validationError(error: z.ZodError): ApiError {
 }
 
 /** CSRF (SDD-000 §2): `Content-Type: application/json` e `Origin` igual ao host de AUTH_URL ou, fora de produção, origem de dev (APP_PUBLIC_ORIGIN, APP_DEV_ORIGINS, IP privado/`*.local`). */
-function checkCsrf(req: Request) {
+function checkCsrf(req: Request, multipart = false) {
   const env = getEnv();
   const allowed = new Set([new URL(env.AUTH_URL).host]);
   const origin = req.headers.get("origin");
@@ -98,7 +100,10 @@ function checkCsrf(req: Request) {
   if (
     originHost === null ||
     !(allowed.has(originHost) || isAllowedDevHost(origin, process.env)) ||
-    !contentType.toLowerCase().startsWith("application/json")
+    !(
+      contentType.toLowerCase().startsWith("application/json") ||
+      (multipart && contentType.toLowerCase().startsWith("multipart/form-data"))
+    )
   ) {
     throw forbidden("Requisição não autorizada.", "BAD_ORIGIN");
   }
@@ -119,7 +124,7 @@ export function withApi<A extends AuthMode = "family", B = undefined, Q = undefi
       const db = getDb();
 
       // 1) CSRF
-      if (mutating) checkCsrf(req);
+      if (mutating) checkCsrf(req, opts.multipart);
 
       // 2..4) sessão, membro, papel
       let ctx: unknown = { clock, requestId };
