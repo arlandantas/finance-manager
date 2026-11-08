@@ -104,7 +104,11 @@ export function ReviewCard({ period }: { period: string }) {
                     Dividir
                   </Button>
                 )
-              ) : null}
+              ) : (
+                <span data-testid="review-item-readonly" className="text-xs text-slate-500">
+                  Só quem lançou pode dividir
+                </span>
+              )}
             </li>
           ))}
         </ul>

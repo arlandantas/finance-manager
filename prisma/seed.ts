@@ -20,7 +20,7 @@ const iso = (offsetDays: number) =>
   new Date(Date.now() - 3 * 3_600_000 + offsetDays * DAY).toISOString().slice(0, 10); // America/Sao_Paulo
 
 async function demo() {
-  const fx = await makeFamily({ name: "Família Silva" });
+  const fx = await makeFamily({ name: "Família Silva", splitEngine: "STORED" });
   const corrente = await makeAccount(fx, {
     name: "Conta corrente",
     owner: "Mariana",

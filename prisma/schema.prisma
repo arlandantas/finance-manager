@@ -177,7 +177,7 @@ model Family {
   // US-028: acerto de contas opcional; `version` protege o conflito de edição ("alterada por")
   settlementEnabled      Boolean     @default(true)
   // EN-002 (ADR-016/021): motor do acerto da família; novas famílias nascem STORED (o serviço grava)
-  splitEngine            SplitEngine @default(LEGACY)
+  splitEngine            SplitEngine @default(STORED)
   version                Int         @default(1)
   updatedAt              DateTime    @default(now()) @updatedAt @db.Timestamptz(3)
   updatedByMemberId      String?     @db.Uuid

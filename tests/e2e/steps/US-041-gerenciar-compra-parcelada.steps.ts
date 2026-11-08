@@ -29,7 +29,7 @@ When("Lucas confirma a exclusão da parcela", async ({ page }) => {
     .getByRole("dialog", { name: "Excluir parcela?" })
     .getByRole("button", { name: "Excluir", exact: true })
     .click();
-  await expect(page.getByText("Despesa excluída")).toBeVisible();
+  await expect(page.getByText("Parcela excluída", { exact: true })).toBeVisible();
 });
 
 When("Lucas desfaz a exclusão da parcela pelo aviso", async ({ page }) => {

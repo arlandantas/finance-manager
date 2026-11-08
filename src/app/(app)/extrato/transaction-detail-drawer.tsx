@@ -183,7 +183,12 @@ export function TransactionDetailDrawer({
           setSettled(null);
           if (action === "delete") {
             const after = res.transaction;
-            toast.success(after.type === "INCOME" ? "Receita excluída" : "Despesa excluída", {
+            const label = after.installment
+              ? "Parcela excluída"
+              : after.type === "INCOME"
+                ? "Receita excluída"
+                : "Despesa excluída";
+            toast.success(label, {
               duration: 8000, // SDD-010 §4.6: "Desfazer" visível por pelo menos 8 s
               action: {
                 label: "Desfazer",

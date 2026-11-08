@@ -73,7 +73,7 @@ async function createExpenseRow(
 
 /** `TEST_SPLIT_ENGINE=STORED pnpm test:int` roda a suíte inteira com famílias STORED (regressão do EN-002). */
 const engineFor = (explicit?: "LEGACY" | "STORED") =>
-  explicit ?? (process.env.TEST_SPLIT_ENGINE === "STORED" ? ("STORED" as const) : undefined);
+  explicit ?? (process.env.TEST_SPLIT_ENGINE === "STORED" ? "STORED" : "LEGACY");
 
 let counter = 0;
 export const uniqueEmail = (prefix = "user") => `${prefix}${++counter}-${Date.now()}@exemplo.com`;
@@ -132,7 +132,7 @@ export async function makeFamily(
     members?: MemberFixture[];
     cutDay?: number;
     uniqueEmails?: boolean;
-    /** Padrão LEGACY (coluna do banco); `STORED` para os testes do rateio gravado (EN-002). */
+    /** Padrão LEGACY nos testes (a coluna do banco é STORED desde o ADR-041); `STORED` para os testes do rateio gravado (EN-002). */
     splitEngine?: "LEGACY" | "STORED";
   } = {},
 ): Promise<FamilyFixture> {
