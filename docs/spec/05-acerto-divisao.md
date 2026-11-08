@@ -4,11 +4,11 @@ Atualizado: 2026-11-07
 
 ## Resumo
 - Despesa dividida entra no acerto do mês; "Só meu", receita, transferência, acerto e pagamento de fatura não entram.
-- Compra parcelada nunca é dividida (`INSTALLMENT_SPLIT_RELEASED=false`): parcela é "Só meu" e o Acerto avisa (US-052).
+- Compra parcelada pode ser dividida (US-042): cada parcela grava o mesmo rateio e entra no acerto do seu mês de competência (spec 03).
 - Rateio (percentual e centavos por membro) é gravado no lançamento pela regra vigente na DATA da despesa; mudar a regra não reescreve o passado. Famílias novas nascem STORED; antigas só com `migrate:split`.
 - Sobra de centavo fica com quem pagou (se peso > 0). O acerto sugere transferências para zerar o mês; registrar cria transferência entre contas; pode ser desfeito.
 - Acerto opcional por família (só ADMIN liga/desliga; desligar não apaga nada).
-- Modos no lançamento (US-043): "Só meu", "Pela regra da família" e "De outro jeito" (percentual por membro, 0% e 100% valem). Não existe: parcela dividida (US-042), "dividir" por categoria (US-044).
+- Modos no lançamento (US-043): "Só meu", "Pela regra da família" e "De outro jeito" (percentual por membro, 0% e 100% valem). Não existe: "dividir" por categoria (US-044).
 - Unidades: centavos inteiros (`amountInCents`); percentuais em bps (10000 = 100%); BigInt interno em `splitAmount`/`apportion`; sem float.
 
 ## Regras
@@ -95,17 +95,16 @@ Atualizado: 2026-11-07
 | L3 | `explainByRules` usa vigência por data, não `splitRuleVersionId`; lançamentos CUSTOM não entram no rótulo | rótulo descreve a regra, não exceções por lançamento |
 | L4 | Acerto aceita qualquer conta da família (SEC-056, D-GES-61) e pode mover crédito de ex-membro (SEC-054/055) | aceito; sujeito a veto |
 | L5 | Quem voltou à família e divide item antigo aparece 2x (SEC-053) | info |
-| L6 | Parcelas fora do acerto (aviso US-052) | Encerra com a US-042 (ADR-040) |
 | L7 | Qualquer membro desfaz qualquer acerto | decisão US-013b |
 | L8 | Mês acertado não trava: edição só pede confirmação | acerto é conciliação, não fechamento |
 | L9 | Destino do acerto livre (SEC-059b) | decisão D-GES-66 |
 
 ## Fontes
-Código: `src/modules/split/` (`split-input`, `custom-input`, `split-amount`, `settlement-{common,legacy,stored}`, `settlement`, `rules`, `service`, `write`, `lock`, `guard`, `explain`, `preview`, `pending`, `indicator`, `backfill`, `migrate-family`, `labels`, `copy`, `shares-label`), `src/lib/apportion.ts`, `src/modules/contas/transfers.ts`, `src/modules/transacoes/{service,mutations,split-edit}.ts` (`requireSettledConfirmation`), `src/modules/previstas/split.ts`, `src/components/split-mode-selector.tsx`, `src/modules/familia/{settings,repo}.ts`, `scripts/migrate-split.ts`, `src/app/(app)/acerto/`. Esquema: `transaction_splits`, `transactions.splitMode`, `families.splitEngine/settlementEnabled`, migrações `20261005150000_en002_percentual_por_lancamento`, `20261107000500_us043_modo_custom`.
+Código: `src/modules/split/` (`split-input`, `custom-input`, `split-amount`, `settlement-{common,legacy,stored}`, `settlement`, `rules`, `service`, `write`, `rule-context`, `rule-service`, `shared-expenses`, `lock`, `guard`, `explain`, `preview`, `pending`, `indicator`, `backfill`, `migrate-family`, `labels`, `copy`, `shares-label`), `src/lib/apportion.ts`, `src/modules/contas/transfers.ts`, `src/modules/transacoes/{service,mutations,split-edit}.ts` (`requireSettledConfirmation`), `src/modules/previstas/split.ts`, `src/components/split-mode-selector.tsx`, `src/modules/familia/{settings,repo}.ts`, `scripts/migrate-split.ts`, `src/app/(app)/acerto/`. Esquema: `transaction_splits`, `transactions.splitMode`, `families.splitEngine/settlementEnabled`, migrações `20261005150000_en002_percentual_por_lancamento`, `20261107000500_us043_modo_custom`.
 Testes: `tests/unit/split/{split-input,split-amount,settlement,settlement-stored,backfill,rules,explain,preview,copy,lock-coverage}`; `tests/integration/{us-043-dividir-no-lancamento,us-009-acerto,us-010-transferencia,us-011-registrar-acerto,us-013b-mes-acertado,us-022-rotulo-regra,us-028-acerto-opcional,us-029-indicador-acerto,us-052-parcelado-fora-do-acerto,en002a-stored,en002-constraints,en002-harness,en002-migracao,us-008-regra-divisao,us-030*,us-093a-titular-e-seletores,us-093a-harness-acerto-sem-conta}`.
 Ancoras: SDD-002/011/015/034, ADR-011/016/021 (vigente: só `splitMode<>NONE ⇒ isSharedExpense`; reversão em 2 níveis; `base` usa `weight ?? bps`).
 
 ## Pendências
-- Janela de reversão dispensada pelo usuário (ADR-040, 2026-11-07): sem produção nem dados reais. US-043 entregue; faltam US-042 e US-044, nessa ordem.
-- Migração `us043_modo_custom` criou `splitMode`/`splitShares` em previstas (+ CHECK `planned_split_chk`). O CHECK `transactions: isSharedExpense=(splitMode<>NONE)` NÃO entrou: `families.splitEngine` e as fábricas de teste ainda nascem LEGACY (grava `isSharedExpense` sem modo). Entra quando toda família for STORED.
+- Janela de reversão dispensada pelo usuário (ADR-040, 2026-11-07): sem produção nem dados reais. US-043 e US-042 entregues; falta US-044.
+- Migração `us043_modo_custom` criou `splitMode`/`splitShares` em previstas (+ CHECK `planned_split_chk`). O CHECK `transactions: isSharedExpense=(splitMode<>NONE)` NÃO entrou: `families.splitEngine` e as fábricas de teste ainda nascem LEGACY (grava `isSharedExpense` sem modo). Gatilho (toda família STORED) ainda não vale após a US-042 (parcelado LEGACY grava só `isSharedExpense`): segue adiado.
 - Rollback nível 2 (`--rollback --purge`) não vale mais (existe CUSTOM).

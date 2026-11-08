@@ -254,10 +254,6 @@ Then(
   },
 );
 
-Given("que a divisão de compras parceladas ainda não foi liberada", async () => {
-  // INSTALLMENT_SPLIT_RELEASED = false até a US-042
-});
-
 When("Lucas escolhe {string} parcelas", async ({ page, world }, parcelas: string) => {
   // US-065: com o drawer já aberto só escolhe as parcelas
   if (await drawer(page).isVisible()) {
@@ -272,13 +268,10 @@ When("Lucas escolhe {string} parcelas", async ({ page, world }, parcelas: string
   });
 });
 
-Then("o campo {string} mostra {string}", async ({ page }, _campo: string, texto: string) => {
-  await expect(drawer(page).getByTestId("split-label")).toHaveText(texto);
-  await expect(
-    drawer(page)
-      .getByRole("radiogroup", { name: /Dividir com a família/ })
-      .getByRole("radio", { name: "Só meu" }),
-  ).toBeChecked();
+Then("a divisão da compra parcelada está disponível sem aviso", async ({ page }) => {
+  const group = drawer(page).getByRole("radiogroup", { name: /Dividir com a família/ });
+  await expect(group.getByRole("radio", { name: /Pela regra/ })).toBeEnabled();
+  await expect(drawer(page).getByTestId("installment-notice")).toHaveCount(0);
 });
 
 When(

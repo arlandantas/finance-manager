@@ -121,6 +121,8 @@ export type SharedExpenseItemDTO = {
   occurredOn: string;
   payer: MemberRef;
   category: { id: string; name: string; icon: string };
+  /** US-042: parcela "no/count" de compra parcelada; null nas demais. */
+  installment: { no: number; count: number } | null;
 };
 export type SharedExpensesResponse = { items: SharedExpenseItemDTO[]; totalInCents: number };
 

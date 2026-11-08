@@ -295,7 +295,7 @@ describe("US-005 (infra) Defaults e categorias", () => {
           { memberId: expect.any(String), bps: 5000 },
         ],
         modes: expect.arrayContaining(["NONE", "RULE"]), // CUSTOM só em família STORED (US-043)
-        installmentsAvailable: false,
+        installmentsAvailable: true,
       },
     });
     await post(lucas(), await expense()); // lança no Nubank

@@ -71,7 +71,6 @@ Funcionalidade: Parcelamento com parcelas já pagas (US-065)
     Quando Lucas lança "Sofá" de "R$ 2.500,00" em "10x" com "4" parcelas já pagas sem dividir
     Então o acerto de nov/2026 não muda
 
-  @depende-us-042 @skip
   Cenário: Restantes entram no acerto e as pagas não
     Dado que o acerto de contas está ligado e a regra de divisão é igual
     Quando Lucas lança "Sofá" de "R$ 2.500,00" em "10x" com "4" parcelas já pagas dividindo com a família

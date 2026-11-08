@@ -77,10 +77,9 @@ Funcionalidade: Compra parcelada no cartão (US-040a)
     Quando Lucas informa "25" parcelas
     Então vê "Escolha de 1 a 24 parcelas"
 
-  Cenário: Compra parcelada fica Só meu até a divisão estar disponível
-    Dado que a divisão de compras parceladas ainda não foi liberada
+  Cenário: Compra parcelada pode ser dividida com a família
     Quando Lucas escolhe "3x" parcelas
-    Então o campo "Dividir com a família" mostra "Disponível em breve para compras parceladas"
+    Então a divisão da compra parcelada está disponível sem aviso
 
   Cenário: Duplo clique não cria duas compras
     Quando Lucas toca duas vezes rapidamente em "Salvar Despesa" com "R$ 2.500,00" em "10x"

@@ -1,6 +1,6 @@
 import { withApi } from "@/lib/api/with-api";
+import { getSplitRule, putSplitRule } from "@/modules/split/rule-service";
 import { SplitRuleInputSchema } from "@/modules/split/schemas";
-import { getSplitRule, putSplitRule } from "@/modules/split/service";
 
 export const dynamic = "force-dynamic";
 

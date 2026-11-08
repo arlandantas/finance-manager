@@ -35,7 +35,7 @@ Ref = mês de fechamento "YYYY-MM". Hoje = `todayInFamilyTz` (America/Sao_Paulo)
 | 15 | Titular: padrão = quem cria; deve ser membro ativo (`INVALID_REFERENCE`). Trocar: só o titular ATUAL (403 `CARD_OWNER_ONLY`); grava `FamilyEvent CARD_OWNER_CHANGED`. Demais campos: qualquer membro. | `updateCard`, SEC-042/047 |
 | 16 | Remoção/saída de titular: cartão com fatura pendente/aberta exige reatribuir (`CARD_NEEDS_OWNER`); sem pendência é arquivado; reatribuição pelo Admin é a única troca de titular sem ser o titular. | `familia/removal.ts` |
 | 17 | "A pagar": fonte única `collectOpenPayables` (faturas abertas e fechadas não pagas, total > 0, mais previstas); fatura não é paga pela lista, só "Ver fatura". Faturas pagas com vencimento no período compõem "Previstas" do Resumo (`paidInvoicesDueIn`). | `previstas/payables.ts` |
-| 18 | Aviso do parcelado fora do acerto: texto único `INSTALLMENT_SPLIT_NOTICE`, exibido com acerto ligado e flag `INSTALLMENT_SPLIT_RELEASED=false`; flag `true` remove os avisos. | `installment-copy.ts` |
+| 18 | Aviso do parcelado fora do acerto (`INSTALLMENT_SPLIT_NOTICE`): só com flag `INSTALLMENT_SPLIT_RELEASED=false`; ligada na US-042, não aparece mais. | `installment-copy.ts` |
 
 Conta pagadora padrão (US-089, SDD-030), regra 19:
 | # | Regra |
@@ -70,7 +70,6 @@ Os de segurança sujeitos a veto do usuário.
 | D-PO-02 | Qualquer membro paga/desfaz fatura e usa qualquer cartão | Confiança familiar; titular só governa "Só meu" e a troca de titular |
 | SEC-052/046 | Remoção: Admin pode ficar com cartão e controlar "Só meu" ali lançados | Aceito + aviso na revisão da remoção |
 | D-GES-57 | Admin não troca titular fora da remoção | Evita captura de "Só meu"; sujeito a veto |
-| US-042 | Parcelado conta como "Só meu" no acerto e subestima créditos; formulário desabilita "Dividir" com 2+ parcelas | Flag `INSTALLMENT_SPLIT_RELEASED=false`; depende de EN-002 |
 | SDD-008 | Importação de fatura (US-066..069) adiada | D-GES-28/33 |
 
 ## Fontes (código/testes)
@@ -81,8 +80,8 @@ Integração (`tests/integration/`): `us-089-conta-pagadora`, `us-015-cartoes`, 
 
 ## Pendências
 - US-089 implementada (TASK-092), aguarda validação do Gestor; migrações `20261030010000_us089_enum_family_event_card_payer` e `20261030010100_us089_card_payment_account`. Não verificada no navegador real (só E2E).
-- US-042 (rateio por parcela) "Aprovada p/ Dev, não iniciada"; US-041 entregue (ver spec 03).
+- US-041 e US-042 entregues (ver spec 03).
 - Assinaturas no cartão (US-096..099, ADR-036) planejadas na [spec 12](12-assinaturas.md): novo impedimento de arquivar `CARD_HAS_ACTIVE_SUBSCRIPTIONS` e `origin = SUBSCRIPTION` em compras.
 - UI de cartões e fatura nunca verificada no navegador após correções de titular (SEC-042/047); `pay-drawer`/Fatura mostrando "Só meu" alheios a todos (API lista para todos, como o Extrato) não confirmado na tela.
-- Usuário: veto a D-GES-57; decidir se/quando liberar US-042.
+- Usuário: veto a D-GES-57.
 - Divergências doc x código (código vence): SDD-008 diz "titular informativo" e "sem cartão arquivável" (superado por SEC-042/047 e US-033); SDD-008 §4.5 diz `payerMemberId: null` no pagamento (código grava só `authorMemberId` + `isSharedExpense=false`).

@@ -1,5 +1,5 @@
 import { withApi } from "@/lib/api/with-api";
-import { getSplitHistory } from "@/modules/split/service";
+import { getSplitHistory } from "@/modules/split/rule-service";
 
 export const dynamic = "force-dynamic";
 

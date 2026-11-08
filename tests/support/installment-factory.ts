@@ -20,6 +20,8 @@ export async function makeInstallmentPurchase(
     note?: string;
     /** US-065: parcelas já pagas antes do app (P); `purchaseOn` vira a âncora da próxima parcela. */
     paidBeforeApp?: number;
+    /** US-042: corpo extra (`split`, `payerMemberId`...). */
+    extra?: Record<string, unknown>;
   },
 ) {
   const author = (o.author ? fx.byName[o.author] : fx.members[0]) ?? fx.members[0];
@@ -39,6 +41,7 @@ export async function makeInstallmentPurchase(
     ...(o.description ? { description: o.description } : {}),
     ...(o.note ? { note: o.note } : {}),
     ...(o.paidBeforeApp ? { paidBeforeApp: o.paidBeforeApp } : {}),
+    ...(o.extra ?? {}),
   });
   if (res.status !== 201)
     throw new Error(`makeInstallmentPurchase falhou: ${JSON.stringify(res.body)}`);

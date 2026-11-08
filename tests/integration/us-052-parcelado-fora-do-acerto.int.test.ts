@@ -26,7 +26,7 @@ describe("US-052 parcelas fora do acerto (somente leitura)", () => {
     expect(s.body.installmentsOutside).toBeNull();
   });
 
-  it("conta as parcelas do mês no Acerto e no indicador, sem mudar o acerto", async () => {
+  it("com a divisão liberada (US-042) o aviso some e o acerto não muda", async () => {
     const before = await get("/api/v1/settlement?period=2026-10");
     const card = await makeCard(fx, { name: "Nubank", owner: "Mariana" });
     await makeInstallmentPurchase(fx, {
@@ -37,7 +37,7 @@ describe("US-052 parcelas fora do acerto (somente leitura)", () => {
       description: "TV 55 polegadas",
     });
     const s = await get("/api/v1/settlement?period=2026-10");
-    expect(s.body.installmentsOutside).toEqual({ count: 1, totalInCents: 40000 });
+    expect(s.body.installmentsOutside).toBeNull(); // US-042 liberou: sem aviso
     expect(s.body.members).toEqual(before.body.members);
     expect(s.body.totalSharedInCents).toBe(before.body.totalSharedInCents);
     const home = await get("/api/v1/home");

@@ -2,8 +2,8 @@
 import { addMonthsToRef, type DateISO, invoiceDates, invoiceRefFor } from "@/modules/cartoes/cycle";
 
 export const MAX_INSTALLMENTS = 24;
-/** Vira `true` no commit da US-042 (rateio por parcela, motor STORED). */
-export const INSTALLMENT_SPLIT_RELEASED = false;
+/** US-042: compra parcelada pode ser dividida (rateio por parcela; avisos da US-052 somem). */
+export const INSTALLMENT_SPLIT_RELEASED = true;
 
 export type InstallmentDraft = {
   no: number;

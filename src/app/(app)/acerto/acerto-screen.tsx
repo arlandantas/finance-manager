@@ -293,6 +293,7 @@ function SharedExpensesList({ period }: { period: string }) {
                 <span className="min-w-0">
                   <span className="block break-words font-medium text-slate-900">
                     {x.description}
+                    {x.installment ? ` ${x.installment.no}/${x.installment.count}` : ""}
                   </span>
                   <span className="block text-xs text-slate-500">
                     {x.occurredOn.split("-").reverse().slice(0, 2).join("/")} · pago por{" "}

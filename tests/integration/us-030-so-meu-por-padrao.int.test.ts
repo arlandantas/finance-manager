@@ -104,7 +104,7 @@ describe("US-030 Só meu por padrão", () => {
       available: false,
       ruleShares: null,
       modes: expect.arrayContaining(["NONE", "RULE"]),
-      installmentsAvailable: false,
+      installmentsAvailable: true,
     });
   });
 

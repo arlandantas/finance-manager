@@ -3,16 +3,14 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 import { compareDate, fromDbDate, toDbDate, todayInFamilyTz } from "@/lib/dates";
 import { fromCents, toCents } from "@/lib/money";
 import { formatInvoiceLabel } from "@/modules/cartoes/cycle";
-import {
-  buildRemainingInstallments,
-  INSTALLMENT_SPLIT_RELEASED,
-} from "@/modules/cartoes/installments";
+import { buildRemainingInstallments } from "@/modules/cartoes/installments";
 import { getOrCreateInvoice, type InvoiceRow } from "@/modules/cartoes/invoices";
 import { activePayments, cardUsage } from "@/modules/cartoes/queries";
 import { recordRevision } from "@/modules/contas/ledger";
 import { assertCanShare } from "@/modules/split/guard";
 import { lockFamilySplit } from "@/modules/split/lock";
 import { splitOf } from "@/modules/split/split-input";
+import { insertSplitRows, resolveSplit } from "@/modules/split/write";
 import { attachTagsOnCreate } from "@/modules/tags/service";
 import { loadInstallmentPlanDTO } from "@/modules/transacoes/installment-plan";
 import { assertPersonalForSelf } from "@/modules/transacoes/ownership";
@@ -37,7 +35,7 @@ export async function createInstallmentPurchase(
   ctx: RequestContext,
   input: ExpenseInput,
 ): Promise<CreateTransactionResponse> {
-  await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: primeira trava (a US-042 grava rateio por parcela)
+  const engine = await lockFamilySplit(tx, ctx.familyId); // ADR-021 §2: primeira trava (grava rateio por parcela)
   const repo = transacoesRepo(tx, ctx.familyId);
   const today = todayInFamilyTz(ctx.clock);
   const paidBeforeApp = input.paidBeforeApp ?? 0;
@@ -53,7 +51,8 @@ export async function createInstallmentPurchase(
   if (!category) throw invalidRef("categoryId", "Escolha uma categoria");
   const payer = await repo.findMember(payerMemberId);
   if (!payer) throw invalidRef("payerMemberId", "Membro inválido");
-  const shared = splitOf(input).mode !== "NONE"; // US-043
+  const split = splitOf(input); // US-043
+  const shared = split.mode !== "NONE";
   await assertPersonalForSelf(tx, ctx, { isSharedExpense: shared, payerMemberId }); // SEC-026c; US-093b
   if (category.kind !== "EXPENSE") {
     throw unprocessable(
@@ -79,22 +78,21 @@ export async function createInstallmentPurchase(
     );
   }
 
-  // 2) guarda da divisão: só depois da US-042 (rateio por parcela, motor STORED)
+  // 2) guarda da divisão: acerto ligado; "De outro jeito" só em família STORED (US-043)
   if (shared) {
     await assertCanShare(tx, ctx); // acerto desligado => SETTLEMENT_DISABLED
-    if (!INSTALLMENT_SPLIT_RELEASED) {
+    if (engine !== "STORED" && split.mode === "CUSTOM") {
       throw unprocessable(
-        "INSTALLMENT_SPLIT_UNAVAILABLE",
-        "Dividir compras parceladas ainda não está disponível",
-        [
-          {
-            path: "isSharedExpense",
-            message: "Dividir compras parceladas ainda não está disponível",
-          },
-        ],
+        "CUSTOM_SPLIT_UNAVAILABLE",
+        "Esta família ainda não aceita divisão personalizada",
       );
     }
   }
+  // US-042 (ADR-016): rateio resolvido UMA vez, na data da compra, e igual em todas as parcelas
+  const rule =
+    shared && engine === "STORED"
+      ? await resolveSplit(tx, ctx.familyId, split, { occurredOn: purchaseOn })
+      : null;
 
   const drafts = buildRemainingInstallments({
     totalInCents: input.amountInCents,
@@ -156,13 +154,24 @@ export async function createInstallmentPurchase(
       note: input.note ?? null,
       payerMemberId,
       authorMemberId: ctx.memberId,
-      isSharedExpense: false,
+      isSharedExpense: shared,
+      ...(rule ? { splitMode: split.mode, splitRuleVersionId: rule.ruleVersionId } : {}),
       installmentPlanId: plan.id,
       installmentNo: d.no,
       installmentCount: count,
     })),
   });
   rows.sort((a, b) => (a.installmentNo as number) - (b.installmentNo as number));
+  if (rule) {
+    for (const row of rows) {
+      await insertSplitRows(tx, ctx.familyId, {
+        transactionId: row.id,
+        amountInCents: toCents(row.amountInCents),
+        payerMemberId,
+        shares: rule.shares,
+      });
+    }
+  }
   // US-045 (RN-013.5): a tag vale para TODAS as parcelas; o plano já está criado/travado nesta transação
   const tags = await attachTagsOnCreate(
     tx,
@@ -195,7 +204,8 @@ export async function createInstallmentPurchase(
             competenceOn: fromDbDate(row.competenceOn),
             description,
             payerMemberId,
-            isSharedExpense: false,
+            isSharedExpense: shared,
+            ...(shared && split.mode === "CUSTOM" ? { splitMode: "CUSTOM" } : {}),
             installment: { planId: plan.id, no: d.no, count, paidBeforeApp },
             ...(tags.length > 0 ? { tags: tags.map((t) => t.name) } : {}),
           },
@@ -208,14 +218,23 @@ export async function createInstallmentPurchase(
   const first = rows[0] as (typeof rows)[number];
   const inv1 = invoices[0] as (typeof invoices)[number];
   const members = new Map((await repo.listMembers()).map((m) => [m.id, memberRefOf(m)] as const));
-  const transaction = toTransactionDTO(first, {
-    tags,
-    account: null,
-    card: { id: card.id, name: card.name, color: card.color },
-    invoice: { ref: inv1.ref, closingDate: inv1.closingDate, dueDate: inv1.dueDate },
-    category: categoryRefOf(category),
-    members,
-  });
+  const splits = rule
+    ? await tx.transactionSplit.findMany({
+        where: { familyId: ctx.familyId, transactionId: first.id },
+        orderBy: { memberId: "asc" },
+      })
+    : [];
+  const transaction = toTransactionDTO(
+    { ...first, splits },
+    {
+      tags,
+      account: null,
+      card: { id: card.id, name: card.name, color: card.color },
+      invoice: { ref: inv1.ref, closingDate: inv1.closingDate, dueDate: inv1.dueDate },
+      category: categoryRefOf(category),
+      members,
+    },
+  );
   const used = (await cardUsage(tx, ctx.familyId, [card.id])).get(card.id) ?? 0;
   return {
     transaction,

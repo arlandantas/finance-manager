@@ -337,10 +337,11 @@ describe("US-040a: à vista e 1x intactos; validações", () => {
     expect(await db.installmentPlan.count()).toBe(0);
   });
 
-  it("dividir parcelado ainda indisponível => 422 INSTALLMENT_SPLIT_UNAVAILABLE", async () => {
+  it("dividir parcelado com o acerto desligado => 422 SETTLEMENT_DISABLED, nada gravado (US-042)", async () => {
+    await db.family.update({ where: { id: fx.family.id }, data: { settlementEnabled: false } });
     const res = await buy(lucas(), { isSharedExpense: true });
     expect(res.status).toBe(422);
-    expect(res.body.error.code).toBe("INSTALLMENT_SPLIT_UNAVAILABLE");
+    expect(res.body.error.code).toBe("SETTLEMENT_DISABLED");
     expect(await db.installmentPlan.count()).toBe(0);
   });
 
@@ -360,9 +361,9 @@ describe("US-040a: à vista e 1x intactos; validações", () => {
     }
   });
 
-  it("defaults informa installmentsAvailable false", async () => {
+  it("defaults informa installmentsAvailable true (US-042)", async () => {
     const d = await at(() => call(lucas(), "GET", "/api/v1/transactions/defaults"));
-    expect(d.body.split.installmentsAvailable).toBe(false);
+    expect(d.body.split.installmentsAvailable).toBe(true);
   });
 });
 

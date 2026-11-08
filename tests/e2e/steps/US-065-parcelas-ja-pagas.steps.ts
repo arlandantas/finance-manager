@@ -145,18 +145,44 @@ When(
 
 When(
   "Lucas lança {string} de {string} em {string} com {string} parcelas já pagas dividindo com a família",
-  async ({}, _d: string, _t: string, _n: string, _p: string) => {
-    // @depende-us-042 (@skip): só roda quando INSTALLMENT_SPLIT_RELEASED = true
-    throw new Error("US-042 não liberada");
+  async ({ page, world }, d: string, total: string, n: string, paid: string) => {
+    await postPlan(page, world, {
+      description: d,
+      total,
+      installments: Number.parseInt(n, 10),
+      paid: Number.parseInt(paid, 10),
+      shared: true,
+    });
   },
 );
 
-Then("o acerto de nov\\/2026 considera {string} pago por Lucas", async ({}, _valor: string) => {
-  throw new Error("US-042 não liberada");
-});
+Given(
+  "que o acerto de contas está ligado e a regra de divisão é igual",
+  async ({ page, world }) => {
+    const res = await page.request.get("/api/v1/settlement?period=2026-10");
+    expect(res.status()).toBe(200);
+    world.data.settlementOutBefore = ((await res.json()) as { members: unknown }).members;
+  },
+);
 
-Then("o acerto de out\\/2026 não muda", async () => {
-  throw new Error("US-042 não liberada");
+Then(
+  "o acerto de nov\\/2026 considera {string} pago por Lucas",
+  async ({ page }, valor: string) => {
+    const res = await page.request.get("/api/v1/settlement?period=2026-11");
+    const body = (await res.json()) as {
+      members: Array<{ member: { name: string }; paidInCents: number }>;
+    };
+    expect(body.members.find((m) => m.member.name.startsWith("Lucas"))?.paidInCents).toBe(
+      money(valor),
+    );
+  },
+);
+
+Then("o acerto de out\\/2026 não muda", async ({ page, world }) => {
+  const res = await page.request.get("/api/v1/settlement?period=2026-10");
+  expect(((await res.json()) as { members: unknown }).members).toEqual(
+    world.data.settlementOutBefore,
+  );
 });
 
 Then(

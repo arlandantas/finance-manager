@@ -5,7 +5,7 @@ Atualizado: 2026-11-07
 ## Resumo
 - Compra parcelada = compra no cartão em 2..24 parcelas. O valor informado é o TOTAL (sem juros); a sobra de centavos vai para a parcela 1. Cada parcela cai em UMA fatura (mês a mês) e conta no mês do fechamento dela (competência). O total consome o limite na hora; cada fatura paga libera só a sua parcela.
 - Parcelas já pagas antes do app (US-065): informa-se quantas (0..N-1); só as restantes viram lançamentos, a partir da fatura aberta (ou da fechada ainda não paga). Nada é criado no passado.
-- Parcelado é SEMPRE "Só meu": dividir está BLOQUEADO (`INSTALLMENT_SPLIT_RELEASED=false`, US-042 não feita). Aviso no formulário, Acerto, Resumo e "Ver compra" (US-052).
+- Parcelado pode ser dividido (US-042, `INSTALLMENT_SPLIT_RELEASED=true`): rateio igual em todas as parcelas, regra resolvida na data da compra; cada parcela entra no acerto do seu mês de competência. Os avisos da US-052 não aparecem mais.
 - Ações do plano: criar, ver compra, excluir compra inteira (com Desfazer, só se TODAS as parcelas ativas estão em fatura aberta) e, por parcela (US-041), editar valor/categoria/descrição/observação ("Somente esta" ou "Esta e as próximas"), excluir e restaurar.
 
 ## Regras
@@ -42,16 +42,16 @@ Plano: ver, excluir, restaurar:
 | 22 | Parcela individual (US-041, `installment-edit.ts`; as rotas desviam por `isInstallmentParcel`). `PATCH` com `scope` ("ONLY_THIS"/"THIS_AND_NEXT"), `version` e `planVersion`: campos `amountInCents`, `categoryId`, `description`, `note` (data e nº de parcelas não editam) => 200 `{ transactions[] (só as alteradas), plan, card }`. Sem `scope` e campo financeiro: 400 (`loadMutable`); só `tags` segue o caminho de tags. |
 | 22a | Travas: família, plano `FOR UPDATE`, faturas em `ref` crescente. `version`/`planVersion` velhos: 409 `VERSION_CONFLICT` ("Esta compra foi alterada por {Nome}. Recarregue para continuar."). Parcela em fatura fechada ou paga: 422 `INSTALLMENT_LOCKED`; em "Esta e as próximas" as seguintes travadas são puladas (a escolhida travada recusa). Sem diferença: 200, sem `version+1`. Cada parcela alterada: `version+1` e revisão `UPDATE`; `plan.version+1`. |
 | 22b | `POST /transactions/:id/delete` (só fatura aberta; senão `INSTALLMENT_LOCKED`; já excluída 409 `ALREADY_DELETED`) e `restore` (recusa fatura paga: `INVOICE_PAID_LOCKED`; plano excluído: `NOT_RESTORABLE`). Resposta traz `transaction`, `plan`, `card`. A parcela excluída fica `REMOVED` em "Ver compra"; o Desfazer do plano não a devolve (carimbo diferente). |
-| 23 | Mês acertado: parcela com rateio (`isSharedExpense`) exige `confirmSettledPeriod` ao mudar valor, excluir ou restaurar (409 `SETTLED_PERIOD_CONFIRMATION_REQUIRED`); mudança de valor recalcula os centavos com os mesmos `bps` (`rewriteSplitAmounts`). Hoje só vale por SQL: parcela nasce "Só meu" (US-042). |
+| 23 | Mês acertado: parcela com rateio (`isSharedExpense`) exige `confirmSettledPeriod` ao mudar valor, excluir ou restaurar (409 `SETTLED_PERIOD_CONFIRMATION_REQUIRED`); mudança de valor recalcula os centavos com os mesmos `bps` (`rewriteSplitAmounts`). Vale para parcela dividida (US-042); excluir uma parcela recalcula o acerto do mês dela. |
 | 24 | Permissão ("Só meu", US-084): excluir/restaurar exige controle sobre todas as parcelas (`assertCanWriteParcels`, uma checagem por combinação pagador/autor/cartão/conta). Ver spec 01. |
 | 25 | Cartão: arquivar bloqueado com parcela ativa em fatura futura (`CARD_HAS_FUTURE_INSTALLMENTS`); restaurar/postar em cartão arquivado = `INVALID_REFERENCE`. `CardDTO.installmentsFutureInCents` e `InvoiceDTO.futureInstallmentsInCents` = Σ ativas em faturas `ref >` a de referência. |
 
-Aviso do parcelado (US-052, SDD-018 §1):
+Divisão do parcelado (US-042; antes, aviso da US-052):
 | # | Regra |
 | :-- | :-- |
-| 26 | Texto único `INSTALLMENT_SPLIT_NOTICE` ("Compras parceladas ainda não entram na divisão do acerto. Elas contam como Só meu até uma próxima versão.") em `installment-copy.ts`; nenhum outro lugar o escreve. |
-| 27 | `showInstallmentNotice = acertoLigado && !INSTALLMENT_SPLIT_RELEASED`. Locais: faixa abaixo de "Dividir" no drawer com 2x+ (interruptor desabilitado, "Disponível em breve para compras parceladas"); Acerto; indicador "i" no Resumo (`installmentsOutside`); "Ver compra" (linha "Fora do acerto"). |
-| 28 | `countInstallmentsOutside`: parcelas `EXPENSE`, `isSharedExpense=false`, ativas, no período do acerto (competência). Só leitura, fora de `computeSettlement`; `null` com acerto desligado ou flag liberado. |
+| 26 | `split` (`NONE`/`RULE`/`CUSTOM`) ou `isSharedExpense:true` (== RULE) vale na compra parcelada. O rateio (`resolveSplit` na data da compra/âncora) é gravado igual em CADA parcela: `splitMode`, `splitRuleVersionId`, linhas `transaction_splits` com `bps` e centavos por parcela (`splitAmount`, sobra a quem pagou). Famílias LEGACY gravam só `isSharedExpense` (CUSTOM: 422 `CUSTOM_SPLIT_UNAVAILABLE`); acerto desligado: 422 `SETTLEMENT_DISABLED`. |
+| 27 | Crédito do acerto = `payerMemberId` da parcela; quem paga a fatura não muda nada. Mudar a regra depois não reescreve parcelas gravadas. `GET /settlement/expenses` traz `installment {no,count}` ("Geladeira 1/3"). |
+| 28 | Aviso `INSTALLMENT_SPLIT_NOTICE`/`showInstallmentNotice` e `installmentsOutside` ficam no código só atrás da flag: com `true` não aparecem (`defaults.split.installmentsAvailable=true`; `installmentsOutside` sempre `null`). |
 
 ## Invariantes
 1. Plano nunca entra em `SUM`; só as linhas (Extrato, fatura, totais e acerto não ganham tabela nova).
@@ -59,7 +59,7 @@ Aviso do parcelado (US-052, SDD-018 §1):
 3. Nenhuma parcela de plano recém-criado com competência anterior à fatura âncora.
 4. `usedInCents` sobe exatamente Σ lançadas; excluir o plano devolve o mesmo valor; Desfazer o recompõe.
 5. `paidBeforeAppCount` nunca muda após o INSERT (trigger).
-6. Parcela criada SEMPRE com `isSharedExpense=false` (hardcoded); `isSharedExpense=true` com parcelas = 422 `SETTLEMENT_DISABLED` (acerto desligado) ou `INSTALLMENT_SPLIT_UNAVAILABLE`.
+6. Parcela dividida: `isSharedExpense=true`, Σ `bps`=10000 e Σ centavos = valor da parcela (trigger do rateio); acerto desligado = 422 `SETTLEMENT_DISABLED`.
 7. Travas sempre na ordem plano -> faturas por `ref` crescente (sem deadlock).
 8. `familyId` da sessão em toda consulta; plano/cartão de outra família = 404/`INVALID_REFERENCE`.
 9. Parcela fora de detecção de recorrentes, agregados da IA e sugestão de categoria (filtro `installmentPlanId IS NULL`).
@@ -68,7 +68,6 @@ Aviso do parcelado (US-052, SDD-018 §1):
 ## Riscos aceitos
 | ID | Limitação | Razão |
 | :-- | :-- | :-- |
-| L-1 | Parcelado fora do acerto (Só meu forçado) | Rateio por parcela exige motor STORED/EN-002 e janela de reversão (D-GES-23, TL-11); aviso em vez de antecipar US-042 (D-PO-49) |
 | L-3 | Fatura fechada ou paga trava a exclusão do plano inteiro | Integridade da fatura; contorno: excluir parcela a parcela (US-041) |
 | L-4 | Excluir plano exige TODAS em fatura aberta, mas edição de compra única (US-016b) trava só a paga | Diferença conhecida (TL-12), a confirmar |
 | L-5 | API aceita estourar o limite | Decisão de produto (aviso na UI) |
@@ -76,13 +75,13 @@ Aviso do parcelado (US-052, SDD-018 §1):
 | L-8 | Acerto/`personal` conta a parcela restante no aviso informativo; saldos do acerto não mudam | DEV-48 (ratificar) |
 
 ## Fontes (código/testes)
-Código: `src/modules/cartoes/{installments,installment-copy,queries,archive,invoice-service}.ts`; `transacoes/{installment-create,installment-manage,installment-edit,installment-schemas,installment-plan,mutations,schemas,service,ledger-where,repo}.ts`; `split/{service,repo,indicator,schemas}.ts`; API `src/app/api/v1/installment-plans/[id]/{route,delete/route,restore/route}.ts` e `POST /transactions`; `prisma/schema.prisma` (`InstallmentPlan`); migrações `20261005140000_us040_parcelamento`, `20261024120000_us065_parcelas_anteriores`.
+Código: `src/modules/cartoes/{installments,installment-copy,queries,archive,invoice-service}.ts`; `transacoes/{installment-create,installment-manage,installment-edit,installment-schemas,installment-plan,mutations,schemas,service,ledger-where,repo}.ts`; `split/{service,shared-expenses,repo,indicator,schemas}.ts`; `transacoes/{installment-parcels,installment-state}.ts`; API `src/app/api/v1/installment-plans/[id]/{route,delete/route,restore/route}.ts` e `POST /transactions`; `prisma/schema.prisma` (`InstallmentPlan`); migrações `20261005140000_us040_parcelamento`, `20261024120000_us065_parcelas_anteriores`.
 UI: `src/components/{transaction-drawer,installment-preview,installment-plan-dialog}.tsx`; `src/app/(app)/extrato/{edit-installment-form,detail-dialogs,transaction-detail-fields}.tsx`; `src/app/(app)/{home-screen,acerto/acerto-screen,extrato/ledger-row,extrato/transaction-detail-drawer,cartoes/[id]/invoice-screen}.tsx`.
-Testes: `tests/unit/cartoes/installments.test.ts`, `tests/unit/split/installment-copy.test.ts`; integração `us-041-gerenciar-parcelas`, `us-040a-parcelamento`, `us-040b-plano`, `us-040b-competencia`, `us-040-gatilho-competencia`, `us-052-parcelado-fora-do-acerto`, `us-065-parcelas-ja-pagas`, `us-016a-compra-cartao`, `sec021-so-meu-dono`, `us084-so-meu-controle`, `sec042-046-so-meu-reteste`, `sec017b-exportar-dados`; E2E `US-041-gerenciar-compra-parcelada`, `US-040a-compra-parcelada`, `US-040b-competencia-e-exclusao`, `US-065-parcelas-ja-pagas-na-entrada`; fábrica `tests/support/installment-factory.ts`.
+Testes: `tests/unit/cartoes/installments.test.ts`, `tests/unit/split/installment-copy.test.ts`; integração `us-042-parcelado-dividido`, `us-041-gerenciar-parcelas`, `us-040a-parcelamento`, `us-040b-plano`, `us-040b-competencia`, `us-040-gatilho-competencia`, `us-052-parcelado-fora-do-acerto`, `us-065-parcelas-ja-pagas`, `us-016a-compra-cartao`, `sec021-so-meu-dono`, `us084-so-meu-controle`, `sec042-046-so-meu-reteste`, `sec017b-exportar-dados`; E2E `US-042-compra-parcelada-dividida`, `US-041-gerenciar-compra-parcelada`, `US-040a-compra-parcelada`, `US-040b-competencia-e-exclusao`, `US-065-parcelas-ja-pagas-na-entrada`; fábrica `tests/support/installment-factory.ts`.
 Âncoras: US-040/041/042/052/065; SDD-014, SDD-018 §1, SDD-020; ADR-014/017/020/027.
 
 ## Pendências
-- US-042 (rateio por parcela; 3 pts): ligar `INSTALLMENT_SPLIT_RELEASED=true` exige `family.splitEngine=STORED` e testes `@depende-us-042`; ao ligar, avisos da US-052 somem e `defaults.split.installmentsAvailable` vira true. Criação hoje grava `isSharedExpense:false`: precisa de rateio por parcela no serviço.
+- US-042 entregue (flag ligada). Parcelas antigas "Só meu" seguem assim; dividir só vale na criação (editar o rateio da parcela não existe).
 - US-041 entregue. Editar parcela não muda categoria/descrição do plano (só das parcelas); excluir a última parcela ativa deixa o plano com `activeCount` 0 (sem excluir o plano).
 - Usuário: ratificar DEV-48..50.
 - Não verificado: UI do drawer/"Ver compra" no navegador após mudanças de "Só meu"; fatura PAID/OPEN de parcela em cartão cujo titular saiu.

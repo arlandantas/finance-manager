@@ -1,7 +1,8 @@
 import { notFound } from "@/lib/api/errors";
 import { withApi } from "@/lib/api/with-api";
 import { uuidSchema } from "@/lib/schemas";
-import { isInstallmentParcel, restoreInstallment } from "@/modules/transacoes/installment-edit";
+import { isInstallmentParcel } from "@/modules/transacoes/installment-parcels";
+import { restoreInstallment } from "@/modules/transacoes/installment-state";
 import { restoreTransaction } from "@/modules/transacoes/mutations";
 import { TransactionStateSchema } from "@/modules/transacoes/schemas";
 

@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { setDevClockOverride } from "@/lib/clock";
-import { INSTALLMENT_SPLIT_RELEASED } from "@/modules/cartoes/installments";
 import * as ledger from "@/modules/contas/ledger";
 import { call } from "../support/call";
 import { resetDb, testDb } from "../support/db";
@@ -122,11 +121,10 @@ describe("US-065: só as restantes viram lançamentos", () => {
     expect(JSON.stringify((await invoice("2026-10")).body)).not.toContain("Sofá");
     expect((await get("/api/v1/accounts")).body).toEqual(accountsBefore);
     expect((await get("/api/v1/month-summary?period=2026-10")).body).toEqual(summaryBefore);
-    // o acerto (saldos/diferenças dos membros) não muda; só o aviso informativo da US-052 conta a parcela
-    // restante de nov (25.000), jamais as pagas
+    // o acerto (saldos/diferenças dos membros) não muda ("Só meu"); sem aviso desde a US-042
     const settlementAfter = (await get("/api/v1/settlement?period=2026-11")).body;
     expect(settlementAfter.members).toEqual(settlementBefore.members);
-    expect(settlementAfter.installmentsOutside).toEqual({ count: 1, totalInCents: 25000 });
+    expect(settlementAfter.installmentsOutside).toBeNull();
     expect(itau.id).toBeTruthy();
   });
 
@@ -234,26 +232,17 @@ describe("US-065: validações", () => {
     expect((await buy({ installmentNo: 5 })).status).toBe(400);
   });
 
-  it("Só meu: dividir continua indisponível (INSTALLMENT_SPLIT_UNAVAILABLE) e o acerto não muda", async () => {
-    if (INSTALLMENT_SPLIT_RELEASED) return; // cenário @depende-us-042 cobre o caso liberado
-    const before = (await get("/api/v1/settlement?period=2026-11")).body;
+  it("US-042: dividir entra no acerto de nov (R$ 250,00 pagos por Lucas) e out fica inalterado", async () => {
+    const out = (await get("/api/v1/settlement?period=2026-10")).body;
     const res = await buy({ isSharedExpense: true });
-    expect([422, 400]).toContain(res.status);
-    expect((await get("/api/v1/settlement?period=2026-11")).body).toEqual(before);
+    expect(res.status).toBe(201);
+    const nov = (await get("/api/v1/settlement?period=2026-11")).body;
+    const lucasRow = nov.members.find((m: { member: { name: string } }) =>
+      m.member.name.startsWith("Lucas"),
+    );
+    expect(lucasRow.paidInCents).toBe(25000);
+    expect((await get("/api/v1/settlement?period=2026-10")).body).toEqual(out);
   });
-
-  it.skipIf(!INSTALLMENT_SPLIT_RELEASED)(
-    "@depende-us-042: restantes entram no acerto de nov (250,00 pagos por Lucas); out inalterado",
-    async () => {
-      const out = (await get("/api/v1/settlement?period=2026-10")).body;
-      const res = await buy({ isSharedExpense: true });
-      expect(res.status).toBe(201);
-      expect(JSON.stringify((await get("/api/v1/settlement?period=2026-11")).body)).toContain(
-        "25000",
-      );
-      expect((await get("/api/v1/settlement?period=2026-10")).body).toEqual(out);
-    },
-  );
 });
 
 describe("US-065: idempotência, atomicidade e banco", () => {

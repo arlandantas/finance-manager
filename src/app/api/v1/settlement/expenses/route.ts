@@ -1,6 +1,6 @@
 import { withApi } from "@/lib/api/with-api";
 import { SettlementPeriodQuerySchema } from "@/modules/split/schemas";
-import { listSharedExpenses } from "@/modules/split/service";
+import { listSharedExpenses } from "@/modules/split/shared-expenses";
 
 export const dynamic = "force-dynamic";
 

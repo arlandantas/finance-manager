@@ -1,6 +1,6 @@
 import { withApi } from "@/lib/api/with-api";
+import { previewRule } from "@/modules/split/rule-service";
 import { SplitRuleInputSchema } from "@/modules/split/schemas";
-import { previewRule } from "@/modules/split/service";
 
 export const dynamic = "force-dynamic";
 

@@ -241,3 +241,17 @@ describe("splitAmount com pagador sem conta (SDD-034 U2, U3)", () => {
     expect("ana" in r).toBe(false);
   });
 });
+
+describe("US-042 AC7: parcelas de 100001 em 3x dividido 50/50, pagador Lucas", () => {
+  it("33335/33333/33333 e cada rateio soma a parcela (sobra com quem pagou)", () => {
+    const shares = sh(["M", 5000], ["L", 5000]);
+    const parcels = [33335, 33333, 33333];
+    const out = parcels.map((p) => splitAmount({ amountInCents: p, shares, payerMemberId: "L" }));
+    expect(out).toEqual([
+      { M: 16667, L: 16668 },
+      { M: 16666, L: 16667 },
+      { M: 16666, L: 16667 },
+    ]);
+    out.forEach((o, i) => expect((o.M ?? 0) + (o.L ?? 0)).toBe(parcels[i]));
+  });
+});
