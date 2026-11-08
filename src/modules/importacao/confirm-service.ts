@@ -22,7 +22,7 @@ import { type ConfirmImportBody, type ConfirmItem } from "./confirm-schema";
 import { itemInvalid, validateItems } from "./confirm-validate";
 import { insertPlan, insertRevisions, insertSingles, type Written } from "./confirm-write";
 import { activeBatchAt, activeImportKeys, postedParcels } from "./draft-history";
-import { importKeys } from "./import-key";
+import { identityOf, importKey, type KeyItem } from "./import-key";
 import { verifyImportToken } from "./token";
 
 const duplicate = (idx: number, reason: string) =>
@@ -75,15 +75,21 @@ export async function confirmInvoiceImport(
   await validateItems(tx, ctx, items, today);
 
   // faturas: alvo + as das parcelas futuras, `FOR UPDATE` em ordem crescente de `ref`
-  const keys = importKeys(
-    cardId,
-    body.invoiceRef,
-    items.map((i) => ({
-      date: i.date,
-      amountInCents: BigInt(i.amountInCents).toString(),
-      description: i.description,
-      installment: i.installment,
-    })),
+  const keyItems = items.map((i) => ({
+    date: i.date,
+    amountInCents: BigInt(i.amountInCents).toString(),
+    description: i.description,
+    installment: i.installment,
+  }));
+  // a ocorrência no arquivo vem do rascunho; aqui só se confere que (identidade, ocorrência) não repete
+  const seen = new Set<string>();
+  for (const [n, i] of items.entries()) {
+    const id = `${identityOf(keyItems[n] as KeyItem)}#${i.occurrence}`;
+    if (seen.has(id)) throw itemInvalid(i.idx, "occurrence", "Item repetido no lote.");
+    seen.add(id);
+  }
+  const keys = items.map((i, n) =>
+    importKey(cardId, body.invoiceRef, keyItems[n] as KeyItem, i.occurrence),
   );
   const drafts = planDrafts(card, items, keys, body, today);
   const invoices = new Map<string, InvoiceRow>();

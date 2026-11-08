@@ -36,7 +36,7 @@ export type Reconciled =
   | { ok: false; code: "NOT_AN_INVOICE" | "TOO_MANY_ITEMS" }
   | {
       ok: true;
-      items: ImportDraftItem[];
+      items: Omit<ImportDraftItem, "occurrence">[];
       declared: { closingDate?: string; dueDate?: string; totalInCents?: string };
       warnings: { code: string; message: string }[];
     };
@@ -66,7 +66,7 @@ export function reconcileExtraction(input: ReconcileInput): Reconciled {
   if (!extraction.isInvoice) return { ok: false, code: "NOT_AN_INVOICE" };
   const byRef = new Map(lines.map((l) => [l.ref, l.text]));
   const seen = new Set<string>();
-  const items: ImportDraftItem[] = [];
+  const items: Omit<ImportDraftItem, "occurrence">[] = [];
   for (const it of extraction.items as ExtractedItem[]) {
     const text = byRef.get(it.line);
     if (text === undefined || seen.has(it.line)) continue; // linha inexistente ou repetida: descartada

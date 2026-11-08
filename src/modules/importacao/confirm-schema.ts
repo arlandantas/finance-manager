@@ -15,6 +15,8 @@ const noControl = (s: string) => !/[\u0000-\u001f\u007f]/.test(s);
 export const ConfirmItemSchema = z
   .object({
     idx: z.number().int().min(0),
+    /** Ordinal no arquivo, vindo do rascunho; entra na `importKey` (nunca recalculado aqui). */
+    occurrence: z.number().int().min(1).max(300),
     date: isoDate,
     description: z.string().trim().min(2).max(100).refine(noControl, "Descrição inválida"),
     amountInCents: cents,

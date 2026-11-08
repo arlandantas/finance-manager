@@ -8,6 +8,8 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 export const ImportDraftItemSchema = z
   .object({
     idx: z.number().int().min(0),
+    /** Ordinal entre itens idênticos do arquivo (ADR-042 §10); volta no corpo da confirmação. */
+    occurrence: z.number().int().min(1),
     line: z.string().optional(),
     date: isoDate.nullable(),
     description: z.string().min(1).max(200),

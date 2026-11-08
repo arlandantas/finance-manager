@@ -20,6 +20,7 @@ const CTX: PlanContext = {
 };
 const item = (o: Partial<ConfirmItem> = {}): ConfirmItem => ({
   idx: 0,
+  occurrence: 1,
   date: "2026-10-03",
   description: "Loja",
   amountInCents: "10000",
@@ -105,5 +106,24 @@ describe("US-068 ConfirmImportBody", () => {
       ConfirmImportBodySchema.safeParse(body([raw({ installment: { no: 1, count: 25 } })])).success,
     ).toBe(false);
     expect(ConfirmImportBodySchema.safeParse(body([])).success).toBe(false);
+  });
+});
+
+describe("US-068 ocorrência no arquivo", () => {
+  it("occurrences conta entre idênticos do arquivo inteiro; a chave depende dela, não do subconjunto confirmado", async () => {
+    const { occurrences, importKey } = await import("@/modules/importacao/import-key");
+    const a = { date: "2026-10-03", amountInCents: "100", description: "Loja", installment: null };
+    expect(occurrences([a, { ...a, description: "Outra" }, a])).toEqual([1, 1, 2]);
+    expect(importKey("c", "2026-10", a, 2)).not.toBe(importKey("c", "2026-10", a, 1));
+  });
+  it("corpo exige occurrence ≥ 1", () => {
+    const b = (o: object) => ({
+      importToken: "t",
+      invoiceRef: "2026-10",
+      items: [{ ...item(), ...o }],
+    });
+    expect(ConfirmImportBodySchema.safeParse(b({})).success).toBe(true);
+    expect(ConfirmImportBodySchema.safeParse(b({ occurrence: 0 })).success).toBe(false);
+    expect(ConfirmImportBodySchema.safeParse(b({ occurrence: undefined })).success).toBe(false);
   });
 });

@@ -61,6 +61,7 @@ const token = (o: { hash?: string; cardId?: string; at?: string; familyId?: stri
 let n = 0;
 const item = async (o: Record<string, unknown> = {}) => ({
   idx: n++,
+  occurrence: 1,
   date: "2026-10-03",
   description: `Compra ${n}`,
   amountInCents: "10000",
@@ -515,5 +516,71 @@ describe("US-068 exportação LGPD (ADR-042 §12)", () => {
     expect(file.familiaAtual?.lancamentos.find((l) => l.origem === "INVOICE_IMPORT")).toBeDefined();
     const meta = JSON.stringify(file.familiaAtual?.importacoes);
     expect(meta).not.toMatch(/Segredo|descri|\.csv|\.pdf/i);
+  });
+});
+
+describe("US-068 ocorrência no arquivo (A,A)", () => {
+  it("só o 2º de dois idênticos confirmado grava; arquivo novo com A,A marca a 1ª e aceita a 2ª; repetir par = 422", async () => {
+    const a = { description: "Padaria", amountInCents: "500" };
+    const first = await send([await item({ ...a, occurrence: 1 })], {
+      tok: token({ hash: "d".repeat(64) }),
+    });
+    expect(first.status).toBe(201); // só a 1ª do arquivo 1
+    // arquivo novo A,A: rascunho marca ocorrência 1 como já importada; o membro confirma só a 2ª
+    const row = await db.creditCard.findUniqueOrThrow({ where: { id: card.id } });
+    const d = await db.$transaction((tx) =>
+      buildDraft(
+        tx,
+        {
+          userId: fx.byName.Mariana?.userId as string,
+          email: "m",
+          name: "Mariana",
+          image: null,
+          clock: { now: () => new Date(NOW) },
+          requestId: "r",
+          memberId: memberId("Mariana"),
+          familyId: fx.family.id,
+          role: "ADMIN",
+        },
+        {
+          cardId: card.id,
+          ownerMemberId: row.ownerMemberId,
+          invoiceRef: "2026-10",
+          source: "CSV",
+          fileHash: "e".repeat(64),
+          declared: {},
+          warnings: [],
+          items: [0, 1].map((idx) => ({
+            idx,
+            date: "2026-10-03",
+            description: "Padaria",
+            amountInCents: "500",
+            kind: "PURCHASE" as const,
+            installment: null,
+          })),
+        },
+      ),
+    );
+    expect(d.items.map((i) => [i.occurrence, i.flags])).toEqual([
+      [1, ["ALREADY_IMPORTED"]],
+      [2, ["POSSIBLE_DUPLICATE"]], // selecionável: o membro decide
+    ]);
+    const tok = token({ hash: "e".repeat(64) });
+    const dup = await send(
+      [
+        await item({ ...a, occurrence: 1, date: "2026-10-03" }),
+        await item({ ...a, occurrence: 1, date: "2026-10-03" }),
+      ],
+      { tok },
+    );
+    expect(dup.status).toBe(422); // (identidade, ocorrência) repetido no corpo
+    const ok = await send([await item({ ...a, occurrence: 2 })], { tok });
+    expect(ok.status).toBe(201);
+    // reimportar depois (outro arquivo) a 2ª: agora ela é duplicada
+    const again = await send([await item({ ...a, occurrence: 2 })], {
+      tok: token({ hash: "f".repeat(64) }),
+    });
+    expect(again.status).toBe(409);
+    expect(again.body.error.code).toBe("IMPORT_ITEM_DUPLICATE");
   });
 });

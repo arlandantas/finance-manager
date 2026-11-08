@@ -11,7 +11,7 @@ import {
   postedParcels,
 } from "./draft-history";
 import { defaultSelected, GROUPS, isImportableKind } from "./groups";
-import { importKeys } from "./import-key";
+import { importKeys, occurrences } from "./import-key";
 import { type ImportDraft, type ImportDraftItem, ImportDraftSchema } from "./schemas";
 import { issueImportToken } from "./token";
 import { reconcileTotal } from "./total";
@@ -19,7 +19,7 @@ import { reconcileTotal } from "./total";
 /** Item como sai do parser (CSV) ou da reconciliação (PDF): ainda sem categoria, grupo definitivo nem marcas. */
 export type ExtractedDraftItem = Omit<
   ImportDraftItem,
-  "selected" | "group" | "categoryId" | "payerMemberId" | "flags" | "duplicateOf"
+  "selected" | "group" | "occurrence" | "categoryId" | "payerMemberId" | "flags" | "duplicateOf"
 > & { needsAttention?: boolean };
 
 export type ExtractedInput = {
@@ -71,6 +71,7 @@ export async function buildDraft(
 ): Promise<ImportDraft> {
   const { items } = input;
   const keys = importKeys(input.cardId, input.invoiceRef, items);
+  const ords = occurrences(items);
   const [imported, history, outros, batchAt] = await Promise.all([
     activeImportKeys(tx, ctx, keys),
     categoryHistory(
@@ -130,6 +131,7 @@ export async function buildDraft(
     const { needsAttention: _n, ...rest } = item;
     return {
       ...rest,
+      occurrence: ords[n] as number,
       selected: batchAt ? false : selected,
       group: GROUPS[item.kind],
       categoryId,

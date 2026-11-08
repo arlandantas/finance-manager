@@ -29,17 +29,26 @@ export function importKey(
   return createHash("sha256").update(raw).digest("hex");
 }
 
-/** Uma chave por item, na ordem recebida; o ordinal (1, 2, ...) conta só entre itens idênticos. */
-export function importKeys(
-  cardId: string,
-  invoiceRef: string,
-  items: readonly KeyItem[],
-): string[] {
+/** Ordinal (1, 2, ...) de cada item entre os idênticos do ARQUIVO, na ordem recebida. */
+export function occurrences(items: readonly KeyItem[]): number[] {
   const seen = new Map<string, number>();
   return items.map((item) => {
     const id = identity(item);
     const ordinal = (seen.get(id) ?? 0) + 1;
     seen.set(id, ordinal);
-    return importKey(cardId, invoiceRef, item, ordinal);
+    return ordinal;
   });
+}
+
+/** Identidade do item (sem ordinal): o par (identidade, ocorrência) não pode repetir num lote. */
+export const identityOf = (i: KeyItem): string => identity(i);
+
+/** Uma chave por item, na ordem recebida; o ordinal conta só entre itens idênticos. */
+export function importKeys(
+  cardId: string,
+  invoiceRef: string,
+  items: readonly KeyItem[],
+): string[] {
+  const ords = occurrences(items);
+  return items.map((item, n) => importKey(cardId, invoiceRef, item, ords[n] as number));
 }
