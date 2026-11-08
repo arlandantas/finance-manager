@@ -174,24 +174,11 @@ describe("EN-004 runLlm", () => {
     expect(await db.llmUsageEvent.count()).toBe(0);
   });
 
-  it("flag AI_FEATURES_ENABLED=false ⇒ 503 AI_UNAVAILABLE; INVOICE_IMPORT ⇒ 422", async () => {
+  it("flag AI_FEATURES_ENABLED=false ⇒ 503 AI_UNAVAILABLE", async () => {
     expect(await fail(run({ config: cfg({ AI_FEATURES_ENABLED: "false" }) }))).toMatchObject({
       status: 503,
       code: "AI_UNAVAILABLE",
     });
-    const e = await fail(
-      runLlm(
-        ctx,
-        {
-          purpose: "INVOICE_IMPORT",
-          payload: {},
-          buildPrompt: () => ({ system: "s", input: "{}" }),
-          outputSchema,
-        },
-        { db, port: fake, config: cfg(), assertConsent: allow },
-      ),
-    );
-    expect(e).toMatchObject({ status: 422, code: "PURPOSE_NOT_AVAILABLE" });
     expect(fake.calls).toHaveLength(0);
   });
 

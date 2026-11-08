@@ -7,7 +7,7 @@ import { useAiSettings } from "@/modules/ia/hooks";
 import { ConsentSwitch } from "./consent-switch";
 import { UsageBlock } from "./usage-block";
 
-/** Configurações ▸ IA e privacidade (SDD-021 §6, SDD-022 §6). INVOICE_IMPORT não aparece até a R5. */
+/** Configurações ▸ IA e privacidade (SDD-021 §6, SDD-022 §6). */
 export function IaScreen() {
   const settings = useAiSettings();
   const data = settings.data;
@@ -50,16 +50,14 @@ export function IaScreen() {
             <h2 id="ai-features-title" className="text-lg font-semibold text-slate-900">
               Recursos da família
             </h2>
-            {data.features
-              .filter((f) => f.purpose === "SPENDING_ANALYSIS")
-              .map((f) => (
-                <ConsentSwitch
-                  key={f.purpose}
-                  feature={f}
-                  canEdit={data.canEdit}
-                  familyVersion={data.familyVersion}
-                />
-              ))}
+            {data.features.map((f) => (
+              <ConsentSwitch
+                key={f.purpose}
+                feature={f}
+                canEdit={data.canEdit}
+                familyVersion={data.familyVersion}
+              />
+            ))}
           </section>
           {data.usage ? <UsageBlock usage={data.usage} /> : null}
         </>

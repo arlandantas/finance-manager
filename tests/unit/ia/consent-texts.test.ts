@@ -6,6 +6,10 @@ import { AI_CONSENT_TEXTS, consentTextHash } from "@/modules/ia/consent-texts";
 const SNAPSHOT: Record<number, string> = {
   1: "508a2b12d166c4246841beea372be781332f0215824b3d1b87050c69fe77f035",
 };
+// US-066c: texto próprio da importação de fatura (ADR-042 §4), também amarrado à versão.
+const SNAPSHOT_INVOICE: Record<number, string> = {
+  1: "d041a0614bdb4f83945652f6f733036d74406197dd05c20c0d990ad248109fe9",
+};
 
 describe("EN-005 textos de consentimento versionados", () => {
   const t = AI_CONSENT_TEXTS.SPENDING_ANALYSIS;
@@ -21,7 +25,18 @@ describe("EN-005 textos de consentimento versionados", () => {
     expect(all).not.toMatch(/reten[cç][aã]o zero|n[aã]o (é|e) usado para treino|descartad/i);
     expect(all).not.toMatch(/fatura/i); // importação de fatura é R5 (D-GES-28)
   });
-  it("a importação de fatura não tem texto na R4", () => {
-    expect(AI_CONSENT_TEXTS.INVOICE_IMPORT).toBeUndefined();
+  it("INVOICE_IMPORT v1: hash conhecido, declara que a descrição do estabelecimento sai, sem retenção zero", () => {
+    const inv = AI_CONSENT_TEXTS.INVOICE_IMPORT;
+    expect(inv).toBeDefined();
+    if (!inv) return;
+    expect(SNAPSHOT_INVOICE[inv.version]).toBe(consentTextHash(inv));
+    const all = `${inv.summary} ${inv.details.join(" ")}`;
+    expect(all).toMatch(/Anthropic/);
+    expect(all).toMatch(/descrição do estabelecimento/);
+    expect(all).toMatch(/Estados Unidos/);
+    expect(all).toMatch(/não é guardado/);
+    expect(all).not.toMatch(
+      /reten[cç][aã]o zero|n[aã]o (é|e) usado para treino|descartad[oa] pelo/i,
+    );
   });
 });

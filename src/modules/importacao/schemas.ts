@@ -59,3 +59,8 @@ export type ImportDraftItem = z.infer<typeof ImportDraftItemSchema>;
 export const PreviewFieldsSchema = z
   .object({ invoiceRef: periodKeySchema, password: z.string().max(200).optional() })
   .strict();
+
+/** US-066c: o mesmo upload + o `previewHash` mostrado ao membro (diferente do recalculado = 409). */
+export const ExtractFieldsSchema = PreviewFieldsSchema.extend({
+  previewHash: z.string().regex(/^[0-9a-f]{64}$/),
+}).strict();

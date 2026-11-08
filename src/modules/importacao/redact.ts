@@ -3,9 +3,9 @@ import { fold, memberWordSet } from "@/modules/analise-ia/payload";
 // ADR-042 §4 / spec 13 regras 5-6: linhas candidatas e redação local. PURO (sem Next, Prisma, relógio).
 // Só linhas que passam em `candidateLines` saem; cabeçalho, endereço, limite e número do cartão não passam.
 
-const DATE =
+export const DATE =
   /(?<![\d/])(?:\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|\d{1,2} (?:jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-z]*\.?)(?![\d/])/gi;
-const AMOUNT =
+export const AMOUNT =
   /(?<![\d.,])(?:R\$\s*)?-?\d{1,3}(?:\.\d{3})+,\d{2}(?!\d)|(?<![\d.,])(?:R\$\s*)?-?\d{1,9},\d{2}(?!\d)/g;
 const CPF = /\b\d{3}\.?\d{3}\.?\d{3}-\d{2}\b|\b\d{11}\b/g;
 const CNPJ = /\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/g;

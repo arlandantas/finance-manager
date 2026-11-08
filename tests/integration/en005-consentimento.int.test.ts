@@ -83,14 +83,16 @@ beforeEach(async () => {
 });
 
 describe("EN-005 opt-in de privacidade", () => {
-  it("recursos nascem desligados; a finalidade da fatura não está disponível na R4", async () => {
+  it("recursos nascem desligados; a importação de fatura tem texto próprio (US-066c)", async () => {
     const r = await settings();
     expect(r.status).toBe(200);
     expect(feature(r).state).toBe("OFF");
     expect(feature(r).available).toBe(true);
     expect(feature(r).currentText.version).toBe(1);
     const inv = r.body.features.find((f: { purpose: string }) => f.purpose === "INVOICE_IMPORT");
-    expect(inv).toMatchObject({ available: false, state: "UNAVAILABLE" });
+    expect(inv).toMatchObject({ available: true, state: "OFF" });
+    expect(inv.currentText.version).toBe(1);
+    expect(inv.currentText.summary).toMatch(/Anthropic/);
     expect(r.body.canEdit).toBe(true);
     expect(r.body.usage).not.toBeNull();
   });
@@ -114,6 +116,7 @@ describe("EN-005 opt-in de privacidade", () => {
         )
       ).status,
     ).toBe(400);
+    setConsentTextsForTests({ SPENDING_ANALYSIS: AI_CONSENT_TEXTS.SPENDING_ANALYSIS as never });
     const inv = await at(() =>
       call(mariana(), "POST", "/api/v1/ai/consents/INVOICE_IMPORT/enable", {
         textVersion: 1,

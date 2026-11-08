@@ -64,6 +64,13 @@ function purposeSettings(cfg: LlmConfig, purpose: LlmPurpose) {
       maxOutputTokens: cfg.LLM_MAX_OUTPUT_TOKENS_ANALYSIS,
     };
   }
+  if (purpose === "INVOICE_IMPORT") {
+    return {
+      model: cfg.LLM_MODEL_IMPORT,
+      effort: cfg.LLM_EFFORT_IMPORT,
+      maxOutputTokens: cfg.LLM_MAX_OUTPUT_TOKENS_IMPORT,
+    };
+  }
   throw purposeNotAvailable();
 }
 

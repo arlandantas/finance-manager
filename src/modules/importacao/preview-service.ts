@@ -17,7 +17,12 @@ const MESSAGES: Record<string, string> = {
 const GROUPS = { PURCHASE: "Compras", CREDIT: "Estornos e créditos" } as const;
 
 /** Spec 13 regra 3: fatura alvo do cartão, ativa, não paga e não posterior à aberta. */
-async function assertTarget(tx: Tx, ctx: RequestContext, cardId: string, invoiceRef: string) {
+export async function assertTarget(
+  tx: Tx,
+  ctx: RequestContext,
+  cardId: string,
+  invoiceRef: string,
+) {
   const card = await cartoesRepo(tx, ctx.familyId).findById(cardId);
   if (!card) throw notFound("Cartão não encontrado.");
   if (card.archivedAt) {

@@ -20,6 +20,19 @@ export const AI_CONSENT_TEXTS: Partial<Record<LlmPurpose, ConsentText>> = {
       "Desligar vale na hora e não apaga as análises já feitas.",
     ],
   },
+  INVOICE_IMPORT: {
+    version: 1,
+    summary:
+      "Para ler o PDF da fatura, o app envia à Anthropic, empresa fora do Brasil, as linhas de compra com data, descrição do estabelecimento e valor, depois de remover nomes, CPF, número do cartão, endereço e contatos. O arquivo não é guardado. Você pode desligar quando quiser.",
+    details: [
+      "O que é enviado: somente as linhas da fatura que têm data e valor (ou total, vencimento, pagamento, estorno e encargos), com a descrição do estabelecimento como aparece no PDF.",
+      "O que é removido antes do envio: nomes de pessoas, CPF e CNPJ, e-mails, telefones, endereço, CEP e números de cartão.",
+      "Antes de cada envio, você vê exatamente as linhas que serão enviadas.",
+      "O arquivo PDF não é guardado: o app lê o texto na hora e descarta o arquivo e a senha.",
+      "O provedor fica fora do Brasil (Estados Unidos): ao ligar, você consente com essa transferência internacional de dados.",
+      "Desligar vale na hora. O CSV da fatura continua funcionando sem IA.",
+    ],
+  },
 };
 
 let override: Partial<Record<LlmPurpose, ConsentText>> | null = null;
@@ -29,7 +42,7 @@ export function setConsentTextsForTests(texts: Partial<Record<LlmPurpose, Consen
   override = texts;
 }
 
-/** Texto vigente da finalidade; `undefined` quando a finalidade não está disponível (INVOICE_IMPORT na R4). */
+/** Texto vigente da finalidade; `undefined` quando a finalidade não está disponível. */
 export function consentTextFor(purpose: LlmPurpose): ConsentText | undefined {
   return (override ?? AI_CONSENT_TEXTS)[purpose];
 }

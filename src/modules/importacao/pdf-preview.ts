@@ -6,6 +6,7 @@ import type { RequestContext, Tx } from "@/lib/api/types";
 import { getLlmConfig } from "@/modules/ia/config";
 import { costMicroBrl, estimateInputTokens, microToCentsCeil } from "@/modules/ia/pricing";
 import { extractPdfText } from "./pdf-text";
+import { INVOICE_IMPORT_PROMPT } from "./prompt";
 import {
   candidateLines,
   MAX_LINES,
@@ -15,8 +16,6 @@ import {
 } from "./redact";
 
 // ADR-042 §4: o que seria enviado à IA, exatamente. Esta etapa NÃO chama o LLM nem grava nada.
-const INVOICE_IMPORT_MAX_OUTPUT_TOKENS = 8000;
-const INVOICE_IMPORT_SYSTEM_CHARS = 2500; // aproximação do prompt de extração (US-066c)
 
 export const InvoiceLinesPayloadSchema = z
   .object({
@@ -69,13 +68,22 @@ export function buildInvoicePayload(text: string, people: string[]): InvoiceLine
   return payload;
 }
 
+/** Texto do PDF => payload redigido e validado: o mesmo que a pré-visualização mostra e a extração envia. */
+export async function pdfPayload(
+  tx: Tx,
+  ctx: RequestContext,
+  input: { bytes: Uint8Array; password?: string | undefined },
+): Promise<InvoiceLinesPayload> {
+  const text = await extractPdfText(input.bytes, input.password);
+  return buildInvoicePayload(text, await peopleOf(tx, ctx.familyId));
+}
+
 export async function previewInvoicePdf(
   tx: Tx,
   ctx: RequestContext,
-  input: { bytes: Uint8Array; password?: string },
+  input: { bytes: Uint8Array; password?: string | undefined },
 ): Promise<PdfPreview> {
-  const text = await extractPdfText(input.bytes, input.password);
-  const payload = buildInvoicePayload(text, await peopleOf(tx, ctx.familyId));
+  const payload = await pdfPayload(tx, ctx, input);
   const out: PdfPreview = {
     source: "PDF",
     lines: payload.lines,
@@ -83,15 +91,15 @@ export async function previewInvoicePdf(
   };
   if (ctx.role === "ADMIN") {
     const cfg = getLlmConfig();
-    const price = cfg.prices[process.env.LLM_MODEL_IMPORT?.trim() || "claude-haiku-5-5"];
+    const price = cfg.prices[cfg.LLM_MODEL_IMPORT];
     if (price) {
       const micro = costMicroBrl(
         {
           inputTokens: estimateInputTokens(
-            INVOICE_IMPORT_SYSTEM_CHARS,
+            INVOICE_IMPORT_PROMPT.length,
             Buffer.byteLength(canonicalJson(payload), "utf8"),
           ),
-          outputTokens: INVOICE_IMPORT_MAX_OUTPUT_TOKENS,
+          outputTokens: cfg.LLM_MAX_OUTPUT_TOKENS_IMPORT,
         },
         price,
         cfg.LLM_USD_BRL_RATE,

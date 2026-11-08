@@ -15,6 +15,10 @@ export const LlmEnvSchema = z.object({
   LLM_MODEL_ANALYSIS: z.string().min(1).default("claude-haiku-5-5"),
   LLM_EFFORT_ANALYSIS: z.enum(["low", "medium", "high"]).default("low"),
   LLM_MAX_OUTPUT_TOKENS_ANALYSIS: z.coerce.number().int().min(256).max(8000).default(3000),
+  // ADR-042 §6: extração de fatura (US-066c)
+  LLM_MODEL_IMPORT: z.string().min(1).default("claude-haiku-5-5"),
+  LLM_EFFORT_IMPORT: z.enum(["low", "medium", "high"]).default("low"),
+  LLM_MAX_OUTPUT_TOKENS_IMPORT: z.coerce.number().int().min(256).max(8000).default(8000),
   LLM_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(30000),
   LLM_DEADLINE_MS: z.coerce.number().int().min(1000).max(180000).default(60000),
   LLM_MAX_RETRIES: z.coerce.number().int().min(0).max(2).default(1),
@@ -87,6 +91,9 @@ export function assertLlmConfig(source: Env = process.env): LlmConfig {
     throw new Error(
       `Modelo sem preço conhecido: ${cfg.LLM_MODEL_ANALYSIS} (defina LLM_PRICES_JSON)`,
     );
+  }
+  if (!prices[cfg.LLM_MODEL_IMPORT]) {
+    throw new Error(`Modelo sem preço conhecido: ${cfg.LLM_MODEL_IMPORT} (defina LLM_PRICES_JSON)`);
   }
   return {
     ...cfg,

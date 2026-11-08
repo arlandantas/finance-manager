@@ -1,3 +1,4 @@
+import type { z } from "zod";
 import { ApiError, badRequest } from "@/lib/api/errors";
 import { MAX_BODY_BYTES, MAX_FILE_BYTES } from "./file-format";
 import { PreviewFieldsSchema } from "./schemas";
@@ -9,10 +10,18 @@ export type PreviewUpload = {
   bytes: Uint8Array;
   invoiceRef: string;
   password: string | undefined;
+  previewHash?: string;
 };
 
 /** Lê o corpo com teto (recusa antes de ler tudo), interpreta o multipart e valida os campos. */
-export async function readPreviewUpload(req: Request): Promise<PreviewUpload> {
+export async function readPreviewUpload(
+  req: Request,
+  schema: z.ZodType<{
+    invoiceRef: string;
+    password?: string | undefined;
+    previewHash?: string;
+  }> = PreviewFieldsSchema,
+): Promise<PreviewUpload> {
   const declared = Number(req.headers.get("content-length") ?? "0");
   if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) throw tooLarge();
   const type = req.headers.get("content-type") ?? "";
@@ -47,7 +56,7 @@ export async function readPreviewUpload(req: Request): Promise<PreviewUpload> {
   for (const [name, value] of form.entries()) {
     if (name !== "file") fields[name] = typeof value === "string" ? value : "";
   }
-  const parsed = PreviewFieldsSchema.safeParse(fields);
+  const parsed = schema.safeParse(fields);
   if (!parsed.success) {
     const details = parsed.error.issues.map((i) => ({
       path: i.path.join("."),
@@ -59,5 +68,6 @@ export async function readPreviewUpload(req: Request): Promise<PreviewUpload> {
     bytes: new Uint8Array(await file.arrayBuffer()),
     invoiceRef: parsed.data.invoiceRef,
     password: parsed.data.password,
+    ...(parsed.data.previewHash ? { previewHash: parsed.data.previewHash } : {}),
   };
 }
