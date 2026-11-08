@@ -4,18 +4,16 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { InstallmentPlanDialog } from "@/components/installment-plan-dialog";
 import { Money } from "@/components/money";
 import { SourceBadge } from "@/components/source-badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
-import { Drawer } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
+import { ApiClientError } from "@/lib/http";
 import { cycleSentence, formatInvoiceLabel } from "@/modules/cartoes/cycle";
-import { useCard, useInvoice, useUndoInvoicePayment } from "@/modules/cartoes/hooks";
+import { useCard, useInvoice } from "@/modules/cartoes/hooks";
 import { LedgerRow } from "../../extrato/ledger-row";
 import { TransactionDetailDrawer } from "../../extrato/transaction-detail-drawer";
 import { PayerLine } from "../payer-line";
@@ -23,10 +21,17 @@ import { PayInvoiceDrawer } from "./pay-invoice-drawer";
 import { StatusChip } from "./status-chip";
 import { SubscriptionDrawer } from "./subscription-drawer";
 import { ProjectedLine, SubscriptionsBlock } from "./subscriptions-block";
+import { UndoPaymentDrawer } from "./undo-payment-drawer";
 
 const brDate = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 
-export function InvoiceScreen({ cardId }: { cardId: string }) {
+export function InvoiceScreen({
+  cardId,
+  importEnabled = false,
+}: {
+  cardId: string;
+  importEnabled?: boolean;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const card = useCard(cardId);
@@ -40,9 +45,6 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
   const [paying, setPaying] = useState(false);
   const [newSub, setNewSub] = useState(false);
   const [undoing, setUndoing] = useState(false);
-  const [undoError, setUndoError] = useState<string | null>(null);
-  const undoKey = useRef(newIdempotencyKey());
-  const undo = useUndoInvoicePayment();
   const c = card.data?.card;
   const inv = invoice.data?.invoice;
 
@@ -55,28 +57,6 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
       setPaying(true);
     }
   }, [autoPay, inv?.canPay]);
-
-  function confirmUndo() {
-    if (!inv?.payment) return;
-    undo.mutate(
-      {
-        cardId,
-        ref: inv.ref,
-        version: inv.payment.version,
-        idempotencyKey: undoKey.current,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Pagamento desfeito");
-          setUndoing(false);
-        },
-        onError: (e) => {
-          if (e instanceof ApiClientError || e instanceof NetworkError) setUndoError(e.message);
-          else setUndoError("Erro inesperado. Tente novamente.");
-        },
-      },
-    );
-  }
 
   const notFound =
     (card.error instanceof ApiClientError && card.error.status === 404) ||
@@ -230,15 +210,16 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
               </p>
             ) : null}
             {inv.canPay ? <Button onClick={() => setPaying(true)}>Pagar fatura</Button> : null}
-            {inv.payment ? (
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  undoKey.current = newIdempotencyKey();
-                  setUndoError(null);
-                  setUndoing(true);
-                }}
+            {importEnabled && inv.status !== "PAID" && !inv.isFuture && !c.archived ? (
+              <Link
+                href={`/cartoes/${cardId}/importar?ref=${inv.ref}`}
+                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-900 hover:bg-slate-50 dark:bg-slate-100"
               >
+                Importar fatura
+              </Link>
+            ) : null}
+            {inv.payment ? (
+              <Button variant="secondary" onClick={() => setUndoing(true)}>
                 Desfazer pagamento
               </Button>
             ) : null}
@@ -303,25 +284,13 @@ export function InvoiceScreen({ cardId }: { cardId: string }) {
         />
       ) : null}
 
-      <Drawer open={undoing} onOpenChange={setUndoing} title="Desfazer pagamento?">
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-slate-700">
-            O valor volta para a conta, a fatura volta a ficar em aberto para pagamento e as compras
-            voltam a consumir o limite.
-          </p>
-          {undoError ? (
-            <p role="alert" className="text-sm text-red-700 dark:text-red-300">
-              {undoError}
-            </p>
-          ) : null}
-          <Button variant="danger" disabled={undo.isPending} onClick={confirmUndo}>
-            {undo.isPending ? "Desfazendo…" : "Desfazer pagamento"}
-          </Button>
-          <Button variant="ghost" onClick={() => setUndoing(false)}>
-            Cancelar
-          </Button>
-        </div>
-      </Drawer>
+      <UndoPaymentDrawer
+        cardId={cardId}
+        invoiceRef={inv?.ref ?? ""}
+        paymentVersion={inv?.payment?.version ?? null}
+        open={undoing}
+        onOpenChange={setUndoing}
+      />
 
       <TransactionDetailDrawer id={detailId} onClose={() => setDetailId(null)} />
       <InstallmentPlanDialog planId={planId} onClose={() => setPlanId(null)} />

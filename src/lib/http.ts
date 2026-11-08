@@ -62,6 +62,34 @@ export async function apiFetch<T>(path: string, opts: Options = {}): Promise<T> 
   return data as T;
 }
 
+/** POST multipart (upload de arquivo): o navegador define o Content-Type com o boundary. */
+export async function apiUpload<T>(path: string, form: FormData, signal?: AbortSignal): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method: "POST",
+      credentials: "same-origin",
+      body: form,
+      ...(signal ? { signal } : {}),
+    });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") throw e;
+    throw new NetworkError();
+  }
+  const text = await res.text();
+  const data = text ? (JSON.parse(text) as unknown) : null;
+  if (!res.ok) {
+    const err = (data as ApiErrorPayload | null)?.error;
+    throw new ApiClientError(
+      res.status,
+      err?.code ?? "INTERNAL",
+      err?.message ?? "Erro inesperado.",
+      err?.details,
+    );
+  }
+  return data as T;
+}
+
 /**
  * UUID v4 para Idempotency-Key. `crypto.randomUUID` só existe em contexto seguro (https/localhost); em dev
  * por IP da LAN (http://192.168.x.x) ele é indefinido, então cai para getRandomValues.
