@@ -12,13 +12,13 @@ Marcos do backlog (status por história em `docs/backlog/index.md`).
 | R3 | 16 | 16/16 |
 | R4 | 1 | 1/1 |
 | R4-A | 1 | 1/1 |
-| R4-B | 6 | 2/6 |
+| R4-B | 9 | 9/9 |
 | R4-C | 4 | 4/4 |
-| R4-D | 10 | 8/10 |
+| R4-D | 11 | 11/11 |
 | R4-S | 7 | 7/7 |
 | UR-1 | 8 | 8/8 |
 | UR-2 | 18 | 18/18 |
 
-Contagem conferida contra `docs/backlog/index.md` em 2026-11-08. R4-B (2/6) e R4-D (8/10) mudam com as linhas em edição (R4-B) e a US-076c; releia o índice.
+Contagem conferida contra `docs/backlog/index.md` em 2026-11-08. Backlog planejado concluído: não há história `todo`, `doing` nem `blocked`.
 
-Em aberto: R5 (importação de fatura, adiada; US-066..069), US-074b e US-076c (bloqueadas, decisão do usuário). R3 e UR-2 concluídos.
+Em aberto: só o que depende do usuário (produção, credenciais, aceite); ver `docs/STATE.md`.
