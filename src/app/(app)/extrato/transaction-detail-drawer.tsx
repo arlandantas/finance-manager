@@ -33,23 +33,12 @@ import {
   personalWriteMessage,
 } from "@/modules/transacoes/ownership";
 import type { TransactionDetailDTO } from "@/modules/transacoes/schemas";
+import { DetailDialogs } from "./detail-dialogs";
+import { EditInstallmentForm } from "./edit-installment-form";
 import { EditTagsForm } from "./edit-tags-form";
 import { EditTransactionForm } from "./edit-transaction-form";
 import { HistoryList } from "./history-list";
-
-function brDate(iso: string): string {
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-slate-100 py-2 last:border-0">
-      <dt className="text-sm text-slate-500">{label}</dt>
-      <dd className="text-right text-sm font-medium text-slate-900">{children}</dd>
-    </div>
-  );
-}
+import { DetailFields } from "./transaction-detail-fields";
 
 /** Desktop (>= 1024): painel lateral à direita; abaixo disso, gaveta/modal (SDD-010 §4.6). */
 const SIDE_PANEL =
@@ -76,7 +65,7 @@ export function TransactionDetailDrawer({
   const [banner, setBanner] = useState<string | null>(null);
   const [undoing, setUndoing] = useState(false);
   const [undoingPayment, setUndoingPayment] = useState(false);
-  // US-040b: parcela é somente leitura (até a US-041); a compra inteira se vê/exclui pelo diálogo do plano
+  // US-040b/041: parcela edita/exclui só em fatura aberta; a compra inteira se vê/exclui pelo diálogo do plano
   const [planDialog, setPlanDialog] = useState<{ confirm: boolean } | null>(null);
   const undoPayment = useUndoInvoicePayment();
   const del = useTransactionState("delete");
@@ -97,6 +86,15 @@ export function TransactionDetailDrawer({
   const planQuery = useInstallmentPlan(installment?.planId ?? null);
   const parcel = planQuery.data?.plan.installments.find((p) => p.no === installment?.no);
   const editable = t && (t.type === "EXPENSE" || t.type === "INCOME") && !installment;
+  // US-041: parcela em fatura aberta edita e exclui; fechada/paga só mostra o motivo
+  const planDto = planQuery.data?.plan;
+  const parcelOpen = Boolean(parcel && parcel.state === "ACTIVE" && !parcel.locked && planDto);
+  const parcelRestorable = Boolean(
+    parcel &&
+      parcel.state === "REMOVED" &&
+      parcel.lockedReason !== "INVOICE_PAID" &&
+      !planDto?.deleted,
+  );
   const tagsEditable = t && (t.type === "EXPENSE" || t.type === "INCOME");
   const family = useFamily().data;
   // SEC-021 / D-GES-50: "Só meu" é alterado por quem controla (pagador, dono da conta e lançador)
@@ -259,7 +257,17 @@ export function TransactionDetailDrawer({
           </p>
         ) : null}
 
-        {t && mode === "edit" ? (
+        {t && mode === "edit" && installment && planDto ? (
+          <EditInstallmentForm
+            t={t}
+            planVersion={planDto.version}
+            onDone={() => setMode("view")}
+            onConflict={setConflictMsg}
+            onSettled={(message, resend) => setSettled({ message, resend })}
+          />
+        ) : null}
+
+        {t && mode === "edit" && !installment ? (
           <EditTransactionForm
             t={t}
             today={defaults.data?.today}
@@ -285,7 +293,10 @@ export function TransactionDetailDrawer({
         {t && mode === "view" ? (
           <>
             <div className="mb-2 flex flex-wrap items-center justify-end gap-2">
-              {t.deletedAt && t.deletionReason === "DELETED" && editable && canWrite ? (
+              {t.deletedAt &&
+              t.deletionReason === "DELETED" &&
+              (editable || parcelRestorable) &&
+              canWrite ? (
                 <Button
                   variant="secondary"
                   disabled={restore.isPending}
@@ -307,7 +318,7 @@ export function TransactionDetailDrawer({
                   {t.isSettlement ? "Desfazer acerto" : "Desfazer transferência"}
                 </Button>
               ) : null}
-              {editable && canWrite && !t.deletedAt ? (
+              {(editable || parcelOpen) && canWrite && !t.deletedAt ? (
                 <Button variant="secondary" onClick={() => setMode("edit")}>
                   <Pencil size={16} aria-hidden="true" />
                   Editar
@@ -332,19 +343,25 @@ export function TransactionDetailDrawer({
                     <ListOrdered size={16} aria-hidden="true" />
                     Ver compra
                   </Button>
-                  {!canWrite ? null : parcel?.lockedReason === "INVOICE_PAID" ? (
+                  {!canWrite ? null : parcel?.lockedReason ? (
                     <span
                       data-testid="installment-paid"
                       className="text-sm font-medium text-slate-600"
                     >
-                      Fatura paga
+                      {parcel.lockedReason === "INVOICE_PAID" ? "Fatura paga" : "Fatura fechada"}
                     </span>
-                  ) : (
-                    <Button variant="secondary" onClick={() => setPlanDialog({ confirm: true })}>
-                      <Trash2 size={16} aria-hidden="true" />
-                      Excluir compra parcelada
-                    </Button>
-                  )}
+                  ) : parcelOpen ? (
+                    <>
+                      <Button variant="secondary" onClick={() => setConfirmingDelete(true)}>
+                        <Trash2 size={16} aria-hidden="true" />
+                        Excluir parcela
+                      </Button>
+                      <Button variant="secondary" onClick={() => setPlanDialog({ confirm: true })}>
+                        <Trash2 size={16} aria-hidden="true" />
+                        Excluir compra parcelada
+                      </Button>
+                    </>
+                  ) : null}
                 </>
               ) : null}
               {editable || installment ? (
@@ -362,64 +379,7 @@ export function TransactionDetailDrawer({
                 <strong>{t?.payer?.name ?? t?.author.name}</strong>, "Só meu": {controlLine}
               </p>
             ) : null}
-            <dl>
-              <Row label="Valor">
-                {t.direction === "CREDIT" ? "+" : "-"}
-                <Money cents={t.amountInCents} />
-              </Row>
-              <Row label="Descrição">{t.description}</Row>
-              <Row label="Data">{brDate(t.occurredOn)}</Row>
-              {installment ? (
-                <Row label="Parcela">
-                  {installment.no}/{installment.count}
-                </Row>
-              ) : null}
-              {t.category ? (
-                <Row label="Categoria">
-                  {t.category.archived ? `${t.category.name} (arquivada)` : t.category.name}
-                </Row>
-              ) : null}
-              {t.account ? (
-                <Row label="Conta">
-                  <SourceBadge color={t.account.color} name={t.account.name} />
-                </Row>
-              ) : null}
-              {t.card ? (
-                <Row label="Cartão">
-                  <SourceBadge color={t.card.color} name={t.card.name} />
-                </Row>
-              ) : null}
-              {t.invoice ? (
-                <Row label="Fatura">
-                  {formatInvoiceLabel(t.invoice.ref)} · fecha {brDate(t.invoice.closingDate)} ·
-                  vence {brDate(t.invoice.dueDate)}
-                </Row>
-              ) : null}
-              {t.type === "EXPENSE" ? (
-                <Row label="Divisão">{t.isSharedExpense ? "Dividida com a família" : "Só meu"}</Row>
-              ) : null}
-              {t.tags.length > 0 ? (
-                <Row label="Tags">
-                  <span className="flex flex-wrap justify-end gap-1" data-testid="detail-tags">
-                    {t.tags.map((tag) => (
-                      <span
-                        key={tag.id}
-                        data-testid="tag-chip"
-                        className="rounded-full border border-slate-200 px-2 py-0.5 text-xs font-medium text-slate-700"
-                      >
-                        {tag.name}
-                      </span>
-                    ))}
-                  </span>
-                </Row>
-              ) : null}
-              {t.note ? <Row label="Observação">{t.note}</Row> : null}
-              {t.deletedAt ? (
-                <Row label="Situação">
-                  {t.deletionReason === "UNDONE" ? "Desfeito" : "Excluído"}
-                </Row>
-              ) : null}
-            </dl>
+            <DetailFields t={t} installment={installment} />
             {t.plannedExpenseId && !t.deletedAt ? (
               <p
                 data-testid="linked-planned"
@@ -501,72 +461,22 @@ export function TransactionDetailDrawer({
         </div>
       </Drawer>
 
-      <Drawer
-        open={confirmingDelete}
-        onOpenChange={setConfirmingDelete}
-        title="Excluir lançamento?"
-      >
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-slate-700">
-            O lançamento sai dos saldos e totais, mas continua no histórico e pode ser restaurado.
-          </p>
-          <Button
-            variant="danger"
-            disabled={del.isPending}
-            onClick={() => t && runState("delete", t)}
-          >
-            {del.isPending ? "Excluindo…" : "Excluir"}
-          </Button>
-          <Button variant="ghost" onClick={() => setConfirmingDelete(false)}>
-            Cancelar
-          </Button>
-        </div>
-      </Drawer>
-
-      <Drawer
-        open={conflictMsg !== null}
-        onOpenChange={(o) => !o && setConflictMsg(null)}
-        title="Lançamento alterado"
-      >
-        <div className="flex flex-col gap-4">
-          <p role="alert" className="text-sm text-slate-800">
-            {conflictMsg}
-          </p>
-          <Button
-            onClick={async () => {
-              setConflictMsg(null);
-              setMode("view");
-              await detail.refetch();
-            }}
-          >
-            Recarregar
-          </Button>
-        </div>
-      </Drawer>
-
-      <Drawer
-        open={settled !== null}
-        onOpenChange={(o) => !o && setSettled(null)}
-        title="Mês já acertado"
-      >
-        <div className="flex flex-col gap-4">
-          <p role="alert" className="text-sm text-slate-800">
-            {settled?.message}
-          </p>
-          <Button
-            onClick={() => {
-              const go = settled?.resend;
-              setSettled(null);
-              go?.();
-            }}
-          >
-            Confirmar mesmo assim
-          </Button>
-          <Button variant="ghost" onClick={() => setSettled(null)}>
-            Cancelar
-          </Button>
-        </div>
-      </Drawer>
+      <DetailDialogs
+        confirmingDelete={confirmingDelete}
+        onConfirmingDelete={setConfirmingDelete}
+        deleting={del.isPending}
+        isParcel={installment !== null}
+        onDelete={() => t && runState("delete", t)}
+        conflictMsg={conflictMsg}
+        onCloseConflict={() => setConflictMsg(null)}
+        onReload={async () => {
+          setConflictMsg(null);
+          setMode("view");
+          await detail.refetch();
+        }}
+        settled={settled}
+        onCloseSettled={() => setSettled(null)}
+      />
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { notFound } from "@/lib/api/errors";
 import { withApi } from "@/lib/api/with-api";
 import { uuidSchema } from "@/lib/schemas";
-import { listHistory } from "@/modules/transacoes/mutations";
+import { listHistory } from "@/modules/transacoes/history";
 
 export const dynamic = "force-dynamic";
 

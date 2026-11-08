@@ -60,10 +60,11 @@ Funcionalidade: Competência da parcela e exclusão da compra parcelada (US-040b
     Então a tela mostra "Há parcelas em faturas já fechadas. Exclua só as parcelas abertas."
     E nenhuma parcela é excluída
 
-  Cenário: Parcela não é editável até a gestão de parcelas
+  Cenário: Parcela em fatura aberta tem as ações de gestão (US-041)
     Dado que Lucas lançou "Notebook" de "R$ 2.500,00" em "10x"
     Quando Lucas abre o detalhe da parcela "3/10"
-    Então o detalhe da parcela não tem "Editar"
+    Então o detalhe da parcela tem "Editar"
+    E o detalhe da parcela tem "Excluir parcela"
     E o detalhe da parcela tem "Excluir compra parcelada"
 
   @integration

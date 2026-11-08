@@ -533,7 +533,7 @@ describe("US-045 compra parcelada", () => {
     expect([...sets]).toEqual(["lazer,trabalho"]);
   });
 
-  it("parcela continua somente leitura para campos financeiros", async () => {
+  it("campo financeiro em parcela sem alcance => 400 (US-041 exige `scope`)", async () => {
     const bought = await makeInstallmentPurchase(fx, {
       card,
       total: 250000,
@@ -541,8 +541,8 @@ describe("US-045 compra parcelada", () => {
       purchaseOn: "2026-10-01",
     });
     const res = await patch(bought.transaction.id, { version: 1, amountInCents: 1000 });
-    expect(res.status).toBe(422);
-    expect(res.body.error.code).toBe("INSTALLMENT_NOT_EDITABLE");
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
   });
 });
 

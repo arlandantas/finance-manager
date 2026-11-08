@@ -233,3 +233,22 @@ export function useInstallmentPlanState(action: "delete" | "restore") {
     onSuccess: invalidate,
   });
 }
+
+// ── Editar parcela (US-041) ──
+import type {
+  EditInstallmentInput,
+  EditInstallmentResponse,
+} from "@/modules/transacoes/installment-schemas";
+
+export function useEditInstallment() {
+  const invalidate = useInvalidateTransaction();
+  return useMutation({
+    mutationFn: (a: { id: string; input: EditInstallmentInput; idempotencyKey: string }) =>
+      apiFetch<EditInstallmentResponse>(`/api/v1/transactions/${a.id}`, {
+        method: "PATCH",
+        body: a.input,
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: invalidate,
+  });
+}

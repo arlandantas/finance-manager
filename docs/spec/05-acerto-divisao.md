@@ -106,6 +106,6 @@ Testes: `tests/unit/split/{split-input,split-amount,settlement,settlement-stored
 Ancoras: SDD-002/011/015/034, ADR-011/016/021 (vigente: só `splitMode<>NONE ⇒ isSharedExpense`; reversão em 2 níveis; `base` usa `weight ?? bps`).
 
 ## Pendências
-- Janela de reversão dispensada pelo usuário (ADR-040, 2026-11-07): sem produção nem dados reais. US-043 entregue; faltam US-041, US-042 e US-044, nessa ordem.
+- Janela de reversão dispensada pelo usuário (ADR-040, 2026-11-07): sem produção nem dados reais. US-043 entregue; faltam US-042 e US-044, nessa ordem.
 - Migração `us043_modo_custom` criou `splitMode`/`splitShares` em previstas (+ CHECK `planned_split_chk`). O CHECK `transactions: isSharedExpense=(splitMode<>NONE)` NÃO entrou: `families.splitEngine` e as fábricas de teste ainda nascem LEGACY (grava `isSharedExpense` sem modo). Entra quando toda família for STORED.
 - Rollback nível 2 (`--rollback --purge`) não vale mais (existe CUSTOM).

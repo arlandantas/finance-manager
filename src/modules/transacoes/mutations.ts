@@ -1,7 +1,7 @@
 import { badRequest, conflict, notFound, unprocessable } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { compareDate, fromDbDate, todayInFamilyTz } from "@/lib/dates";
-import { formatBRL, toCents } from "@/lib/money";
+import { toCents } from "@/lib/money";
 import { periodOf } from "@/lib/period";
 import { formatInvoiceLabel, invoiceRefFor } from "@/modules/cartoes/cycle";
 import { getOrCreateInvoice, lockInvoices } from "@/modules/cartoes/invoices";
@@ -37,19 +37,18 @@ import {
 } from "@/modules/transacoes/ownership";
 import { transacoesRepo } from "@/modules/transacoes/repo";
 import type {
-  RevisionDTO,
   TransactionStateInput,
   UpdateTransactionParsed,
   UpdateTransactionResponse,
 } from "@/modules/transacoes/schemas";
 import { getTransaction, memberRefOf } from "@/modules/transacoes/service";
-import { planSplitChange, SPLIT_MODE_LABEL } from "@/modules/transacoes/split-edit";
+import { planSplitChange } from "@/modules/transacoes/split-edit";
 
 const NOT_EDITABLE = "Transferências e acertos não podem ser editados. Use Desfazer.";
 const INVOICE_PAID_LOCKED =
   "Esta compra está em uma fatura já paga. Desfaça o pagamento da fatura para alterá-la.";
-const INSTALLMENT_NOT_EDITABLE =
-  "Esta parcela não pode ser alterada. Exclua a compra parcelada e lance de novo.";
+const INSTALLMENT_SCOPE_REQUIRED =
+  "Informe o alcance da edição da parcela: somente esta ou esta e as próximas.";
 const linkedToPlanned = (kind: "EXPENSE" | "INCOME") => plannedCopy(kind).linkedToPlanned;
 const PAYMENT_NOT_EDITABLE =
   "O pagamento de fatura não pode ser editado nem excluído. Use Desfazer pagamento.";
@@ -79,9 +78,11 @@ async function loadMutable(
   if (row.kind !== "EXPENSE" && row.kind !== "INCOME") {
     throw unprocessable("NOT_EDITABLE", NOT_EDITABLE);
   }
-  // SDD-014 §4.8: parcela é somente leitura até a US-041 (o contorno é excluir a compra inteira)
+  // US-041: parcela só edita com `scope` (as rotas desviam para `installment-edit.ts`)
   if (row.installmentPlanId) {
-    throw unprocessable("INSTALLMENT_NOT_EDITABLE", INSTALLMENT_NOT_EDITABLE);
+    throw badRequest("VALIDATION_ERROR", INSTALLMENT_SCOPE_REQUIRED, [
+      { path: "scope", message: INSTALLMENT_SCOPE_REQUIRED },
+    ]);
   }
   return row;
 }
@@ -578,71 +579,4 @@ export async function restoreTransaction(
     changes: [{ field: "deletionReason", from: "DELETED", to: null }],
   });
   return { transaction: (await getTransaction(tx, ctx, id)).transaction };
-}
-
-const FIELD_LABELS: Record<string, string> = {
-  amountInCents: "Valor",
-  description: "Descrição",
-  categoryId: "Categoria",
-  occurredOn: "Data",
-  payerMemberId: "Quem pagou",
-  isSharedExpense: "Dividir com a família",
-  split: "Divisão",
-  accountId: "Conta",
-  note: "Observação",
-  tags: "Tags",
-  deletionReason: "Situação",
-  "*": "Criação",
-};
-
-/** GET /transactions/:id/history (SDD-001 §3): mais recente primeiro, com rótulos resolvidos. */
-export async function listHistory(
-  tx: Tx,
-  ctx: RequestContext,
-  id: string,
-): Promise<{ items: RevisionDTO[] }> {
-  const repo = transacoesRepo(tx, ctx.familyId);
-  if (!(await repo.findById(id))) throw notFound("Lançamento não encontrado.");
-  const members = new Map((await repo.listMembers()).map((m) => [m.id, memberRefOf(m)] as const));
-  const accounts = new Map(
-    (
-      await tx.bankAccount.findMany({
-        where: { familyId: ctx.familyId },
-        select: { id: true, name: true },
-      })
-    ).map((a) => [a.id, a.name] as const),
-  );
-  const categories = new Map((await repo.listAllCategories()).map((c) => [c.id, c.name] as const));
-  const label = (field: string, v: unknown): string | undefined => {
-    if (v === null || v === undefined) return undefined;
-    if (field === "accountId") return accounts.get(String(v));
-    if (field === "categoryId") return categories.get(String(v));
-    if (field === "payerMemberId") return members.get(String(v))?.name;
-    if (field === "amountInCents") return formatBRL(Number(v));
-    if (field === "isSharedExpense") return v ? "Comum" : "Pessoal";
-    if (field === "split") return SPLIT_MODE_LABEL[v as "NONE" | "RULE" | "CUSTOM"];
-    return undefined;
-  };
-  const rows = await repo.listRevisions(id);
-  return {
-    items: rows.map((r) => ({
-      revision: r.revision,
-      action: r.action,
-      at: r.at.toISOString(),
-      actor: members.get(r.actorMemberId) ?? { id: r.actorMemberId, name: "Membro", image: null },
-      changes: (r.changes as Array<Change & { source?: string }>).map((c) => {
-        const fromLabel = label(c.field, c.from);
-        const toLabel = label(c.field, c.to);
-        return {
-          field: c.field,
-          label: FIELD_LABELS[c.field] ?? c.field,
-          from: c.from,
-          to: c.to,
-          ...(fromLabel !== undefined ? { fromLabel } : {}),
-          ...(toLabel !== undefined ? { toLabel } : {}),
-          ...(c.source ? { source: c.source } : {}),
-        };
-      }),
-    })),
-  };
 }

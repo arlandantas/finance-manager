@@ -20,7 +20,7 @@ import type {
 const LOCKED = "Há parcelas em faturas já fechadas. Exclua só as parcelas abertas.";
 const PLAN_NOT_FOUND = "Compra parcelada não encontrada.";
 
-type PlanLock = {
+export type PlanLock = {
   id: string;
   cardId: string;
   version: number;
@@ -30,7 +30,7 @@ type PlanLock = {
 };
 
 /** A PRIMEIRA trava de toda operação de plano (SDD-014 §1: plano ➜ faturas em ordem crescente). */
-async function lockPlan(tx: Tx, ctx: RequestContext, id: string): Promise<PlanLock> {
+export async function lockPlan(tx: Tx, ctx: RequestContext, id: string): Promise<PlanLock> {
   const rows = await tx.$queryRaw<PlanLock[]>`
     SELECT id, "cardId", version, "deletedAt", "updatedByMemberId", "authorMemberId"
     FROM installment_plans WHERE id = ${id}::uuid AND "familyId" = ${ctx.familyId}::uuid FOR UPDATE`;
@@ -39,7 +39,7 @@ async function lockPlan(tx: Tx, ctx: RequestContext, id: string): Promise<PlanLo
   return plan;
 }
 
-async function versionConflict(tx: Tx, ctx: RequestContext, plan: PlanLock) {
+export async function versionConflict(tx: Tx, ctx: RequestContext, plan: PlanLock) {
   const by = plan.updatedByMemberId ?? plan.authorMemberId;
   const name = (await memberNames(transacoesRepo(tx, ctx.familyId))).get(by) ?? "outra pessoa";
   return conflict(
@@ -49,13 +49,13 @@ async function versionConflict(tx: Tx, ctx: RequestContext, plan: PlanLock) {
   );
 }
 
-async function cardOf(tx: Tx, ctx: RequestContext, cardId: string) {
+export async function cardOf(tx: Tx, ctx: RequestContext, cardId: string) {
   const card = await tx.creditCard.findFirst({ where: { id: cardId, familyId: ctx.familyId } });
   if (!card) throw notFound(PLAN_NOT_FOUND);
   return card;
 }
 
-async function respond(
+export async function respond(
   tx: Tx,
   ctx: RequestContext,
   planId: string,
@@ -71,7 +71,7 @@ async function respond(
 
 /** US-040b (SDD-014 §4.3): exclui a compra inteira, só se TODA parcela ativa está em fatura aberta. */
 /** As parcelas de um plano repetem pagador, autor e cartão: confere cada combinação uma só vez. */
-async function assertCanWriteParcels(
+export async function assertCanWriteParcels(
   tx: Tx,
   ctx: RequestContext,
   parcels: Array<Parameters<typeof assertCanWriteTransaction>[2]>,

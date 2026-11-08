@@ -352,7 +352,11 @@ export type UpdateTransactionInput = z.input<typeof UpdateTransactionSchema>;
 export type UpdateTransactionParsed = z.output<typeof UpdateTransactionSchema>;
 
 export const TransactionStateSchema = z
-  .object({ version: versionSchema, confirmSettledPeriod: z.boolean().optional() })
+  .object({
+    version: versionSchema,
+    planVersion: versionSchema.optional(), // US-041: só em parcela
+    confirmSettledPeriod: z.boolean().optional(),
+  })
   .strict(); // delete / restore
 export type TransactionStateInput = z.input<typeof TransactionStateSchema>;
 

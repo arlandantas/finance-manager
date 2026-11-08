@@ -474,35 +474,20 @@ describe("US-040a: idempotência, isolamento, atomicidade, concorrência", () =>
 describe("US-040a: arquivar cartão com parcelas futuras (SDD-012 §4.1)", () => {
   it("CARD_HAS_FUTURE_INSTALLMENTS enquanto houver parcela ativa em fatura futura", async () => {
     const res0 = await buy(lucas(), { installments: 3, amountInCents: 30000 });
-    // com a fatura aberta vazia (parcela 1 removida por SQL: a US-041 ainda não existe), só as futuras bloqueiam
-    await db.$executeRaw`UPDATE transactions SET "deletedAt" = now(), "deletedByMemberId" = ${mid("Lucas")}::uuid, "deletionReason" = 'DELETED'
-      WHERE "installmentPlanId" = ${res0.body.plan.id}::uuid AND "installmentNo" = 1`;
+    // com a fatura aberta vazia (parcela 1 excluída, US-041), só as futuras bloqueiam
+    const ids = res0.body.plan.installments.map((p: { transactionId: string }) => p.transactionId);
+    const drop = (txId: string) =>
+      at(() => call(lucas(), "POST", `/api/v1/transactions/${txId}/delete`, { version: 1 }));
+    expect((await drop(ids[0])).status).toBe(200);
     const res = await at(() =>
       call(mariana(), "POST", `/api/v1/cards/${nubank.id}/archive`, { version: 1 }),
     );
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe("CARD_HAS_FUTURE_INSTALLMENTS");
-    await db.$executeRaw`UPDATE transactions SET "deletedAt" = now(), "deletedByMemberId" = ${mid("Lucas")}::uuid, "deletionReason" = 'DELETED'
-      WHERE "installmentPlanId" = ${res0.body.plan.id}::uuid AND "installmentNo" > 1`;
+    for (const txId of ids.slice(1)) expect((await drop(txId)).status).toBe(200);
     const ok = await at(() =>
       call(mariana(), "POST", `/api/v1/cards/${nubank.id}/archive`, { version: 1 }),
     );
     expect(ok.status).toBe(200);
-  });
-});
-
-describe("US-040a: parcela é somente leitura até a US-041", () => {
-  it("PATCH, delete e restore em parcela => 422 INSTALLMENT_NOT_EDITABLE", async () => {
-    const res = await buy(lucas());
-    const id = res.body.transaction.id;
-    for (const [m, p, b] of [
-      ["PATCH", `/api/v1/transactions/${id}`, { version: 1, note: "x" }],
-      ["POST", `/api/v1/transactions/${id}/delete`, { version: 1 }],
-      ["POST", `/api/v1/transactions/${id}/restore`, { version: 1 }],
-    ] as const) {
-      const r = await at(() => call(lucas(), m, p, b));
-      expect(r.status).toBe(422);
-      expect(r.body.error.code).toBe("INSTALLMENT_NOT_EDITABLE");
-    }
   });
 });
