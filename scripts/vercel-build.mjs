@@ -14,6 +14,9 @@ function run(cmd, args) {
 }
 
 if (process.argv[1]?.endsWith("vercel-build.mjs")) {
+  // `src/generated/` está no .gitignore: não depende do `postinstall`, que pode ser pulado/falhar na Vercel.
+  console.log("[vercel-build] gerando o Prisma Client (prisma generate)");
+  run("pnpm", ["exec", "prisma", "generate"]);
   if (shouldMigrate(process.env)) {
     console.log(
       "[vercel-build] VERCEL_ENV=production: aplicando migrações (prisma migrate deploy)",
