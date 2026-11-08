@@ -8,7 +8,7 @@ Atualizado: 2026-11-07
 - Rateio (percentual e centavos por membro) é gravado no lançamento pela regra vigente na DATA da despesa; mudar a regra não reescreve o passado. Famílias novas nascem STORED; antigas só com `migrate:split`.
 - Sobra de centavo fica com quem pagou (se peso > 0). O acerto sugere transferências para zerar o mês; registrar cria transferência entre contas; pode ser desfeito.
 - Acerto opcional por família (só ADMIN liga/desliga; desligar não apaga nada).
-- Modos no lançamento (US-043): "Só meu", "Pela regra da família" e "De outro jeito" (percentual por membro, 0% e 100% valem). Não existe: "dividir" por categoria (US-044).
+- Modos no lançamento (US-043): "Só meu", "Pela regra da família" e "De outro jeito" (percentual por membro, 0% e 100% valem). Categoria pode lembrar "dividir" (US-044, D1..D4).
 - Unidades: centavos inteiros (`amountInCents`); percentuais em bps (10000 = 100%); BigInt interno em `splitAmount`/`apportion`; sem float.
 
 ## Regras
@@ -33,6 +33,14 @@ Atualizado: 2026-11-07
 | C3 | Editar: `split` troca o modo (apaga e regrava as linhas; RULE resolve na data da despesa); RULE sobre RULE e CUSTOM com os mesmos bps não mudam nada; `isSharedExpense:true` numa dividida mantém o modo. Mês acertado exige `confirmSettledPeriod`; acerto desligado = 422 `SETTLEMENT_DISABLED` ao dividir |
 | C4 | `TransactionDTO.split = {mode, ruleVersionId, shares:[{member,bps,amountInCents}]}` (null em "Só meu"); revisão registra `split` (modo antes/depois) |
 | C5 | Previsão: `planned_expenses.splitMode` + `splitShares` (JSON, só CUSTOM); `PlannedExpenseDTO.split`. A baixa herda: RULE resolvida na data do pagamento, CUSTOM copiado (exige membros ativos de novo) |
+
+### Dividir por categoria e revisão do mês (US-044)
+| # | Regra |
+| :-- | :-- |
+| D1 | `Category.defaultSplit` (padrão false; só despesa, 422 `DEFAULT_SPLIT_EXPENSE_ONLY`; acerto desligado 422 `SETTLEMENT_DISABLED`). PATCH `/categories/:id { version, defaultSplit }` por qualquer membro; arquivar preserva. Ligar/desligar sobe `version` |
+| D2 | Cliente (`useSplitDefaultFromCategory`, estado `{mode,userPicked}`): categoria com `defaultSplit` e sem escolha manual sugere RULE; escolha manual vale até fechar o formulário e a categoria nunca a desfaz; sem `defaultSplit` volta ao padrão do modo. Só no lançamento novo (previsão/edição não mudam) |
+| D3 | GET `/settlement/review?period=` => `{eligible,dismissed,count,totalInCents,items}`; `eligible = period.end < hoje`; itens = EXPENSE ativas `splitMode=NONE`, sem parcelas, por competência, `(occurredOn,createdAt,id)` desc, com `version`. Só leitura; acerto desligado = 409 |
+| D4 | POST `/settlement/review/dismiss {period}` grava `settlement_review_dismissals(familyId,periodKey)` com `ON CONFLICT DO NOTHING` (repetir = 200); mês em andamento 422 `PERIOD_NOT_ENDED`. "Dividir" = PATCH `split:{mode:RULE}` (regra da data; mês acertado exige `confirmSettledPeriod`). UI: botão só nos itens de quem lançou ("Só meu" alheio é 403) |
 
 ### Motor do acerto
 | # | Regra | Detalhe |
@@ -100,11 +108,11 @@ Atualizado: 2026-11-07
 | L9 | Destino do acerto livre (SEC-059b) | decisão D-GES-66 |
 
 ## Fontes
-Código: `src/modules/split/` (`split-input`, `custom-input`, `split-amount`, `settlement-{common,legacy,stored}`, `settlement`, `rules`, `service`, `write`, `rule-context`, `rule-service`, `shared-expenses`, `lock`, `guard`, `explain`, `preview`, `pending`, `indicator`, `backfill`, `migrate-family`, `labels`, `copy`, `shares-label`), `src/lib/apportion.ts`, `src/modules/contas/transfers.ts`, `src/modules/transacoes/{service,mutations,split-edit}.ts` (`requireSettledConfirmation`), `src/modules/previstas/split.ts`, `src/components/split-mode-selector.tsx`, `src/modules/familia/{settings,repo}.ts`, `scripts/migrate-split.ts`, `src/app/(app)/acerto/`. Esquema: `transaction_splits`, `transactions.splitMode`, `families.splitEngine/settlementEnabled`, migrações `20261005150000_en002_percentual_por_lancamento`, `20261107000500_us043_modo_custom`.
-Testes: `tests/unit/split/{split-input,split-amount,settlement,settlement-stored,backfill,rules,explain,preview,copy,lock-coverage}`; `tests/integration/{us-043-dividir-no-lancamento,us-009-acerto,us-010-transferencia,us-011-registrar-acerto,us-013b-mes-acertado,us-022-rotulo-regra,us-028-acerto-opcional,us-029-indicador-acerto,us-052-parcelado-fora-do-acerto,en002a-stored,en002-constraints,en002-harness,en002-migracao,us-008-regra-divisao,us-030*,us-093a-titular-e-seletores,us-093a-harness-acerto-sem-conta}`.
+Código: `src/modules/split/` (`review`, `review-repo`, `split-input`, `custom-input`, `split-amount`, `settlement-{common,legacy,stored}`, `settlement`, `rules`, `service`, `write`, `rule-context`, `rule-service`, `shared-expenses`, `lock`, `guard`, `explain`, `preview`, `pending`, `indicator`, `backfill`, `migrate-family`, `labels`, `copy`, `shares-label`), `src/lib/apportion.ts`, `src/modules/contas/transfers.ts`, `src/modules/transacoes/{service,mutations,split-edit}.ts` (`requireSettledConfirmation`), `src/modules/previstas/split.ts`, `src/components/{split-mode-selector,use-split-default-from-category}.tsx`, `src/modules/familia/{settings,repo}.ts`, `scripts/migrate-split.ts`, `src/app/(app)/acerto/`. Esquema: `transaction_splits`, `transactions.splitMode`, `families.splitEngine/settlementEnabled`, migrações `20261005150000_en002_percentual_por_lancamento`, `20261107000500_us043_modo_custom`, `20261108000100_us044_split_padrao_categoria` (`categories.defaultSplit`, `settlement_review_dismissals`).
+Testes: int `us-044-dividir-por-categoria`, unit `ui/split-default-from-category`; `tests/unit/split/{split-input,split-amount,settlement,settlement-stored,backfill,rules,explain,preview,copy,lock-coverage}`; `tests/integration/{us-043-dividir-no-lancamento,us-009-acerto,us-010-transferencia,us-011-registrar-acerto,us-013b-mes-acertado,us-022-rotulo-regra,us-028-acerto-opcional,us-029-indicador-acerto,us-052-parcelado-fora-do-acerto,en002a-stored,en002-constraints,en002-harness,en002-migracao,us-008-regra-divisao,us-030*,us-093a-titular-e-seletores,us-093a-harness-acerto-sem-conta}`.
 Ancoras: SDD-002/011/015/034, ADR-011/016/021 (vigente: só `splitMode<>NONE ⇒ isSharedExpense`; reversão em 2 níveis; `base` usa `weight ?? bps`).
 
 ## Pendências
-- Janela de reversão dispensada pelo usuário (ADR-040, 2026-11-07): sem produção nem dados reais. US-043 e US-042 entregues; falta US-044.
+- Janela de reversão dispensada pelo usuário (ADR-040, 2026-11-07): sem produção nem dados reais. US-043, US-042 e US-044 entregues.
 - Migração `us043_modo_custom` criou `splitMode`/`splitShares` em previstas (+ CHECK `planned_split_chk`). O CHECK `transactions: isSharedExpense=(splitMode<>NONE)` NÃO entrou: `families.splitEngine` e as fábricas de teste ainda nascem LEGACY (grava `isSharedExpense` sem modo). Gatilho (toda família STORED) ainda não vale após a US-042 (parcelado LEGACY grava só `isSharedExpense`): segue adiado.
 - Rollback nível 2 (`--rollback --purge`) não vale mais (existe CUSTOM).

@@ -6,6 +6,7 @@ import type { RulePreviewDTO } from "@/modules/split/preview";
 import type {
   CreateSettlementInput,
   SettlementDTO,
+  SettlementReviewDTO,
   SharedExpensesResponse,
   SplitHistoryResponse,
   SplitRuleDTO,
@@ -63,6 +64,31 @@ export function useSharedExpenses(period: string | undefined, enabled: boolean) 
         `/api/v1/settlement/expenses${period ? `?period=${period}` : ""}`,
       ),
     enabled,
+  });
+}
+
+/** US-044: despesas "Só meu" do mês encerrado (só leitura). 409 com o acerto desligado: a tela já avisa. */
+export function useSettlementReview(period: string | undefined) {
+  return useQuery({
+    queryKey: ["settlement", period ?? "current", "review"],
+    queryFn: () =>
+      apiFetch<SettlementReviewDTO>(
+        `/api/v1/settlement/review${period ? `?period=${period}` : ""}`,
+      ),
+    retry: false,
+  });
+}
+
+export function useDismissSettlementReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (a: { period: string; idempotencyKey: string }) =>
+      apiFetch<{ dismissed: true }>("/api/v1/settlement/review/dismiss", {
+        method: "POST",
+        body: { period: a.period },
+        idempotencyKey: a.idempotencyKey,
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["settlement"] }),
   });
 }
 

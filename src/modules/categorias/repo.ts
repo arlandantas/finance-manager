@@ -45,7 +45,7 @@ export function categoriasRepo(tx: Tx, familyId: string) {
     updateVersioned: (
       id: string,
       version: number,
-      data: { name?: string; icon?: string; updatedByMemberId: string },
+      data: { name?: string; icon?: string; defaultSplit?: boolean; updatedByMemberId: string },
     ) =>
       tx.category.updateMany({
         where: { id, familyId, version },

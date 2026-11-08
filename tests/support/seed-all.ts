@@ -213,4 +213,7 @@ export async function seedEverything(fx: FamilyFixture): Promise<void> {
   await db.categorySuggestionDismissal.create({
     data: { familyId, descriptionKey: "mercado", toCategoryId: category.id, byMemberId: mariana },
   });
+  await db.settlementReviewDismissal.create({
+    data: { familyId, periodKey: "2026-09", byMemberId: mariana },
+  });
 }

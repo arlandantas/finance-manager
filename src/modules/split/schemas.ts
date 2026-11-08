@@ -136,3 +136,22 @@ export type SettlementIndicatorDTO = {
   previous: null | { monthsCount: number; totalInCents: number; oldestPeriodKey: string };
   installmentsOutside: InstallmentsOutside | null; // US-052
 };
+
+export const DismissReviewSchema = z.object({ period: periodKeySchema }).strict();
+
+/** US-044: `GET /settlement/review`. */
+export type SettlementReviewDTO = {
+  eligible: boolean;
+  dismissed: boolean;
+  count: number;
+  totalInCents: number;
+  items: Array<{
+    id: string;
+    version: number;
+    description: string;
+    amountInCents: number;
+    occurredOn: string;
+    payer: MemberRef;
+    category: { id: string; name: string; icon: string };
+  }>;
+};

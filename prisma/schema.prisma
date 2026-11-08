@@ -140,12 +140,12 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(uuid()) @db.Uuid
-  tokenHash    String   @unique // SEC-018: sha256(token) em hex; o banco nunca guarda o token
-  sessionToken String?  @unique // LEGADO: só leitura pelo código antigo durante o deploy; removido na fase 2
-  userId       String   @db.Uuid
-  expires      DateTime @db.Timestamptz(3) // ociosidade (deslizante, 30 dias)
-  createdAt    DateTime @default(now()) @db.Timestamptz(3) // base do prazo absoluto (90 dias)
+  id           String    @id @default(uuid()) @db.Uuid
+  tokenHash    String    @unique // SEC-018: sha256(token) em hex; o banco nunca guarda o token
+  sessionToken String?   @unique // LEGADO: só leitura pelo código antigo durante o deploy; removido na fase 2
+  userId       String    @db.Uuid
+  expires      DateTime  @db.Timestamptz(3) // ociosidade (deslizante, 30 dias)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3) // base do prazo absoluto (90 dias)
   // DEV-91/US-035: sessão de quem foi removido da família. Deixa de autenticar na hora; a linha só serve para
   // mostrar o aviso único "acesso encerrado" no próximo acesso (e é apagada ali ou pelo expurgo).
   endedAt      DateTime? @db.Timestamptz(3)
@@ -175,22 +175,23 @@ model Family {
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   // US-028: acerto de contas opcional; `version` protege o conflito de edição ("alterada por")
-  settlementEnabled Boolean     @default(true)
+  settlementEnabled      Boolean     @default(true)
   // EN-002 (ADR-016/021): motor do acerto da família; novas famílias nascem STORED (o serviço grava)
-  splitEngine       SplitEngine @default(LEGACY)
-  version           Int         @default(1)
-  updatedAt         DateTime    @default(now()) @updatedAt @db.Timestamptz(3)
-  updatedByMemberId String?     @db.Uuid
+  splitEngine            SplitEngine @default(LEGACY)
+  version                Int         @default(1)
+  updatedAt              DateTime    @default(now()) @updatedAt @db.Timestamptz(3)
+  updatedByMemberId      String?     @db.Uuid
   // EN-004 (SDD-021 §5): sobrescrita do teto mensal de IA (centavos); nulo = padrão do ambiente
-  aiMonthlyCapCents Int?
+  aiMonthlyCapCents      Int?
   // EN-006a (ADR-030 §4): o Administrador pode bloquear o acesso por assistente (MCP) da família inteira
-  assistantAccessEnabled Boolean @default(true)
+  assistantAccessEnabled Boolean     @default(true)
 
   llmBudgetMonths              LlmBudgetMonth[]
   llmUsageEvents               LlmUsageEvent[]
   spendingAnalyses             SpendingAnalysis[]
   avoidableDismissals          AvoidableDismissal[]
   categorySuggestionDismissals CategorySuggestionDismissal[]
+  settlementReviewDismissals   SettlementReviewDismissal[]
   aiConsentEvents              AiConsentEvent[]
   mcpGrants                    McpGrant[]
   mcpAuditEvents               McpAuditEvent[]
@@ -272,13 +273,13 @@ model FamilyEvent {
 }
 
 model Member {
-  id       String   @id @default(uuid()) @db.Uuid
-  familyId String   @db.Uuid
+  id                String    @id @default(uuid()) @db.Uuid
+  familyId          String    @db.Uuid
   // US-092 (ADR-033): nulo = membro cadastrado SEM conta (só metadado). NOT NULL caiu; CHECKs/gatilho em SQL cru
   // (members_unlinked_*_chk, members_pending_email_chk, members_name_len_chk, members_link_guard).
-  userId   String?  @db.Uuid
-  role     Role
-  joinedAt DateTime @default(now()) @db.Timestamptz(3)
+  userId            String?   @db.Uuid
+  role              Role
+  joinedAt          DateTime  @default(now()) @db.Timestamptz(3)
   // US-092: rótulo do cadastro (sem conta) ou nome escolhido no aceite (094b); zerado ao excluir a conta
   name              String?
   pendingEmail      String? // e-mail do cadastro sem conta; só ADMIN vê; apagado na remoção
@@ -286,16 +287,16 @@ model Member {
   createdByMemberId String?   @db.Uuid // FK composta em SQL cru
 
   // US-035 (ADR-019): ex-membro. Nunca se apaga `Member`; "ativo" = removedAt nulo
-  removedAt         DateTime?          @db.Timestamptz(3)
-  removedByMemberId String?            @db.Uuid
-  removalKind       MemberRemovalKind?
-  removalNoticeAt   DateTime?          @db.Timestamptz(3)
+  removedAt           DateTime?          @db.Timestamptz(3)
+  removedByMemberId   String?            @db.Uuid
+  removalKind         MemberRemovalKind?
+  removalNoticeAt     DateTime?          @db.Timestamptz(3)
   // US-076a (SDD-027 §R2.2): última conferência dos lançamentos via assistente (cartão da Home)
-  assistantReviewedAt DateTime?        @db.Timestamptz(3)
+  assistantReviewedAt DateTime?          @db.Timestamptz(3)
 
-  family Family @relation(fields: [familyId], references: [id])
-  user   User?  @relation(fields: [userId], references: [id])
-  invitations Invitation[]
+  family          Family                 @relation(fields: [familyId], references: [id])
+  user            User?                  @relation(fields: [userId], references: [id])
+  invitations     Invitation[]
   assistantLimits MemberAssistantLimits?
 
   ownedAccounts                BankAccount[]
@@ -325,6 +326,7 @@ model Member {
   spendingAnalyses             SpendingAnalysis[]
   avoidableDismissals          AvoidableDismissal[]
   categorySuggestionDismissals CategorySuggestionDismissal[]
+  settlementReviewDismissals   SettlementReviewDismissal[]
 
   @@unique([familyId, id])
   // Unicidade (userId) e (familyId, userId) só entre ATIVOS: índices parciais em SQL cru (r21_ex_membro)
@@ -369,6 +371,8 @@ model Category {
   icon              String // chave de ícone (ex.: "shopping-cart")
   sortOrder         Int
   archivedAt        DateTime?    @db.Timestamptz(3)
+  // US-044: lançamentos novos nesta categoria nascem "Pela regra da família" (só despesa)
+  defaultSplit      Boolean      @default(false)
   // US-014: conflito de edição ("alterada por {Nome}")
   version           Int          @default(1)
   updatedAt         DateTime     @default(now()) @updatedAt @db.Timestamptz(3)
@@ -411,14 +415,14 @@ model BankAccount {
   deletedAt          DateTime? @db.Timestamptz(3)
   deletedByMemberId  String?   @db.Uuid
 
-  family            Family             @relation(fields: [familyId], references: [id])
-  owner             Member             @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
+  family            Family              @relation(fields: [familyId], references: [id])
+  owner             Member              @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
   transactions      Transaction[]
   plannedExpenses   PlannedExpense[]
   recurringExpenses RecurringExpense[]
   payerForCards     CreditCard[]
-  plannedFrom       PlannedTransfer[]  @relation("PlannedTransferFrom") // US-100
-  plannedTo         PlannedTransfer[]  @relation("PlannedTransferTo")
+  plannedFrom       PlannedTransfer[]   @relation("PlannedTransferFrom") // US-100
+  plannedTo         PlannedTransfer[]   @relation("PlannedTransferTo")
   recurringFrom     RecurringTransfer[] @relation("RecurringTransferFrom") // US-101
   recurringTo       RecurringTransfer[] @relation("RecurringTransferTo")
 
@@ -466,9 +470,9 @@ model CreditCard {
   // US-050 (SDD-017): cor do marcador (ver BankAccount.color)
   color AccountColor @default(BLUE)
 
-  family           Family            @relation(fields: [familyId], references: [id])
-  owner            Member            @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
-  paymentAccount   BankAccount?      @relation(fields: [familyId, paymentAccountId], references: [familyId, id])
+  family           Family             @relation(fields: [familyId], references: [id])
+  owner            Member             @relation(fields: [familyId, ownerMemberId], references: [familyId, id])
+  paymentAccount   BankAccount?       @relation(fields: [familyId, paymentAccountId], references: [familyId, id])
   invoices         CardInvoice[]
   installmentPlans InstallmentPlan[]
   transactions     Transaction[]
@@ -511,7 +515,7 @@ model TransferGroup {
   deletedAt              DateTime?         @db.Timestamptz(3) // desfeito
   deletedByMemberId      String?           @db.Uuid
 
-  family Family        @relation(fields: [familyId], references: [id])
+  family Family           @relation(fields: [familyId], references: [id])
   legs   Transaction[]
   plan   PlannedTransfer? // US-100: prevista que originou a transferência
 
@@ -521,60 +525,61 @@ model TransferGroup {
 }
 
 model Transaction {
-  id                 String          @id @default(uuid()) @db.Uuid
-  familyId           String          @db.Uuid
+  id                 String            @id @default(uuid()) @db.Uuid
+  familyId           String            @db.Uuid
   kind               TransactionKind
   direction          Direction
-  accountId          String?         @db.Uuid // NULL só em compra no cartão (CHECK tx_kind_shape_chk)
-  cardId             String?         @db.Uuid
-  invoiceId          String?         @db.Uuid
+  accountId          String?           @db.Uuid // NULL só em compra no cartão (CHECK tx_kind_shape_chk)
+  cardId             String?           @db.Uuid
+  invoiceId          String?           @db.Uuid
   amountInCents      BigInt // magnitude (>0; OPENING pode ser 0)
-  occurredOn         DateTime        @db.Date
-  categoryId         String?         @db.Uuid // EXPENSE/INCOME: obrigatório; demais: nulo
+  occurredOn         DateTime          @db.Date
+  categoryId         String?           @db.Uuid // EXPENSE/INCOME: obrigatório; demais: nulo
   description        String // 2..100; padrão = nome da categoria; transferências: texto gerado
   note               String? // até 500
-  payerMemberId      String?         @db.Uuid // EXPENSE/INCOME: quem pagou/recebeu (D-PO-01)
-  isSharedExpense    Boolean         @default(false) // true só em EXPENSE comum
-  authorMemberId     String          @db.Uuid // imutável
-  updatedByMemberId  String?         @db.Uuid
-  transferGroupId    String?         @db.Uuid
-  version            Int             @default(1)
-  createdAt          DateTime        @default(now()) @db.Timestamptz(3)
-  updatedAt          DateTime        @updatedAt @db.Timestamptz(3)
-  deletedAt          DateTime?       @db.Timestamptz(3)
-  deletedByMemberId  String?         @db.Uuid
+  payerMemberId      String?           @db.Uuid // EXPENSE/INCOME: quem pagou/recebeu (D-PO-01)
+  isSharedExpense    Boolean           @default(false) // true só em EXPENSE comum
+  authorMemberId     String            @db.Uuid // imutável
+  updatedByMemberId  String?           @db.Uuid
+  transferGroupId    String?           @db.Uuid
+  version            Int               @default(1)
+  createdAt          DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime          @updatedAt @db.Timestamptz(3)
+  deletedAt          DateTime?         @db.Timestamptz(3)
+  deletedByMemberId  String?           @db.Uuid
   deletionReason     DeletionReason?
   // US-040 (ADR-017/020): parcela de compra parcelada. `competenceOn` é SEMPRE derivada pelo gatilho
   // tx_sync_competence (sem plano = occurredOn; parcela = closingDate da fatura); o default só evita exigi-la no create.
-  installmentPlanId  String?         @db.Uuid
+  installmentPlanId  String?           @db.Uuid
   installmentNo      Int?
   installmentCount   Int?
-  competenceOn       DateTime        @default(dbgenerated("CURRENT_DATE")) @db.Date
+  competenceOn       DateTime          @default(dbgenerated("CURRENT_DATE")) @db.Date
   // EN-002 (ADR-016): rateio por lançamento. `NONE` = "Só meu" = sem linhas em transaction_splits.
-  splitMode          SplitMode       @default(NONE)
-  splitRuleVersionId String?         @db.Uuid
+  splitMode          SplitMode         @default(NONE)
+  splitRuleVersionId String?           @db.Uuid
   // US-076a (SDD-027 §R2.2): lançamento direto pelo assistente. `assistantGrantId` sem FK rígida (a conexão pode ser expurgada)
-  origin           TransactionOrigin @default(APP)
-  assistantGrantId String?           @db.Uuid
-  assistantIdemKey String?
+  origin             TransactionOrigin @default(APP)
+  assistantGrantId   String?           @db.Uuid
+  assistantIdemKey   String?
 
-  family      Family                @relation(fields: [familyId], references: [id])
-  plan        InstallmentPlan?      @relation(fields: [familyId, installmentPlanId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  splitRule   SplitRuleVersion?     @relation(fields: [familyId, splitRuleVersionId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  splits      TransactionSplit[]
-  account     BankAccount?          @relation(fields: [familyId, accountId], references: [familyId, id])
-  card        CreditCard?           @relation(fields: [familyId, cardId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  invoice     CardInvoice?          @relation(fields: [familyId, invoiceId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  category    Category?             @relation(fields: [familyId, categoryId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  payer       Member?               @relation("TxPayer", fields: [familyId, payerMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  author      Member                @relation("TxAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
-  group       TransferGroup?        @relation(fields: [familyId, transferGroupId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  revisions   TransactionRevision[]
-  paidPlanned PlannedExpense?       @relation("PlannedPaidTx")
-  tags        TransactionTag[]
+  family             Family                @relation(fields: [familyId], references: [id])
+  plan               InstallmentPlan?      @relation(fields: [familyId, installmentPlanId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  splitRule          SplitRuleVersion?     @relation(fields: [familyId, splitRuleVersionId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  splits             TransactionSplit[]
+  account            BankAccount?          @relation(fields: [familyId, accountId], references: [familyId, id])
+  card               CreditCard?           @relation(fields: [familyId, cardId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  invoice            CardInvoice?          @relation(fields: [familyId, invoiceId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  category           Category?             @relation(fields: [familyId, categoryId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  payer              Member?               @relation("TxPayer", fields: [familyId, payerMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  author             Member                @relation("TxAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+  group              TransferGroup?        @relation(fields: [familyId, transferGroupId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  revisions          TransactionRevision[]
+  paidPlanned        PlannedExpense?       @relation("PlannedPaidTx")
+  tags               TransactionTag[]
   subscriptionCharge SubscriptionCharge?
 
   @@unique([familyId, id])
+  @@unique([assistantGrantId, assistantIdemKey])
   @@index([familyId, occurredOn(sort: Desc), createdAt(sort: Desc), id(sort: Desc)])
   @@index([familyId, accountId])
   @@index([familyId, payerMemberId, occurredOn])
@@ -584,7 +589,6 @@ model Transaction {
   @@index([familyId, competenceOn(sort: Desc), createdAt(sort: Desc), id(sort: Desc)], map: "tx_family_competence_idx")
   @@index([familyId, kind, competenceOn], map: "tx_family_kind_competence_idx")
   @@index([familyId, origin, occurredOn])
-  @@unique([assistantGrantId, assistantIdemKey])
   @@map("transactions")
 }
 
@@ -985,6 +989,20 @@ model AvoidableDismissal {
   @@map("avoidable_dismissals")
 }
 
+// US-044: "Não perguntar de novo para este mês" na revisão de despesas "Só meu" do mês encerrado.
+model SettlementReviewDismissal {
+  familyId   String   @db.Uuid
+  periodKey  String // YYYY-MM
+  byMemberId String   @db.Uuid
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  family   Family @relation(fields: [familyId], references: [id])
+  byMember Member @relation(fields: [familyId, byMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([familyId, periodKey])
+  @@map("settlement_review_dismissals")
+}
+
 // US-072 (SDD-023 §5): "Recusar" uma sugestão local de categoria; vale para a família (regra local, sem IA).
 model CategorySuggestionDismissal {
   familyId       String   @db.Uuid
@@ -1094,17 +1112,17 @@ model McpClient {
 
 // Pedido validado do /oauth/authorize (TTL 10 min, uso único)
 model McpAuthorizationRequest {
-  id              String    @id @default(uuid()) @db.Uuid
-  clientId        String    @db.Uuid
-  redirectUri     String
-  state           String?
-  codeChallenge   String
-  scopesRequested String[]
-  resource        String
-  userId          String?   @db.Uuid
-  expiresAt       DateTime  @db.Timestamptz(3)
-  consumedAt      DateTime? @db.Timestamptz(3)
-  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  id               String    @id @default(uuid()) @db.Uuid
+  clientId         String    @db.Uuid
+  redirectUri      String
+  state            String?
+  codeChallenge    String
+  scopesRequested  String[]
+  resource         String
+  userId           String?   @db.Uuid
+  expiresAt        DateTime  @db.Timestamptz(3)
+  consumedAt       DateTime? @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
   // SEC-011: sha256(nonce) do cookie do navegador que iniciou o pedido; nulo só em pedidos anteriores à migração
   browserNonceHash String?
 
@@ -1135,9 +1153,9 @@ model McpGrant {
   // SEC-011: aviso "nova conexão" na Home até ser dispensado
   noticeDismissedAt DateTime?         @db.Timestamptz(3)
 
-  family Family     @relation(fields: [familyId], references: [id])
-  member Member     @relation(fields: [familyId, memberId], references: [familyId, id])
-  client McpClient? @relation(fields: [clientId], references: [id])
+  family Family          @relation(fields: [familyId], references: [id])
+  member Member          @relation(fields: [familyId, memberId], references: [familyId, id])
+  client McpClient?      @relation(fields: [clientId], references: [id])
   tokens McpToken[]
   audits McpAuditEvent[]
 
@@ -1209,35 +1227,35 @@ enum SubscriptionChargeStatus {
 }
 
 model CardSubscription {
-  id              String    @id @default(uuid()) @db.Uuid
-  familyId        String    @db.Uuid
-  cardId          String    @db.Uuid
-  description     String // 2..100
-  categoryId      String    @db.Uuid
-  payerMemberId   String    @db.Uuid
-  isSharedExpense Boolean   @default(false) // US-099
-  dayOfMonth      Int // 1..31 (CHECK)
-  firstChargeOn   DateTime  @db.Date
-  endMonth        DateTime? @db.Date // dia 1; último mês cobrado; null = sem fim
-  nextChargeOn    DateTime? @db.Date // atalho do lançamento preguiçoso; null = sem próxima
-  endedAt         DateTime? @db.Timestamptz(3)
-  endedOn         DateTime? @db.Date
-  endedByMemberId String?   @db.Uuid
-  authorMemberId  String    @db.Uuid
-  updatedByMemberId String? @db.Uuid // US-097: quem editou por último ("alterada por")
-  version         Int       @default(1)
-  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+  id                String    @id @default(uuid()) @db.Uuid
+  familyId          String    @db.Uuid
+  cardId            String    @db.Uuid
+  description       String // 2..100
+  categoryId        String    @db.Uuid
+  payerMemberId     String    @db.Uuid
+  isSharedExpense   Boolean   @default(false) // US-099
+  dayOfMonth        Int // 1..31 (CHECK)
+  firstChargeOn     DateTime  @db.Date
+  endMonth          DateTime? @db.Date // dia 1; último mês cobrado; null = sem fim
+  nextChargeOn      DateTime? @db.Date // atalho do lançamento preguiçoso; null = sem próxima
+  endedAt           DateTime? @db.Timestamptz(3)
+  endedOn           DateTime? @db.Date
+  endedByMemberId   String?   @db.Uuid
+  authorMemberId    String    @db.Uuid
+  updatedByMemberId String?   @db.Uuid // US-097: quem editou por último ("alterada por")
+  version           Int       @default(1)
+  createdAt         DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(3)
 
-  family   Family                   @relation(fields: [familyId], references: [id])
-  card     CreditCard               @relation(fields: [familyId, cardId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  category Category                 @relation(fields: [familyId, categoryId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  payer    Member                   @relation("SubscriptionPayer", fields: [familyId, payerMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  author   Member                   @relation("SubscriptionAuthor", fields: [familyId, authorMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  endedBy  Member?                  @relation("SubscriptionEnder", fields: [familyId, endedByMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  updatedBy Member?                 @relation("SubscriptionUpdater", fields: [familyId, updatedByMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
-  amounts  CardSubscriptionAmount[]
-  charges  SubscriptionCharge[]
+  family    Family                   @relation(fields: [familyId], references: [id])
+  card      CreditCard               @relation(fields: [familyId, cardId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  category  Category                 @relation(fields: [familyId, categoryId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  payer     Member                   @relation("SubscriptionPayer", fields: [familyId, payerMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  author    Member                   @relation("SubscriptionAuthor", fields: [familyId, authorMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  endedBy   Member?                  @relation("SubscriptionEnder", fields: [familyId, endedByMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  updatedBy Member?                  @relation("SubscriptionUpdater", fields: [familyId, updatedByMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  amounts   CardSubscriptionAmount[]
+  charges   SubscriptionCharge[]
 
   @@unique([familyId, id])
   @@index([familyId, endedAt, nextChargeOn])
@@ -1308,11 +1326,11 @@ model PlannedTransfer {
   isException       Boolean               @default(false)
 
   series        RecurringTransfer? @relation(fields: [familyId, seriesId], references: [familyId, id])
-  family        Family         @relation(fields: [familyId], references: [id])
-  fromAccount   BankAccount    @relation("PlannedTransferFrom", fields: [familyId, fromAccountId], references: [familyId, id])
-  toAccount     BankAccount    @relation("PlannedTransferTo", fields: [familyId, toAccountId], references: [familyId, id])
-  transferGroup TransferGroup? @relation(fields: [familyId, transferGroupId], references: [familyId, id])
-  author        Member         @relation("PlannedTransferAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+  family        Family             @relation(fields: [familyId], references: [id])
+  fromAccount   BankAccount        @relation("PlannedTransferFrom", fields: [familyId, fromAccountId], references: [familyId, id])
+  toAccount     BankAccount        @relation("PlannedTransferTo", fields: [familyId, toAccountId], references: [familyId, id])
+  transferGroup TransferGroup?     @relation(fields: [familyId, transferGroupId], references: [familyId, id])
+  author        Member             @relation("PlannedTransferAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
 
   @@unique([familyId, id])
   @@unique([familyId, transferGroupId])

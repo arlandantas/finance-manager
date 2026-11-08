@@ -89,9 +89,12 @@ export const UpdateCategorySchema = z
     version: versionSchema,
     name: nameSchema.optional(),
     icon: iconSchema.optional(),
+    defaultSplit: z.boolean().optional(), // US-044
   })
   .strict()
-  .refine((v) => v.name !== undefined || v.icon !== undefined, { message: "Nada para alterar" });
+  .refine((v) => v.name !== undefined || v.icon !== undefined || v.defaultSplit !== undefined, {
+    message: "Nada para alterar",
+  });
 export type UpdateCategoryInput = z.input<typeof UpdateCategorySchema>;
 
 export const CategoryStateSchema = z.object({ version: versionSchema }).strict(); // archive / unarchive
@@ -112,5 +115,6 @@ export type CategoryDTO = {
   kind: "EXPENSE" | "INCOME";
   icon: string;
   archived: boolean;
+  defaultSplit: boolean;
   version: number;
 };

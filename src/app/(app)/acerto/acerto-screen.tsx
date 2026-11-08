@@ -25,6 +25,7 @@ import {
 } from "@/modules/split/hooks";
 import { formatBps, formatBpsList } from "@/modules/split/rules";
 import type { SettlementDTO, SettlementSuggestion, SplitRuleDTO } from "@/modules/split/schemas";
+import { ReviewCard } from "./review-card";
 import { SettleDrawer } from "./settle-drawer";
 
 const firstName = (name: string) => name.split(" ")[0] ?? name;
@@ -428,6 +429,7 @@ export function AcertoScreen() {
                   <MemberCard key={m.member.id} row={m} showRemaining={hasAdjustments} />
                 ))}
               </ul>
+              <ReviewCard period={s.period.key} />
               {s.status !== "EMPTY" ? <SharedExpensesList period={s.period.key} /> : null}
               <RuleSummary s={s} rule={rule.data} />
               {s.settlements.length > 0 ? (

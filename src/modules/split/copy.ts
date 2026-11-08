@@ -16,4 +16,8 @@ export const SPLIT_COPY = {
   backHome: "Voltar para o início",
   personal: (n: number, money: string) =>
     `${n} ${n === 1 ? "despesa Só meu" : "despesas Só meu"} neste mês (${money})`,
+  reviewPrompt: (n: number) =>
+    `${n} ${n === 1 ? "despesa Só meu" : "despesas Só meu"} neste mês. Revisar?`,
+  reviewDismiss: "Não perguntar de novo para este mês",
+  reviewSettled: "Este mês já foi acertado. Dividir muda o acerto; confirme para continuar.",
 } as const;

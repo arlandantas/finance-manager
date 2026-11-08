@@ -23,6 +23,7 @@ import { Drawer } from "@/components/ui/drawer";
 import { Field, inputClass } from "@/components/ui/field";
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { UnlinkedBadge } from "@/components/ui/unlinked-badge";
+import { useSplitDefaultFromCategory } from "@/components/use-split-default-from-category";
 import { ApiClientError, NetworkError } from "@/lib/http";
 import { addMonthsToRef, formatInvoiceLabel, invoiceHint } from "@/modules/cartoes/cycle";
 import { useCards } from "@/modules/cartoes/hooks";
@@ -50,7 +51,6 @@ import {
   saveLabel,
   seriesDefaults,
   serviceOf,
-  sharedAfterModeChange,
   validateDateForWhen,
   validateSubmission,
 } from "@/modules/lancamento/door";
@@ -86,9 +86,11 @@ export function TransactionDrawer({
   const [source, setSource] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [payerId, setPayerId] = useState("");
-  const [shared, setShared] = useState(false); // nasce "Só meu" e não lembra a escolha (US-030)
-  const [sharedTouched, setSharedTouched] = useState(false);
-  const [customOn, setCustomOn] = useState(false); // US-043: "De outro jeito"
+  // Nasce "Só meu" e não lembra a escolha (US-030); categoria com `defaultSplit` sugere "Pela regra" (US-044)
+  const split = useSplitDefaultFromCategory("NONE");
+  const shared = split.mode !== "NONE";
+  const sharedTouched = split.userPicked;
+  const customOn = split.mode === "CUSTOM"; // US-043: "De outro jeito"
   const [customPct, setCustomPct] = useState<Record<string, string>>({});
   // US-090/091: "Quando?" e "Repetir"; a data é uma só (occurredOn em NOW, dueOn em LATER)
   const [when, setWhen] = useState<DoorWhen>("NOW");
@@ -124,6 +126,7 @@ export function TransactionDrawer({
     kind === "EXPENSE" && (when === "LATER" || source.startsWith("card:")) ? repeat : "NONE";
   const doorService = serviceOf({ kind, when, repeat: repeatNow, source });
   const subscriptionOn = doorService === "SUBSCRIPTION";
+  const resetSplit = split.reset;
   const { key, renew: renewKey } = useDoorKey(doorService, unknownOutcome);
   const door = useDoorSubmit(key);
 
@@ -133,9 +136,7 @@ export function TransactionDrawer({
     setKind(initialKind);
     setCents(0);
     setCategoryId("");
-    setShared(false);
-    setSharedTouched(false);
-    setCustomOn(false);
+    resetSplit("NONE");
     setCustomPct({});
     setWhen("NOW");
     setRepeat("NONE");
@@ -276,9 +277,7 @@ export function TransactionDrawer({
       : false;
 
   function changeSplitMode(m: SplitModeValue) {
-    setShared(m !== "NONE");
-    setSharedTouched(true);
-    setCustomOn(m === "CUSTOM");
+    split.pick(m);
     setErrors((e) => ({ ...e, split: undefined }));
     if (m === "CUSTOM" && Object.keys(customPct).length === 0) {
       setCustomPct(initialCustomPct(members, defaults.data?.split.ruleShares));
@@ -288,7 +287,7 @@ export function TransactionDrawer({
   function changeWhen(next: DoorWhen) {
     if (next === when) return;
     setWhen(next);
-    if (!sharedTouched) setShared(sharedAfterModeChange({ shared, sharedTouched }, next));
+    split.setBase(MODE_DEFAULTS[next].shared ? "RULE" : "NONE");
     setErrors((e) => ({ ...e, date: undefined }));
     if (validateDateForWhen(date, next, today)) setDetailsOpen(true);
   }
@@ -304,6 +303,7 @@ export function TransactionDrawer({
       setSource(defaults.data?.accountId ? `acc:${defaults.data.accountId}` : "");
     }
     setCategoryId("");
+    split.onCategory(false);
     setErrors((e) => ({ ...e, categoryId: undefined }));
   }
 
@@ -592,6 +592,7 @@ export function TransactionDrawer({
                     aria-checked={categoryId === c.id}
                     onClick={() => {
                       setCategoryId(c.id);
+                      split.onCategory(c.defaultSplit);
                       setErrors((e) => ({ ...e, categoryId: undefined }));
                     }}
                     className={cn(

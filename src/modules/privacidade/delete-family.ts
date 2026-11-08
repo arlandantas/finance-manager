@@ -29,6 +29,7 @@ export const FAMILY_TABLES_DELETE_ORDER = [
   "llm_budget_months",
   "avoidable_dismissals",
   "category_suggestion_dismissals",
+  "settlement_review_dismissals",
   "transaction_revisions",
   "transaction_splits",
   "planned_expenses",

@@ -8,6 +8,7 @@ import {
   Palette,
   Pencil,
   Plus,
+  Split,
   Undo2,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,8 +21,9 @@ import { Menu, MenuItem } from "@/components/ui/menu";
 import { SegmentedChoice } from "@/components/ui/segmented-choice";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiClientError, NetworkError, newIdempotencyKey } from "@/lib/http";
-import { useCategories, useCategoryState } from "@/modules/categorias/hooks";
+import { useCategories, useCategoryState, useUpdateCategory } from "@/modules/categorias/hooks";
 import type { CategoryDTO } from "@/modules/categorias/schemas";
+import { useDefaults } from "@/modules/transacoes/hooks";
 import { CategoryDrawer, type DrawerTarget } from "./category-drawer";
 
 type Kind = "EXPENSE" | "INCOME";
@@ -33,6 +35,8 @@ export function CategoriasScreen() {
   const list = useCategories(kind, true);
   const archive = useCategoryState("archive");
   const unarchive = useCategoryState("unarchive");
+  const update = useUpdateCategory();
+  const canSplit = useDefaults(kind === "EXPENSE").data?.split.available ?? false; // US-044
   const [target, setTarget] = useState<DrawerTarget | null>(null);
   const busy = useRef(false);
 
@@ -47,6 +51,25 @@ export function CategoriasScreen() {
       { id: c.id, version: c.version, idempotencyKey: newIdempotencyKey() },
       {
         onSuccess: () => toast.success("Categoria reativada"),
+        onError: (e) => toast.error(e instanceof Error ? e.message : "Erro inesperado."),
+        onSettled: () => {
+          busy.current = false;
+        },
+      },
+    );
+  }
+
+  function toggleDefaultSplit(c: CategoryDTO) {
+    if (busy.current) return;
+    busy.current = true;
+    update.mutate(
+      {
+        id: c.id,
+        input: { version: c.version, defaultSplit: !c.defaultSplit },
+        idempotencyKey: newIdempotencyKey(),
+      },
+      {
+        onSuccess: () => toast.success("Categoria atualizada"),
         onError: (e) => toast.error(e instanceof Error ? e.message : "Erro inesperado."),
         onSettled: () => {
           busy.current = false;
@@ -140,7 +163,14 @@ export function CategoriasScreen() {
               <span className="text-slate-700">
                 <CategoryIcon icon={c.icon} />
               </span>
-              <span className="min-w-0 flex-1 truncate font-medium text-slate-900">{c.name}</span>
+              <span className="min-w-0 flex-1 truncate font-medium text-slate-900">
+                {c.name}
+                {c.defaultSplit ? (
+                  <span className="block text-xs font-normal text-slate-600">
+                    Divide por padrão
+                  </span>
+                ) : null}
+              </span>
               <Menu
                 label={`Ações da categoria ${c.name}`}
                 trigger={<MoreHorizontal size={20} aria-hidden="true" />}
@@ -165,6 +195,17 @@ export function CategoriasScreen() {
                       <Palette size={16} aria-hidden="true" />
                       Mudar ícone
                     </MenuItem>
+                    {kind === "EXPENSE" && (canSplit || c.defaultSplit) ? (
+                      <MenuItem
+                        onClick={() => {
+                          close();
+                          toggleDefaultSplit(c);
+                        }}
+                      >
+                        <Split size={16} aria-hidden="true" />
+                        {c.defaultSplit ? "Não dividir por padrão" : "Dividir por padrão"}
+                      </MenuItem>
+                    ) : null}
                     <MenuItem
                       onClick={() => {
                         close();

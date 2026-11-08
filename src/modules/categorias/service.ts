@@ -8,6 +8,7 @@ import {
   MAX_CATEGORIES_PER_KIND,
   type UpdateCategoryInput,
 } from "@/modules/categorias/schemas";
+import { assertCanShare } from "@/modules/split/guard";
 
 type Row = NonNullable<Awaited<ReturnType<ReturnType<typeof categoriasRepo>["findById"]>>>;
 type Repo = ReturnType<typeof categoriasRepo>;
@@ -23,6 +24,7 @@ export function toCategoryDTO(c: Row): CategoryDTO {
     kind: c.kind,
     icon: c.icon,
     archived: c.archivedAt !== null,
+    defaultSplit: c.defaultSplit,
     version: c.version,
   };
 }
@@ -87,6 +89,17 @@ export async function createCategory(
   }
 }
 
+/** US-044: só despesa; com o acerto desligado não há o que dividir. */
+async function assertDefaultSplitAllowed(tx: Tx, ctx: RequestContext, kind: "EXPENSE" | "INCOME") {
+  if (kind !== "EXPENSE") {
+    throw unprocessable(
+      "DEFAULT_SPLIT_EXPENSE_ONLY",
+      "Só categorias de despesa podem dividir por padrão",
+    );
+  }
+  await assertCanShare(tx, ctx);
+}
+
 /** SDD-007 §4.2. */
 export async function updateCategory(
   tx: Tx,
@@ -107,7 +120,9 @@ export async function updateCategory(
   }
   const nameChanged = input.name !== undefined && input.name !== row.name;
   const iconChanged = input.icon !== undefined && input.icon !== row.icon;
-  if (!nameChanged && !iconChanged) {
+  const splitChanged = input.defaultSplit !== undefined && input.defaultSplit !== row.defaultSplit;
+  if (input.defaultSplit !== undefined) await assertDefaultSplitAllowed(tx, ctx, row.kind);
+  if (!nameChanged && !iconChanged && !splitChanged) {
     if (input.version !== row.version) throw await versionConflict(repo, id);
     return { category: toCategoryDTO(row) };
   }
@@ -120,6 +135,9 @@ export async function updateCategory(
     res = await repo.updateVersioned(id, input.version, {
       ...(nameChanged && input.name !== undefined ? { name: input.name } : {}),
       ...(iconChanged && input.icon !== undefined ? { icon: input.icon } : {}),
+      ...(splitChanged && input.defaultSplit !== undefined
+        ? { defaultSplit: input.defaultSplit }
+        : {}),
       updatedByMemberId: ctx.memberId,
     });
   } catch (e) {
