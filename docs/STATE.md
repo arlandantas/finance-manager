@@ -7,8 +7,8 @@
 
 ## Próximo passo
 1. Aceitar UR-2, US-050/051 e o bloco R3; QA com dados reais fica com o usuário.
-2. Achados do QA a tratar (sem história ainda): seletor de divisão mostra só 2 opções na família demo (CUSTOM só em STORED; AC1 da US-043 pede 3); revisão do mês tem um único "Dividir" abaixo da lista (só vale p/ itens próprios, sem indicar qual); aviso ao excluir parcela diz "Despesa excluída".
-3. CHECK `isSharedExpense=(splitMode<>NONE)` em `transactions` só quando toda família for STORED (LEGACY grava sem modo).
+2. Achados do QA do R3 tratados (`a2876e0`, ADR-041): motor STORED por padrão (migração `20261108000200` vira só famílias LEGACY sem despesa comum; as demais exigem `pnpm migrate:split --dry-run` e depois sem a flag, com `--verify`); revisão do mês com ação por item; "Parcela excluída". QA no browser repetido nesses pontos (dev migrada com `migrate:split`, gate ok, acerto de out idêntico).
+3. CHECK `isSharedExpense=(splitMode<>NONE)` em `transactions` só depois de `migrate:split` em produção e `--verify` limpo (ADR-041).
 4. Bloqueadas: US-066..069 (R5 adiada), US-074b e US-076c (decisão do usuário).
 
 ## Pendências do usuário
