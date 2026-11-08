@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { withClock } from "@/lib/clock";
+import { logger } from "@/lib/logger";
 import { InMemoryMailer, setMailer } from "@/lib/mail";
 import { call } from "../support/call";
 import { resetDb, testDb } from "../support/db";
@@ -132,6 +133,32 @@ describe("AC4: chave patEnabled do Administrador", () => {
   });
 });
 
+describe("confirmação do PAT", () => {
+  const patch = (who: As, id: string, body: Record<string, unknown>) =>
+    at(0, () => call(who, "PATCH", `/api/v1/assistant/connections/${id}/confirmation`, body));
+
+  it("PAT: desligar sem riskAcknowledged = 400; com = 200; ligar não exige", async () => {
+    const made = await create(lucas(), { allowWrite: true, writeAcknowledged: true });
+    const id = made.body.connection.id as string;
+    expect((await patch(lucas(), id, { requireConfirmation: false })).status).toBe(400);
+    expect((await db.mcpGrant.findUniqueOrThrow({ where: { id } })).requireConfirmation).toBe(true);
+    const ok = await patch(lucas(), id, { requireConfirmation: false, riskAcknowledged: true });
+    expect(ok.status).toBe(200);
+    expect(ok.body.connection.requireConfirmation).toBe(false);
+    expect((await patch(lucas(), id, { requireConfirmation: true })).status).toBe(200);
+  });
+
+  it("conexão OAuth segue sem exigir a ciência", async () => {
+    const o = await at(0, () =>
+      oauthDance({ member: lucas(), scopes: ["read", "write"], allowWrite: true }),
+    );
+    const grant = await db.mcpGrant.findFirstOrThrow({ where: { kind: "OAUTH" } });
+    await db.mcpGrant.update({ where: { id: grant.id }, data: { requireConfirmation: true } });
+    expect(o.accessToken).toBeTruthy();
+    expect((await patch(lucas(), grant.id, { requireConfirmation: false })).status).toBe(200);
+  });
+});
+
 describe("AC6: e-mail de limite do token pessoal", () => {
   it("a 61ª chamada no minuto dispara 1 e-mail; a 62ª não; sem token, valores nem descrições", async () => {
     const token = (await create()).body.token as string;
@@ -196,8 +223,16 @@ describe("AC6: e-mail de limite do token pessoal", () => {
 
   it("falha do e-mail não derruba a resposta de limite", async () => {
     const token = (await create()).body.token as string;
-    mailer.failWith = new Error("smtp fora");
+    mailer.failWith = new Error("smtp fora SEGREDO-ERRO");
+    const spies = (["info", "warn", "error", "debug"] as const).map((l) =>
+      vi.spyOn(logger, l).mockImplementation(() => undefined),
+    );
     for (let i = 0; i < 60; i++) await ping(token);
     expect((await ping(token)).status).toBe(429);
+    const logged = JSON.stringify(spies.flatMap((s) => s.mock.calls));
+    expect(logged).toContain("mcp_pat_alert_failed");
+    expect(logged).not.toContain(token);
+    expect(logged).not.toContain("SEGREDO-ERRO");
+    expect(logged).not.toContain("smtp fora");
   });
 });

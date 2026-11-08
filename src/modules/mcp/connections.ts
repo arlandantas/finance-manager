@@ -1,4 +1,4 @@
-import { conflict, forbidden, notFound } from "@/lib/api/errors";
+import { ApiError, conflict, forbidden, notFound } from "@/lib/api/errors";
 import type { RequestContext, Tx } from "@/lib/api/types";
 import { recordAudit } from "@/modules/mcp/audit";
 import {
@@ -183,11 +183,19 @@ export async function setConnectionConfirmation(
   input: SetConfirmationInput,
 ): Promise<{ connection: ConnectionDTO }> {
   const rows = await tx.$queryRaw<
-    Array<{ id: string; requireConfirmation: boolean; status: string }>
-  >`SELECT id, "requireConfirmation", status FROM mcp_grants WHERE id = ${id}::uuid AND "familyId" = ${ctx.familyId}::uuid AND "memberId" = ${ctx.memberId}::uuid FOR UPDATE`;
+    Array<{ id: string; requireConfirmation: boolean; status: string; kind: string }>
+  >`SELECT id, "requireConfirmation", status, kind::text FROM mcp_grants WHERE id = ${id}::uuid AND "familyId" = ${ctx.familyId}::uuid AND "memberId" = ${ctx.memberId}::uuid FOR UPDATE`;
   const g = rows[0];
   if (!g) throw notFound("Conexão não encontrada.");
   if (g.status !== "ACTIVE") throw conflict("CONNECTION_INACTIVE", "A conexão não está ativa.");
+  // ADR-043 §9: desligar a confirmação de um token pessoal exige ciência explícita do risco
+  if (g.kind === "PAT" && !input.requireConfirmation && g.requireConfirmation) {
+    if (input.riskAcknowledged !== true) {
+      throw new ApiError(400, "VALIDATION_ERROR", "Confirme a ciência do risco para desligar.", {
+        fields: { riskAcknowledged: "obrigatório" },
+      });
+    }
+  }
   if (g.requireConfirmation !== input.requireConfirmation) {
     await tx.mcpGrant.update({
       where: { id },

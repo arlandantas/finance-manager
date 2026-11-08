@@ -34,7 +34,9 @@ export type ConfirmProposalResult = {
 
 export const EmptyBodySchema = z.object({}).strict();
 
-export const SetConfirmationSchema = z.object({ requireConfirmation: z.boolean() }).strict();
+export const SetConfirmationSchema = z
+  .object({ requireConfirmation: z.boolean(), riskAcknowledged: z.literal(true).optional() })
+  .strict();
 export type SetConfirmationInput = z.infer<typeof SetConfirmationSchema>;
 
 export const PROPOSAL_EXPIRED_MESSAGE =

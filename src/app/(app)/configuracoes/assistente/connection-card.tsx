@@ -103,7 +103,12 @@ function ConfirmationToggle({ c }: { c: ConnectionDTO }) {
     }
     setWarn(false);
     set.mutate(
-      { id: c.id, requireConfirmation: !on, idempotencyKey: keyRef.current },
+      {
+        id: c.id,
+        requireConfirmation: !on,
+        ...(confirmed ? { riskAcknowledged: true as const } : {}),
+        idempotencyKey: keyRef.current,
+      },
       {
         onSuccess: () => {
           keyRef.current = newIdempotencyKey();

@@ -40,12 +40,20 @@ export function useDecideProposal(id: string, action: "confirm" | "reject") {
 export function useSetConfirmation() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (a: { id: string; requireConfirmation: boolean; idempotencyKey: string }) =>
+    mutationFn: (a: {
+      id: string;
+      requireConfirmation: boolean;
+      riskAcknowledged?: true;
+      idempotencyKey: string;
+    }) =>
       apiFetch<{ connection: ConnectionDTO }>(
         `/api/v1/assistant/connections/${a.id}/confirmation`,
         {
           method: "PATCH",
-          body: { requireConfirmation: a.requireConfirmation },
+          body: {
+            requireConfirmation: a.requireConfirmation,
+            ...(a.riskAcknowledged ? { riskAcknowledged: true } : {}),
+          },
           idempotencyKey: a.idempotencyKey,
         },
       ),
