@@ -73,7 +73,7 @@ type TxRow = {
   updatedAt: Date;
   deletedAt: Date | null;
   deletionReason: "DELETED" | "UNDONE" | null;
-  origin?: "APP" | "ASSISTANT" | "SUBSCRIPTION";
+  origin?: "APP" | "ASSISTANT" | "SUBSCRIPTION" | "INVOICE_IMPORT";
   assistantGrantId?: string | null;
 };
 

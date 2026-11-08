@@ -167,6 +167,7 @@ model VerificationToken {
 
 // ───────── Núcleo familiar ─────────
 model Family {
+  importBatches      ImportBatch[] // US-067
   assistantProposals AssistantProposal[] // US-076c
   id                 String              @id @default(uuid()) @db.Uuid
   name               String
@@ -254,6 +255,8 @@ enum FamilyEventType {
   TAG_RENAMED // US-046 (SDD-016): gestão de tags (sem uso nesta fatia)
   TAG_MERGED
   TAG_DELETED
+  INVOICE_IMPORTED // US-067/068 (ADR-042)
+  INVOICE_IMPORT_REVERTED // US-069
 }
 
 // Trilha append-only de eventos da família (trigger forbid_mutation em SQL cru)
@@ -274,6 +277,8 @@ model FamilyEvent {
 }
 
 model Member {
+  importedBatches    ImportBatch[]       @relation("BatchImporter") // US-067
+  revertedBatches    ImportBatch[]       @relation("BatchReverter") // US-067
   assistantProposals AssistantProposal[] // US-076c
   id                 String              @id @default(uuid()) @db.Uuid
   familyId           String              @db.Uuid
@@ -449,6 +454,7 @@ enum AccountColor {
 
 // ───────── Cartões de crédito (US-015, SDD-008, ADR-014) ─────────
 model CreditCard {
+  importBatches      ImportBatch[] // US-067
   assistantProposals AssistantProposal[] // US-076c
   id                 String              @id @default(uuid()) @db.Uuid
   familyId           String              @db.Uuid
@@ -489,13 +495,14 @@ model CreditCard {
 
 // Fatura materializada sob demanda (primeira compra no ciclo). Total, limite e situação são derivados (ADR-014).
 model CardInvoice {
-  id             String   @id @default(uuid()) @db.Uuid
-  familyId       String   @db.Uuid
-  cardId         String   @db.Uuid
+  importBatches  ImportBatch[] // US-067
+  id             String        @id @default(uuid()) @db.Uuid
+  familyId       String        @db.Uuid
+  cardId         String        @db.Uuid
   referenceMonth String // "YYYY-MM" do mês de FECHAMENTO
-  closingDate    DateTime @db.Date // snapshot do ciclo do cartão na criação
-  dueDate        DateTime @db.Date
-  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  closingDate    DateTime      @db.Date // snapshot do ciclo do cartão na criação
+  dueDate        DateTime      @db.Date
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
 
   card         CreditCard    @relation(fields: [familyId, cardId], references: [familyId, id])
   transactions Transaction[]
@@ -531,6 +538,7 @@ model TransferGroup {
 
 model Transaction {
   assistantProposals  AssistantProposal[] // US-076c
+  importBatch         ImportBatch?        @relation(fields: [familyId, importBatchId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
   id                  String              @id @default(uuid()) @db.Uuid
   familyId            String              @db.Uuid
   kind                TransactionKind
@@ -568,6 +576,9 @@ model Transaction {
   assistantGrantId    String?             @db.Uuid
   assistantIdemKey    String?
   assistantProposalId String?             @unique @db.Uuid // US-076c: proposta confirmada que originou o lançamento (sem FK: ciclo com a proposta)
+  // US-067 (ADR-042 §10): lote de importação de fatura e chave de dedupe (único parcial por família em SQL cru)
+  importBatchId       String?             @db.Uuid
+  importKey           String?
 
   family             Family                @relation(fields: [familyId], references: [id])
   plan               InstallmentPlan?      @relation(fields: [familyId, installmentPlanId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
@@ -655,13 +666,15 @@ model InstallmentPlan {
   updatedAt          DateTime  @updatedAt @db.Timestamptz(3)
   deletedAt          DateTime? @db.Timestamptz(3)
   deletedByMemberId  String?   @db.Uuid
+  importBatchId      String?   @db.Uuid // US-067
 
-  family   Family        @relation(fields: [familyId], references: [id])
-  card     CreditCard    @relation(fields: [familyId, cardId], references: [familyId, id])
-  category Category      @relation(fields: [familyId, categoryId], references: [familyId, id])
-  payer    Member        @relation("PlanPayer", fields: [familyId, payerMemberId], references: [familyId, id])
-  author   Member        @relation("PlanAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
-  parcels  Transaction[]
+  importBatch ImportBatch?  @relation(fields: [familyId, importBatchId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  family      Family        @relation(fields: [familyId], references: [id])
+  card        CreditCard    @relation(fields: [familyId, cardId], references: [familyId, id])
+  category    Category      @relation(fields: [familyId, categoryId], references: [familyId, id])
+  payer       Member        @relation("PlanPayer", fields: [familyId, payerMemberId], references: [familyId, id])
+  author      Member        @relation("PlanAuthor", fields: [familyId, authorMemberId], references: [familyId, id])
+  parcels     Transaction[]
 
   @@unique([familyId, id])
   @@index([familyId, cardId, purchaseOn])
@@ -1031,6 +1044,7 @@ enum TransactionOrigin {
   APP
   ASSISTANT
   SUBSCRIPTION // US-096 (ADR-036): cobrança automática de assinatura no cartão
+  INVOICE_IMPORT // US-067 (ADR-042): importada de fatura (CSV/PDF)
 }
 
 // US-076b (SDD-027 §R2.2): limites de lançamento do assistente, por MEMBRO; null = sem limite. Sem linha = padrões sugeridos.
@@ -1419,4 +1433,39 @@ model RecurringTransfer {
   @@unique([familyId, id])
   @@index([familyId, endedAt, generatedThroughMonth])
   @@map("recurring_transfers")
+}
+
+enum ImportSource {
+  CSV
+  PDF
+}
+
+// US-067 (ADR-042 §10, §12): lote de importação de fatura; só metadados (nunca nome nem conteúdo do arquivo).
+// Único parcial (familyId, cardId, fileHash) WHERE revertedAt IS NULL em SQL cru.
+model ImportBatch {
+  id                 String       @id @default(uuid()) @db.Uuid
+  familyId           String       @db.Uuid
+  cardId             String       @db.Uuid
+  invoiceId          String       @db.Uuid
+  fileHash           String
+  source             ImportSource
+  itemCount          Int
+  totalInCents       BigInt
+  importedByMemberId String       @db.Uuid
+  importedAt         DateTime     @default(now()) @db.Timestamptz(3)
+  revertedAt         DateTime?    @db.Timestamptz(3)
+  revertedByMemberId String?      @db.Uuid
+  version            Int          @default(1)
+
+  family       Family            @relation(fields: [familyId], references: [id])
+  card         CreditCard        @relation(fields: [familyId, cardId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  invoice      CardInvoice       @relation(fields: [familyId, invoiceId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  importedBy   Member            @relation("BatchImporter", fields: [familyId, importedByMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  revertedBy   Member?           @relation("BatchReverter", fields: [familyId, revertedByMemberId], references: [familyId, id], onDelete: Restrict, onUpdate: Restrict)
+  transactions Transaction[]
+  plans        InstallmentPlan[]
+
+  @@unique([familyId, id])
+  @@index([familyId, cardId, importedAt])
+  @@map("import_batches")
 }

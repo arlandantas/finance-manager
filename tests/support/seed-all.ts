@@ -5,6 +5,7 @@ import {
   makeCard,
   makeCardPurchase,
   makeInvitation,
+  makeInvoice,
   makePlannedExpense,
   makeTransaction,
   makeTransfer,
@@ -138,8 +139,22 @@ export async function seedEverything(fx: FamilyFixture): Promise<void> {
       status: "SKIPPED_INVOICE_PAID",
     },
   });
+  // US-067: lote de importação (o plano abaixo aponta para ele: a ordem de exclusão precisa respeitar a FK)
+  const importBatch = await db.importBatch.create({
+    data: {
+      familyId,
+      cardId: card.id,
+      invoiceId: (await makeInvoice(fx, card, "2026-10")).id,
+      fileHash: "b".repeat(64),
+      source: "CSV",
+      itemCount: 1,
+      totalInCents: 30000n,
+      importedByMemberId: mariana,
+    },
+  });
   await db.installmentPlan.create({
     data: {
+      importBatchId: importBatch.id,
       familyId,
       cardId: card.id,
       totalInCents: 30000n,

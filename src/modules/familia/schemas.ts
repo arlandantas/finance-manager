@@ -160,7 +160,9 @@ export type FamilyEventDTO = {
     | "MEMBER_LINKED" // US-094b
     | "TAG_RENAMED" // US-046 (SDD-016): gestão de tags
     | "TAG_MERGED"
-    | "TAG_DELETED";
+    | "TAG_DELETED"
+    | "INVOICE_IMPORTED" // US-068
+    | "INVOICE_IMPORT_REVERTED"; // US-069
   actor: { id: string; name: string };
   target: { id: string; name: string } | null;
   changes: Record<string, unknown>;

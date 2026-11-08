@@ -178,6 +178,8 @@ const EVENT_TEXT: Record<FamilyDTO["events"][number]["type"], string> = {
   TAG_RENAMED: "renomeou uma tag",
   TAG_MERGED: "mesclou tags",
   TAG_DELETED: "removeu uma tag",
+  INVOICE_IMPORTED: "importou uma fatura",
+  INVOICE_IMPORT_REVERTED: "desfez a importação de uma fatura",
 };
 
 function RenameDialog({

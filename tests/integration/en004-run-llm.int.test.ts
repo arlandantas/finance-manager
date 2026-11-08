@@ -174,6 +174,24 @@ describe("EN-004 runLlm", () => {
     expect(await db.llmUsageEvent.count()).toBe(0);
   });
 
+  it("finalidade desconhecida/indisponível ⇒ 422 PURPOSE_NOT_AVAILABLE, sem provedor nem reserva", async () => {
+    const e = await fail(
+      runLlm(
+        ctx,
+        {
+          purpose: "FUTURE_PURPOSE" as never, // US-066c liberou INVOICE_IMPORT: só uma finalidade fora do enum cai aqui
+          payload: {},
+          buildPrompt: () => ({ system: "s", input: "{}" }),
+          outputSchema,
+        },
+        { db, port: fake, config: cfg(), assertConsent: allow },
+      ),
+    );
+    expect(e).toMatchObject({ status: 422, code: "PURPOSE_NOT_AVAILABLE" });
+    expect(fake.calls).toHaveLength(0);
+    expect(await db.llmUsageEvent.count()).toBe(0);
+  });
+
   it("flag AI_FEATURES_ENABLED=false ⇒ 503 AI_UNAVAILABLE", async () => {
     expect(await fail(run({ config: cfg({ AI_FEATURES_ENABLED: "false" }) }))).toMatchObject({
       status: 503,

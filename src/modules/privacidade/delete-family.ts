@@ -43,6 +43,7 @@ export const FAMILY_TABLES_DELETE_ORDER = [
   "tags",
   "transactions",
   "installment_plans",
+  "import_batches", // US-067: depois de transactions e installment_plans (FK RESTRICT), antes de card_invoices, cartões e membros
   "recurring_expenses",
   "card_invoices",
   "credit_cards",

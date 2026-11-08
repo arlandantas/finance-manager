@@ -53,6 +53,8 @@ async function send(o: Opts = {}) {
   const text = await res.text();
   return { status: res.status, body: text ? JSON.parse(text) : null };
 }
+const outrosId = async () =>
+  (await db.category.findFirstOrThrow({ where: { familyId: fx.family.id, name: "Outros" } })).id;
 const counts = async () => ({
   tx: await db.transaction.count(),
   idem: await db.idempotencyRecord.count(),
@@ -83,7 +85,7 @@ describe("US-066 preview do CSV", () => {
     expect(r.body.items[0]).toMatchObject({
       amountInCents: "123456",
       kind: "PURCHASE",
-      categoryId: null,
+      categoryId: await outrosId(), // US-067: sem histórico = "Outros"
       flags: [],
       payerMemberId: fx.byName.Lucas?.memberId,
     });

@@ -5,16 +5,16 @@ import { openInvoiceRef } from "@/modules/cartoes/cycle";
 import { activePayments } from "@/modules/cartoes/queries";
 import { cartoesRepo } from "@/modules/cartoes/repo";
 import { parseInvoiceCsv } from "./csv-parser";
+import { buildDraft } from "./draft";
 import { detectFormat } from "./file-format";
 import { type PdfPreview, previewInvoicePdf } from "./pdf-preview";
-import { type ImportDraft, ImportDraftSchema } from "./schemas";
-import { hashFile, issueImportToken } from "./token";
+import type { ImportDraft } from "./schemas";
+import { hashFile } from "./token";
 
 const MESSAGES: Record<string, string> = {
   CSV_COLUMNS_NOT_FOUND: "Não encontramos as colunas de data, descrição e valor.",
   NOT_AN_INVOICE: "Este arquivo não parece uma fatura de cartão.",
 };
-const GROUPS = { PURCHASE: "Compras", CREDIT: "Estornos e créditos" } as const;
 
 /** Spec 13 regra 3: fatura alvo do cartão, ativa, não paga e não posterior à aberta. */
 export async function assertTarget(
@@ -65,40 +65,21 @@ export async function previewInvoiceImport(
     }
     throw unprocessable(parsed.code, MESSAGES[parsed.code] ?? "Arquivo inválido.");
   }
-  const fileHash = hashFile(input.bytes);
-  const items = parsed.items.map((i) => ({
-    idx: i.idx,
-    date: i.date,
-    description: i.description,
-    amountInCents: String(i.amountInCents),
-    kind: i.kind,
-    installment: i.installment,
-    selected: i.kind === "PURCHASE",
-    group: GROUPS[i.kind],
-    categoryId: null,
-    payerMemberId: card.ownerMemberId,
-    flags: [],
-  }));
-  // Totais definitivos (reconcileTotal, BigInt) chegam na US-067; aqui só a soma crua.
-  const total = parsed.items.reduce(
-    (s, i) => (i.kind === "PURCHASE" ? s + i.amountInCents : s - i.amountInCents),
-    0n,
-  );
-  const selected = parsed.items.reduce(
-    (s, i) => (i.kind === "PURCHASE" ? s + i.amountInCents : s),
-    0n,
-  );
-  return ImportDraftSchema.parse({
-    importToken: issueImportToken(
-      { familyId: ctx.familyId, cardId, fileHash, source: "CSV" },
-      ctx.clock.now(),
-    ),
-    source: "CSV",
-    fileHash,
+  return buildDraft(tx, ctx, {
+    cardId,
+    ownerMemberId: card.ownerMemberId,
     invoiceRef: input.invoiceRef,
+    source: "CSV",
+    fileHash: hashFile(input.bytes),
     declared: {},
-    items,
-    totals: { itemsTotal: String(total), selectedTotal: String(selected), difference: "0" },
     warnings: [],
+    items: parsed.items.map((i) => ({
+      idx: i.idx,
+      date: i.date,
+      description: i.description,
+      amountInCents: String(i.amountInCents),
+      kind: i.kind,
+      installment: i.installment,
+    })),
   });
 }

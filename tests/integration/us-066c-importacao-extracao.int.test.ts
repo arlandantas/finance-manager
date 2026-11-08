@@ -117,7 +117,9 @@ describe("US-066c extração do PDF pela IA", () => {
       date: "2026-10-13",
       installment: { no: 3, count: 10 },
       flags: [],
-      categoryId: null,
+      categoryId: (
+        await db.category.findFirstOrThrow({ where: { familyId: fx.family.id, name: "Outros" } })
+      ).id, // US-067: sem histórico = "Outros"
     });
     expect(r.body.declared).toMatchObject({ totalInCents: "128456", dueDate: "2026-11-05" });
     expect(r.body.importToken).toBeTruthy();

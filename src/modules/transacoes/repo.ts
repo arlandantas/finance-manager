@@ -163,7 +163,7 @@ export function transacoesRepo(tx: Tx, familyId: string) {
       splitMode?: "NONE" | "RULE" | "CUSTOM";
       splitRuleVersionId?: string | null;
       /** US-076a: lançamento direto pelo assistente. */
-      origin?: "APP" | "ASSISTANT" | "SUBSCRIPTION";
+      origin?: "APP" | "ASSISTANT" | "SUBSCRIPTION" | "INVOICE_IMPORT";
       assistantGrantId?: string | null;
       assistantIdemKey?: string | null;
       createdAt?: Date;

@@ -6,6 +6,7 @@ import { aiUnavailable } from "@/modules/ia/errors";
 import { iaDb } from "@/modules/ia/repo";
 import { runLlm } from "@/modules/ia/run";
 import { hit } from "@/modules/mcp/rate-limit";
+import { buildDraft } from "./draft";
 import { type InvoiceExtraction, InvoiceExtractionSchema } from "./extraction-schema";
 import { registerInvoiceFakeFixtures } from "./fake-fixtures";
 import { detectFormat } from "./file-format";
@@ -13,8 +14,8 @@ import { type InvoiceLinesPayload, invoicePayloadHash, pdfPayload } from "./pdf-
 import { assertTarget } from "./preview-service";
 import { INVOICE_IMPORT_PROMPT } from "./prompt";
 import { reconcileExtraction } from "./reconcile";
-import { type ImportDraft, ImportDraftSchema } from "./schemas";
-import { hashFile, issueImportToken } from "./token";
+import type { ImportDraft } from "./schemas";
+import { hashFile } from "./token";
 
 export const IMPORT_DAILY_LIMIT = 10;
 const DAY_S = 24 * 60 * 60;
@@ -105,31 +106,19 @@ export async function extractInvoiceImport(
     }
     throw unprocessable("NOT_AN_INVOICE", "Este arquivo não parece uma fatura de cartão.");
   }
-  const fileHash = hashFile(input.bytes);
-  let itemsTotal = 0n;
-  let selectedTotal = 0n;
-  for (const i of rec.items) {
-    const v = BigInt(i.amountInCents ?? "0");
-    if (i.kind === "PURCHASE" || i.kind === "FEE") itemsTotal += v;
-    else if (i.kind === "CREDIT") itemsTotal -= v;
-    if (i.selected) selectedTotal += v;
-  }
-  const declaredTotal = rec.declared.totalInCents ? BigInt(rec.declared.totalInCents) : null;
-  return ImportDraftSchema.parse({
-    importToken: issueImportToken(
-      { familyId: ctx.familyId, cardId, fileHash, source: "PDF" },
-      ctx.clock.now(),
-    ),
-    source: "PDF",
-    fileHash,
+  return buildDraft(tx, ctx, {
+    cardId,
+    ownerMemberId: card.ownerMemberId,
     invoiceRef: input.invoiceRef,
+    source: "PDF",
+    fileHash: hashFile(input.bytes),
     declared: rec.declared,
-    items: rec.items,
-    totals: {
-      itemsTotal: String(itemsTotal),
-      selectedTotal: String(selectedTotal),
-      difference: String(declaredTotal === null ? 0n : declaredTotal - itemsTotal),
-    },
     warnings: rec.warnings,
+    items: rec.items.map(
+      ({ selected: _s, group: _g, categoryId: _c, payerMemberId: _p, flags, ...i }) => ({
+        ...i,
+        needsAttention: flags.includes("NEEDS_ATTENTION"),
+      }),
+    ),
   });
 }
