@@ -58,6 +58,7 @@ Atualizado: 2026-11-08 · Situação: US-066 entregue (flag, `preview` do CSV, p
 | :-- | :-- | :-- |
 | IMP-1 | Descrição do estabelecimento vai à Anthropic | Necessária para extrair; opt-in próprio, linhas redigidas, pré-visualização |
 | IMP-2 | Redação por regra pode deixar passar um nome de terceiro numa descrição | Só linhas candidatas; teste de propriedade com dados maliciosos |
+| IMP-6 | `pendingEmail` não é lido na redação (guarda SEC-058): o e-mail completo cai no regex; a parte local solta, sem `@`, pode passar | Guarda de privacidade; só em linha candidata |
 | IMP-3 | Recarregar a revisão perde o rascunho (e o custo do PDF) | Preço de não guardar nada no servidor |
 | IMP-4 | Parcela com sobra de centavos na 1ª: total do plano aproximado | Corrigível por US-041 |
 | IMP-5 | Estorno não vira lançamento na v1 | Ledger não tem compra negativa; aparece só na conferência |

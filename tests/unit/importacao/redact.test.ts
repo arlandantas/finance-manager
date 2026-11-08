@@ -63,6 +63,10 @@ describe("US-066b redactInvoiceLines (tabela)", () => {
     ["12/10 Lúcas&Pereira 10,00", "12/10 pessoa&pessoa 10,00"],
     ["12/10 JOAQUIM BRAGA 10,00", "12/10 pessoa pessoa 10,00"],
     ["12/10 ｌｕｃａｓ 10,00", "12/10 pessoa 10,00"],
+    ["12/10 Lu\u200Bcas Pe\u00ADreira 10,00", "12/10 pessoa pessoa 10,00"],
+    ["12/10 JOAOBRAGA 10,00", "12/10 pessoa 10,00"],
+    ["12/10 xLUCASx 10,00", "12/10 pessoa 10,00"],
+    ["12/10 CARTAO 4111111111111111,00", "12/10 CARTAO ,00"],
     ["12/10 BANANA 10,00", "12/10 BANANA 10,00"],
   ])("%s", (input, expected) => {
     expect(red(input)).toBe(expected);

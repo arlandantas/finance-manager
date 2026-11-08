@@ -6,7 +6,7 @@ import { fold, memberWordSet } from "@/modules/analise-ia/payload";
 const DATE =
   /(?<![\d/])(?:\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2}(?:\/\d{2,4})?|\d{1,2} (?:jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-z]*\.?)(?![\d/])/gi;
 const AMOUNT =
-  /(?<![\d.,])(?:R\$\s*)?-?\d{1,3}(?:\.\d{3})+,\d{2}(?!\d)|(?<![\d.,])(?:R\$\s*)?-?\d+,\d{2}(?!\d)/g;
+  /(?<![\d.,])(?:R\$\s*)?-?\d{1,3}(?:\.\d{3})+,\d{2}(?!\d)|(?<![\d.,])(?:R\$\s*)?-?\d{1,9},\d{2}(?!\d)/g;
 const CPF = /\b\d{3}\.?\d{3}\.?\d{3}-\d{2}\b|\b\d{11}\b/g;
 const CNPJ = /\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/g;
 const EMAIL = /[^\s@<>()]+@[^\s@<>()]+/g;
@@ -51,14 +51,17 @@ function protect(line: string): { text: string; keep: string[] } {
 }
 
 function redactLine(line: string, words: Set<string>): string {
+  const longNames = [...words].filter((n) => n.length >= 4);
   // identificadores estruturados primeiro, sobre o texto bruto (valores e datas não casam estes formatos)
-  let t = line.normalize("NFKC");
+  let t = line.normalize("NFKC").replace(/\p{Cf}/gu, ""); // zero-width e soft hyphen não escondem nomes
   for (const re of [EMAIL, URL_RE, CNPJ, CPF, CEP, PHONE]) t = t.replace(re, " ");
   const { text, keep } = protect(t);
   let r = text.replace(LONG_DIGITS, " ");
   r = r.replace(/\p{L}+/gu, (w) => {
     const bare = fold(w);
-    return bare.length >= 3 && words.has(bare) ? "pessoa" : w;
+    if (bare.length >= 3 && words.has(bare)) return "pessoa";
+    // nome colado em outra palavra ("JOAOSILVA"): nome com ≥ 4 letras como trecho
+    return bare.length >= 4 && longNames.some((n) => bare.includes(n)) ? "pessoa" : w;
   });
   r = r.replace(/\u0001(\d+)\u0002/g, (_, i) => keep[Number(i)] ?? "");
   return r.replace(/\s+/g, " ").trim().slice(0, MAX_LINE_CHARS);
