@@ -100,7 +100,7 @@ Ordem das pendentes (importação de fatura, ADR-042, spec 13): US-066 → US-06
 | US-076a | R4-D | Lançar uma despesa direto pelo assistente | done | US-075, US-077, EN-007 |
 | US-076b | R4-D | Limites de lançamento do assistente, configuráveis pelo membro | done | US-076a |
 | US-076c | R4-D | Modo opcional "exigir confirmação" por conexão | done | US-076a, US-076b |
-| US-074b | R4-D | Token pessoal (PAT) para clientes MCP sem OAuth: servidor (ADR-043) | todo | US-074, US-075, US-076b, US-076c |
+| US-074b | R4-D | Token pessoal (PAT) para clientes MCP sem OAuth: servidor (ADR-043) | done | US-074, US-075, US-076b, US-076c |
 | US-074c | R4-D | Token pessoal: tela, chave do Administrador e alerta de uso | todo | US-074b |
 | US-083 | R4-S | Cadastro restrito por lista de e-mails permitidos (alpha) | done | — |
 | US-084 | R4-S | Lançamento "Só meu" só pode ser alterado por quem tem controle sobre ele | done | US-005, US-013a |
