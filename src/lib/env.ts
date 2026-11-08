@@ -41,6 +41,9 @@ const schema = z
     MCP_CIMD_ALLOWED_HOSTS: optionalString,
     SMTP_HOST: z.string().default("localhost"),
     SMTP_PORT: z.coerce.number().int().default(1025),
+    SMTP_USER: optionalString,
+    SMTP_PASSWORD: optionalString, // segredo (EN-006): nunca em log, erro ou resposta
+    SMTP_SECURE: flag, // TLS implícito (porta 465); na 587 usa STARTTLS
     MAIL_FROM: z.string().default("Finance Manager <no-reply@finance-manager.local>"),
   })
   .superRefine((env, ctx) => {

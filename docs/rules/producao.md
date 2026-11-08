@@ -19,7 +19,7 @@ Vercel + Prisma Postgres (ADR-031, spec 11, ADR-041). Tudo aqui é feito pelo us
 
 ## 3. Migrações (expand antes do código)
 - `vercel-build` roda `prisma migrate deploy` só em `VERCEL_ENV=production`; falhou => build falha, versão anterior segue no ar.
-- Pendentes em produção: `20261029*` até `20261108*` (tags, cartão pagador, membro sem conta, cores, previstas, assinaturas, transferências previstas, modo custom, split padrão, motor STORED). Todas expandem; o código antigo continua rodando.
+- Pendentes em produção: `20261029*` até `20261108000200` (liste `prisma/migrations` e use as commitadas na versão que for ao ar) (tags, cartão pagador, membro sem conta, cores, previstas, assinaturas, transferências previstas, modo custom, split padrão, motor STORED). Todas expandem; o código antigo continua rodando.
 - Antes: com `DIRECT_URL` de produção no shell, `pnpm exec prisma migrate status` (drift: avisar, nunca aplicar).
 - Deploy de produção (merge/push em `main`, ou `vercel --prod`).
 - A migração `20261108000200` só vira STORED as famílias LEGACY sem despesa comum. Para a família existente, com `DATABASE_URL` de produção: `pnpm migrate:split --dry-run` => se limpo, `pnpm migrate:split` => `pnpm migrate:split --verify` (deve sair sem problemas). Falha de gate (1 centavo) para a família e sai com código 1: pare e escale.
@@ -36,7 +36,7 @@ Vercel + Prisma Postgres (ADR-031, spec 11, ADR-041). Tudo aqui é feito pelo us
 - Motor de rateio: `pnpm migrate:split --engine LEGACY --family <id>` (só sem CUSTOM/parcela dividida).
 
 ## 6. Antes de divulgar
-- SMTP real para convites: `SMTP_HOST`, `SMTP_PORT`, `MAIL_FROM`. ATENÇÃO: `src/lib/mail.ts` não envia usuário/senha nem TLS (`secure:false`); a maioria dos provedores exige. Sem essa história, convite por e-mail não funciona em produção (use link copiado).
+- SMTP real para convites (EN-006): `SMTP_HOST`, `SMTP_PORT` (465 = TLS implícito; 587 = STARTTLS), `SMTP_USER`, `SMTP_PASSWORD` (segredo, só na Vercel), `SMTP_SECURE=true` (opcional, força TLS implícito em outra porta), `MAIL_FROM` (remetente). Em produção, sem host real, usuário ou senha o envio falha citando só os nomes das variáveis; a senha nunca vai a log ou erro.
 - No DNS do domínio do remetente: SPF, DKIM (do provedor) e DMARC (`p=none` e depois `quarantine`).
 - `/privacidade` (US-082) com revisão jurídica e `PRIVACY_CONTACT_EMAIL` real; `ALLOWED_SIGNUP_EMAILS` preenchida.
 - MCP/IA só ligam com restore testado, domínio definitivo e revisão (ver `docs/rules/seguranca-lgpd.md`).
