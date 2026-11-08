@@ -184,6 +184,22 @@ export const ExportSettlementSchema = z
   })
   .strict();
 
+export const ExportImportBatchSchema = z // US-068
+  .object({
+    id,
+    cartaoId: id,
+    faturaId: id,
+    hashDoArquivo: z.string(),
+    fonte: z.enum(["CSV", "PDF"]),
+    quantidadeDeItens: z.number().int(),
+    totalEmCentavos: cents,
+    importadoPorId: id,
+    importadoEm: iso,
+    desfeitoEm: nullableIso,
+    desfeitoPorId: id.nullable(),
+  })
+  .strict();
+
 export const ExportFamilySchema = z
   .object({
     id,
@@ -200,6 +216,7 @@ export const ExportFamilySchema = z
     transferenciasPrevistas: z.array(ExportPlannedTransferSchema), // US-100
     transferenciasRecorrentes: z.array(ExportRecurringTransferSchema), // US-101
     acertos: z.array(ExportSettlementSchema),
+    importacoes: z.array(ExportImportBatchSchema), // US-068
   })
   .strict();
 

@@ -21,6 +21,7 @@ const COVERED: Array<[string, string[]]> = [
   ],
   ["src/modules/transacoes/installment-edit.ts", ["editInstallment"]],
   ["src/modules/transacoes/installment-state.ts", ["deleteInstallment", "restoreInstallment"]],
+  ["src/modules/importacao/confirm-service.ts", ["confirmInvoiceImport"]], // US-068
   ["src/modules/split/rule-service.ts", ["putSplitRule"]],
   ["src/modules/split/service.ts", ["registerSettlement"]],
   ["src/modules/contas/transfers.ts", ["undoTransferGroup"]],

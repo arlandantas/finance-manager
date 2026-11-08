@@ -2,6 +2,7 @@ import { ApiError } from "@/lib/api/errors";
 import type { Tx, UserContext } from "@/lib/api/types";
 import { fromDbDate } from "@/lib/dates";
 import { memberDisplayName } from "@/modules/familia/display-name";
+import { exportImportBatches } from "@/modules/privacidade/export-imports";
 import {
   EXPORT_MAX_BYTES,
   type ExportFile,
@@ -252,6 +253,7 @@ async function currentFamily(
     assinaturas: await exportSubscriptions(tx, familyId, mine, clock),
     transferenciasPrevistas: await exportPlannedTransfers(tx, familyId),
     transferenciasRecorrentes: await exportRecurringTransfers(tx, familyId),
+    importacoes: await exportImportBatches(tx, familyId),
     acertos: groups.map((g) => ({
       id: g.id,
       tipo: g.kind,
