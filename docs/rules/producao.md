@@ -2,24 +2,14 @@
 
 ## 0. Situação atual (verificável no repositório; o resto fica a confirmar)
 - Em produção na Vercel: https://verbus-finance.vercel.app/ (informado pelo usuário; domínio também em `AUTH_URL`/smoke). Banco: Prisma Postgres provisionado dentro da Vercel (ADR-031).
-- Runtime: alvo Node 26 no repositório (`engines` `>=26 <27`, `.nvmrc` 26, `Dockerfile` `node:26-alpine`; ADR-044, US-102). Pendente do usuário: AC3 (Vercel Project Settings > Node.js Version = 26) e AC5 (`scripts/smoke-prod.sh` com `SMOKE OK` após o deploy). Se houver erro de `fetch` externo, `VERCEL_FETCH_DISABLE_H2=1`.
+- Runtime: Node 26 em produção desde 2026-11-08 (`engines` `>=26 <27`, `.nvmrc` 26, `Dockerfile` `node:26-alpine`; ADR-044, US-102). Deploy e `scripts/smoke-prod.sh` (`SMOKE OK`) confirmados pelo usuário. Se houver erro de `fetch` externo, `VERCEL_FETCH_DISABLE_H2=1`.
 - Migrações: `vercel-build` (`scripts/vercel-build.mjs`) roda `prisma generate`, `prisma migrate deploy` só com `VERCEL_ENV=production` e `next build`. O CLI usa a URL direta (`prisma.config.ts` + `src/lib/db-url.ts`); o app usa a pooled.
 - Cron: `vercel.json` agenda `/api/cron/purge` (`0 7 * * *`), autenticado por `CRON_SECRET`. Backup: `.github/workflows/backup.yml` (manual).
-- A confirmar com o usuário: versão de Node em Vercel Project Settings; variáveis realmente definidas (só nomes, seção 1); migrações já aplicadas em produção; região do banco e `regions`; backup/restore ensaiado; `scripts/smoke-prod.sh` rodado; previews desligados.
+- A confirmar com o usuário: variáveis realmente definidas (só nomes, seção 1); migrações já aplicadas em produção; região do banco e `regions`; backup/restore ensaiado; `scripts/smoke-prod.sh` rodado; previews desligados.
 
 
-## 0.1 Checklist do usuário: subir a US-102 (Node 26) para produção
-Marque na ordem; nada disto o agente faz (push, deploy e Vercel são seus).
-1. [ ] Vercel > Project > Settings > Build and Deployment > Node.js Version = `26.x`. O `engines` (`>=26 <27`) já manda no build; a configuração deixa o painel coerente.
-2. [ ] (Opcional, recomendado) Testar antes num preview: `git push` de uma branch, abrir o preview e fazer login e uma tela com dados. Previews não levam segredos (seção 1); sem login possível, teste direto em produção com o rollback à mão.
-3. [ ] Conferir o backup recente (seção 2) antes do deploy; o `engines` novo não muda o banco, mas é o ponto de retorno.
-4. [ ] `git push` na `main` (há commits locais não enviados) ou `vercel --prod`; acompanhar o build: `prisma generate`, `migrate deploy` e `next build` em Node 26.
-5. [ ] `scripts/smoke-prod.sh https://verbus-finance.vercel.app` deve imprimir `SMOKE OK`.
-6. [ ] `/api/health` com `Authorization: Bearer $CRON_SECRET`: `database` ok e sem `unsafe_config`; logs da Vercel sem erro de runtime.
-7. [ ] Login Google real; se a IA estiver ligada, uma chamada (o `fetch` agora usa HTTP/2 por padrão). Erro de rede externo: definir `VERCEL_FETCH_DISABLE_H2=1` em Production e refazer o deploy.
-8. [ ] Algo errado: Deployments > Instant Rollback (o banco não muda; ver seção 5) e avisar o agente.
-9. [ ] Ao concluir, dizer ao agente: ele fecha AC3 e AC5 da US-102 no STATE.
-Depois, os itens "a confirmar" da seção 0 e, em produção, `pnpm migrate:split` (seção 3).
+## 0.1 Migração para Node 26: concluída em 2026-11-08
+Push na `main`, deploy e smoke OK (confirmado pelo usuário). Resta só observar os logs e, ao ligar a IA (§7), conferir a primeira chamada externa (HTTP/2 do `fetch`).
 
 Vercel + Prisma Postgres (ADR-031, spec 11, ADR-041). Roteiro do 1º deploy (passos 1 a 6 abaixo, ainda valem para conferência). Tudo aqui é feito pelo usuário; nenhum segredo entra no repositório. Rode `pnpm check:docs && pnpm lint && pnpm typecheck && pnpm test` e `pnpm test:int` antes.
 
@@ -61,3 +51,16 @@ Vercel + Prisma Postgres (ADR-031, spec 11, ADR-041). Roteiro do 1º deploy (pas
 - No DNS do domínio do remetente: SPF, DKIM (do provedor) e DMARC (`p=none` e depois `quarantine`).
 - `/privacidade` (US-082) com revisão jurídica e `PRIVACY_CONTACT_EMAIL` real; `ALLOWED_SIGNUP_EMAILS` preenchida.
 - MCP/IA só ligam com restore testado, domínio definitivo e revisão (ver `docs/rules/seguranca-lgpd.md`).
+
+## 7. Ligar a IA (Anthropic): roteiro do usuário
+Nenhuma chave é criada pelo agente: conta, cobrança e chave são suas (nunca cole a chave em chat, commit ou doc). Spec 06a, ADR-028/042, EXT-12.
+1. [ ] console.anthropic.com: criar/entrar na conta da organização e ativar cobrança (créditos pré-pagos; comece com pouco, ex.: US$ 10).
+2. [ ] Settings > Limits: definir limite de gasto mensal baixo (ex.: US$ 10) como segunda trava, além dos tetos do app.
+3. [ ] Settings > API keys > Create key, workspace dedicado, nome `finance-manager-prod`. Copie na hora (aparece uma vez) e guarde no gerenciador de senhas.
+4. [ ] Vercel > Settings > Environment Variables, escopo SÓ Production (marque Sensitive na chave): `ANTHROPIC_API_KEY`, `LLM_PROVIDER=anthropic`, `LLM_GLOBAL_MONTHLY_CAP_CENTS=5000`, `OPS_ALERT_EMAIL=<seu e-mail>`, `AI_FEATURES_ENABLED=true`. Opcionais: `LLM_MONTHLY_CAP_CENTS` (por família, padrão 500), `LLM_MODEL_ANALYSIS`/`LLM_MODEL_IMPORT` (padrão `claude-haiku-5-5`).
+5. [ ] O alarme dos tetos (50/80/100%) vai por e-mail: sem SMTP real (§6) fica só no log. Configure o SMTP antes ou confie no log da Vercel.
+6. [ ] Redeploy (variáveis só valem em novo deploy). Sem `OPS_ALERT_EMAIL` ou teto global o boot falha de propósito (spec 06a, regra 3): leia o erro do build.
+7. [ ] No app (Administrador): Família > IA e privacidade, ligue a finalidade e confirme o texto vigente (consentimento por família). Rode uma análise pequena e confira o consumo (console Anthropic e uso no app).
+8. [ ] Importação de PDF (opcional): `INVOICE_IMPORT_ENABLED=true`; o PDF envia a descrição do estabelecimento à Anthropic (ADR-042 §4): aceite explícito seu; valide com uma fatura real.
+9. [ ] Algo errado: remova `AI_FEATURES_ENABLED` (ou ponha `false`), redeploy, e revogue a chave no console se houver suspeita de vazamento.
+Pendência de desenvolvimento: `pnpm ai:golden` (D-GES-34, SDD-023 §8.4) ainda não existe em `package.json`; era pré-requisito de ligar a IA. Decida se liga assim mesmo ou se vira história.
