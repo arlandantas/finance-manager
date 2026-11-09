@@ -6,8 +6,14 @@ export async function register() {
   const { assertLlmConfig } = await import("@/modules/ia/config");
   assertLlmConfig();
   // SEC-010: sem URL exata de cliente CIMD nenhum cliente CIMD é aceito (DCR segue valendo); MCP_CIMD_ALLOWED_HOSTS é ignorada.
-  const { cimdAllowedClientIds, mcpEnabled } = await import("@/modules/mcp/config");
-  if (mcpEnabled() && cimdAllowedClientIds().length === 0) {
+  const { cimdAllowAny, cimdAllowedClientIds, mcpEnabled } = await import("@/modules/mcp/config");
+  if (mcpEnabled() && cimdAllowAny()) {
+    const { logger } = await import("@/lib/logger");
+    logger.warn(
+      { event: "mcp_cimd_allow_any" },
+      "MCP_CIMD_ALLOW_ANY=true: qualquer cliente CIMD válido é aceito (temporário; procure mcp_cimd_client_seen nos logs)",
+    );
+  } else if (mcpEnabled() && cimdAllowedClientIds().length === 0) {
     const { logger } = await import("@/lib/logger");
     logger.warn(
       { event: "mcp_cimd_allowlist_empty" },

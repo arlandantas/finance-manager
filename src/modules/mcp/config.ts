@@ -59,6 +59,15 @@ export function cimdAllowedClientIds(env: Env = process.env): string[] {
     .filter(Boolean);
 }
 
+/**
+ * TEMPORÁRIO (ver STATE.md): `MCP_CIMD_ALLOW_ANY=true` aceita qualquer cliente CIMD que passe nas demais validações
+ * (https canônica, SSRF, redirect no mesmo host). Quem não está na lista continua "não verificado" e o consentimento
+ * exige o aceite do risco. Padrão desligado (falha fechada, SEC-010). Remover ao cadastrar o `client_id` do Claude.
+ */
+export function cimdAllowAny(env: Env = process.env): boolean {
+  return env.MCP_CIMD_ALLOW_ANY?.trim().toLowerCase() === "true";
+}
+
 function appUrl(env: Env): string {
   return (env.APP_URL?.trim() || "http://localhost:3100").replace(/\/+$/, "");
 }

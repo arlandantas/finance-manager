@@ -75,7 +75,7 @@ export function isPrivateAddress(addr: string): boolean {
  * SEC-010 (SDD-028 §3.2): valida a URL do `client_id` sem rede. Forma canônica, https, sem credenciais,
  * porta, query ou fragmento, host não-IP, e IGUALDADE EXATA com a lista de URLs permitidas.
  */
-export function assertCimdUrl(clientId: string, allowedClientIds: readonly string[]): URL {
+export function assertCimdUrl(clientId: string, allowedClientIds: readonly string[] | "any"): URL {
   if (clientId.length > 512 || !/^[\x21-\x7e]+$/.test(clientId)) throw new CimdError("url");
   let u: URL;
   try {
@@ -89,7 +89,9 @@ export function assertCimdUrl(clientId: string, allowedClientIds: readonly strin
   if (isIP(u.hostname.replace(/^\[|\]$/g, "")) !== 0 || u.hostname.endsWith(".")) {
     throw new CimdError("ip_host");
   }
-  if (!allowedClientIds.includes(clientId)) throw new CimdError("not_allowed");
+  if (allowedClientIds !== "any" && !allowedClientIds.includes(clientId)) {
+    throw new CimdError("not_allowed");
+  }
   return u;
 }
 
@@ -138,7 +140,7 @@ async function readCapped(res: Response, max: number): Promise<Uint8Array> {
 
 export async function fetchCimd(
   clientId: string,
-  allowedClientIds: readonly string[],
+  allowedClientIds: readonly string[] | "any",
   fetchImpl: FetchImpl = fetch,
 ): Promise<CimdClient> {
   const url = assertCimdUrl(clientId, allowedClientIds);

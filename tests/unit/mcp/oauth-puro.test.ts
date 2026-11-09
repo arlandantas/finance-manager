@@ -16,6 +16,7 @@ import {
 } from "@/modules/mcp/cimd";
 import {
   canonicalResource,
+  cimdAllowAny,
   cimdAllowedClientIds,
   issuerOf,
   mcpEnabled,
@@ -151,6 +152,19 @@ describe("EN-006a/SEC-010 CIMD por URL exata e SSRF (fetch e DNS injetados, sem 
 
   it("lista vazia: nenhum cliente CIMD é aceito", async () => {
     expect(await reason(() => assertCimdUrl(URL_OK, []))).toBe("not_allowed");
+  });
+
+  it('modo "any" (MCP_CIMD_ALLOW_ANY): aceita URL fora da lista, mas mantém as demais validações', async () => {
+    expect(() => assertCimdUrl(URL_OK, "any")).not.toThrow();
+    expect(await reason(() => assertCimdUrl("http://claude.ai/x", "any"))).toBe("scheme");
+    expect(await reason(() => assertCimdUrl("https://127.0.0.1/x", "any"))).toBe("ip_host");
+    expect(await reason(() => assertCimdUrl("https://claude.ai/x?y=1", "any"))).toBe("url");
+  });
+
+  it("cimdAllowAny: só com MCP_CIMD_ALLOW_ANY=true (padrão desligado)", () => {
+    expect(cimdAllowAny({})).toBe(false);
+    expect(cimdAllowAny({ MCP_CIMD_ALLOW_ANY: "false" })).toBe(false);
+    expect(cimdAllowAny({ MCP_CIMD_ALLOW_ANY: " TRUE " })).toBe(true);
   });
 
   it("falhas de busca: 3xx, status, content-type, tamanho, JSON, esquema, client_id, método, redirect_uris", async () => {

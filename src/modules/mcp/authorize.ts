@@ -3,6 +3,7 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { conflict, notFound, unprocessable } from "@/lib/api/errors";
 import type { Clock } from "@/lib/clock";
 import { randomToken, sha256Hex } from "@/lib/ids";
+import { logger } from "@/lib/logger";
 import { uuidSchema } from "@/lib/schemas";
 import { recordAudit } from "@/modules/mcp/audit";
 import {
@@ -17,6 +18,7 @@ import {
   CIMD_CACHE_MS,
   CODE_TTL_S,
   canonicalResource,
+  cimdAllowAny,
   cimdAllowedClientIds,
   issuerOf,
   RATE,
@@ -70,7 +72,10 @@ function normalizeResource(r: string): string {
   return r.replace(/\/+$/, "");
 }
 
-function cimdStillValid(c: { clientId: string; redirectUris: string[] }, allowed: string[]) {
+function cimdStillValid(
+  c: { clientId: string; redirectUris: string[] },
+  allowed: readonly string[] | "any",
+) {
   try {
     const host = assertCimdUrl(c.clientId, allowed).hostname;
     return c.redirectUris.length > 0 && c.redirectUris.every((r) => isCimdRedirectUri(r, host));
@@ -89,18 +94,36 @@ export async function resolveClient(
   const env = opts.env ?? process.env;
   if (/^https?:\/\//i.test(clientId)) {
     const cached = await db.mcpClient.findUnique({ where: { clientId } });
-    const allowed = cimdAllowedClientIds(env);
+    const list = cimdAllowedClientIds(env);
+    const allowAny = cimdAllowAny(env);
+    const allowed = allowAny ? "any" : list;
+    // Registro para descobrir o `client_id` real dos clientes (filtrar na Vercel por `mcp_cimd_client_seen`).
+    // O client_id é uma URL pública do cliente: não é dado pessoal.
+    const seen = (outcome: string, extra: Record<string, unknown> = {}) =>
+      logger.info(
+        {
+          event: "mcp_cimd_client_seen",
+          clientId: clientId.slice(0, 300),
+          outcome,
+          inAllowlist: list.includes(clientId),
+          allowAny,
+          ...extra,
+        },
+        `MCP cliente CIMD: ${clientId.slice(0, 300)} (${outcome})`,
+      );
     if (
       cached?.kind === "CIMD" &&
       cached.metadataFetchedAt &&
       now.getTime() - cached.metadataFetchedAt.getTime() < CIMD_CACHE_MS
     ) {
       // SEC-010: o cliente gravado é revalidado contra as regras atuais a cada uso (inclusive o cache)
-      return cimdStillValid(cached, allowed) ? cached : null;
+      const valid = cimdStillValid(cached, allowed);
+      seen(valid ? "accepted_cached" : "rejected_cached", { clientName: cached.clientName });
+      return valid ? cached : null;
     }
     try {
       const doc = await fetchCimd(clientId, allowed, opts.fetchImpl);
-      return await db.mcpClient.upsert({
+      const saved = await db.mcpClient.upsert({
         where: { clientId },
         create: {
           clientId,
@@ -117,8 +140,14 @@ export async function resolveClient(
           metadataFetchedAt: now,
         },
       });
+      seen("accepted", { clientName: saved.clientName });
+      return saved;
     } catch (e) {
-      if (e instanceof CimdError) return null;
+      if (e instanceof CimdError) {
+        seen("rejected", { reason: e.reason });
+        return null;
+      }
+      seen("rejected", { reason: "internal" });
       // Falha de rede/banco com cache vencido: não usar metadado velho (falha fechada).
       return null;
     }
