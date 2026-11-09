@@ -5,7 +5,7 @@
 **Verificação (2026-11-08, Node 26.13):** lint e typecheck limpos; `pnpm test` 1276 (110 arquivos); `pnpm test:int` 141 arquivos, 1638 testes; E2E completo 634 de 635 (a única falha, US-094b "nome escolhido", é corrida de hidratação do `fill` sobre campo pré-preenchido e passa isolada; sem relação com o Node). QA no browser (dev, Mariana, IA simulada): CSV de 6 linhas → rascunho (compras, parcela 3/10, estorno bloqueado) → 5 itens importados (fatura R$ 428,50; parcelas futuras +R$ 1.750,00; selo "Importado da fatura") → desfazer devolveu limite, fatura e parcelas ao valor anterior; token pessoal criado (formato `fmp_`, valor só no diálogo, nunca no DOM depois), listado e revogado; chaves da família nascem desligadas. Sem erro de console além do ruído do HMR. NÃO conferido no browser: PDF, "Esta e as próximas" na parcela, mobile da importação, e-mail de alerta do token.
 
 ## Próximo passo
-1. Usuário: ligar a IA seguindo `docs/rules/producao.md` §7 (chave Anthropic, tetos, variáveis, consentimento); fecha US-102 AC3 e AC5); aceite do bloco e QA com dados reais; conferir em produção os itens "a confirmar" de `docs/rules/producao.md` §0.
+1. Usuário: ligar a IA seguindo `docs/rules/producao.md` §7 (chave Anthropic, tetos, variáveis, consentimento)); aceite do bloco e QA com dados reais; conferir em produção os itens "a confirmar" de `docs/rules/producao.md` §0.
 2. Em produção, após o deploy: `pnpm migrate:split --dry-run`, depois sem a flag, depois `--verify` (ADR-041). Só então o CHECK `isSharedExpense=(splitMode<>NONE)` em `transactions` vira história.
 3. Sem desenvolvimento autônomo pendente. Candidatos se o usuário quiser: dividir as fontes >300 linhas; paginar a lista de lotes importados; E2E completo medido.
 
